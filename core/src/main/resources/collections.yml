@@ -1,0 +1,29 @@
+# =====================================================================
+#  HalilIbrahimMMO - Koleksiyon Ayarları
+# =====================================================================
+#  Her koleksiyon, oyuncunun en az bir kez toplaması gereken eşyalardan
+#  oluşur. Bir eşya ilk kez alındığında o ögenin "xp" değeri verilir;
+#  koleksiyondaki tüm ögeler toplandığında ayrıca "tamamlama-xp" verilir.
+#  Bu dosyayı /rpg yenile ile yükleyin.
+# =====================================================================
+
+koleksiyonlar:
+  degerli-madenler:
+    gorunen-ad: "Değerli Madenler"
+    tamamlama-xp: 1000
+    ogeler:
+      elmas: { gorunen-ad: "Elmas", esya: DIAMOND, xp: 100 }
+      zumrut: { gorunen-ad: "Zümrüt", esya: EMERALD, xp: 100 }
+      altin: { gorunen-ad: "Altın Külçe", esya: GOLD_INGOT, xp: 50 }
+      demir: { gorunen-ad: "Demir Külçe", esya: IRON_INGOT, xp: 25 }
+      lapis: { gorunen-ad: "Lapis Lazuli", esya: LAPIS_LAZULI, xp: 25 }
+      antika-kalinti: { gorunen-ad: "Antika Kalıntı", esya: ANCIENT_DEBRIS, xp: 200 }
+
+  deniz-hazineleri:
+    gorunen-ad: "Deniz Hazineleri"
+    tamamlama-xp: 500
+    ogeler:
+      nautilus: { gorunen-ad: "Nautilus Kabuğu", esya: NAUTILUS_SHELL, xp: 75 }
+      mercan: { gorunen-ad: "Mercan Bloğu", esya: BRAIN_CORAL_BLOCK, xp: 40 }
+      deniz-feneri: { gorunen-ad: "Deniz Feneri", esya: SEA_LANTERN, xp: 60 }
+      prizmarin: { gorunen-ad: "Prizmarin Kristali", esya: PRISMARINE_CRYSTALS, xp: 50 }

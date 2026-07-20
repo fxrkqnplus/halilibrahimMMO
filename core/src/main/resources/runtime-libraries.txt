@@ -1,0 +1,10 @@
+# HalilIbrahimMMO runtime library manifest.
+# One Maven coordinate (group:artifact:version) per line, resolved at server
+# startup by HalilIbrahimMMOLoader through Paper's PluginLoader mechanism.
+# Versions are substituted from gradle.properties at build time - do not
+# hardcode versions anywhere else.
+com.zaxxer:HikariCP:${hikariCpVersion}
+org.xerial:sqlite-jdbc:${sqliteJdbcVersion}
+com.mysql:mysql-connector-j:${mysqlConnectorVersion}
+org.mariadb.jdbc:mariadb-java-client:${mariadbConnectorVersion}
+org.postgresql:postgresql:${postgresqlVersion}

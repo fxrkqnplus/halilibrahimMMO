@@ -1,0 +1,60 @@
+# =====================================================================
+#  HalilIbrahimMMO - Ana Yapılandırma Dosyası
+# =====================================================================
+#  Bu dosyayı değiştirdikten sonra sunucuyu yeniden başlatmadan
+#  değişiklikleri uygulamak için "/rpg yenile" komutunu kullanabilirsiniz.
+#
+#  Not: Bu dosyadaki yorum satırları ve biçimlendirme, eklenti tarafından
+#  otomatik olarak yeniden yazılmaz; dosyanızı dilediğiniz gibi düzenleyip
+#  yorum ekleyebilirsiniz.
+# =====================================================================
+
+genel:
+  # Sunucunun ve eklentinin kullanacağı dil kodu.
+  # Şu an için sadece "tr" (Türkçe) resmi olarak desteklenmektedir.
+  dil: "tr"
+
+  # Ayrıntılı hata ayıklama (debug) loglarını açar/kapatır.
+  # Konsolu kalabalıklaştırır, sadece sorun giderirken açık bırakın.
+  # "/rpg hataayiklama" komutuyla sunucu çalışırken de geçici olarak değiştirilebilir.
+  hata-ayiklama-modu: false
+
+# =====================================================================
+#  Veritabanı Ayarları
+# =====================================================================
+#  Desteklenen türler: SQLITE, MYSQL, MARIADB, POSTGRESQL
+#  Ek bir kurulum yapmak istemiyorsanız SQLITE varsayılan olarak kalabilir;
+#  dosya tabanlıdır ve harici bir veritabanı sunucusu gerektirmez.
+# =====================================================================
+veritabani:
+  tur: SQLITE
+
+  # Sadece "tur: SQLITE" seçildiğinde kullanılır.
+  sqlite:
+    # Eklenti veri klasörü içinde oluşturulacak veritabanı dosyasının adı.
+    dosya-adi: "veritabani.db"
+
+  # Sadece "tur: MYSQL", "MARIADB" veya "POSTGRESQL" seçildiğinde kullanılır.
+  sunucu:
+    host: "localhost"
+    port: 3306
+    veritabani-adi: "halilibrahimmmo"
+    kullanici-adi: "root"
+    sifre: ""
+    # Veritabanı sunucusuna SSL/TLS üzerinden bağlanmak için true yapın.
+    ssl-kullan: false
+
+  # HikariCP bağlantı havuzu ayarları. Çok oyunculu (500+) sunucularda
+  # performansı doğrudan etkiler; ne yaptığınızı bilmiyorsanız varsayılanları
+  # değiştirmeyin.
+  havuz:
+    # Havuzda aynı anda açık olabilecek en fazla bağlantı sayısı.
+    maksimum-baglanti: 10
+    # Havuzda hazır tutulan, kullanılmayan (boşta) en az bağlantı sayısı.
+    minimum-bosta-baglanti: 2
+    # Yeni bir bağlantı için en fazla bu kadar milisaniye beklenir.
+    baglanti-zaman-asimi-ms: 30000
+    # Boşta kalan bir bağlantı bu süreden (ms) sonra havuzdan çıkarılır.
+    bosta-zaman-asimi-ms: 600000
+    # Bir bağlantı, ne kadar aktif olursa olsun bu süreden (ms) sonra yenilenir.
+    maksimum-yasam-suresi-ms: 1800000

@@ -1,0 +1,56 @@
+# =====================================================================
+#  HalilIbrahimMMO - Kabiliyet ve Enerji Ayarları
+# =====================================================================
+#  Kabiliyetler /kabiliyet <id> ile etkinleştirilir. Blok kabiliyetleri,
+#  etki-suresi-saniye içinde yalnız sonraki uygun blok kırmada tüketilir.
+# =====================================================================
+
+enerji:
+  maksimum: 100
+  yenilenme-saniye-basina: 4
+
+kabiliyetler:
+  kazici-darbe:
+    gorunen-ad: "Kazıcı Darbesi"
+    beceri: kazicilik
+    gerekli-seviye: 10
+    enerji: 20
+    bekleme-suresi-saniye: 30
+    etki-suresi-saniye: 15
+    etki:
+      tur: EXCAVATE
+      limit: 9
+
+  agac-kirici:
+    gorunen-ad: "Ağaç Kırıcı"
+    beceri: odunculuk
+    gerekli-seviye: 15
+    enerji: 25
+    bekleme-suresi-saniye: 45
+    etki-suresi-saniye: 15
+    etki:
+      tur: TREE_FELL
+      limit: 32
+
+  damar-kirici:
+    gorunen-ad: "Damar Kırıcı"
+    beceri: madencilik
+    gerekli-seviye: 20
+    enerji: 30
+    bekleme-suresi-saniye: 60
+    etki-suresi-saniye: 15
+    etki:
+      tur: VEIN_MINE
+      limit: 16
+
+  avci-odagi:
+    gorunen-ad: "Avcı Odağı"
+    beceri: avcilik
+    gerekli-seviye: 10
+    enerji: 25
+    bekleme-suresi-saniye: 45
+    etki-suresi-saniye: 10
+    etki:
+      tur: DAMAGE_BUFF
+      limit: 1
+      hasar-carpani: 1.5

@@ -1,0 +1,246 @@
+package com.halilibrahim.halilibrahimmmo.classes;
+
+import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
+import com.halilibrahim.halilibrahimmmo.api.classes.PlayerClassSnapshot;
+import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
+import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
+import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
+import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
+/** YAML-backed class catalogue plus asynchronous persistent talent allocation. */
+public final class YamlClassService implements ClassService {
+    private static final String FILE_NAME = "classes.yml";
+    private final JavaPlugin plugin;
+    private final ProfileService profiles;
+    private final ClassRepository repository;
+    private final AbilityService abilities;
+    private final AtomicReference<ClassSettings> settings = new AtomicReference<>();
+    private final ConcurrentHashMap<UUID, PlayerClassProgress> progressCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, String> selectedClasses = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, CompletableFuture<Void>> updateChains = new ConcurrentHashMap<>();
+    private final NamespacedKey healthModifierKey;
+
+    public YamlClassService(JavaPlugin plugin, ProfileService profiles, ClassRepository repository, AbilityService abilities) {
+        this.plugin = plugin;
+        this.profiles = profiles;
+        this.repository = repository;
+        this.abilities = abilities;
+        this.healthModifierKey = new NamespacedKey(plugin, "class-health");
+    }
+
+    @Override public void enable() { reload(); }
+    @Override public void disable() { progressCache.clear(); selectedClasses.clear(); updateChains.clear(); }
+
+    @Override
+    public void reload() {
+        File file = new File(plugin.getDataFolder(), FILE_NAME);
+        if (!file.exists()) plugin.saveResource(FILE_NAME, false);
+        try {
+            settings.set(parse(YamlConfiguration.loadConfiguration(file)));
+        } catch (RuntimeException exception) {
+            throw new LifecycleException("classes.yml could not be loaded.", exception);
+        }
+    }
+
+    @Override public ClassSettings settings() {
+        ClassSettings value = settings.get();
+        if (value == null) throw new IllegalStateException("ClassService.enable() has not run yet.");
+        return value;
+    }
+    @Override public Collection<PlayerClassDefinition> definitions() { return settings().definitions().values(); }
+    @Override public String displayName(String classId) {
+        PlayerClassDefinition definition = settings().definitions().get(classId);
+        return definition == null ? classId : definition.displayName();
+    }
+
+    @Override
+    public CompletableFuture<PlayerClassProgress> load(UUID playerId, String playerName) {
+        PlayerClassProgress cached = progressCache.get(playerId);
+        if (cached != null) return CompletableFuture.completedFuture(cached);
+        return profiles.load(playerId, playerName).thenCompose(profile -> repository.load(playerId).thenApply(progress -> {
+            selectedClasses.put(playerId, profile.selectedClass());
+            progressCache.put(playerId, progress);
+            return progress;
+        }));
+    }
+
+    @Override
+    public CompletableFuture<ClassSelectionResult> select(UUID playerId, String playerName, String rawClassId) {
+        String classId = rawClassId.toLowerCase(Locale.ROOT);
+        if (!settings().definitions().containsKey(classId)) {
+            return CompletableFuture.completedFuture(new ClassSelectionResult(ClassSelectionResult.Status.UNKNOWN_CLASS, classId, 0));
+        }
+        return serial(playerId, () -> selectNow(playerId, playerName, classId));
+    }
+
+    private CompletableFuture<ClassSelectionResult> selectNow(UUID playerId, String playerName, String classId) {
+        return profiles.load(playerId, playerName).thenCompose(profile -> load(playerId, playerName).thenCompose(progress -> {
+            if (profile.selectedClass().equals(classId)) {
+                return CompletableFuture.completedFuture(new ClassSelectionResult(ClassSelectionResult.Status.ALREADY_SELECTED, classId, 0));
+            }
+            long now = System.currentTimeMillis();
+            if (!profile.selectedClass().isEmpty() && progress.classChangeReadyAtMillis() > now) {
+                return CompletableFuture.completedFuture(new ClassSelectionResult(ClassSelectionResult.Status.COOLDOWN, classId, progress.classChangeReadyAtMillis() - now));
+            }
+            long readyAt = profile.selectedClass().isEmpty() ? 0L : Math.addExact(now, settings().changeCooldownMillis());
+            return profiles.update(playerId, playerName, old -> withClass(old, classId))
+                    .thenCompose(ignored -> repository.saveCooldown(playerId, readyAt))
+                    .thenApply(ignored -> {
+                        selectedClasses.put(playerId, classId);
+                        progressCache.put(playerId, new PlayerClassProgress(playerId, progress.talentRanks(), readyAt));
+                        return new ClassSelectionResult(ClassSelectionResult.Status.SELECTED, classId, 0);
+                    });
+        }));
+    }
+
+    @Override
+    public CompletableFuture<TalentSpendResult> spend(UUID playerId, String playerName, String rawTalentId) {
+        String talentId = rawTalentId.toLowerCase(Locale.ROOT);
+        return serial(playerId, () -> spendNow(playerId, playerName, talentId));
+    }
+
+    private CompletableFuture<TalentSpendResult> spendNow(UUID playerId, String playerName, String talentId) {
+        return profiles.load(playerId, playerName).thenCompose(profile -> load(playerId, playerName).thenCompose(progress -> {
+            String classId = profile.selectedClass();
+            if (classId.isEmpty()) return CompletableFuture.completedFuture(new TalentSpendResult(TalentSpendResult.Status.NO_CLASS, talentId, 0, pointsFor(profile) - progress.spentPoints()));
+            PlayerClassDefinition definition = settings().definitions().get(classId);
+            TalentNodeDefinition talent = definition == null ? null : definition.talents().get(talentId);
+            if (talent == null) return CompletableFuture.completedFuture(new TalentSpendResult(TalentSpendResult.Status.UNKNOWN_TALENT, talentId, 0, pointsFor(profile) - progress.spentPoints()));
+            int currentRank = progress.talentRanks().getOrDefault(classId, Map.of()).getOrDefault(talentId, 0);
+            int available = pointsFor(profile) - progress.spentPoints();
+            if (currentRank >= talent.maximumRank()) return CompletableFuture.completedFuture(new TalentSpendResult(TalentSpendResult.Status.MAXIMUM_RANK, talentId, currentRank, available));
+            if (available <= 0) return CompletableFuture.completedFuture(new TalentSpendResult(TalentSpendResult.Status.NO_POINTS, talentId, currentRank, available));
+            int nextRank = currentRank + 1;
+            return repository.saveRank(playerId, classId, talentId, nextRank).thenApply(ignored -> {
+                Map<String, Map<String, Integer>> ranks = mutableCopy(progress.talentRanks());
+                ranks.computeIfAbsent(classId, ignoredId -> new LinkedHashMap<>()).put(talentId, nextRank);
+                PlayerClassProgress next = new PlayerClassProgress(playerId, freeze(ranks), progress.classChangeReadyAtMillis());
+                progressCache.put(playerId, next);
+                return new TalentSpendResult(TalentSpendResult.Status.SPENT, talentId, nextRank, available - 1);
+            });
+        }));
+    }
+
+    @Override
+    public CompletableFuture<Optional<PlayerClassSnapshot>> findSnapshot(UUID playerId) {
+        return profiles.find(playerId).thenCompose(found -> found.map(profile -> load(playerId, profile.playerName()).thenApply(progress -> Optional.of(snapshot(profile, progress))))
+                .orElseGet(() -> CompletableFuture.completedFuture(Optional.empty())));
+    }
+
+    @Override
+    public ClassModifiers modifiers(UUID playerId) {
+        String classId = selectedClasses.get(playerId);
+        PlayerClassProgress progress = progressCache.get(playerId);
+        PlayerClassDefinition definition = classId == null || progress == null ? null : settings().definitions().get(classId);
+        if (definition == null) return ClassModifiers.none();
+        double health = 0, damage = 0;
+        int energy = 0;
+        Map<String, Double> costs = new LinkedHashMap<>(), cooldowns = new LinkedHashMap<>();
+        Map<String, Integer> limits = new LinkedHashMap<>();
+        Map<String, Integer> ranks = progress.talentRanks().getOrDefault(classId, Map.of());
+        for (TalentNodeDefinition talent : definition.talents().values()) {
+            int rank = ranks.getOrDefault(talent.id(), 0);
+            double total = rank * talent.valuePerRank();
+            switch (talent.effectType()) {
+                case MAX_HEALTH -> health += total;
+                case PVE_DAMAGE_MULTIPLIER -> damage += total;
+                case MAX_ENERGY -> energy += (int) total;
+                case ABILITY_ENERGY_COST_REDUCTION -> costs.merge(talent.abilityId(), total, Double::sum);
+                case ABILITY_COOLDOWN_REDUCTION -> cooldowns.merge(talent.abilityId(), total, Double::sum);
+                case ABILITY_LIMIT_BONUS -> limits.merge(talent.abilityId(), (int) total, Integer::sum);
+            }
+        }
+        return new ClassModifiers(health, damage, energy, Map.copyOf(costs), Map.copyOf(cooldowns), Map.copyOf(limits));
+    }
+
+    @Override
+    public void applyPlayerEffects(Player player) {
+        AttributeInstance attribute = player.getAttribute(Attribute.MAX_HEALTH);
+        if (attribute == null) return;
+        attribute.getModifiers().stream().filter(modifier -> modifier.getKey().equals(healthModifierKey)).toList().forEach(attribute::removeModifier);
+        double bonus = modifiers(player.getUniqueId()).maximumHealthBonus();
+        if (bonus != 0) attribute.addModifier(new AttributeModifier(healthModifierKey, bonus, AttributeModifier.Operation.ADD_NUMBER));
+        player.setHealth(Math.min(player.getHealth(), attribute.getValue()));
+    }
+
+    @Override public void evict(UUID playerId) { progressCache.remove(playerId); selectedClasses.remove(playerId); }
+
+    public int pointsFor(PlayerProfile profile) {
+        return TalentPointBudget.pointsFor(profile.globalLevel(), profile.prestige(), settings().levelsPerTalentPoint());
+    }
+
+    private ClassSettings parse(YamlConfiguration yaml) {
+        long cooldownDays = yaml.getLong("sinif-degistirme-bekleme-gun", -1);
+        int levelsPerPoint = yaml.getInt("seviye-basina-yetenek-puani", 0);
+        if (cooldownDays < 0 || levelsPerPoint < 1) throw new IllegalArgumentException("Invalid class point or cooldown settings.");
+        ConfigurationSection classes = requiredSection(yaml, "siniflar");
+        Map<String, PlayerClassDefinition> definitions = new LinkedHashMap<>();
+        for (String rawId : classes.getKeys(false)) {
+            String id = rawId.toLowerCase(Locale.ROOT);
+            if (!id.matches("[a-z0-9_-]+") || definitions.containsKey(id)) throw new IllegalArgumentException("Invalid class id: " + rawId);
+            ConfigurationSection section = requiredSection(classes, rawId);
+            String displayName = section.getString("gorunen-ad");
+            if (displayName == null || displayName.isBlank()) throw new IllegalArgumentException("Class display name required: " + id);
+            ConfigurationSection talents = requiredSection(section, "yetenekler");
+            Map<String, TalentNodeDefinition> nodes = new LinkedHashMap<>();
+            for (String rawTalentId : talents.getKeys(false)) {
+                String talentId = rawTalentId.toLowerCase(Locale.ROOT);
+                ConfigurationSection node = requiredSection(talents, rawTalentId);
+                ConfigurationSection effect = requiredSection(node, "etki");
+                String nodeName = node.getString("gorunen-ad");
+                int maximumRank = node.getInt("maksimum-rank", 0);
+                ClassEffectType type = ClassEffectType.valueOf(effect.getString("tur", "").toUpperCase(Locale.ROOT));
+                String abilityId = effect.getString("kabiliyet", "").toLowerCase(Locale.ROOT);
+                double value = effect.getDouble("deger-rank-basina", 0);
+                if (!talentId.matches("[a-z0-9_-]+") || nodes.containsKey(talentId) || nodeName == null || nodeName.isBlank() || maximumRank < 1 || maximumRank > 64 || value <= 0) throw new IllegalArgumentException("Invalid talent: " + rawTalentId);
+                boolean needsAbility = type == ClassEffectType.ABILITY_ENERGY_COST_REDUCTION || type == ClassEffectType.ABILITY_COOLDOWN_REDUCTION || type == ClassEffectType.ABILITY_LIMIT_BONUS;
+                if (needsAbility != !abilityId.isBlank() || (needsAbility && !abilities.settings().definitions().containsKey(abilityId))) throw new IllegalArgumentException("Invalid talent ability: " + talentId);
+                if ((type == ClassEffectType.ABILITY_ENERGY_COST_REDUCTION || type == ClassEffectType.ABILITY_COOLDOWN_REDUCTION) && value * maximumRank >= 1.0D) throw new IllegalArgumentException("Reduction talent cannot reach 100%: " + talentId);
+                if ((type == ClassEffectType.MAX_ENERGY || type == ClassEffectType.ABILITY_LIMIT_BONUS) && value != Math.rint(value)) throw new IllegalArgumentException("Integer talent requires an integer value: " + talentId);
+                nodes.put(talentId, new TalentNodeDefinition(talentId, nodeName, maximumRank, type, abilityId, value));
+            }
+            if (nodes.isEmpty()) throw new IllegalArgumentException("Class must define talents: " + id);
+            definitions.put(id, new PlayerClassDefinition(id, displayName, Map.copyOf(nodes)));
+        }
+        if (definitions.isEmpty()) throw new IllegalArgumentException("classes.yml must define classes.");
+        return new ClassSettings(Math.multiplyExact(cooldownDays, 86_400_000L), levelsPerPoint, Map.copyOf(definitions));
+    }
+
+    private PlayerClassSnapshot snapshot(PlayerProfile profile, PlayerClassProgress progress) {
+        int points = pointsFor(profile);
+        return new PlayerClassSnapshot(profile.playerId(), profile.selectedClass(), points, progress.spentPoints(), progress.talentRanks());
+    }
+    private static PlayerProfile withClass(PlayerProfile old, String classId) { return new PlayerProfile(old.playerId(), old.playerName(), old.globalLevel(), old.globalExperience(), old.prestige(), classId); }
+    private static ConfigurationSection requiredSection(ConfigurationSection parent, String path) { ConfigurationSection section = parent.getConfigurationSection(path); if (section == null) throw new IllegalArgumentException("Missing YAML section: " + path); return section; }
+    private static Map<String, Map<String, Integer>> mutableCopy(Map<String, Map<String, Integer>> source) { Map<String, Map<String, Integer>> copy = new LinkedHashMap<>(); source.forEach((key, value) -> copy.put(key, new LinkedHashMap<>(value))); return copy; }
+    private static Map<String, Map<String, Integer>> freeze(Map<String, Map<String, Integer>> source) { Map<String, Map<String, Integer>> frozen = new LinkedHashMap<>(); source.forEach((key, value) -> frozen.put(key, Map.copyOf(value))); return Map.copyOf(frozen); }
+    private <T> CompletableFuture<T> serial(UUID playerId, Supplier<CompletableFuture<T>> action) {
+        synchronized (updateChains) {
+            CompletableFuture<Void> previous = updateChains.getOrDefault(playerId, CompletableFuture.completedFuture(null));
+            CompletableFuture<T> result = previous.handle((ignored, throwable) -> null).thenCompose(ignored -> action.get());
+            CompletableFuture<Void> tail = result.handle((ignored, throwable) -> null);
+            updateChains.put(playerId, tail);
+            tail.whenComplete((ignored, throwable) -> updateChains.remove(playerId, tail));
+            return result;
+        }
+    }
+}

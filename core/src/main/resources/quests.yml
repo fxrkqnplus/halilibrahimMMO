@@ -1,0 +1,55 @@
+# =====================================================================
+#  HalilIbrahimMMO - Görev Ayarları
+# =====================================================================
+#  tur: PERMANENT (kalıcı, tek seferlik) | DAILY (günlük) | WEEKLY (haftalık)
+#  hedef.tur: BLOCK_BREAK (blok kırma) | MOB_KILL (yaratık öldürme)
+#  hedef.malzemeler sadece BLOCK_BREAK, hedef.varliklar sadece MOB_KILL için
+#  kullanılır. varliklar boş bırakılırsa herhangi bir yaratık sayılır.
+#  Bu dosyayı /rpg yenile ile yükleyin.
+# =====================================================================
+
+gorevler:
+  odun-ustasi:
+    gorunen-ad: "Odun Ustası"
+    tur: PERMANENT
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [OAK_LOG, SPRUCE_LOG, BIRCH_LOG, JUNGLE_LOG, ACACIA_LOG, DARK_OAK_LOG]
+    sayi: 500
+    xp: 500
+
+  derinlik-kazicisi:
+    gorunen-ad: "Derinlik Kazıcısı"
+    tur: PERMANENT
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [DEEPSLATE_DIAMOND_ORE, DEEPSLATE_EMERALD_ORE, ANCIENT_DEBRIS]
+    sayi: 50
+    xp: 1000
+
+  gunluk-maden-turu:
+    gorunen-ad: "Günlük Maden Turu"
+    tur: DAILY
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [COAL_ORE, DEEPSLATE_COAL_ORE, IRON_ORE, DEEPSLATE_IRON_ORE, COPPER_ORE, DEEPSLATE_COPPER_ORE]
+    sayi: 50
+    xp: 150
+
+  gunluk-avlanma:
+    gorunen-ad: "Günlük Avlanma"
+    tur: DAILY
+    hedef:
+      tur: MOB_KILL
+      varliklar: []
+    sayi: 20
+    xp: 150
+
+  haftalik-zombi-avi:
+    gorunen-ad: "Haftalık Zombi Avı"
+    tur: WEEKLY
+    hedef:
+      tur: MOB_KILL
+      varliklar: [ZOMBIE, HUSK, DROWNED]
+    sayi: 100
+    xp: 750

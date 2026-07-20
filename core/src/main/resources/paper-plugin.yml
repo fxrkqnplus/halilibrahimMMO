@@ -1,0 +1,25 @@
+name: HalilIbrahimMMO
+version: ${version}
+main: com.halilibrahim.halilibrahimmmo.HalilIbrahimMMOPlugin
+loader: com.halilibrahim.halilibrahimmmo.HalilIbrahimMMOLoader
+description: Türk Minecraft topluluğu için özgün MMORPG ilerleme eklentisi.
+author: HalilIbrahim Studio
+website: https://github.com/halilibrahim
+api-version: '${apiVersion}'
+load: STARTUP
+
+dependencies:
+  server:
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    LuckPerms:
+      load: BEFORE
+      required: false
+      join-classpath: true
+
+permissions:
+  halilibrahimmmo.admin:
+    description: HalilIbrahimMMO yönetici komutlarını kullanma izni (/rpg yenile, versiyon, hataayıklama).
+    default: op

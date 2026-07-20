@@ -1,0 +1,40 @@
+# HalilIbrahimMMO - Unvan kataloğu
+# Her unvanın tek bir kazanma koşulu vardır. "tur" alanı şunlardan biri
+# olmalıdır: LEVEL (seviye), PRESTIGE (prestij), QUEST_COMPLETED (gorev-id),
+# COLLECTION_COMPLETED (koleksiyon-id), SKILL_LEVEL (beceri-id + seviye).
+unvanlar:
+  gezgin:
+    gorunen-ad: "Gezgin"
+    esya: COMPASS
+    kosul:
+      tur: LEVEL
+      seviye: 10
+
+  usta-madenci:
+    gorunen-ad: "Usta Madenci"
+    esya: DIAMOND_PICKAXE
+    kosul:
+      tur: SKILL_LEVEL
+      beceri-id: madencilik
+      seviye: 50
+
+  hazine-avcisi:
+    gorunen-ad: "Hazine Avcısı"
+    esya: CHEST
+    kosul:
+      tur: COLLECTION_COMPLETED
+      koleksiyon-id: degerli-madenler
+
+  gorev-eri:
+    gorunen-ad: "Görev Eri"
+    esya: WRITTEN_BOOK
+    kosul:
+      tur: QUEST_COMPLETED
+      gorev-id: odun-ustasi
+
+  efsane:
+    gorunen-ad: "Efsane"
+    esya: NETHER_STAR
+    kosul:
+      tur: PRESTIGE
+      prestij: 1

@@ -1,0 +1,37 @@
+# HalilIbrahimMMO - Kozmetik kataloğu
+# Kozmetikler, katılım ve seviye atlama anında kısa bir parçacık efekti
+# olarak görünür. Her kozmetiğin tek bir kazanma koşulu vardır - geçerli
+# değerler için titles.yml'nin başındaki açıklamaya bakın.
+kozmetikler:
+  yildiz-tozu:
+    gorunen-ad: "Yıldız Tozu"
+    esya: NETHER_STAR
+    efekt: END_ROD
+    kosul:
+      tur: LEVEL
+      seviye: 20
+
+  alev-cemberi:
+    gorunen-ad: "Alev Çemberi"
+    esya: BLAZE_POWDER
+    efekt: FLAME
+    kosul:
+      tur: PRESTIGE
+      prestij: 1
+
+  deniz-kopugu:
+    gorunen-ad: "Deniz Köpüğü"
+    esya: PRISMARINE_CRYSTALS
+    efekt: BUBBLE_POP
+    kosul:
+      tur: COLLECTION_COMPLETED
+      koleksiyon-id: deniz-hazineleri
+
+  usta-avci:
+    gorunen-ad: "Usta Avcı"
+    esya: BOW
+    efekt: CRIT
+    kosul:
+      tur: SKILL_LEVEL
+      beceri-id: avcilik
+      seviye: 50

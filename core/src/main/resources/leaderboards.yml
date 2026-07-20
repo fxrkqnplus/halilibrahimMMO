@@ -1,0 +1,5 @@
+# HalilIbrahimMMO - Liderlik tablosu ayarlari
+# Her liderlik tablosunda gosterilecek en iyi oyuncu sayisi.
+giris-sayisi: 10
+# Liderlik tablolarinin veritabanindan ne siklikta (saniye) yeniden okunacagi.
+yenileme-araligi-saniye: 300
