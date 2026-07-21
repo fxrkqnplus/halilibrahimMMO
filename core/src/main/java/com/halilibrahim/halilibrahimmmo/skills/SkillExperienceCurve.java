@@ -26,6 +26,10 @@ public final class SkillExperienceCurve {
         return maximumLevel;
     }
 
+    public long requiredForCurrentLevel(int level) {
+        return requirements.get(level);
+    }
+
     public SkillProgress award(SkillProgress progress, long amount) {
         if (amount <= 0 || progress.level() >= maximumLevel) {
             return progress;

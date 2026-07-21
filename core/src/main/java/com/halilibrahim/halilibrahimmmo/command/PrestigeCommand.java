@@ -9,6 +9,7 @@ import com.halilibrahim.halilibrahimmmo.prestige.PrestigeResult;
 import com.halilibrahim.halilibrahimmmo.prestige.PrestigeService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
+import com.halilibrahim.halilibrahimmmo.scoreboard.SidebarService;
 import com.halilibrahim.halilibrahimmmo.titles.TitleDefinition;
 import com.halilibrahim.halilibrahimmmo.titles.TitleService;
 import io.papermc.paper.command.brigadier.BasicCommand;
@@ -32,6 +33,7 @@ public final class PrestigeCommand implements BasicCommand {
     private final CosmeticService cosmetics;
     private final FeedbackService feedback;
     private final MessageService messages;
+    private final SidebarService sidebar;
 
     public PrestigeCommand(
             JavaPlugin plugin,
@@ -41,7 +43,8 @@ public final class PrestigeCommand implements BasicCommand {
             TitleService titles,
             CosmeticService cosmetics,
             FeedbackService feedback,
-            MessageService messages
+            MessageService messages,
+            SidebarService sidebar
     ) {
         this.plugin = plugin;
         this.prestige = prestige;
@@ -51,6 +54,7 @@ public final class PrestigeCommand implements BasicCommand {
         this.cosmetics = cosmetics;
         this.feedback = feedback;
         this.messages = messages;
+        this.sidebar = sidebar;
     }
 
     @Override
@@ -86,6 +90,7 @@ public final class PrestigeCommand implements BasicCommand {
                     ));
                     if (result.status() == PrestigeResult.Status.PRESTIGED) {
                         feedback.celebratePrestige(player, result.prestige());
+                        sidebar.refresh(player);
                         titles.evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyTitles(player, unlocked));
                         cosmetics.evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyCosmetics(player, unlocked));
                     }

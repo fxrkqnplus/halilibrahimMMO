@@ -11,6 +11,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 
@@ -21,15 +22,26 @@ public final class PlayerEnergyService implements EnergyService {
     private final MessageService messages;
     private final Supplier<AbilitySettings> settings;
     private final ToIntFunction<Player> maximumEnergyBonus;
+    private final Predicate<Player> actionBarSuppressed;
     private final ConcurrentHashMap<UUID, EnergyState> energy = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Long> lastShownAt = new ConcurrentHashMap<>();
     private ScheduledTask regenerationTask;
 
-    public PlayerEnergyService(JavaPlugin plugin, MessageService messages, Supplier<AbilitySettings> settings, ToIntFunction<Player> maximumEnergyBonus) {
+    /**
+     * @param actionBarSuppressed returns {@code true} while an ability activation
+     *                            countdown is showing on this player's action bar -
+     *                            energy status yields to it rather than flickering
+     *                            between the two on the same line.
+     */
+    public PlayerEnergyService(
+            JavaPlugin plugin, MessageService messages, Supplier<AbilitySettings> settings,
+            ToIntFunction<Player> maximumEnergyBonus, Predicate<Player> actionBarSuppressed
+    ) {
         this.plugin = plugin;
         this.messages = messages;
         this.settings = settings;
         this.maximumEnergyBonus = maximumEnergyBonus;
+        this.actionBarSuppressed = actionBarSuppressed;
     }
 
     @Override
@@ -95,6 +107,9 @@ public final class PlayerEnergyService implements EnergyService {
     }
 
     private void show(Player player, int current) {
+        if (actionBarSuppressed.test(player)) {
+            return;
+        }
         long now = System.currentTimeMillis();
         Long previous = lastShownAt.putIfAbsent(player.getUniqueId(), now);
         if (previous != null && now - previous < 1_000L) {
