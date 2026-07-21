@@ -1,10 +1,12 @@
 package com.halilibrahim.halilibrahimmmo.database;
 
 import com.halilibrahim.halilibrahimmmo.config.DatabaseSettings;
+import com.halilibrahim.halilibrahimmmo.database.migration.ClassProgressSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.ClassSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.CoreSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.Migration;
 import com.halilibrahim.halilibrahimmmo.database.migration.MigrationRunner;
+import com.halilibrahim.halilibrahimmmo.database.migration.PlayerActivationSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerProfileSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.QuestSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.SkillSchemaMigration;
@@ -40,7 +42,8 @@ public final class IntegrationDatabaseSupport {
     public static List<Migration> allMigrations() {
         return List.of(
                 new CoreSchemaMigration(), new PlayerProfileSchemaMigration(), new SkillSchemaMigration(),
-                new ClassSchemaMigration(), new QuestSchemaMigration(), new TitleCosmeticSchemaMigration()
+                new ClassSchemaMigration(), new QuestSchemaMigration(), new TitleCosmeticSchemaMigration(),
+                new ClassProgressSchemaMigration(), new PlayerActivationSchemaMigration()
         );
     }
 

@@ -3,6 +3,9 @@ package com.halilibrahim.halilibrahimmmo.command;
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityDefinition;
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
+import com.halilibrahim.halilibrahimmmo.gui.AbilitiesMenu;
+import com.halilibrahim.halilibrahimmmo.gui.GuiManager;
+import com.halilibrahim.halilibrahimmmo.gui.GuiServices;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import io.papermc.paper.command.brigadier.BasicCommand;
@@ -12,19 +15,24 @@ import org.bukkit.entity.Player;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
-/** Activates one configured player ability through {@code /kabiliyet <id>}. */
+/**
+ * {@code /kabiliyet} opens the ability-selection menu directly when typed
+ * bare; {@code /kabiliyet <id>} still activates that ability immediately,
+ * unchanged from before.
+ */
 public final class AbilityCommand implements BasicCommand {
 
     private final AbilityService abilities;
     private final EnergyService energy;
     private final MessageService messages;
+    private final GuiServices guiServices;
 
-    public AbilityCommand(AbilityService abilities, EnergyService energy, MessageService messages) {
+    public AbilityCommand(AbilityService abilities, EnergyService energy, MessageService messages, GuiServices guiServices) {
         this.abilities = abilities;
         this.energy = energy;
         this.messages = messages;
+        this.guiServices = guiServices;
     }
 
     @Override
@@ -34,8 +42,7 @@ public final class AbilityCommand implements BasicCommand {
             return;
         }
         if (args.length != 1) {
-            String available = abilities.definitions().stream().map(AbilityDefinition::id).sorted().reduce((left, right) -> left + ", " + right).orElse("-");
-            messages.send(player, MessageKey.ABILITY_LIST, Map.of("kabiliyetler", available));
+            GuiManager.open(player, new AbilitiesMenu(guiServices));
             return;
         }
         abilities.activate(player, args[0].toLowerCase(Locale.ROOT), energy);

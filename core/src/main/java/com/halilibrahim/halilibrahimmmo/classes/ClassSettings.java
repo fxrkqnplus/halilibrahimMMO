@@ -6,6 +6,8 @@ import java.util.Map;
 public record ClassSettings(
         long changeCooldownMillis,
         int levelsPerTalentPoint,
+        ClassExperienceCurve classLevelCurve,
+        double synergyExperienceBonus,
         Map<String, PlayerClassDefinition> definitions
 ) {
 }

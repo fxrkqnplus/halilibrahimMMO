@@ -2,3 +2,39 @@
 # Seviye atlama, gorev/koleksiyon tamamlama ve prestij anlarinda gosterilen
 # boss cubugu ve ekran basligi kac saniye ekranda kalir.
 sure-saniye: 5
+
+# Her XP kazaniminda gosterilen ilerleme boss cubugunun, son kazanimdan
+# itibaren kac saniye sonra gizlenecegi.
+xp-cubugu-sure-saniye: 3
+
+# Ses efektleri: her olay icin bir Bukkit Sound adi, ses seviyesi ve perde.
+# Gecerli Sound adlari icin Paper/Bukkit Sound enum'una bakin.
+sesler:
+  seviye-atlama:
+    ses: ENTITY_PLAYER_LEVELUP
+    ses-seviyesi: 1.0
+    ton: 1.0
+  beceri-seviye-atlama:
+    ses: ENTITY_EXPERIENCE_ORB_PICKUP
+    ses-seviyesi: 1.0
+    ton: 1.2
+  sinif-seviye-atlama:
+    ses: ENTITY_PLAYER_LEVELUP
+    ses-seviyesi: 1.0
+    ton: 0.8
+  sinif-secildi:
+    ses: BLOCK_ENCHANTMENT_TABLE_USE
+    ses-seviyesi: 1.0
+    ton: 1.0
+  kabiliyet-baslangic:
+    ses: ITEM_TRIDENT_RIPTIDE_1
+    ses-seviyesi: 0.8
+    ton: 1.2
+  kabiliyet-bitis:
+    ses: ENTITY_ITEM_BREAK
+    ses-seviyesi: 0.6
+    ton: 1.0
+  kabiliyet-acildi:
+    ses: UI_TOAST_CHALLENGE_COMPLETE
+    ses-seviyesi: 1.0
+    ton: 1.0

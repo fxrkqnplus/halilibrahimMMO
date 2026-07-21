@@ -110,6 +110,17 @@ public final class CachedQuestService implements QuestService {
     }
 
     @Override
+    public Map<String, QuestProgress> cachedAll(UUID playerId) {
+        Map<String, QuestProgress> result = new LinkedHashMap<>();
+        cache.forEach((key, progress) -> {
+            if (key.playerId().equals(playerId)) {
+                result.put(key.questId(), progress);
+            }
+        });
+        return Map.copyOf(result);
+    }
+
+    @Override
     public void evict(UUID playerId) {
         cache.keySet().removeIf(key -> key.playerId().equals(playerId));
     }

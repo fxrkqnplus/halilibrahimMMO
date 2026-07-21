@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-/** Asynchronous JDBC storage for talent ranks and persistent class-change cooldowns. */
+/** Asynchronous JDBC storage for talent ranks, class-change cooldowns and per-class level tracks. */
 public final class ClassRepository {
     private final DatabaseService database;
 
@@ -42,7 +42,19 @@ public final class ClassRepository {
                     }
                 }
             }
-            return new PlayerClassProgress(playerId, copy(ranks), readyAt);
+            Map<String, ClassLevelProgress> classLevels = new LinkedHashMap<>();
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT class_id, class_level, class_experience FROM hmmo_player_class_progress WHERE player_id = ?
+                    """)) {
+                statement.setString(1, playerId.toString());
+                try (ResultSet result = statement.executeQuery()) {
+                    while (result.next()) {
+                        String classId = result.getString("class_id");
+                        classLevels.put(classId, new ClassLevelProgress(classId, result.getInt("class_level"), result.getLong("class_experience")));
+                    }
+                }
+            }
+            return new PlayerClassProgress(playerId, copy(ranks), readyAt, Map.copyOf(classLevels));
         });
     }
 
@@ -74,6 +86,22 @@ public final class ClassRepository {
                     INSERT INTO hmmo_player_class_cooldowns (player_id, ready_at_millis) VALUES (?, ?)
                     """)) {
                 insert.setString(1, playerId.toString()); insert.setLong(2, readyAtMillis); insert.executeUpdate();
+            }
+        });
+    }
+
+    CompletableFuture<Void> saveClassLevel(UUID playerId, String classId, int level, long experience) {
+        return database.executeVoid(connection -> {
+            try (PreparedStatement update = connection.prepareStatement("""
+                    UPDATE hmmo_player_class_progress SET class_level = ?, class_experience = ? WHERE player_id = ? AND class_id = ?
+                    """)) {
+                update.setInt(1, level); update.setLong(2, experience); update.setString(3, playerId.toString()); update.setString(4, classId);
+                if (update.executeUpdate() != 0) return;
+            }
+            try (PreparedStatement insert = connection.prepareStatement("""
+                    INSERT INTO hmmo_player_class_progress (player_id, class_id, class_level, class_experience) VALUES (?, ?, ?, ?)
+                    """)) {
+                insert.setString(1, playerId.toString()); insert.setString(2, classId); insert.setInt(3, level); insert.setLong(4, experience); insert.executeUpdate();
             }
         });
     }
