@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * <p>The bundled resource (with Turkish comments) is copied to the data folder
  * verbatim on first run and is never programmatically rewritten afterwards, so
- * admin edits and comments always survive {@code /rpg yenile}. Every load produces
+ * admin edits and comments always survive {@code /haliladmin}'s reload. Every load produces
  * a brand new immutable {@link CoreConfig}, atomically published through an
  * {@link AtomicReference} so concurrent readers on other threads never observe a
  * half-parsed configuration.</p>

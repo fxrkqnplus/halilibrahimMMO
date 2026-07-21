@@ -26,8 +26,17 @@ final class SkillMaterialConfigTest {
         ConfigurationSection skills = yaml.getConfigurationSection("beceriler");
         assertNotNull(skills);
         for (String id : skills.getKeys(false)) {
-            for (String materialName : skills.getStringList(id + ".kaynak.malzemeler")) {
+            if (!"BLOCK".equals(skills.getString(id + ".kaynak.tur"))) {
+                continue;
+            }
+            ConfigurationSection materials = skills.getConfigurationSection(id + ".kaynak.malzemeler");
+            assertNotNull(materials, () -> "Block skill is missing kaynak.malzemeler: " + id);
+            for (String materialName : materials.getKeys(false)) {
                 assertTrue(SUPPORTED_BLOCK_MATERIALS.contains(materialName), () -> "Unknown or non-block material in skills.yml: " + materialName);
+                long xp = materials.getLong(materialName + ".xp", -1);
+                String displayName = materials.getString(materialName + ".gorunen-ad");
+                assertTrue(xp > 0, () -> "Non-positive XP for material " + materialName + " in skill " + id);
+                assertNotNull(displayName, () -> "Missing display name for material " + materialName + " in skill " + id);
             }
         }
     }

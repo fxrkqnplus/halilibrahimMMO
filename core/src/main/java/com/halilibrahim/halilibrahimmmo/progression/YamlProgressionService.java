@@ -1,6 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.progression;
 
 import com.halilibrahim.halilibrahimmmo.api.progression.ProgressionCause;
+import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;

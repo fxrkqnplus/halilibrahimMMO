@@ -48,7 +48,7 @@ public interface HalilIbrahimMMOAPI {
 
     /**
      * @return {@code true} if verbose debug logging is currently enabled via {@code config.yml}
-     * or toggled at runtime through {@code /rpg hataayıklama}.
+     * or toggled at runtime through {@code /haliladmin}'s debug toggle.
      */
     boolean isDebugModeEnabled();
 

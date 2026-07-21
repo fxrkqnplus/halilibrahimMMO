@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.skills;
 
 import com.halilibrahim.halilibrahimmmo.core.PluginService;
 import org.bukkit.Material;
+import org.bukkit.entity.EntityType;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -21,9 +22,9 @@ public interface SkillService extends PluginService {
 
     CompletableFuture<Void> loadAll(UUID playerId);
 
-    CompletableFuture<Optional<SkillProgress>> awardBlock(UUID playerId, Material material);
+    CompletableFuture<Optional<SkillAwardResult>> awardBlock(UUID playerId, String playerName, Material material);
 
-    CompletableFuture<Optional<SkillProgress>> awardMob(UUID playerId);
+    CompletableFuture<Optional<SkillAwardResult>> awardMob(UUID playerId, String playerName, EntityType entityType);
 
     /** Synchronous, in-memory only - for callers that cannot await a future (e.g. PlaceholderAPI). */
     Optional<SkillProgress> cached(UUID playerId, String skillId);

@@ -59,7 +59,7 @@ public final class PrestigeMenu implements GuiView {
     @Override
     public void handleClick(Player player, int slot, ItemStack clicked, ClickType click) {
         if (slot == BACK_SLOT) {
-            GuiManager.open(player, new AnaMenu(services));
+            GuiManager.open(player, new ProgressionMenu(services));
             return;
         }
         if (slot != CONFIRM_SLOT) {
@@ -78,6 +78,7 @@ public final class PrestigeMenu implements GuiView {
                     ));
                     if (result.status() == PrestigeResult.Status.PRESTIGED) {
                         services.feedback().celebratePrestige(player, result.prestige());
+                        services.sidebar().refresh(player);
                         services.titles().evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyTitles(player, unlocked));
                         services.cosmetics().evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyCosmetics(player, unlocked));
                     }

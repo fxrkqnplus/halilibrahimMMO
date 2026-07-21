@@ -2,10 +2,13 @@
 # Her unvanın tek bir kazanma koşulu vardır. "tur" alanı şunlardan biri
 # olmalıdır: LEVEL (seviye), PRESTIGE (prestij), QUEST_COMPLETED (gorev-id),
 # COLLECTION_COMPLETED (koleksiyon-id), SKILL_LEVEL (beceri-id + seviye).
+# "sohbet-stili" sohbette ve sağ taraftaki panelde unvanın rengini/kalınlığını
+# belirler: ALTIN, MOR_KALIN, KIRMIZI_KALIN, YESIL_KALIN, MAVI, BEYAZ_KALIN.
 unvanlar:
   gezgin:
     gorunen-ad: "Gezgin"
     esya: COMPASS
+    sohbet-stili: MAVI
     kosul:
       tur: LEVEL
       seviye: 10
@@ -13,6 +16,7 @@ unvanlar:
   usta-madenci:
     gorunen-ad: "Usta Madenci"
     esya: DIAMOND_PICKAXE
+    sohbet-stili: BEYAZ_KALIN
     kosul:
       tur: SKILL_LEVEL
       beceri-id: madencilik
@@ -21,6 +25,7 @@ unvanlar:
   hazine-avcisi:
     gorunen-ad: "Hazine Avcısı"
     esya: CHEST
+    sohbet-stili: ALTIN
     kosul:
       tur: COLLECTION_COMPLETED
       koleksiyon-id: degerli-madenler
@@ -28,6 +33,7 @@ unvanlar:
   gorev-eri:
     gorunen-ad: "Görev Eri"
     esya: WRITTEN_BOOK
+    sohbet-stili: YESIL_KALIN
     kosul:
       tur: QUEST_COMPLETED
       gorev-id: odun-ustasi
@@ -35,6 +41,7 @@ unvanlar:
   efsane:
     gorunen-ad: "Efsane"
     esya: NETHER_STAR
+    sohbet-stili: MOR_KALIN
     kosul:
       tur: PRESTIGE
       prestij: 1

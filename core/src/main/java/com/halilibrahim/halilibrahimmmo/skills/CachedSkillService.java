@@ -4,6 +4,7 @@ import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -12,11 +13,11 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 
 /** YAML-backed, write-through cache for all configured player skills. */
 public final class CachedSkillService implements SkillService {
@@ -25,13 +26,20 @@ public final class CachedSkillService implements SkillService {
 
     private final JavaPlugin plugin;
     private final SkillRepository repository;
+    private final BiFunction<UUID, String, Double> classSynergyMultiplier;
+    private final SkillExperienceListener experienceListener;
     private final AtomicReference<SkillSettings> settings = new AtomicReference<>();
     private final ConcurrentHashMap<SkillKey, SkillProgress> cache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<SkillKey, CompletableFuture<SkillProgress>> updateChains = new ConcurrentHashMap<>();
 
-    public CachedSkillService(JavaPlugin plugin, SkillRepository repository) {
+    public CachedSkillService(
+            JavaPlugin plugin, SkillRepository repository,
+            BiFunction<UUID, String, Double> classSynergyMultiplier, SkillExperienceListener experienceListener
+    ) {
         this.plugin = plugin;
         this.repository = repository;
+        this.classSynergyMultiplier = classSynergyMultiplier;
+        this.experienceListener = experienceListener;
     }
 
     @Override
@@ -101,13 +109,13 @@ public final class CachedSkillService implements SkillService {
     }
 
     @Override
-    public CompletableFuture<Optional<SkillProgress>> awardBlock(UUID playerId, Material material) {
-        return awardMatching(playerId, SkillSource.BLOCK, material);
+    public CompletableFuture<Optional<SkillAwardResult>> awardBlock(UUID playerId, String playerName, Material material) {
+        return awardMatching(playerId, playerName, SkillSource.BLOCK, material, null);
     }
 
     @Override
-    public CompletableFuture<Optional<SkillProgress>> awardMob(UUID playerId) {
-        return awardMatching(playerId, SkillSource.MOB, null);
+    public CompletableFuture<Optional<SkillAwardResult>> awardMob(UUID playerId, String playerName, EntityType entityType) {
+        return awardMatching(playerId, playerName, SkillSource.MOB, null, entityType);
     }
 
     @Override
@@ -120,28 +128,43 @@ public final class CachedSkillService implements SkillService {
         cache.keySet().removeIf(key -> key.playerId().equals(playerId));
     }
 
-    private CompletableFuture<Optional<SkillProgress>> awardMatching(UUID playerId, SkillSource source, Material material) {
+    private CompletableFuture<Optional<SkillAwardResult>> awardMatching(
+            UUID playerId, String playerName, SkillSource source, Material material, EntityType entityType
+    ) {
         Optional<SkillDefinition> definition = settings().definitions().values().stream()
                 .filter(candidate -> candidate.source() == source)
-                .filter(candidate -> source != SkillSource.BLOCK || candidate.materials().contains(material))
+                .filter(candidate -> source != SkillSource.BLOCK || candidate.materialRewards().containsKey(material))
                 .findFirst();
         if (definition.isEmpty()) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
         SkillDefinition skill = definition.get();
+        SkillRewardEntry rewardEntry = source == SkillSource.BLOCK
+                ? skill.materialRewards().get(material)
+                : skill.entityRewards().getOrDefault(entityType, skill.defaultEntityReward());
         SkillKey key = new SkillKey(playerId, skill.id());
+        double multiplier = classSynergyMultiplier.apply(playerId, skill.id());
+        long grantedAmount = Math.round(rewardEntry.xp() * multiplier);
         synchronized (updateChains) {
             CompletableFuture<SkillProgress> previous = updateChains.get(key);
             CompletableFuture<SkillProgress> base = previous == null ? load(playerId, skill.id()) : previous;
-            CompletableFuture<SkillProgress> next = base.thenApply(progress -> settings().curve().award(progress, skill.reward()))
-                    .thenCompose(progress -> repository.save(progress).thenApply(ignored -> progress))
-                    .thenApply(progress -> {
-                        cache.put(key, progress);
-                        return progress;
+            CompletableFuture<SkillAwardResult> next = base.thenApply(progress -> {
+                        int previousLevel = progress.level();
+                        SkillProgress awarded = settings().curve().award(progress, grantedAmount);
+                        return new SkillAwardResult(awarded, previousLevel, grantedAmount, awarded.level() != previousLevel, rewardEntry.displayName());
+                    })
+                    .thenCompose(result -> repository.save(result.progress()).thenApply(ignored -> result))
+                    .thenApply(result -> {
+                        cache.put(key, result.progress());
+                        return result;
                     });
-            updateChains.put(key, next);
-            next.whenComplete((ignored, throwable) -> updateChains.remove(key, next));
-            return next.thenApply(Optional::of);
+            CompletableFuture<SkillProgress> tail = next.thenApply(SkillAwardResult::progress);
+            updateChains.put(key, tail);
+            tail.whenComplete((ignored, throwable) -> updateChains.remove(key, tail));
+            return next.thenApply(result -> {
+                experienceListener.onSkillExperienceGained(playerId, playerName, skill.id(), grantedAmount);
+                return Optional.of(result);
+            });
         }
     }
 
@@ -166,22 +189,49 @@ public final class CachedSkillService implements SkillService {
                 throw new IllegalArgumentException("Skill display name is required: " + id);
             }
             SkillSource source = SkillSource.valueOf(section.getString("kaynak.tur", "").toUpperCase(Locale.ROOT));
-            long reward = section.getLong("xp", 0);
-            if (reward <= 0) {
-                throw new IllegalArgumentException("Skill XP reward must be positive: " + id);
+            Map<Material, SkillRewardEntry> materialRewards;
+            Map<EntityType, SkillRewardEntry> entityRewards;
+            SkillRewardEntry defaultEntityReward;
+            if (source == SkillSource.BLOCK) {
+                ConfigurationSection materialsSection = requireSection(section, "kaynak.malzemeler");
+                Map<Material, SkillRewardEntry> parsed = new LinkedHashMap<>();
+                for (String materialName : materialsSection.getKeys(false)) {
+                    parsed.put(parseMaterial(materialName), parseRewardEntry(materialsSection, materialName, id));
+                }
+                if (parsed.isEmpty()) {
+                    throw new IllegalArgumentException("Block skill must define materials: " + id);
+                }
+                materialRewards = Map.copyOf(parsed);
+                entityRewards = Map.of();
+                defaultEntityReward = null;
+            } else {
+                defaultEntityReward = parseRewardEntry(section, "kaynak.varsayilan", id);
+                ConfigurationSection entitiesSection = section.getConfigurationSection("kaynak.varliklar");
+                Map<EntityType, SkillRewardEntry> parsed = new LinkedHashMap<>();
+                if (entitiesSection != null) {
+                    for (String entityName : entitiesSection.getKeys(false)) {
+                        parsed.put(EntityType.valueOf(entityName.toUpperCase(Locale.ROOT)), parseRewardEntry(entitiesSection, entityName, id));
+                    }
+                }
+                entityRewards = Map.copyOf(parsed);
+                materialRewards = Map.of();
             }
-            Set<Material> materials = source == SkillSource.BLOCK
-                    ? section.getStringList("kaynak.malzemeler").stream().map(this::parseMaterial).collect(java.util.stream.Collectors.toUnmodifiableSet())
-                    : Set.of();
-            if (source == SkillSource.BLOCK && materials.isEmpty()) {
-                throw new IllegalArgumentException("Block skill must define materials: " + id);
-            }
-            definitions.put(id, new SkillDefinition(id, displayName, source, materials, reward));
+            definitions.put(id, new SkillDefinition(id, displayName, source, materialRewards, entityRewards, defaultEntityReward));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("skills.yml must define at least one skill.");
         }
         return new SkillSettings(curve, Map.copyOf(definitions));
+    }
+
+    private SkillRewardEntry parseRewardEntry(ConfigurationSection parent, String path, String skillId) {
+        ConfigurationSection entry = requireSection(parent, path);
+        long xp = entry.getLong("xp", 0);
+        String displayName = entry.getString("gorunen-ad");
+        if (xp <= 0 || displayName == null || displayName.isBlank()) {
+            throw new IllegalArgumentException("Invalid reward entry '" + path + "' in skill: " + skillId);
+        }
+        return new SkillRewardEntry(xp, displayName);
     }
 
     private ConfigurationSection requireSection(ConfigurationSection parent, String path) {

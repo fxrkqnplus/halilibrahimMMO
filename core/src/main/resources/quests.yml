@@ -5,7 +5,7 @@
 #  hedef.tur: BLOCK_BREAK (blok kırma) | MOB_KILL (yaratık öldürme)
 #  hedef.malzemeler sadece BLOCK_BREAK, hedef.varliklar sadece MOB_KILL için
 #  kullanılır. varliklar boş bırakılırsa herhangi bir yaratık sayılır.
-#  Bu dosyayı /rpg yenile ile yükleyin.
+#  Bu dosyayı /haliladmin panelindeki "Yeniden Yükle" düğmesiyle yükleyin.
 # =====================================================================
 
 gorevler:

@@ -1,8 +1,17 @@
 # =====================================================================
 #  HalilIbrahimMMO - Kabiliyet ve Enerji Ayarları
 # =====================================================================
-#  Kabiliyetler /kabiliyet <id> ile etkinleştirilir. Blok kabiliyetleri,
-#  etki-suresi-saniye içinde yalnız sonraki uygun blok kırmada tüketilir.
+#  Kabiliyetler menüden seçilip uygun alete sağ tıklayarak etkinleştirilir,
+#  ya da doğrudan /kabiliyet <id> ile. Blok kabiliyetleri, etki-suresi-saniye
+#  içinde yalnız sonraki uygun blok kırmada tüketilir. Her kabiliyet tam
+#  olarak bir sınıfa aittir (sinif alanı) - o sınıf seçili olmayan bir
+#  oyuncu bu kabiliyeti kullanamaz.
+#
+#  sure-modu: SURE (varsayılan) kabiliyet sadece etki-suresi-saniye kadar
+#  sürer. ENERJI ise (yalnız etki.tur: DAMAGE_BUFF ile birlikte kullanılabilir)
+#  her isabetli vuruşta enerji-vurus-basi kadar enerji tüketir ve enerji
+#  biterse kabiliyet erken sona erer; etki-suresi-saniye yine de bir üst
+#  sınır (güvenlik freni) olarak kalır.
 # =====================================================================
 
 enerji:
@@ -10,47 +19,189 @@ enerji:
   yenilenme-saniye-basina: 4
 
 kabiliyetler:
+  # ----- Define Avcısı (savasci) - sinerji: kazicilik -----
+  hazine-sezgisi:
+    gorunen-ad: "Hazine Sezgisi"
+    aciklama: "Etkinken kırdığın bloklardan %50 ihtimalle ekstra bir düşme kazanırsın."
+    beceri: kazicilik
+    sinif: savasci
+    gerekli-seviye: 5
+    enerji: 20
+    bekleme-suresi-saniye: 90
+    etki-suresi-saniye: 20
+    arac:
+      tur: SHOVEL
+    etki:
+      tur: EXTRA_DROP_CHANCE
+      sans: 0.5
+
   kazici-darbe:
     gorunen-ad: "Kazıcı Darbesi"
+    aciklama: "Sonraki uygun blok kırmanda çevredeki 9 bloğu birden kazır."
     beceri: kazicilik
+    sinif: savasci
     gerekli-seviye: 10
     enerji: 20
-    bekleme-suresi-saniye: 30
+    bekleme-suresi-saniye: 60
     etki-suresi-saniye: 15
+    # Menuden secilip sag tikla etkinlestirmek icin gereken alet: herhangi bir kurek.
+    arac:
+      tur: SHOVEL
     etki:
       tur: EXCAVATE
       limit: 9
 
+  define-refleksi:
+    gorunen-ad: "Define Refleksi"
+    aciklama: "3 saniye boyunca neredeyse tüm hasara karşı dirençli olursun."
+    beceri: kazicilik
+    sinif: savasci
+    gerekli-seviye: 30
+    enerji: 30
+    bekleme-suresi-saniye: 150
+    etki-suresi-saniye: 3
+    arac:
+      tur: ANY
+    etki:
+      tur: BRIEF_INVULNERABILITY
+
+  # ----- Orman Bekçisi (oduncu) - sinerji: odunculuk -----
+  yesil-yol:
+    gorunen-ad: "Yeşil Yol"
+    aciklama: "10 saniye boyunca hareket hızın artar."
+    beceri: odunculuk
+    sinif: oduncu
+    gerekli-seviye: 5
+    enerji: 20
+    bekleme-suresi-saniye: 75
+    etki-suresi-saniye: 10
+    arac:
+      tur: AXE
+    etki:
+      tur: SPEED_BURST
+
   agac-kirici:
     gorunen-ad: "Ağaç Kırıcı"
+    aciklama: "Sonraki ağaç kırmanda bağlı tüm kütükleri (en fazla 32) birden keser."
     beceri: odunculuk
+    sinif: oduncu
     gerekli-seviye: 15
     enerji: 25
-    bekleme-suresi-saniye: 45
+    bekleme-suresi-saniye: 75
     etki-suresi-saniye: 15
+    # Menuden secilip sag tikla etkinlestirmek icin gereken alet: herhangi bir balta.
+    arac:
+      tur: AXE
     etki:
       tur: TREE_FELL
       limit: 32
 
-  damar-kirici:
-    gorunen-ad: "Damar Kırıcı"
-    beceri: madencilik
-    gerekli-seviye: 20
-    enerji: 30
-    bekleme-suresi-saniye: 60
-    etki-suresi-saniye: 15
+  doga-sifasi:
+    gorunen-ad: "Doğa Şifası"
+    aciklama: "8 saniye boyunca can yenilenmen hızlanır."
+    beceri: odunculuk
+    sinif: oduncu
+    gerekli-seviye: 30
+    enerji: 25
+    bekleme-suresi-saniye: 120
+    etki-suresi-saniye: 8
+    arac:
+      tur: HOE
     etki:
-      tur: VEIN_MINE
-      limit: 16
+      tur: AREA_HEAL
+
+  # ----- Amansız Savaşçı (avci) - sinerji: avcilik -----
+  gece-gorusu:
+    gorunen-ad: "Gece Görüşü"
+    aciklama: "60 saniye boyunca karanlıkta net görürsün."
+    beceri: avcilik
+    sinif: avci
+    gerekli-seviye: 5
+    enerji: 15
+    bekleme-suresi-saniye: 120
+    etki-suresi-saniye: 60
+    arac:
+      tur: SWORD
+    etki:
+      tur: NIGHT_VISION
 
   avci-odagi:
     gorunen-ad: "Avcı Odağı"
+    aciklama: "Etkinken verdiğin PvE hasarı %50 artar (yalnızca yaratıklara karşı - PvP'de geçerli değildir). Her isabetli vuruşta enerji tüketir; enerjin biterse ya da en fazla 2 dakika sonra kendiliğinden sona erer."
     beceri: avcilik
+    sinif: avci
     gerekli-seviye: 10
     enerji: 25
-    bekleme-suresi-saniye: 45
-    etki-suresi-saniye: 10
+    bekleme-suresi-saniye: 90
+    etki-suresi-saniye: 120
+    sure-modu: ENERJI
+    enerji-vurus-basi: 8
+    # Menuden secilip sag tikla etkinlestirmek icin gereken alet: herhangi bir kilic.
+    arac:
+      tur: SWORD
     etki:
       tur: DAMAGE_BUFF
       limit: 1
       hasar-carpani: 1.5
+
+  yikici-darbe:
+    gorunen-ad: "Yıkıcı Darbe"
+    aciklama: "Çevrendeki 4 blok yarıçapındaki yaratıkları geriye iter ve hasar verir."
+    beceri: avcilik
+    sinif: avci
+    gerekli-seviye: 30
+    enerji: 30
+    bekleme-suresi-saniye: 100
+    etki-suresi-saniye: 2
+    arac:
+      tur: SWORD
+    etki:
+      tur: KNOCKBACK_SLAM
+      yaricap: 4
+      hasar-carpani: 2.0
+
+  # ----- Mağara Adamı (madenci) - sinerji: madencilik -----
+  cevher-sezgisi:
+    gorunen-ad: "Cevher Sezgisi"
+    aciklama: "Etkinken kırdığın bloklardan %40 ihtimalle ekstra bir düşme kazanırsın."
+    beceri: madencilik
+    sinif: madenci
+    gerekli-seviye: 5
+    enerji: 25
+    bekleme-suresi-saniye: 90
+    etki-suresi-saniye: 20
+    arac:
+      tur: PICKAXE
+    etki:
+      tur: EXTRA_DROP_CHANCE
+      sans: 0.4
+
+  damar-kirici:
+    gorunen-ad: "Damar Kırıcı"
+    aciklama: "Sonraki uygun blok kırmanda bağlı aynı cevher damarını (en fazla 16 blok) birden kazır."
+    beceri: madencilik
+    sinif: madenci
+    gerekli-seviye: 20
+    enerji: 30
+    bekleme-suresi-saniye: 100
+    etki-suresi-saniye: 15
+    # Menuden secilip sag tikla etkinlestirmek icin gereken alet: herhangi bir kazma.
+    arac:
+      tur: PICKAXE
+    etki:
+      tur: VEIN_MINE
+      limit: 16
+
+  kaya-zirhi:
+    gorunen-ad: "Kaya Zırhı"
+    aciklama: "3 saniye boyunca neredeyse tüm hasara karşı dirençli olursun."
+    beceri: madencilik
+    sinif: madenci
+    gerekli-seviye: 35
+    enerji: 30
+    bekleme-suresi-saniye: 160
+    etki-suresi-saniye: 3
+    arac:
+      tur: PICKAXE
+    etki:
+      tur: BRIEF_INVULNERABILITY

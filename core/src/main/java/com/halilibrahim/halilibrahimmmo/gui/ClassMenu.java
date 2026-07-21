@@ -102,7 +102,7 @@ public final class ClassMenu implements GuiView {
     @Override
     public void handleClick(Player player, int slot, ItemStack clicked, ClickType click) {
         if (slot == BACK_SLOT) {
-            GuiManager.open(player, new AnaMenu(services));
+            GuiManager.open(player, new ProgressionMenu(services));
             return;
         }
         String classId = slotToClassId.get(slot);
@@ -123,6 +123,9 @@ public final class ClassMenu implements GuiView {
                         case SELECTED -> {
                             services.classes().applyPlayerEffects(player);
                             services.energy().reconcile(player);
+                            services.abilities().clearSelection(player.getUniqueId());
+                            services.sidebar().refresh(player);
+                            services.feedback().celebrateClassSelected(player);
                             services.messages().send(player, MessageKey.CLASS_SELECTED, Map.of("sinif", services.classes().displayName(result.classId())));
                         }
                         case ALREADY_SELECTED -> services.messages().send(player, MessageKey.CLASS_ALREADY_SELECTED, Map.of("sinif", services.classes().displayName(result.classId())));

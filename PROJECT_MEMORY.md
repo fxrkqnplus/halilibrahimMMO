@@ -426,7 +426,17 @@ that proves every framework piece works together end-to-end.
   titles, cosmetics and visual feedback are all done.
 - Phase 7 is **complete** (see §20, §21): PlaceholderAPI/LuckPerms hooks,
   exploit hardening and cross-engine repository integration tests are all
-  done. All originally-planned phases are now finished.
+  done. All originally-planned phases (per the project's original brief)
+  are now finished.
+- **Phase 8 is complete** (see §22): a user-requested follow-on phase, not
+  part of the original brief - a persistent sidebar HUD, per-source XP
+  BossBar feedback with level-up split out to a personal chat message,
+  menu-based ability selection with right-click activation and glint/action-bar
+  feedback, and OP-only `/rpg oyuncu` admin tooling. `./gradlew build`/`test`
+  are green; a live `./gradlew runServer` walkthrough of Phase 8's features
+  specifically has not yet been performed in any session and should be done
+  before considering it fully field-verified (same caveat §20 already
+  recorded for Phase 7's PlaceholderAPI/LuckPerms live resolution).
 
 ## 15. Phase 4 — classes, talent trees and prestige
 
@@ -1027,3 +1037,686 @@ detail lives in the session history; the durable decisions are below.
   containers - the tests are compiled and structurally ready, and should
   be run with Docker started before trusting cross-engine correctness as
   proven rather than merely well-designed.
+
+## 22. Phase 8 — HUD sidebar, XP feedback, ability selection and admin tooling (Phase 8 complete)
+
+A user-requested follow-on phase, built one parent task at a time with an
+explicit stop-and-report after each: (1) a persistent profile sidebar, (2) a
+per-source XP BossBar plus a personal-only level-up chat message, (3)
+menu-based ability selection with right-click activation, glint and an
+action-bar countdown, (4) OP-only `/rpg oyuncu` admin commands.
+
+### 8.1 Sidebar (scoreboard HUD) and `/panel`
+
+- New `scoreboard` package: `SidebarService` (`PluginService`) /
+  `ScoreboardSidebarService` renders a per-player Bukkit `Scoreboard` on
+  `DisplaySlot.SIDEBAR` - player name, selected class (or "not selected"),
+  level, XP/next-level-XP and prestige, one fixed-order line each, using
+  the `Team`-prefix-per-invisible-legacy-color-code-entry trick to render
+  arbitrary text lines (the standard workaround for scoreboard lines not
+  being freely settable strings).
+- **The on/off preference is deliberately never persisted** - a plain
+  in-memory `ConcurrentHashMap<UUID, Boolean>` (default `true`), evicted on
+  quit - per an explicit user requirement that the sidebar always defaults
+  to visible on every join/server restart, never remembering a prior
+  session's choice. `/panel` (new `PanelCommand`) just flips this map.
+- Every XP/level/class/prestige change that already had a hook now also
+  calls `sidebar.refresh(player)` on the player's own region scheduler,
+  including a **self-found gap fix**: `QuestListener`/`CollectionListener`
+  call `ProgressionService.award(...)` directly rather than through
+  `ProgressionListener`, so they were bypassing the sidebar-refresh hook
+  until both gained an explicit `sidebar.refresh(...)` call alongside their
+  existing BossBar trigger (see §8.2).
+
+### 8.2 Per-source XP BossBar and personal level-up chat
+
+- `FeedbackService`/`BossBarFeedbackService` gained
+  `showExperienceProgress(...)`: one BossBar instance is reused per player
+  (`ConcurrentHashMap<UUID, BossBar>`), never stacked, with its own
+  auto-hide timer that resets on every subsequent XP gain while the bar is
+  still visible (`feedback.yml`'s new `xp-cubugu-sure-saniye`).
+- **`celebrateLevelUp` was rewritten to be chat-only** - the previous
+  BossBar/Title level-up celebration (`FEEDBACK_LEVEL_UP_BOSSBAR/TITLE/
+  SUBTITLE`) was removed outright and replaced with a single personal
+  `MessageKey.FEEDBACK_LEVEL_UP_CHAT` message, per an explicit user
+  requirement that level-up feedback be visible only to the leveling
+  player, never a broadcast or an on-screen title. Quest/collection/
+  prestige BossBar+Title feedback is unchanged and out of scope (§16/§19's
+  behaviour there was never touched).
+- **One fully-authored `MessageKey` template per XP cause**
+  (`FEEDBACK_XP_BLOCK_BREAK_BOSSBAR`, `_MOB_KILL_`, `_PLAYTIME_`, `_QUEST_`,
+  `_COLLECTION_`, `_SKILL_`), not a single generic template fed a
+  Java-resolved source label - the same "no Turkish word ever built in
+  Java" discipline §18/§19 already established for leaderboard/title
+  labels. `ProgressionCause.EXTERNAL` (reserved since Phase 2, first
+  actually used in §8.4's admin `xp ver`) intentionally maps to no BossBar
+  template at all - admin-granted XP does not produce source-attribution
+  BossBar noise the way organic gameplay XP does.
+- `SkillExperienceCurve` gained `requiredForCurrentLevel(int)` (mirroring
+  `ExperienceCurve`'s existing method), needed to compute the skill XP
+  bar's "current/required" fraction.
+
+### 8.3 Ability selection, right-click activation, glint and countdown
+
+- **Selection and activation are now two separate steps**, replacing
+  click-to-activate in `AbilitiesMenu`. `AbilityService` gained
+  `select(Player, String)`/`selected(UUID)` (in-memory, not persisted -
+  consistent with the sidebar preference and with abilities never having
+  been persisted before this phase either); `AbilitiesMenu#handleClick`
+  now selects and re-glints the chosen icon instead of calling the
+  existing `activate(...)` path directly.
+- New `AbilityToolTag` enum (`PICKAXE`/`AXE`/`SHOVEL`/`SWORD`/`HOE`, each
+  wrapping a Bukkit `Tag<Material>` constant like `Tag.ITEMS_PICKAXES`)
+  plus a new `arac.tur` key per ability in `abilities.yml` - this avoids
+  hand-maintaining a material list per ability the way an ad-hoc
+  `Set<Material>` would have required. New `AbilityActivationListener`
+  (`PlayerInteractEvent`, main-hand-only, right-click block/air only)
+  activates the selected ability when the held item matches its
+  `AbilityToolTag`, calling the exact same `AbilityService#activate(...)`
+  `/kabiliyet <id>` already calls - **`/kabiliyet <id>` itself was left
+  completely unchanged** and remains a valid direct-activation path
+  alongside menu-select-then-right-click, not replaced by it.
+- Cosmetic-only glint (`ItemMeta#setEnchantmentGlintOverride(Boolean)`,
+  `null` clears the override rather than forcing it off) is applied to the
+  held tool for the ability's duration and removed on expiry or early
+  consumption; `ActiveAbilityStatus` (id + expiry epoch millis) backs a
+  once-a-second `player.getScheduler().runAtFixedRate(...)` action-bar
+  countdown (`ABILITY_COUNTDOWN_ACTIONBAR`) that also covers one-shot
+  abilities' pre-consumption waiting window, not just duration-based
+  buffs - both share the same underlying `armed`/`activeMillis` state, so
+  no separate code path was needed for the one-shot case, per an explicit
+  user clarification during this phase's PRD review.
+- `PlayerEnergyService` gained a `Predicate<Player> actionBarSuppressed`
+  constructor parameter (a lambda checking `AbilityService#activeStatus`,
+  not a direct `AbilityService` field) so the ability countdown wins over
+  the pre-existing energy action bar without a circular service
+  dependency between `EnergyService` and `AbilityService`.
+- **Self-found and fixed, out of this phase's original scope:**
+  `AbilityService#handleEntityDamage` (the `DAMAGE_BUFF` effect behind
+  "Avcı Odağı") had zero call sites anywhere in the codebase since Phase
+  3 - confirmed via an exhaustive grep - meaning that ability's damage
+  multiplier had never actually applied. `ClassListener` already listens
+  to the same `EntityDamageByEntityEvent` for the class PvE-damage
+  modifier, so one line there now also calls
+  `abilities.handleEntityDamage(event)`.
+
+### 8.4 `/rpg oyuncu` admin commands
+
+- New `command.subcommand.PlayerAdminSubCommand` (`SubCommand`,
+  `name() = "oyuncu"`) adds six actions under `/rpg oyuncu <isim> <eylem>`:
+  `bilgi`, `seviye <değer>`, `xp ver <miktar>`, `sinif <id|temizle>`,
+  `yetenek <id> seviye <değer>`, `istatistik <anahtar> <değer>`. Every
+  target must be online - admin actions go through the same cached,
+  write-through services gameplay uses, never touch offline rows directly.
+- **Permission architecture is the one genuinely new pattern this phase
+  introduced.** §5.6 established a single `SubCommand#permission()` node
+  checked by `RpgCommand` *before* dispatching to the subcommand at all -
+  fine for one node per subcommand, but this subcommand needs six
+  independently LuckPerms-delegatable nodes
+  (`halilibrahimmmo.admin.oyuncu.bilgi`, `.seviye`, `.xp`, `.sinif`,
+  `.yetenek`, `.istatistik`, all `default: op`). Bukkit permission nodes
+  do not imply their parent, so gating the whole subcommand behind one
+  umbrella node would have made it impossible to hand a staff member only
+  `...oyuncu.bilgi` without also granting every other action. The fix:
+  `PlayerAdminSubCommand.permission()` returns a new, deliberately
+  permissive gate node (`halilibrahimmmo.admin.oyuncu`, `default: true`)
+  that only lets `RpgCommand` dispatch into the subcommand at all; the six
+  real per-action checks happen manually inside `execute()`
+  (`sender.hasPermission("halilibrahimmmo.admin.oyuncu." + action)`,
+  falling back to the existing `MessageKey.NO_PERMISSION`). **`RpgCommand`
+  itself also lost its `permission()` override entirely** (previously
+  hardcoded to `halilibrahimmmo.admin`), for the identical reason one
+  level up: a staff member granted only a granular `oyuncu.*` node must
+  still be able to reach `/rpg` at all for that check to ever run.
+  `yenile`/`versiyon`/`hataayiklama` are unaffected - they already enforce
+  their own `halilibrahimmmo.admin` node internally via the same
+  `RpgCommand`-owned per-subcommand check this pattern relies on.
+- **New admin mutation methods, added directly to the existing service
+  interfaces (never exposed via the `api` module - deliberately kept
+  internal, matching this codebase's existing minimal-public-surface
+  discipline every prior phase's API addition followed):**
+  `ProgressionService#setLevel` (clamps into `[1, curve().maximumLevel()]`,
+  resets XP to 0, does **not** run title/cosmetic evaluation or the
+  level-up celebration - a correction tool, not a gameplay XP path, unlike
+  `award`); `ClassService#forceSetClass` (bypasses `select()`'s
+  change-cooldown entirely via the same per-player `serial(...)` chain
+  `select`/`spend` already use, preserves spent talent ranks, an empty
+  string clears the class); `SkillService#setLevel` (same clamp-and-reset
+  shape as `ProgressionService#setLevel`, reuses `CachedSkillService`'s
+  existing per-skill `updateChains` chain-safety); `ProfileService#
+  setStatistic` (a new `ProfileRepository` method - direct UPDATE-then-
+  INSERT assignment, deliberately separate from the existing *additive*
+  `incrementStatistic`, not a parameter flag on it).
+- `xp ver` is the one action that reuses the **existing** gameplay path
+  (`ProgressionService.award(..., ProgressionCause.EXTERNAL)`) rather than
+  a bespoke mutation, specifically so admin-granted XP still runs
+  achievement/title/cosmetic evaluation and the level-up chat message
+  exactly like organic XP does - `PlayerAdminSubCommand` duplicates the
+  same `celebrateLevelUp`/`cosmetics.celebrate`/`titles.evaluate`/
+  `cosmetics.evaluate` call shape `ProgressionListener#award` already
+  established, the same "each site duplicates a small notify block rather
+  than sharing a helper" tolerance §19 already documented.
+  `ProgressionCause.EXTERNAL` (reserved since Phase 2) is used for the
+  first time here.
+- Every successful action sends the admin a Turkish confirmation and logs
+  a Turkish line via `PluginLogger` (which admin, which target, what
+  changed); `seviye`/`xp ver`/`sinif` also call `sidebar.refresh(target)`
+  on the target's own region scheduler so the change is visible
+  immediately - `yetenek`/`istatistik` deliberately do not, since neither
+  value is shown on the sidebar.
+- New `paper-plugin.yml` permission entries: the `oyuncu` gate node plus
+  six per-action nodes (see above). New `rpg.oyuncu.*` section in
+  `messages.yml`/`MessageKey.java` (12 keys: usage, offline, invalid
+  number, `bilgi`/`bilgi-sinifsiz`, and one confirmation message per
+  action).
+- `./gradlew build`/`./gradlew test` are green with Java 26 (verified by
+  the user locally, this session's sandbox has no JDK 26/internet access
+  to run Gradle itself). No new pure-logic unit test was added this
+  phase - the admin mutations reuse existing, already-testable records
+  (`PlayerProfile`, `SkillProgress`) rather than introducing new branching
+  logic complex enough to warrant one the way `PrestigeRules`/
+  `UnlockConditions` did; a `PlayerAdminSubCommand`-adjacent test would
+  need a live server anyway (same reasoning §17/§20 already gave for not
+  unit-testing GUI/PlaceholderAPI code).
+
+## 23. Phase 9 — sidebar redesign, GUI-first commands, per-skill admin XP, onboarding gate, class rework (Phase 9 complete)
+
+A large, user-requested follow-on phase, built in seven stop-and-report
+sub-phases (9.1–9.7): (1) quick wins (Güç rename, admin skill-XP grant,
+GUI-first `/sinif`/`/kabiliyet`), (2) class renaming/synergy-skill
+mapping/class-level foundation, (3) class-exclusive abilities, (4) synergy
+XP bonus and class-level wiring, (5) sound effects, (6) the `/mmo aktif`
+onboarding gate, (7) the full sidebar redesign.
+
+### 9.1 — Güç rename, admin per-skill XP grant, GUI-first commands
+
+- The global level's Turkish label changed from "Seviye" to "Güç" everywhere
+  it referred specifically to the *global* level (sidebar, `/profil`, admin
+  info, leaderboard) - **text-only** `messages.yml` changes, no `MessageKey`
+  additions. The one leaderboard entry lore shared between the global-level
+  and per-skill boards (`GUI_LEADERBOARD_ENTRY_LEVEL_LORE`,
+  `gui.liderlik.oge-seviye`) was deliberately left saying "Seviye" since
+  renaming it would have incorrectly relabeled skill leaderboard entries too
+  - confirmed by reading `LeaderboardDetailMenu#levelLore` before editing.
+- `SkillService#addExperience(UUID, String, long)` (new, additive, reuses
+  the normal `SkillExperienceCurve.award(...)` and can cross multiple
+  levels) closes the one genuine gap that existed: admins could already
+  **set** a skill's level (`SkillService#setLevel`, resets XP) but could not
+  **add** XP to one. `/rpg oyuncu <isim> yetenek <id> xp <miktar>` is a new
+  sibling verb under the existing `yetenek` action/permission node
+  (`halilibrahimmmo.admin.oyuncu.yetenek` already covered both).
+- `/sinif` and `/kabiliyet` now open their GUI directly instead of parsing
+  chat arguments - `ClassCommand`/`AbilityCommand` were rewritten down to
+  `GuiManager.open(player, new ClassMenu(...)/new AbilitiesMenu(...))`.
+  **The old chat-argument forms were removed entirely** (`sec`/`agac`/`ac`,
+  bare-listing), per an explicit user decision during plan review - both
+  `ClassMenu`/`AbilitiesMenu` already covered the exact same actions.
+  `/kabiliyet <id>` (direct activation) is unaffected - only the bare/no-arg
+  form's behavior changed, from printing a list to opening the menu.
+  `ABILITY_LIST`/`CLASS_LIST`/`CLASS_TREE`/`CLASS_USAGE` `MessageKey`s were
+  deleted as now-genuinely-dead.
+
+### 9.2 — Class renaming, synergy-skill mapping, class-level foundation
+
+- All four classes got new `gorunen-ad` values (ids/talent ids/code
+  untouched): `avci` → **Amansız Savaşçı**, `madenci` → **Mağara Adamı**
+  (both user-specified), `savasci` → **Define Avcısı**, `oduncu` →
+  **Orman Bekçisi** (both proposed and user-confirmed). Each class gained a
+  `sinerji-beceri` field pointing at exactly one of the four skills
+  (`avci`↔avcilik, `madenci`↔madencilik, `oduncu`↔odunculuk,
+  `savasci`↔kazicilik) - a mapping forced once the first three are fixed by
+  the user's own examples, and confirmed to already match every existing
+  ability's configured skill with zero reassignment needed.
+- **Third leveling track, deliberately flavor/display-only**: a new
+  per-(player, class) level/XP pair, tracked independently of talent ranks
+  (which already survive class switches) via a new `classLevels` map on
+  `PlayerClassProgress` and a new table (`hmmo_player_class_progress`, V7
+  `ClassProgressSchemaMigration`). New `ClassExperienceCurve` mirrors
+  `SkillExperienceCurve`'s shape verbatim (a fourth near-duplicate curve
+  class in this codebase now, alongside `ExperienceCurve`/
+  `SkillExperienceCurve` - kept as three separate classes rather than one
+  shared generic, consistent with this codebase's existing tolerance for
+  that duplication). **Class level never gates anything mechanically** -
+  ability unlock stays exactly as it always was (skill-level-gated); this
+  track exists purely so a player can see "how much have I invested in this
+  class" separately from "how good am I at the underlying skill."
+- `YamlClassService` gained a `SkillService` dependency (to validate
+  `sinerji-beceri` against real skill ids at parse time) - no circularity,
+  since `SkillService` has zero dependency back on `classes`.
+- `ClassService#awardClassExperience`/`#classProgress` are new, internal
+  (not exposed via `api`), following the exact same "admin/internal mutation
+  added directly to the service interface" precedent §22 already set.
+
+### 9.3 — Class-exclusive abilities
+
+- `AbilityDefinition` gained a `classId` field - an ability now belongs to
+  exactly one class, checked in `activate(...)` against
+  `ProfileService#cached(playerId).selectedClass()` (a new `ProfileService`
+  dependency on `YamlAbilityService`), rejecting with a new
+  `ABILITY_WRONG_CLASS` message on mismatch. `AbilitiesMenu` filters to only
+  the player's selected class's abilities (a new "no class yet" empty state,
+  `GUI_ABILITIES_NO_CLASS`); `ClassMenu#selectClass`'s `SELECTED` branch now
+  also clears the player's in-memory ability *selection*
+  (`AbilityService#clearSelection`, new) so a stale cross-class selection
+  can't silently linger after switching.
+- **8 new abilities** (every class now has exactly 3; the 4 pre-existing
+  ones - `kazici-darbe`, `agac-kirici`, `damar-kirici`, `avci-odagi` - became
+  each class's mid-tier signature ability unchanged). Three new
+  `AbilityEffectType` shapes were needed beyond the original two
+  (armed-for-a-block-break, buffed-for-damage): **instant** effects applied
+  immediately inside `activateOnPlayerRegion` (`BRIEF_INVULNERABILITY`,
+  `AREA_HEAL`, `SPEED_BURST`, `NIGHT_VISION` via vanilla `PotionEffect`s;
+  `KNOCKBACK_SLAM` via nearby-entity velocity+damage), and one more
+  **armed-for-a-block-break-with-a-chance** shape (`EXTRA_DROP_CHANCE`, a new
+  parallel `dropBuffs` map, rolled inside `handleBlockBreak` independent of
+  whatever else is armed - it fires on *any* normal block break, not just
+  the ability's own tool). `AbilityToolTag.ANY` (matches every material,
+  including an empty hand) was added for one tool-agnostic ability.
+  `AbilityDefinition.limit`/`damageMultiplier` are deliberately dual-purposed
+  per effect type rather than growing the record further (`limit` doubles as
+  `KNOCKBACK_SLAM`'s radius; `damageMultiplier` doubles as
+  `EXTRA_DROP_CHANCE`'s 0-1 chance) - `abilities.yml` gained matching
+  `etki.sans`/`etki.yaricap` keys, and `YamlAbilityService#parse`'s
+  validation became a `switch` over effect type instead of one blanket rule.
+- One pre-existing talent (`madenci`'s `kazici-tasarrufu`, which reduced
+  `kazici-darbe`'s cost) had to be retargeted, since `kazici-darbe` became
+  `savasci`-exclusive under the new class-gating - renamed to
+  `cevher-tasarrufu`, now reducing the new `madenci`-exclusive
+  `cevher-sezgisi` instead. This is the one non-additive edit `classes.yml`
+  needed this phase.
+
+### 9.4 — Synergy XP bonus, class-level XP wiring, new-ability-unlocked toast
+
+- `SkillService#awardBlock`/`#awardMob` now return
+  `CompletableFuture<Optional<SkillAwardResult>>` (progress + pre-award
+  level + actual granted amount + `leveledUp`) instead of a bare
+  `SkillProgress` - the first time skill-XP awards exposed a level-up
+  signal at all, mirroring `ProgressionAwardResult`'s existing shape.
+  Both methods also gained a `playerName` parameter (only `SkillListener`
+  called them; safe to widen).
+- **The class synergy bonus (+20% XP in the selected class's one synergy
+  skill) and the class-XP mirroring are both wired through
+  `CachedSkillService`'s constructor**, via the same
+  `Function`/`AtomicReference` circular-dependency bridge already
+  established between `AbilityService`/`ClassService`
+  (`SkillService` is constructed before `ClassService` in the bootstrap):
+  a `BiFunction<UUID,String,Double> classSynergyMultiplier` decides the
+  bonus, and a new `skills.SkillExperienceListener` callback (deliberately
+  defined in the `skills` package, not `classes`, so `skills` never depends
+  on `classes`) notifies a new `classes.ClassSynergyBridge` after every
+  award - which resolves the real `ClassService` from an
+  `AtomicReference<ClassService>` forward-reference and, if the skill
+  matches the selected class's synergy skill, calls
+  `awardClassExperience(...)` with the *same* granted amount (1:1
+  mirroring - no separate class-XP rate, the simplest defensible default).
+- **New-ability-unlocked toast**: `SkillListener` now checks, on every
+  `leveledUp()` skill award, whether any of the player's selected class's
+  abilities has a `requiredLevel` in `(previousLevel, newLevel]` - handles
+  multi-level jumps correctly, not just +1 increments - and fires
+  `FeedbackService#celebrateAbilityUnlocked` (new, bossbar+title/subtitle
+  fade, same shape as quest/collection completion). Two more new chat-only
+  celebrations were added alongside it for symmetry:
+  `celebrateClassLevelUp`/`celebrateSkillLevelUp` (skill level-up previously
+  had *no* dedicated feedback beyond the XP bossbar - this phase formalizes
+  it). **`FeedbackService` was moved earlier in the plugin bootstrap**
+  (right after `ProgressionService`, before `ClassService`/`SkillService`)
+  purely so `ClassSynergyBridge` could depend on it - it has no other
+  dependencies, so the reorder is inert everywhere else.
+
+### 9.5 — Sound effects (first-ever `org.bukkit.Sound` usage)
+
+- New `feedback.yml` `sesler:` section (7 named cues: level-up, skill
+  level-up, class level-up, class-selected, ability-start, ability-end,
+  ability-unlocked), each `{ ses: <Sound enum name>, ses-seviyesi, ton }`,
+  parsed/validated at load time exactly like every other YAML enum in this
+  codebase (`Sound.valueOf(...)` - deprecated-for-removal on this Paper
+  version but not yet actually removed; left as-is rather than switching to
+  a `Registry.SOUNDS` lookup, since every cue is config-driven and trivially
+  changed later regardless of which lookup mechanism resolves the name).
+  `BossBarFeedbackService` gained a private `playSound(Player, String key)`
+  helper wired into the corresponding celebration methods, plus two new
+  sound-only methods with no accompanying chat message
+  (`celebrateClassSelected`, called from `ClassMenu`; `celebrateAbilityActivated`/
+  `celebrateAbilityEnded`, called from `YamlAbilityService` - which gained a
+  `FeedbackService` dependency for exactly this).
+  `YamlAbilityService#clearActivationFeedback` only plays the "ended" sound
+  when a feedback task was actually active, to avoid firing it on every
+  drop/held-item-change/quit event regardless of whether an ability was
+  running.
+
+### 9.6 — `/mmo aktif` onboarding gate and class-intro/confirm GUIs
+
+- New `activation` package (`ActivationService`/`CachedActivationService`/
+  `ActivationRepository`), structurally identical to the
+  `hmmo_player_unlocked_titles` INSERT-only membership pattern - presence of
+  a row means activated, no update-able columns. New V8
+  `PlayerActivationSchemaMigration`.
+- **The onboarding gate is a full progression kill-switch, not a cosmetic
+  sidebar toggle** (an explicit user decision during plan review, flagged as
+  the single biggest judgment call in the phase): `ProgressionListener`'s
+  shared `award(...)` method (covers block/mob/playtime XP),
+  `SkillListener`'s block/mob handlers, `QuestListener`'s block/mob
+  handlers, and `CollectionListener#onPickup` all now no-op for a
+  not-yet-activated player. The playtime task additionally pre-filters
+  online players by activation before even attempting an award.
+  `ActivationService#isActivated` is warmed on join from
+  `ProgressionListener#onJoin` (which already loads the profile first).
+- **Self-found and fixed, not originally scoped**: `SidebarListener#onJoin`
+  did not wait on the activation cache before calling
+  `sidebar.initialize(...)`, meaning an already-activated *returning*
+  player could momentarily (and with nothing to ever self-correct it) see
+  the "please activate" prompt line instead of their real stats if the
+  render ran before `ActivationService#isActivated` resolved. Fixed by
+  chaining `activation.isActivated(...)` into the same join future
+  `SidebarListener` already awaits before rendering.
+- `/mmo aktif` (new `MmoCommand`) is idempotent (`MMO_ALREADY_ACTIVE` if
+  already set) and, on success, immediately opens the new `ClassIntroMenu`
+  (all 4 classes, a one-line flavor blurb per class plus their 3 abilities'
+  live display names - pulled from `AbilityService#definitions()` filtered
+  by `classId`, so this screen can never drift from the ability catalogue).
+  Picking a class opens `ClassConfirmMenu`, which calls the *exact same*
+  `ClassService#select(...)` path `ClassMenu` already uses (identical
+  `ClassSelectionResult.Status` handling) - wording branches on whether the
+  player already has a class (first-ever pick: no cooldown mentioned,
+  applies immediately; a returning pick: shows the real
+  `sinif-degistirme-bekleme-gun` value).
+- `ScoreboardSidebarService` gained an `ActivationService` dependency and,
+  for this sub-phase, only the minimal "not activated → single prompt line"
+  branch (the full activated-state redesign is §23's 9.7). **This is also
+  where the sidebar's line-count-varies-per-render problem first became
+  real** (previously always exactly 5 lines) - `render(...)` now
+  unregisters any `Team` beyond the current pass's line count, a latent gap
+  in the original Phase 8 implementation that had gone unnoticed because
+  line count never actually changed before now.
+
+### 9.7 — Full sidebar redesign
+
+- `QuestService#cachedAll(UUID)` (new, synchronous) exposes
+  `CachedQuestService`'s already-existing internal per-player cache
+  (warmed by the existing `QuestListener#onJoin` → `loadAll(...)` call) -
+  no new caching machinery needed. Inherits the pre-existing, unchanged
+  lazy-quest-reset staleness (§16) - a completed daily/weekly quest may
+  still read `completed=true` briefly past period-end until the player's
+  next progress-triggering action.
+- `ScoreboardSidebarService` gained `SkillService`/`AbilityService`/
+  `QuestService` dependencies, which required **moving its construction in
+  `HalilIbrahimMMOPlugin#onEnable()` to after `QuestService`** (previously
+  built right after `ClassService`) - confirmed safe since `EnergyService`,
+  built in between in the old order, has no dependency on it either way.
+- Final activated-state line set (name → combined Güç level+XP → prestige →
+  selected class → combined class level+XP for that class → active
+  ability+countdown → "X/3 açık" ability count → daily quest count → weekly
+  quest count), each omitted-not-blank when not applicable (no class: skip
+  class-level/ability lines entirely, show a `SIDEBAR_LINE_NO_CLASS_NUDGE`
+  instead; no active ability: skip that line rather than showing an idle
+  placeholder). `SIDEBAR_LINE_XP` (the old separate XP line) was deleted as
+  now-genuinely-dead once Güç level+XP merged into one line.
+
+### Verification (this phase)
+
+- `./gradlew build`/`./gradlew test`/`:core:compileIntegrationTestJava` are
+  all green with Java 26 in this session. `IntegrationDatabaseSupport
+  .allMigrations()` and `AbstractMigrationCrossEngineTest`'s hardcoded
+  `Set.of(1..6)` version assertion were both updated to include V7/V8 - the
+  cross-engine containers themselves were not run this session (no Docker
+  daemon available), same caveat §21 already documented.
+- **A live `./gradlew runServer` boot was performed and is the one piece of
+  in-game verification this session could actually do**: booted cleanly to
+  `Done`, all 8 migrations (including the new V7/V8) applied against a
+  fresh SQLite database with the previous session's stale
+  `classes.yml`/`abilities.yml`/`feedback.yml`/`messages.yml` deleted first
+  so they regenerated from the updated bundled resources, and the plugin
+  enabled with zero exceptions - confirming every new/changed YAML file
+  parses correctly (including all 7 `sesler:` `Sound.valueOf(...)` calls
+  resolving to real enum constants) and the reordered service bootstrap has
+  no circular-dependency or construction-order fault. The server was then
+  stopped (no interactive console was available in this session to send it
+  a graceful `stop`).
+- **Not verified this session, requires a live client and is the
+  responsibility of the next session/the user** (same category of gap
+  every GUI-touching phase since §17 has honestly recorded): actually
+  clicking through `ClassIntroMenu`/`ClassConfirmMenu`/the filtered
+  `AbilitiesMenu`; right-click-activating each of the 6 new
+  `AbilityEffectType`s in-world and confirming their Bukkit potion/velocity/
+  drop-duplication effects actually do something sensible; hearing all 7
+  sound cues; watching the redesigned sidebar render correctly across all
+  four states (unactivated / activated-no-class / activated-with-class /
+  mid-ability-countdown) and confirming no stale lines linger when
+  switching classes back and forth; confirming the synergy XP bonus and
+  class-level-up chat message actually fire correctly during real gameplay.
+
+## 24. Phase 10 — admin GUI-only, rarity XP, ability rework, sidebar/chat/bossbar polish (Phase 10 complete)
+
+A large, user-requested follow-on phase, built in eight stop-and-report
+sub-phases (10.1-10.8): (1) `/haliladmin` GUI-only admin panel, replacing
+`/rpg`'s chat-argument dispatch and removing every command that let staff
+hand-set a player's XP/level/class/skill values, (2) rarity-tiered XP for
+every skill, (3) ability-unlock gating verified already correct, (4)
+duration-vs-energy-drain ability activation modes, longer cooldowns, and a
+locked-ability display/tooltip fix in `AbilitiesMenu`, (5) `/menu`
+reorganized into four categories, (6) per-title chat tag colors, (7) full
+sidebar redesign, (8) simultaneous skill+class XP bossbars with per-class
+colors and the specific block/mob name in the skill bar.
+
+### 10.1 - `/haliladmin` GUI-only admin panel
+
+- **The entire chat-argument admin command surface was deleted**, not just
+  edited: `command.RpgCommand`, `command.SubCommand`, and all four
+  `command.subcommand.*` classes (`ReloadSubCommand`, `VersionSubCommand`,
+  `DebugToggleSubCommand`, `PlayerAdminSubCommand`) are gone. `/rpg oyuncu`'s
+  five mutation actions (`seviye`, `xp ver`, `sinif`, `yetenek`,
+  `istatistik`) are permanently removed per an explicit user requirement -
+  there is no code path anywhere in this codebase that can hand-set a
+  player's XP/level/class/skill values anymore. The backing service methods
+  that only ever existed for those actions were deleted too, confirmed via
+  grep before removal to have no other call sites:
+  `ProgressionService#setLevel`, `ClassService#forceSetClass`,
+  `SkillService#setLevel`, `SkillService#addExperience`,
+  `ProfileService#setStatistic` (+ its dedicated `ProfileRepository` method).
+  `bilgi` (read-only player info) survives, reimplemented as a GUI screen.
+- New `command.AdminCommand` registers `/haliladmin`, gated by
+  `halilibrahimmmo.admin` checked in the command itself (unlike `/menu`,
+  which is open to everyone) before opening `gui.AdminMenu`. **Permission
+  model deliberately simplified from Phase 8's design**: the six granular
+  `halilibrahimmmo.admin.oyuncu.*` LuckPerms-delegation nodes are gone,
+  replaced by the single `halilibrahimmmo.admin` node gating the whole
+  panel - once every admin action collapsed into one GUI behind one command,
+  the fine-grained per-action delegation Phase 8 built specifically for
+  chat-argument dispatch no longer had a reason to exist.
+- `gui.AdminMenu` (reload / debug toggle / version info / online-players
+  browser) → `gui.AdminOnlinePlayersMenu` (one player-head per online
+  player) → `gui.AdminPlayerInfoMenu` (read-only profile/class/skill
+  summary, same fields `PlayerAdminSubCommand#info` used to render). Reload
+  and debug-toggle call the exact same `HalilIbrahimMMOAPI#reload()`/
+  `ConfigService#setDebugModeOverride(...)` the old chat commands called,
+  then reopen `AdminMenu` so the debug-toggle item's lore reflects the new
+  state immediately.
+- `GuiServices` gained `ConfigService` and `HalilIbrahimMMOAPI` fields
+  (needed by `AdminMenu`) - the first GUI-tree record to need either.
+- Every `/rpg yenile`/`/rpg hataayiklama` reference across YAML comments,
+  Javadoc and `README.md` was updated to `/haliladmin` in the same session -
+  confirmed via an exhaustive grep for `/rpg` afterward, zero remaining.
+
+### 10.2 - Rarity-tiered XP economy (all four skills, not just avcılık)
+
+- **`SkillDefinition`'s single flat `reward` field is gone.** New record
+  `SkillRewardEntry(long xp, String displayName)` backs a per-material map
+  (`materialRewards`, BLOCK skills - same "material must be in the map to
+  trigger at all" gate as before, just per-material XP now) or a per-entity
+  map plus a `defaultEntityReward` fallback (MOB skill/`avcilik` - any
+  non-player kill still counts, unlisted `EntityType`s fall back to the
+  default entry so nothing silently grants zero). `skills.yml` was fully
+  rewritten: e.g. `DIRT` → 1xp, `DIAMOND_ORE` → 14xp, `ANCIENT_DEBRIS` →
+  20xp; `ZOMBIE` → 5xp, `ELDER_GUARDIAN` → 60xp, `WARDEN` → 200xp,
+  `ENDER_DRAGON` → 250xp (~30 explicitly tiered mobs; the numbers are a
+  first-pass design, trivially retunable in YAML since every value is
+  data-driven).
+  `SkillService#awardMob` gained an `EntityType` parameter (threaded from
+  `SkillListener#onEntityDeath`'s `event.getEntity().getType()`) since MOB
+  rewards are no longer a single flat number.
+- `SkillAwardResult` gained `sourceDisplayName` (the specific ore/mob's
+  Turkish name) so the skill XP bossbar can show it:
+  `geribildirim.xp-beceri-bossbar` gained a `<kaynak>` placeholder,
+  rendering e.g. "Madencilik +14xp (Elmas Cevheri) (42/500)" - only this one
+  template changed; the separate *global* progression bossbar templates
+  (`ProgressionListener`) were intentionally left alone.
+
+### 10.3 - Ability unlock gating: verified already correct
+
+`YamlAbilityService#activateOnPlayerRegion` already rejected activation
+below `definition.requiredLevel()` on `definition.skillId()`'s level - and
+every ability's configured skill already equals its owning class's
+`sinerji-beceri` (Phase 9.2). "Abilities unlock strictly by the selected
+class's synergy-skill level" was therefore already true; no code changed,
+called out explicitly so a future session doesn't mistake it for an
+oversight.
+
+### 10.4 - Duration vs. energy-drain abilities, longer cooldowns, locked-ability display
+
+- New `abilities.AbilityActivationMode` (`SURE`/`ENERJI`, YAML key
+  `sure-modu`, default `SURE` - every ability's exact prior behavior).
+  `ENERJI` mode is used by exactly one ability so far - `avci-odagi` (Avcı
+  Odağı, the sustained `DAMAGE_BUFF` combat buff) - per an explicit user
+  example (night vision = duration-based, the combat buff = energy-drain-
+  per-hit). `AbilityService#handleEntityDamage` gained an `EnergyService`
+  parameter (its one call site, `ClassListener#onDamage`, already had
+  `EnergyService` available - no new circular-dependency wiring needed) and
+  now debits `enerji-vurus-basi` (8, for `avci-odagi`) on every qualifying
+  PvE hit, ending the buff early via the existing `clearActivationFeedback`
+  path once energy is insufficient. `etki-suresi-saniye` remains a hard
+  fallback expiry (120s for `avci-odagi`) regardless of energy, so the
+  ability can never run unbounded. The action-bar countdown
+  (`startActivationFeedback`) shows remaining energy instead of remaining
+  seconds for `ENERJI`-mode abilities (new `kabiliyet.geri-sayim-enerji`).
+- Every ability's `bekleme-suresi-saniye` was raised (roughly 60-100% longer,
+  heavier for higher-tier abilities) - e.g. `hazine-sezgisi` 60→90s,
+  `kaya-zirhi` 90→160s.
+- **Self-found gap, not originally scoped**: `AbilitiesMenu` showed every
+  ability belonging to the selected class with full name/description/cost
+  regardless of whether the player's skill level actually unlocked it -
+  fixed by checking `skills.cached(...)` per ability during render: locked
+  abilities now render as a non-clickable red `BARRIER` item showing only
+  the required level, no description or energy cost; unlocked abilities
+  gained a hover description (new `aciklama` field on every
+  `AbilityDefinition`/`abilities.yml` entry) and only show an energy-cost
+  lore line when `energyCost() > 0`.
+
+### 10.5 - `/menu` reorganized into categories
+
+`AnaMenu`'s eleven flat icons became four category icons - İlerleme (new
+`gui.ProgressionMenu`: profile/skills/class/prestige), Kabiliyetlerim
+(unchanged, stayed top-level as this phase's most-reworked system), Görevler
+(new `gui.TasksMenu`: quests/collections/journal), Topluluk (new
+`gui.CommunityMenu`: leaderboards/titles/cosmetics). Every existing leaf
+menu's back button was repointed from `AnaMenu` to its new category parent
+(`AbilitiesMenu` is the one exception, staying pointed at `AnaMenu` since it
+never moved into a category).
+
+### 10.6 - Per-title chat tag colors
+
+- New bounded `titles.TitleChatStyle` enum (6 members: color + bold flag),
+  the same "YAML names a bounded enum constant, Java owns the real value"
+  pattern `kaynak.tur`/`etki.tur`/`arac.tur` already use. `TitleDefinition`
+  gained a `chatStyle` field parsed from a new `titles.yml` `sohbet-stili`
+  key per title; `TitleService` gained a synchronous `equippedStyle(UUID)`
+  getter mirroring the existing `equippedDisplayName` cache shape exactly
+  (`CachedTitleService`'s `cacheEquipped` now populates both caches
+  together).
+- **`TitleChatListener` was rewritten to build the chat prefix as a directly-
+  styled Adventure `Component`** (color/bold from `TitleChatStyle`) instead
+  of one shared `MessageKey` template coloring every title identically -
+  the one deliberate, documented exception in this codebase to "always
+  render through a `MessageKey`/`messages.yml` template": a title's color is
+  genuinely per-title configured data, and `MessageService` only ever
+  substitutes unparsed string placeholders, which cannot vary a
+  placeholder's own color per invocation. `MessageKey.TITLE_CHAT_PREFIX`/
+  `unvan.sohbet-oneki` were deleted as now-genuinely-dead.
+
+### 10.7 - Full sidebar redesign
+
+- `ScoreboardSidebarService` gained a `TitleService` dependency (for the
+  name-line tag, reusing `TitleChatStyle` so a player's chat tag and
+  sidebar tag always match) - required moving its construction in
+  `HalilIbrahimMMOPlugin#onEnable()` to after `TitleService`/
+  `CosmeticService`, the same kind of reorder §9.7 already did once for
+  `QuestService`.
+- **The fixed 9-entry `LINE_ENTRIES` array is gone**, replaced by a
+  `lineEntry(int index)` generator (single legacy code for index 0-15,
+  two-code combinations beyond that) - needed because the new layout
+  routinely exceeds 9 lines once per-ability and per-daily-quest lines are
+  included. The stale-team cleanup in `render(...)` now scans forward from
+  `board.getTeam(TEAM_PREFIX + lines.size())` until it finds an
+  unregistered slot, rather than looping a fixed upper bound.
+- Line changes: the name line now prefixes the equipped title in its
+  configured color (10.6); the old "X/3 açık" ability-count summary became
+  **one line per unlocked ability** of the selected class, green if it is
+  the player's currently menu-selected ability
+  (`AbilityService#selected`) or red otherwise, locked abilities omitted
+  entirely; the old single daily-quest summary became **one line per DAILY
+  quest**, showing its name, `current/target` progress and its configured
+  XP reward (weekly quests kept the existing single summary line - only
+  daily was asked to expand); a new always-shown footer line
+  (`sidebar.alt-bilgi`, "`/panel` ile aç/kapat") was added to every state
+  including unactivated/no-class, not just the fully-activated view.
+
+### 10.8 - Simultaneous skill+class bossbars, per-class colors, source name
+
+- **Fixed a pre-existing bug found during this phase's research, not
+  originally scoped**: `BossBarFeedbackService`'s one reusable bar per
+  player was keyed by `UUID` alone, so a single block break/mob kill's
+  *global* progression bossbar and *skill* bossbar (`ProgressionListener`
+  and `SkillListener` both call `showExperienceProgress` back-to-back on
+  the same player) were silently clobbering each other - only whichever
+  call landed last was ever visible. Fixed by rekeying
+  `experienceBars`/`experienceBarHideTasks` to a
+  `record ExperienceBarKey(UUID playerId, String category)`
+  (`"global"`/`"skill"`/`"class"`), which also happens to be exactly what
+  the new simultaneous class bar needed anyway.
+  `FeedbackService#showExperienceProgress` gained `category`/
+  `BossBar.Color` parameters; every existing call site
+  (`ProgressionListener`, `SkillListener`, `QuestListener`,
+  `CollectionListener`) was updated to pass its category and (for now,
+  uniformly) `BossBar.Color.GREEN`.
+- New bounded `classes.ClassBarColor` enum (4 members → 4 distinct
+  `BossBar.Color`s), referenced from a new `classes.yml` `bossbar-rengi`
+  key per class - same bounded-enum-from-YAML pattern as 10.6's
+  `TitleChatStyle`. Assigned: Define Avcısı=SARI(yellow), Amansız
+  Savaşçı=KIRMIZI(red), Mağara Adamı=MAVI(blue), Orman Bekçisi=YESIL(green).
+  `PlayerClassDefinition` gained a `barColor` field.
+- `ClassSynergyBridge#onSkillExperienceGained` (previously silent - it
+  mirrored synergy-skill XP into the class-level track with zero
+  player-facing feedback) now also shows a `"class"`-category bossbar in
+  the class's own color right alongside the skill bar `SkillListener`
+  already shows, so a synergy-skill kill/break now visibly shows **both**
+  bars at once. New `MessageKey.FEEDBACK_XP_CLASS_BOSSBAR`/
+  `geribildirim.xp-sinif-bossbar`.
+
+### Verification (this phase)
+
+- `./gradlew build`/`./gradlew test` are green after every sub-phase and at
+  the end of the full phase, Java 26.
+  `SkillMaterialConfigTest`/`ClassConfigTest`/`TitleConfigTest` were updated
+  for the new `skills.yml` map shape and the new `sohbet-stili`/
+  `bossbar-rengi` YAML fields respectively.
+- **A live `./gradlew runServer` boot was performed after all eight
+  sub-phases**, with the previous session's stale `config.yml`/
+  `messages.yml`/`skills.yml`/`abilities.yml`/`titles.yml`/`classes.yml`/
+  `quests.yml`/`collections.yml` deleted from `core/run/plugins/
+  HalilIbrahimMMO/` first so every changed file regenerated from the
+  updated bundled resources (same pattern §23 already used). The plugin
+  enabled with zero exceptions, the server reached `Done` in ~8s, and the
+  log had zero "eksik mesaj anahtari" (missing message key) warnings -
+  confirming every new/renamed `MessageKey` has a matching `messages.yml`
+  entry, every new bounded enum (`AbilityActivationMode`, `TitleChatStyle`,
+  `ClassBarColor`) resolves against its YAML string in every bundled file,
+  and the reordered `SidebarService` construction has no circular-
+  dependency fault.
+- **Not verified this session, requires a live client** (same honest
+  caveat every GUI/feedback-touching phase since §17 has carried):
+  right-click-activating `avci-odagi` in real PvE combat and watching it
+  end early on energy depletion; confirming the two simultaneous bossbars
+  actually render side-by-side (Adventure supports multiple bars per
+  player, but this was never exercised live before); reading the
+  redesigned sidebar across all states; confirming locked abilities render
+  correctly in `AbilitiesMenu`; clicking through the new `/haliladmin`
+  panel and `/menu` category screens.

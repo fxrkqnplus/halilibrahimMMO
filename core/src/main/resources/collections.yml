@@ -4,7 +4,7 @@
 #  Her koleksiyon, oyuncunun en az bir kez toplaması gereken eşyalardan
 #  oluşur. Bir eşya ilk kez alındığında o ögenin "xp" değeri verilir;
 #  koleksiyondaki tüm ögeler toplandığında ayrıca "tamamlama-xp" verilir.
-#  Bu dosyayı /rpg yenile ile yükleyin.
+#  Bu dosyayı /haliladmin panelindeki "Yeniden Yükle" düğmesiyle yükleyin.
 # =====================================================================
 
 koleksiyonlar:

@@ -37,6 +37,7 @@ public final class CachedTitleService implements TitleService {
     private final ConcurrentHashMap<UUID, Set<String>> unlockedCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, String> equippedIdCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, String> equippedDisplayNameCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, TitleChatStyle> equippedStyleCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, CompletableFuture<Void>> updateChains = new ConcurrentHashMap<>();
 
     public CachedTitleService(JavaPlugin plugin, TitleRepository repository, UnlockContextLoader contextLoader) {
@@ -55,6 +56,7 @@ public final class CachedTitleService implements TitleService {
         unlockedCache.clear();
         equippedIdCache.clear();
         equippedDisplayNameCache.clear();
+        equippedStyleCache.clear();
         updateChains.clear();
     }
 
@@ -174,10 +176,16 @@ public final class CachedTitleService implements TitleService {
     }
 
     @Override
+    public Optional<TitleChatStyle> equippedStyle(UUID playerId) {
+        return Optional.ofNullable(equippedStyleCache.get(playerId));
+    }
+
+    @Override
     public void evict(UUID playerId) {
         unlockedCache.remove(playerId);
         equippedIdCache.remove(playerId);
         equippedDisplayNameCache.remove(playerId);
+        equippedStyleCache.remove(playerId);
     }
 
     private Optional<TitleDefinition> resolveEquipped(String id) {
@@ -192,8 +200,10 @@ public final class CachedTitleService implements TitleService {
         TitleDefinition definition = resolveEquipped(id).orElse(null);
         if (definition == null) {
             equippedDisplayNameCache.remove(playerId);
+            equippedStyleCache.remove(playerId);
         } else {
             equippedDisplayNameCache.put(playerId, definition.displayName());
+            equippedStyleCache.put(playerId, definition.chatStyle());
         }
     }
 
@@ -215,7 +225,8 @@ public final class CachedTitleService implements TitleService {
                 throw new IllegalArgumentException("Invalid title icon material: " + id);
             }
             UnlockCondition condition = UnlockConditionParser.parse(requiredSection(section, "kosul"), id);
-            definitions.put(id, new TitleDefinition(id, displayName, icon, condition));
+            TitleChatStyle chatStyle = TitleChatStyle.valueOf(section.getString("sohbet-stili", "").toUpperCase(Locale.ROOT));
+            definitions.put(id, new TitleDefinition(id, displayName, icon, condition, chatStyle));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("titles.yml must define at least one title.");

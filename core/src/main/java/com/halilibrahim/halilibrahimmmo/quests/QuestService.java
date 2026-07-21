@@ -22,6 +22,9 @@ public interface QuestService extends PluginService {
 
     CompletableFuture<Map<String, QuestProgress>> loadAll(UUID playerId);
 
+    /** Synchronous, in-memory only - empty until {@link #loadAll} has warmed the cache for this player. */
+    Map<String, QuestProgress> cachedAll(UUID playerId);
+
     /**
      * Awards progress toward every configured {@link QuestObjectiveType#BLOCK_BREAK}
      * quest matching {@code material}, expiring and resetting any repeating quest

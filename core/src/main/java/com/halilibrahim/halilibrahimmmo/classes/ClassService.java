@@ -21,4 +21,15 @@ public interface ClassService extends PluginService {
     ClassModifiers modifiers(UUID playerId);
     void applyPlayerEffects(Player player);
     void evict(UUID playerId);
+
+    /**
+     * Internal: awards class-track XP to one specific (player, class) pair
+     * through the shared per-player update chain, independent of whether
+     * that class is currently selected. Callers (the skill-synergy bridge)
+     * are responsible for only calling this for the player's selected class.
+     */
+    CompletableFuture<ClassExperienceAwardResult> awardClassExperience(UUID playerId, String playerName, String classId, long amount);
+
+    /** Synchronous, in-memory cached read of one (player, class) level+XP - level 1/XP 0 default if never loaded. */
+    ClassLevelProgress classProgress(UUID playerId, String classId);
 }

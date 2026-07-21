@@ -32,5 +32,8 @@ public interface TitleService extends PluginService {
     /** Synchronous, in-memory only - for the chat renderer, which cannot afford an async DB round-trip per message. */
     Optional<String> equippedDisplayName(UUID playerId);
 
+    /** Synchronous, in-memory only - the equipped title's chat/sidebar tag style, alongside {@link #equippedDisplayName}. */
+    Optional<TitleChatStyle> equippedStyle(UUID playerId);
+
     void evict(UUID playerId);
 }

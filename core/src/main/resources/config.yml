@@ -2,7 +2,7 @@
 #  HalilIbrahimMMO - Ana Yapılandırma Dosyası
 # =====================================================================
 #  Bu dosyayı değiştirdikten sonra sunucuyu yeniden başlatmadan
-#  değişiklikleri uygulamak için "/rpg yenile" komutunu kullanabilirsiniz.
+#  değişiklikleri uygulamak için /haliladmin panelindeki "Yeniden Yükle" düğmesini kullanabilirsiniz.
 #
 #  Not: Bu dosyadaki yorum satırları ve biçimlendirme, eklenti tarafından
 #  otomatik olarak yeniden yazılmaz; dosyanızı dilediğiniz gibi düzenleyip
@@ -16,7 +16,7 @@ genel:
 
   # Ayrıntılı hata ayıklama (debug) loglarını açar/kapatır.
   # Konsolu kalabalıklaştırır, sadece sorun giderirken açık bırakın.
-  # "/rpg hataayiklama" komutuyla sunucu çalışırken de geçici olarak değiştirilebilir.
+  # /haliladmin panelindeki "Hata Ayıklama Modu" düğmesiyle sunucu çalışırken de geçici olarak değiştirilebilir.
   hata-ayiklama-modu: false
 
 # =====================================================================

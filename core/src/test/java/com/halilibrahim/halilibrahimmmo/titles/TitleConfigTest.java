@@ -34,6 +34,10 @@ final class TitleConfigTest {
             Material icon = Material.matchMaterial(titles.getString(id + ".esya", ""));
             assertNotNull(icon, id);
 
+            TitleChatStyle style = assertDoesNotThrow(
+                    () -> TitleChatStyle.valueOf(titles.getString(id + ".sohbet-stili", "")), id);
+            assertNotNull(style, id);
+
             ConfigurationSection kosul = titles.getConfigurationSection(id + ".kosul");
             assertNotNull(kosul, id);
             UnlockCondition condition = assertDoesNotThrow(() -> UnlockConditionParser.parse(kosul, id), id);

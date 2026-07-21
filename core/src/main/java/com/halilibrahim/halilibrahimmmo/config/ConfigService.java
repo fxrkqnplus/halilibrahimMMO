@@ -15,7 +15,7 @@ public interface ConfigService extends PluginService {
     CoreConfig coreConfig();
 
     /**
-     * Applies a runtime-only debug mode override (see {@code /rpg hataayiklama}),
+     * Applies a runtime-only debug mode override (see {@code /haliladmin}'s debug toggle),
      * without touching {@code config.yml} on disk. The override is cleared the next
      * time {@link #reload()} re-reads the file from disk.
      */

@@ -3,27 +3,93 @@
 sinif-degistirme-bekleme-gun: 7
 seviye-basina-yetenek-puani: 25
 
+# Sinif seviyesi: sadece secili sinifin "sinerji-beceri"sinden XP kazanildikca
+# artar (bkz. her sinifin sinerji-beceri alani). Bu tamamen gorsel/prestij
+# amacli bir ilerleme cizgisidir; hicbir kabiliyetin acilmasini etkilemez.
+sinif-ilerleme:
+  maksimum-seviye: 50
+  sinerji-xp-bonusu: 0.20
+  seviyeler:
+    1: 100
+    2: 150
+    3: 200
+    4: 250
+    5: 300
+    6: 350
+    7: 400
+    8: 450
+    9: 500
+    10: 550
+    11: 600
+    12: 650
+    13: 700
+    14: 750
+    15: 800
+    16: 850
+    17: 900
+    18: 950
+    19: 1000
+    20: 1050
+    21: 1100
+    22: 1150
+    23: 1200
+    24: 1250
+    25: 1300
+    26: 1350
+    27: 1400
+    28: 1450
+    29: 1500
+    30: 1550
+    31: 1600
+    32: 1650
+    33: 1700
+    34: 1750
+    35: 1800
+    36: 1850
+    37: 1900
+    38: 1950
+    39: 2000
+    40: 2050
+    41: 2100
+    42: 2150
+    43: 2200
+    44: 2250
+    45: 2300
+    46: 2350
+    47: 2400
+    48: 2450
+    49: 2500
+    50: 0
+
 siniflar:
   savasci:
-    gorunen-ad: "Savaşçı"
+    gorunen-ad: "Define Avcısı"
+    sinerji-beceri: kazicilik
+    bossbar-rengi: SARI
     yetenekler:
       canlilik: { gorunen-ad: "Canlılık", maksimum-rank: 4, etki: { tur: MAX_HEALTH, deger-rank-basina: 2 } }
       guc: { gorunen-ad: "Güç", maksimum-rank: 4, etki: { tur: PVE_DAMAGE_MULTIPLIER, deger-rank-basina: 0.03 } }
       dayaniklilik: { gorunen-ad: "Dayanıklılık", maksimum-rank: 4, etki: { tur: MAX_ENERGY, deger-rank-basina: 5 } }
   avci:
-    gorunen-ad: "Avcı"
+    gorunen-ad: "Amansız Savaşçı"
+    sinerji-beceri: avcilik
+    bossbar-rengi: KIRMIZI
     yetenekler:
       nisancilik: { gorunen-ad: "Nişancılık", maksimum-rank: 4, etki: { tur: PVE_DAMAGE_MULTIPLIER, deger-rank-basina: 0.03 } }
       odak-tasarrufu: { gorunen-ad: "Odak Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: avci-odagi, deger-rank-basina: 0.05 } }
       odak-ritmi: { gorunen-ad: "Odak Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: avci-odagi, deger-rank-basina: 0.05 } }
   madenci:
-    gorunen-ad: "Madenci"
+    gorunen-ad: "Mağara Adamı"
+    sinerji-beceri: madencilik
+    bossbar-rengi: MAVI
     yetenekler:
-      kazici-tasarrufu: { gorunen-ad: "Kazıcı Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: kazici-darbe, deger-rank-basina: 0.05 } }
+      cevher-tasarrufu: { gorunen-ad: "Cevher Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: cevher-sezgisi, deger-rank-basina: 0.05 } }
       damar-tasarrufu: { gorunen-ad: "Damar Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: damar-kirici, deger-rank-basina: 0.05 } }
       damar-uzmanligi: { gorunen-ad: "Damar Uzmanlığı", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: damar-kirici, deger-rank-basina: 1 } }
   oduncu:
-    gorunen-ad: "Oduncu"
+    gorunen-ad: "Orman Bekçisi"
+    sinerji-beceri: odunculuk
+    bossbar-rengi: YESIL
     yetenekler:
       kesim-tasarrufu: { gorunen-ad: "Kesim Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }
       kesim-ritmi: { gorunen-ad: "Kesim Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }

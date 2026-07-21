@@ -5,6 +5,7 @@ import com.halilibrahim.halilibrahimmmo.api.classes.PlayerClassSnapshot;
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
 import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
+import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -33,17 +34,19 @@ public final class YamlClassService implements ClassService {
     private final ProfileService profiles;
     private final ClassRepository repository;
     private final AbilityService abilities;
+    private final SkillService skills;
     private final AtomicReference<ClassSettings> settings = new AtomicReference<>();
     private final ConcurrentHashMap<UUID, PlayerClassProgress> progressCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, String> selectedClasses = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, CompletableFuture<Void>> updateChains = new ConcurrentHashMap<>();
     private final NamespacedKey healthModifierKey;
 
-    public YamlClassService(JavaPlugin plugin, ProfileService profiles, ClassRepository repository, AbilityService abilities) {
+    public YamlClassService(JavaPlugin plugin, ProfileService profiles, ClassRepository repository, AbilityService abilities, SkillService skills) {
         this.plugin = plugin;
         this.profiles = profiles;
         this.repository = repository;
         this.abilities = abilities;
+        this.skills = skills;
         this.healthModifierKey = new NamespacedKey(plugin, "class-health");
     }
 
@@ -106,7 +109,7 @@ public final class YamlClassService implements ClassService {
                     .thenCompose(ignored -> repository.saveCooldown(playerId, readyAt))
                     .thenApply(ignored -> {
                         selectedClasses.put(playerId, classId);
-                        progressCache.put(playerId, new PlayerClassProgress(playerId, progress.talentRanks(), readyAt));
+                        progressCache.put(playerId, new PlayerClassProgress(playerId, progress.talentRanks(), readyAt, progress.classLevels()));
                         return new ClassSelectionResult(ClassSelectionResult.Status.SELECTED, classId, 0);
                     });
         }));
@@ -133,7 +136,7 @@ public final class YamlClassService implements ClassService {
             return repository.saveRank(playerId, classId, talentId, nextRank).thenApply(ignored -> {
                 Map<String, Map<String, Integer>> ranks = mutableCopy(progress.talentRanks());
                 ranks.computeIfAbsent(classId, ignoredId -> new LinkedHashMap<>()).put(talentId, nextRank);
-                PlayerClassProgress next = new PlayerClassProgress(playerId, freeze(ranks), progress.classChangeReadyAtMillis());
+                PlayerClassProgress next = new PlayerClassProgress(playerId, freeze(ranks), progress.classChangeReadyAtMillis(), progress.classLevels());
                 progressCache.put(playerId, next);
                 return new TalentSpendResult(TalentSpendResult.Status.SPENT, talentId, nextRank, available - 1);
             });
@@ -184,6 +187,27 @@ public final class YamlClassService implements ClassService {
 
     @Override public void evict(UUID playerId) { progressCache.remove(playerId); selectedClasses.remove(playerId); }
 
+    @Override
+    public CompletableFuture<ClassExperienceAwardResult> awardClassExperience(UUID playerId, String playerName, String classId, long amount) {
+        return serial(playerId, () -> load(playerId, playerName).thenCompose(progress -> {
+            ClassLevelProgress before = progress.levelProgress(classId);
+            ClassLevelProgress after = settings().classLevelCurve().award(before, amount);
+            Map<String, ClassLevelProgress> updatedLevels = new LinkedHashMap<>(progress.classLevels());
+            updatedLevels.put(classId, after);
+            PlayerClassProgress next = new PlayerClassProgress(playerId, progress.talentRanks(), progress.classChangeReadyAtMillis(), Map.copyOf(updatedLevels));
+            return repository.saveClassLevel(playerId, classId, after.level(), after.experience()).thenApply(ignored -> {
+                progressCache.put(playerId, next);
+                return new ClassExperienceAwardResult(after.level(), after.level() != before.level());
+            });
+        }));
+    }
+
+    @Override
+    public ClassLevelProgress classProgress(UUID playerId, String classId) {
+        PlayerClassProgress progress = progressCache.get(playerId);
+        return progress == null ? new ClassLevelProgress(classId, 1, 0L) : progress.levelProgress(classId);
+    }
+
     public int pointsFor(PlayerProfile profile) {
         return TalentPointBudget.pointsFor(profile.globalLevel(), profile.prestige(), settings().levelsPerTalentPoint());
     }
@@ -192,6 +216,16 @@ public final class YamlClassService implements ClassService {
         long cooldownDays = yaml.getLong("sinif-degistirme-bekleme-gun", -1);
         int levelsPerPoint = yaml.getInt("seviye-basina-yetenek-puani", 0);
         if (cooldownDays < 0 || levelsPerPoint < 1) throw new IllegalArgumentException("Invalid class point or cooldown settings.");
+        ConfigurationSection progressionSection = requiredSection(yaml, "sinif-ilerleme");
+        int classMaximumLevel = progressionSection.getInt("maksimum-seviye", 0);
+        double synergyBonus = progressionSection.getDouble("sinerji-xp-bonusu", 0);
+        if (synergyBonus < 0) throw new IllegalArgumentException("Class synergy XP bonus must not be negative.");
+        ConfigurationSection classLevels = requiredSection(progressionSection, "seviyeler");
+        Map<Integer, Long> classLevelRequirements = new LinkedHashMap<>();
+        for (String key : classLevels.getKeys(false)) {
+            classLevelRequirements.put(Integer.parseInt(key), classLevels.getLong(key));
+        }
+        ClassExperienceCurve classLevelCurve = new ClassExperienceCurve(classMaximumLevel, classLevelRequirements);
         ConfigurationSection classes = requiredSection(yaml, "siniflar");
         Map<String, PlayerClassDefinition> definitions = new LinkedHashMap<>();
         for (String rawId : classes.getKeys(false)) {
@@ -200,6 +234,11 @@ public final class YamlClassService implements ClassService {
             ConfigurationSection section = requiredSection(classes, rawId);
             String displayName = section.getString("gorunen-ad");
             if (displayName == null || displayName.isBlank()) throw new IllegalArgumentException("Class display name required: " + id);
+            String synergySkillId = section.getString("sinerji-beceri", "").toLowerCase(Locale.ROOT);
+            if (synergySkillId.isBlank() || !skills.settings().definitions().containsKey(synergySkillId)) {
+                throw new IllegalArgumentException("Class synergy skill must reference a known skill id: " + id);
+            }
+            ClassBarColor barColor = ClassBarColor.valueOf(section.getString("bossbar-rengi", "").toUpperCase(Locale.ROOT));
             ConfigurationSection talents = requiredSection(section, "yetenekler");
             Map<String, TalentNodeDefinition> nodes = new LinkedHashMap<>();
             for (String rawTalentId : talents.getKeys(false)) {
@@ -219,10 +258,10 @@ public final class YamlClassService implements ClassService {
                 nodes.put(talentId, new TalentNodeDefinition(talentId, nodeName, maximumRank, type, abilityId, value));
             }
             if (nodes.isEmpty()) throw new IllegalArgumentException("Class must define talents: " + id);
-            definitions.put(id, new PlayerClassDefinition(id, displayName, Map.copyOf(nodes)));
+            definitions.put(id, new PlayerClassDefinition(id, displayName, synergySkillId, barColor, Map.copyOf(nodes)));
         }
         if (definitions.isEmpty()) throw new IllegalArgumentException("classes.yml must define classes.");
-        return new ClassSettings(Math.multiplyExact(cooldownDays, 86_400_000L), levelsPerPoint, Map.copyOf(definitions));
+        return new ClassSettings(Math.multiplyExact(cooldownDays, 86_400_000L), levelsPerPoint, classLevelCurve, synergyBonus, Map.copyOf(definitions));
     }
 
     private PlayerClassSnapshot snapshot(PlayerProfile profile, PlayerClassProgress progress) {

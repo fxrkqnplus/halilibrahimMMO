@@ -1,7 +1,11 @@
 package com.halilibrahim.halilibrahimmmo;
 
+import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
+import com.halilibrahim.halilibrahimmmo.activation.ActivationRepository;
+import com.halilibrahim.halilibrahimmmo.activation.CachedActivationService;
 import com.halilibrahim.halilibrahimmmo.api.HalilIbrahimMMOAPI;
-import com.halilibrahim.halilibrahimmmo.command.RpgCommand;
+import com.halilibrahim.halilibrahimmmo.command.AdminCommand;
+import com.halilibrahim.halilibrahimmmo.command.MmoCommand;
 import com.halilibrahim.halilibrahimmmo.command.ProfileCommand;
 import com.halilibrahim.halilibrahimmmo.command.AbilityCommand;
 import com.halilibrahim.halilibrahimmmo.command.ClassCommand;
@@ -10,6 +14,7 @@ import com.halilibrahim.halilibrahimmmo.command.CosmeticCommand;
 import com.halilibrahim.halilibrahimmmo.command.JournalCommand;
 import com.halilibrahim.halilibrahimmmo.command.LeaderboardCommand;
 import com.halilibrahim.halilibrahimmmo.command.MenuCommand;
+import com.halilibrahim.halilibrahimmmo.command.PanelCommand;
 import com.halilibrahim.halilibrahimmmo.command.PrestigeCommand;
 import com.halilibrahim.halilibrahimmmo.command.QuestCommand;
 import com.halilibrahim.halilibrahimmmo.command.TitleCommand;
@@ -17,17 +22,16 @@ import com.halilibrahim.halilibrahimmmo.classes.ClassListener;
 import com.halilibrahim.halilibrahimmmo.classes.ClassModifiers;
 import com.halilibrahim.halilibrahimmmo.classes.ClassRepository;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
+import com.halilibrahim.halilibrahimmmo.classes.ClassSettings;
+import com.halilibrahim.halilibrahimmmo.classes.ClassSynergyBridge;
 import com.halilibrahim.halilibrahimmmo.classes.YamlClassService;
+import com.halilibrahim.halilibrahimmmo.abilities.AbilityActivationListener;
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.abilities.YamlAbilityService;
 import com.halilibrahim.halilibrahimmmo.collections.CachedCollectionService;
 import com.halilibrahim.halilibrahimmmo.collections.CollectionListener;
 import com.halilibrahim.halilibrahimmmo.collections.CollectionRepository;
 import com.halilibrahim.halilibrahimmmo.collections.CollectionService;
-import com.halilibrahim.halilibrahimmmo.command.SubCommand;
-import com.halilibrahim.halilibrahimmmo.command.subcommand.DebugToggleSubCommand;
-import com.halilibrahim.halilibrahimmmo.command.subcommand.ReloadSubCommand;
-import com.halilibrahim.halilibrahimmmo.command.subcommand.VersionSubCommand;
 import com.halilibrahim.halilibrahimmmo.config.ConfigService;
 import com.halilibrahim.halilibrahimmmo.config.YamlConfigService;
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
@@ -42,6 +46,8 @@ import com.halilibrahim.halilibrahimmmo.database.migration.PlayerProfileSchemaMi
 import com.halilibrahim.halilibrahimmmo.database.migration.QuestSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.SkillSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.ClassSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.ClassProgressSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.PlayerActivationSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.TitleCosmeticSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CachedCosmeticService;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticListener;
@@ -75,6 +81,9 @@ import com.halilibrahim.halilibrahimmmo.quests.CachedQuestService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestListener;
 import com.halilibrahim.halilibrahimmmo.quests.QuestRepository;
 import com.halilibrahim.halilibrahimmmo.quests.QuestService;
+import com.halilibrahim.halilibrahimmmo.scoreboard.ScoreboardSidebarService;
+import com.halilibrahim.halilibrahimmmo.scoreboard.SidebarListener;
+import com.halilibrahim.halilibrahimmmo.scoreboard.SidebarService;
 import com.halilibrahim.halilibrahimmmo.skills.CachedSkillService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillListener;
 import com.halilibrahim.halilibrahimmmo.skills.SkillRepository;
@@ -102,7 +111,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * in dependency order, registering them with the {@link ServiceContainer}, running
  * pending database migrations exactly once, publishing the public
  * {@link HalilIbrahimMMOAPI} through Bukkit's {@code ServicesManager}, and
- * registering the {@code /rpg} command. No gameplay or business logic lives here -
+ * registering the {@code /haliladmin} command. No gameplay or business logic lives here -
  * that is the entire point of splitting every system into its own service class.</p>
  */
 public final class HalilIbrahimMMOPlugin extends JavaPlugin {
@@ -133,26 +142,52 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             ProfileService profileService = startService(
                     new CachedProfileService(new ProfileRepository(databaseService)), ProfileService.class
             );
+            ActivationService activationService = startService(
+                    new CachedActivationService(new ActivationRepository(databaseService)), ActivationService.class
+            );
             ProgressionService progressionService = startService(
                     new YamlProgressionService(this, profileService), ProgressionService.class
             );
-            SkillService skillService = startService(
-                    new CachedSkillService(this, new SkillRepository(databaseService)), SkillService.class
+            FeedbackService feedbackService = startService(
+                    new BossBarFeedbackService(this, messageService), FeedbackService.class
             );
             AtomicReference<ClassService> classServiceReference = new AtomicReference<>();
+            SkillService skillService = startService(
+                    new CachedSkillService(this, new SkillRepository(databaseService),
+                            (playerId, skillId) -> {
+                                ClassService cs = classServiceReference.get();
+                                if (cs == null) {
+                                    return 1.0;
+                                }
+                                return profileService.cached(playerId).map(profile -> {
+                                    String classId = profile.selectedClass();
+                                    if (classId.isEmpty()) {
+                                        return 1.0;
+                                    }
+                                    ClassSettings classSettings = cs.settings();
+                                    var definition = classSettings.definitions().get(classId);
+                                    return definition != null && definition.synergySkillId().equals(skillId)
+                                            ? 1.0 + classSettings.synergyExperienceBonus()
+                                            : 1.0;
+                                }).orElse(1.0);
+                            },
+                            new ClassSynergyBridge(this, profileService, classServiceReference, feedbackService)
+                    ), SkillService.class
+            );
             AbilityService abilityService = startService(
-                    new YamlAbilityService(this, skillService, messageService, playerId -> {
+                    new YamlAbilityService(this, skillService, messageService, profileService, feedbackService, playerId -> {
                         ClassService classService = classServiceReference.get();
                         return classService == null ? ClassModifiers.none() : classService.modifiers(playerId);
                     }), AbilityService.class
             );
             ClassService classService = startService(
-                    new YamlClassService(this, profileService, new ClassRepository(databaseService), abilityService), ClassService.class
+                    new YamlClassService(this, profileService, new ClassRepository(databaseService), abilityService, skillService), ClassService.class
             );
             classServiceReference.set(classService);
             EnergyService energyService = startService(
                     new PlayerEnergyService(this, messageService, abilityService::settings,
-                            player -> classService.modifiers(player.getUniqueId()).maximumEnergyBonus()), EnergyService.class
+                            player -> classService.modifiers(player.getUniqueId()).maximumEnergyBonus(),
+                            player -> abilityService.activeStatus(player.getUniqueId()).isPresent()), EnergyService.class
             );
             PrestigeService prestigeService = startService(
                     new YamlPrestigeService(this, profileService, progressionService), PrestigeService.class
@@ -176,24 +211,27 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             CosmeticService cosmeticService = startService(
                     new CachedCosmeticService(this, new CosmeticRepository(databaseService), unlockContextLoader), CosmeticService.class
             );
-            FeedbackService feedbackService = startService(
-                    new BossBarFeedbackService(this, messageService), FeedbackService.class
+            SidebarService sidebarService = startService(
+                    new ScoreboardSidebarService(this, messageService, profileService, classService, progressionService,
+                            activationService, skillService, abilityService, questService, titleService), SidebarService.class
             );
             BlockBreakRateLimiter breakRateLimiter = new BlockBreakRateLimiter();
             this.progressionListener = new ProgressionListener(
-                    this, profileService, progressionService, abilityService, titleService, cosmeticService, feedbackService, messageService, breakRateLimiter
+                    this, profileService, progressionService, abilityService, titleService, cosmeticService, feedbackService, messageService, breakRateLimiter, sidebarService, activationService
             );
             getServer().getPluginManager().registerEvents(progressionListener, this);
-            getServer().getPluginManager().registerEvents(new SkillListener(skillService, abilityService, energyService, breakRateLimiter), this);
-            getServer().getPluginManager().registerEvents(new ClassListener(this, classService), this);
+            getServer().getPluginManager().registerEvents(new SkillListener(this, skillService, abilityService, energyService, feedbackService, profileService, activationService, breakRateLimiter), this);
+            getServer().getPluginManager().registerEvents(new ClassListener(this, classService, abilityService, energyService), this);
+            getServer().getPluginManager().registerEvents(new AbilityActivationListener(abilityService, energyService), this);
+            getServer().getPluginManager().registerEvents(new SidebarListener(this, sidebarService, profileService, classService, activationService), this);
             getServer().getPluginManager().registerEvents(
-                    new QuestListener(this, questService, abilityService, progressionService, titleService, cosmeticService, feedbackService, messageService, journalService, breakRateLimiter), this
+                    new QuestListener(this, questService, abilityService, progressionService, titleService, cosmeticService, feedbackService, messageService, journalService, breakRateLimiter, sidebarService, activationService), this
             );
             getServer().getPluginManager().registerEvents(
-                    new CollectionListener(this, collectionService, progressionService, titleService, cosmeticService, feedbackService, messageService, journalService), this
+                    new CollectionListener(this, collectionService, progressionService, titleService, cosmeticService, feedbackService, messageService, journalService, sidebarService, activationService), this
             );
             getServer().getPluginManager().registerEvents(new TitleListener(titleService), this);
-            getServer().getPluginManager().registerEvents(new TitleChatListener(titleService, messageService), this);
+            getServer().getPluginManager().registerEvents(new TitleChatListener(titleService), this);
             getServer().getPluginManager().registerEvents(new CosmeticListener(this, cosmeticService), this);
             getServer().getPluginManager().registerEvents(new GuiListener(), this);
 
@@ -214,12 +252,12 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             GuiServices guiServices = new GuiServices(
                     this, messageService, profileService, progressionService, skillService, abilityService, energyService,
                     classService, prestigeService, questService, collectionService, journalService, leaderboardService,
-                    titleService, cosmeticService, feedbackService
+                    titleService, cosmeticService, feedbackService, sidebarService, configService, api
             );
 
-            registerCommands(configService, messageService, profileService, progressionService, abilityService, classService,
+            registerCommands(messageService, profileService, progressionService, abilityService, classService,
                     energyService, prestigeService, questService, collectionService, journalService, leaderboardService, skillService,
-                    titleService, cosmeticService, feedbackService, guiServices);
+                    titleService, cosmeticService, feedbackService, sidebarService, guiServices, activationService);
 
             pluginLogger.info("HalilIbrahimMMO " + getPluginMeta().getVersion() + " basariyla etkinlestirildi.");
         } catch (Exception exception) {
@@ -270,7 +308,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
     }
 
     private void runPendingMigrations(DatabaseService databaseService) {
-        List<Migration> migrations = List.of(new CoreSchemaMigration(), new PlayerProfileSchemaMigration(), new SkillSchemaMigration(), new ClassSchemaMigration(), new QuestSchemaMigration(), new TitleCosmeticSchemaMigration());
+        List<Migration> migrations = List.of(new CoreSchemaMigration(), new PlayerProfileSchemaMigration(), new SkillSchemaMigration(), new ClassSchemaMigration(), new QuestSchemaMigration(), new TitleCosmeticSchemaMigration(), new ClassProgressSchemaMigration(), new PlayerActivationSchemaMigration());
         MigrationRunner migrationRunner = new MigrationRunner(databaseService, pluginLogger, migrations);
 
         try {
@@ -284,7 +322,6 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
     }
 
     private void registerCommands(
-            ConfigService configService,
             MessageService messageService,
             ProfileService profileService,
             ProgressionService progressionService,
@@ -300,24 +337,15 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             TitleService titleService,
             CosmeticService cosmeticService,
             FeedbackService feedbackService,
-            GuiServices guiServices
+            SidebarService sidebarService,
+            GuiServices guiServices,
+            ActivationService activationService
     ) {
-        List<SubCommand> subCommands = List.of(
-                new ReloadSubCommand(api, messageService),
-                new VersionSubCommand(api, messageService),
-                new DebugToggleSubCommand(configService, messageService)
-        );
-
-        registerCommand(
-                "rpg",
-                "HalilIbrahimMMO yonetici ve teshis komutu",
-                List.of(),
-                new RpgCommand(subCommands, messageService)
-        );
+        registerCommand("haliladmin", "HalilIbrahimMMO yonetici paneli", List.of(), new AdminCommand(guiServices));
         registerCommand("profil", "MMO profilinizi gosterir", List.of(), new ProfileCommand(this, profileService, messageService, classService));
-        registerCommand("kabiliyet", "Bir MMO kabiliyetini kullanir", List.of(), new AbilityCommand(abilityService, energyService, messageService));
-        registerCommand("sinif", "MMO sinifinizi ve yetenek agacinizi yonetir", List.of(), new ClassCommand(this, classService, profileService, energyService, messageService));
-        registerCommand("prestij", "Maksimum seviyede prestij yapar", List.of(), new PrestigeCommand(this, prestigeService, profileService, progressionService, titleService, cosmeticService, feedbackService, messageService));
+        registerCommand("kabiliyet", "Bir MMO kabiliyetini kullanir veya kabiliyet menusunu acar", List.of(), new AbilityCommand(abilityService, energyService, messageService, guiServices));
+        registerCommand("sinif", "MMO sinif menusunu acar", List.of(), new ClassCommand(guiServices));
+        registerCommand("prestij", "Maksimum seviyede prestij yapar", List.of(), new PrestigeCommand(this, prestigeService, profileService, progressionService, titleService, cosmeticService, feedbackService, messageService, sidebarService));
         registerCommand("gorev", "Gorevlerinizi ve ilerlemenizi gosterir", List.of(), new QuestCommand(this, questService, messageService));
         registerCommand("koleksiyon", "Koleksiyonlarinizi ve ilerlemenizi gosterir", List.of(), new CollectionCommand(this, collectionService, messageService));
         registerCommand("gunluk", "Macera gunluginuzu gosterir", List.of(), new JournalCommand(this, journalService, messageService));
@@ -325,6 +353,8 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
         registerCommand("unvan", "Unvanlarinizi gosterir ve kusanir", List.of(), new TitleCommand(this, titleService, messageService));
         registerCommand("kozmetik", "Kozmetiklerinizi gosterir ve kusanir", List.of(), new CosmeticCommand(this, cosmeticService, messageService));
         registerCommand("menu", "Ana MMO menusunu acar", List.of(), new MenuCommand(guiServices));
+        registerCommand("panel", "Sag taraftaki bilgi ekranini acar/kapatir", List.of(), new PanelCommand(sidebarService, messageService));
+        registerCommand("mmo", "MMO sistemini aktiflestirir", List.of(), new MmoCommand(this, activationService, guiServices, messageService));
     }
 
     private boolean isDebugModeCurrentlyEnabled() {

@@ -1,11 +1,15 @@
 package com.halilibrahim.halilibrahimmmo.feedback;
 
 import com.halilibrahim.halilibrahimmmo.core.PluginService;
+import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
+import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.entity.Player;
 
+import java.util.Map;
+
 /**
- * Universal (not equip-based) bossbar/on-screen-title polish for the four
- * moments every player already gets a chat message for. Every method is
+ * Universal (not equip-based) bossbar/on-screen-title polish for every XP
+ * award, plus the level-up/quest/collection/prestige moments. Every method is
  * synchronous - callers must already be on the player's own region
  * scheduler, exactly like the {@code messages.send(...)} calls they sit
  * alongside.
@@ -14,6 +18,32 @@ public interface FeedbackService extends PluginService {
 
     FeedbackSettings settings();
 
+    /**
+     * Shows or updates one per-player, per-{@code category} XP progress bossbar
+     * ({@code category} e.g. {@code "global"}/{@code "skill"}/{@code "class"} -
+     * distinct categories render as separate, simultaneous bars, e.g. a
+     * synergy-skill kill shows both the skill bar and the class bar at once,
+     * each its own {@code color}). {@code template} is one of the
+     * {@code FEEDBACK_XP_*_BOSSBAR} {@link MessageKey}s, already carrying
+     * whatever source-specific placeholders it needs (e.g. {@code beceri} for
+     * the skill variant, {@code kaynak} for the specific block/mob) in
+     * {@code placeholders} - {@code kazanilan}/{@code mevcut}/{@code gereken}
+     * are added automatically. Repeated calls for the same player/category
+     * update that bar in place and reset its auto-hide timer, rather than
+     * stacking a new bar.
+     *
+     * @param currentExperience the player's XP already earned within their current level.
+     * @param requiredExperience the XP required to complete that level (0 at the level cap).
+     */
+    void showExperienceProgress(
+            Player player, MessageKey template, Map<String, String> placeholders,
+            long currentExperience, long requiredExperience, String category, BossBar.Color color
+    );
+
+    /** Clears a player's in-memory XP progress bar state (called on quit). */
+    void clearExperienceProgress(Player player);
+
+    /** Sends the invoking player a chat-only, non-broadcast level-up message. */
     void celebrateLevelUp(Player player, int newLevel);
 
     void celebrateQuestCompleted(Player player, String questDisplayName);
@@ -21,4 +51,22 @@ public interface FeedbackService extends PluginService {
     void celebrateCollectionCompleted(Player player, String collectionDisplayName);
 
     void celebratePrestige(Player player, int newPrestige);
+
+    /** Bossbar+title/subtitle fade, fired when a class-exclusive ability's skill-level threshold is crossed. */
+    void celebrateAbilityUnlocked(Player player, String abilityDisplayName);
+
+    /** Sends the invoking player a chat-only, non-broadcast class level-up message. */
+    void celebrateClassLevelUp(Player player, String classDisplayName, int newLevel);
+
+    /** Sends the invoking player a chat-only, non-broadcast skill level-up message. */
+    void celebrateSkillLevelUp(Player player, String skillDisplayName, int newLevel);
+
+    /** Plays the class-selection sound cue only - the confirmation chat message is sent separately by the caller. */
+    void celebrateClassSelected(Player player);
+
+    /** Plays the ability-activation-start sound cue only. */
+    void celebrateAbilityActivated(Player player);
+
+    /** Plays the ability-activation-end sound cue only. */
+    void celebrateAbilityEnded(Player player);
 }

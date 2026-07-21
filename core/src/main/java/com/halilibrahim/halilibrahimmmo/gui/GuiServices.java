@@ -1,8 +1,10 @@
 package com.halilibrahim.halilibrahimmmo.gui;
 
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
+import com.halilibrahim.halilibrahimmmo.api.HalilIbrahimMMOAPI;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.collections.CollectionService;
+import com.halilibrahim.halilibrahimmmo.config.ConfigService;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
@@ -13,6 +15,7 @@ import com.halilibrahim.halilibrahimmmo.prestige.PrestigeService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestService;
+import com.halilibrahim.halilibrahimmmo.scoreboard.SidebarService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import com.halilibrahim.halilibrahimmmo.titles.TitleService;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -38,6 +41,9 @@ public record GuiServices(
         LeaderboardService leaderboards,
         TitleService titles,
         CosmeticService cosmetics,
-        FeedbackService feedback
+        FeedbackService feedback,
+        SidebarService sidebar,
+        ConfigService config,
+        HalilIbrahimMMOAPI api
 ) {
 }

@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 /**
  * Thin wrapper around the SLF4J logger Paper provides through
  * {@code JavaPlugin#getSLF4JLogger()}, adding a debug-mode gate driven by
- * {@code config.yml}/{@code /rpg hataayiklama}.
+ * {@code config.yml}/{@code /haliladmin}'s debug toggle.
  *
  * <p>{@link #debug(Supplier)} accepts a lazily-evaluated message so expensive
  * diagnostic string building (formatting collections, joining SQL, ...) never

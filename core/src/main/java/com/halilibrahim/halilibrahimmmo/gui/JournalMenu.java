@@ -70,7 +70,7 @@ public final class JournalMenu implements GuiView {
     @Override
     public void handleClick(Player player, int slot, ItemStack clicked, ClickType click) {
         if (slot == BACK_SLOT) {
-            GuiManager.open(player, new AnaMenu(services));
+            GuiManager.open(player, new TasksMenu(services));
         }
     }
 }
