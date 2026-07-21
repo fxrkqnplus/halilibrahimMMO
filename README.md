@@ -1,148 +1,208 @@
 # HalilIbrahimMMO
 
-Original MMORPG progression plugin for Paper 26.2 (Minecraft 26.2), built for a Turkish
-Minecraft community. No economy — progression is driven entirely by levels, skill XP,
-prestige, quests, collections and achievements.
+Türk Minecraft topluluğu için geliştirilmiş, özgün bir MMORPG ilerleme eklentisi
+(Paper 26.2 / Minecraft 26.2). Ekonomi yoktur — tüm ilerleme seviye, beceri XP'si,
+prestij, görevler, koleksiyonlar ve başarılar üzerinden işler.
 
-This is a multi-phase commercial-grade build. See [`PROJECT_MEMORY.md`](PROJECT_MEMORY.md)
-for the full architectural record; it is kept up to date after every phase and must be
-read before starting new work on this project.
+Bu, çok fazlı, ticari kalitede bir yapıdır. Tüm mimari kararların kaydı için
+[`PROJECT_MEMORY.md`](PROJECT_MEMORY.md) dosyasına bakın; her fazdan sonra güncel
+tutulur ve bu proje üzerinde yeni bir işe başlamadan önce okunmalıdır.
 
-## Requirements
+## Gereksinimler
 
-- Java 26 (Oracle JDK or OpenJDK)
-- Paper 26.2 (Build 60 or newer)
-- Gradle Wrapper (bundled, no local Gradle install required)
+- Java 26 (Oracle JDK veya OpenJDK)
+- Paper 26.2 (Build 60 veya üzeri)
+- Gradle Wrapper (repo ile birlikte gelir, ayrıca yerel Gradle kurulumu gerekmez)
 
-## Project layout
+## Proje yapısı
 
-- [`api/`](api) — Public developer API. Pure interfaces + a `ServicesManager`-based
-  accessor. Other plugins depend on this module only.
-- [`core/`](core) — Full plugin implementation (`HalilIbrahimMMOPlugin` and every
-  internal system). Depends on `api`.
+- [`api/`](api) — Herkese açık geliştirici API'si. Saf arayüzler + bir
+  `ServicesManager` tabanlı erişimci. Diğer eklentiler yalnızca bu modüle bağımlı olur.
+- [`core/`](core) — Eklentinin tam uygulaması (`HalilIbrahimMMOPlugin` ve her bir
+  iç sistem). `api` modülüne bağımlıdır.
 
-## Building
+## Derleme
 
 ```powershell
 ./gradlew build
 ```
 
-The shaded, ready-to-deploy jar is produced at `core/build/libs/HalilIbrahimMMO-<version>-all.jar`.
+Dağıtıma hazır, birleştirilmiş (shaded) jar dosyası
+`core/build/libs/HalilIbrahimMMO-<surum>-all.jar` yolunda oluşturulur.
 
-## Running a local test server
+## Yerel test sunucusu çalıştırma
 
 ```powershell
 ./gradlew runServer
 ```
 
-This downloads a Paper 26.2 test server into `run/` and boots it with the plugin installed.
+Bu komut `run/` klasörüne bir Paper 26.2 test sunucusu indirir ve eklenti kurulu
+olarak başlatır.
 
-## Database
+## Veritabanı
 
-SQLite is the zero-config default. MySQL, MariaDB and PostgreSQL are supported via
-`config.yml` (`veritabani.tur`). All JDBC drivers and HikariCP are resolved at runtime
-through Paper's `PluginLoader` mechanism — nothing is shaded into the plugin jar.
+SQLite, sıfır yapılandırma gerektiren varsayılan seçenektir. MySQL, MariaDB ve
+PostgreSQL, `config.yml` (`veritabani.tur`) üzerinden desteklenir. Tüm JDBC
+sürücüleri ve HikariCP, Paper'ın `PluginLoader` mekanizması üzerinden çalışma
+zamanında çözümlenir — eklenti jar'ına hiçbir şey gömülmez (shade edilmez).
 
-## Progression foundation
+## İlerleme temeli
 
-The current build includes asynchronous UUID-based player profiles, statistics and
-global progression. `progression.yml` contains the configurable level cap, explicit
-XP table and rewards for block breaking, mob kills and playtime. Players can view
-their saved progression with `/profil`. Use Java 26 for every Gradle command; the
-workspace's installed JDK is `C:\Program Files\Java\jdk-26.0.1`.
+Mevcut yapı, UUID tabanlı asenkron oyuncu profillerini, istatistikleri ve genel
+ilerlemeyi içerir. `progression.yml` dosyasında yapılandırılabilir seviye
+tavanı, açık XP tablosu ve blok kırma/yaratık öldürme/oynama süresi ödülleri
+bulunur. Oyuncular kayıtlı ilerlemelerini `/profil` ile görüntüleyebilir.
+Genel seviye, oyun içinde "Güç" olarak adlandırılır. Her Gradle komutu için
+Java 26 kullanın; çalışma alanında kurulu JDK `C:\Program Files\Java\jdk-26.0.1`
+konumundadır.
 
-## Skills and abilities
+## Beceriler ve kabiliyetler
 
-Four independently levelled skills are now included: `kazicilik`, `odunculuk`,
-`madencilik` and `avcilik`. Their shared explicit level curve and valid gameplay
-sources are configurable in `skills.yml`. `abilities.yml` configures the shared,
-non-persistent energy pool and the four bounded starter abilities. Players use
-`/kabiliyet <id>` to activate an ability; block abilities apply to the next valid
-block within 15 seconds, while Avcı Odağı is a short PvE-only damage boost.
+Dört bağımsız olarak seviyelenen beceri bulunur: `kazicilik`, `odunculuk`,
+`madencilik` ve `avcilik`. Paylaşılan açık seviye eğrileri `skills.yml`
+dosyasında yapılandırılır; her beceri artık kırılan bloğun veya öldürülen
+yaratığın **nadirliğine göre** farklı miktarda XP verir (ör. toprak çok az,
+elmas/kadim kalıntı çok daha fazla; zombi az, warden/ejderha çok daha fazla).
+`abilities.yml`, paylaşılan kalıcı olmayan enerji havuzunu ve sınıfa özel
+kabiliyetleri yapılandırır.
 
-The developer API exposes immutable skill definitions and asynchronous read-only
-player skill lookups. It does not allow external plugins to award skill XP or
-trigger abilities.
+Kabiliyetler iki şekilde etkinleştirilebilir: doğrudan `/kabiliyet <id>` ile,
+ya da kabiliyet menüsünden birini seçip uygun alete (kazma/balta/kürek/kılıç,
+kabiliyete göre değişir) sağ tıklayarak — seçili alet, kabiliyetin süresi
+boyunca parlar ve eylem çubuğunda hangi kabiliyetin etkin olduğu ile ne kadar
+süre (ya da tek seferlik kabiliyetlerde bekleme penceresi) kaldığı gösterilir.
+Bazı kabiliyetler tamamen süreye dayalıdır (ör. Gece Görüşü); Amansız
+Savaşçı'nın Avcı Odağı gibi savaşa dayalı bazı kabiliyetler ise her isabetli
+vuruşta enerji tüketir ve enerji biterse ya da en fazla birkaç dakika sonra
+kendiliğinden sona erer — ve yalnızca yaratıklara (PvE) karşı geçerlidir,
+PvP'de hiçbir etkisi yoktur. Henüz açılmamış kabiliyetler menüde kilitli
+olarak gösterilir, detayları açılana kadar gizli kalır.
 
-## Classes and prestige
+Geliştirici API'si, değişmez beceri tanımlarını ve asenkron salt okunur oyuncu
+beceri sorgularını sunar. Harici eklentilerin beceri XP'si vermesine veya
+kabiliyet tetiklemesine izin vermez.
 
-Players can choose Savaşçı, Avcı, Madenci or Oduncu with `/sinif sec <id>`, inspect
-their selected tree with `/sinif agac`, and spend shared talent points with
-`/sinif ac <yetenek>`. A class change has a configurable seven-day, database-backed
-cooldown. At global level 100, `/prestij onayla` resets only global level/XP and
-opens another four-point talent cycle; the default maximum is 10 prestiges.
+## Profil paneli (sidebar)
 
-## Quests, collections and the adventure journal
+Ekranın sağında kalıcı bir bilgi paneli; oyuncu adını (varsa kuşanılan unvan
+kendi rengiyle önde), Güç seviyesi/XP'sini, prestiji, seçili sınıfı ve o
+sınıfın kendi seviyesini, açık kabiliyetlerin adlarını (seçili olan yeşil,
+diğerleri kırmızı), her günlük görevi ayrı ayrı ilerleme ve XP ödülüyle, ve
+haftalık görev özetini gösterir. `/panel` mevcut oturum için paneli açar/
+kapatır — tercih kaydedilmez, her katılışta veya sunucu yeniden başladığında
+panel varsayılan olarak görünür duruma döner.
 
-`/gorev` lists every permanent, daily and weekly quest along with your progress;
-quests advance automatically as you break the right blocks or kill the right
-mobs, and daily/weekly quests reset on their own once their period ends.
-`/koleksiyon` lists your collections, and `/koleksiyon <id>` shows exactly which
-items you still need to pick up at least once. `/gunluk` shows your ten most
-recent quest completions and collection milestones. Completing a quest,
-obtaining a collection entry, and completing a whole collection all award
-global XP through the same progression system as everything else.
+## Sınıflar ve prestij
 
-## Leaderboards
+`/sinif` kabiliyet menüsünü açar; oyuncular Define Avcısı, Amansız Savaşçı,
+Mağara Adamı veya Orman Bekçisi sınıflarından birini seçebilir, yetenek
+ağaçlarını inceleyebilir ve paylaşılan yetenek puanlarını harcayabilir —
+tamamı menü üzerinden, artık sohbet komutu argümanı yoktur. Her sınıfın kendi
+"sinerji becerisi" vardır (ör. Amansız Savaşçı ↔ avcılık) ve o beceriden
+kazanılan XP'nin bir kısmı otomatik olarak sınıfın kendi seviye izine de
+yansır. Sınıf değişikliğinin yapılandırılabilir, veritabanı destekli yedi
+günlük bir bekleme süresi vardır. Genel seviye 100'e ulaşıldığında
+`/prestij onayla` yalnızca genel seviye/XP'yi sıfırlar ve dört puanlık yeni
+bir yetenek döngüsü açar; varsayılan maksimum prestij sayısı 10'dur.
+
+## Görevler, koleksiyonlar ve macera günlüğü
+
+`/gorev` her kalıcı, günlük ve haftalık görevi ilerlemenizle birlikte listeler;
+görevler doğru blokları kırdıkça veya doğru yaratıkları öldürdükçe otomatik
+ilerler, günlük/haftalık görevler kendi periyotları bittiğinde kendiliğinden
+sıfırlanır. `/koleksiyon` koleksiyonlarınızı listeler, `/koleksiyon <id>` ise
+henüz en az bir kez toplamadığınız ögeleri gösterir. `/gunluk` son on görev
+tamamlama ve koleksiyon kilometre taşınızı gösterir. Bir görevi tamamlamak,
+bir koleksiyon ögesi edinmek ve bir koleksiyonun tamamını tamamlamak, her şey
+gibi aynı ilerleme sistemi üzerinden genel XP kazandırır.
+
+## Liderlik tabloları
 
 `/liderlik seviye`, `/liderlik prestij`, `/liderlik gorev`, `/liderlik
-koleksiyon` and `/liderlik <yetenek-id>` show the top-ranked players for
-global level/XP, prestige, quest completions, collection entries obtained and
-each configured skill. The same boards are browsable from `/menu`'s
-Leaderboards icon. Results are cached for a short, configurable interval
-(`leaderboards.yml`) rather than querying the database on every open.
+koleksiyon` ve `/liderlik <yetenek-id>`; genel seviye/XP, prestij, tamamlanan
+görev sayısı, edinilen koleksiyon ögesi sayısı ve her yapılandırılmış beceri
+için en üst sıradaki oyuncuları gösterir. Aynı tablolara `/menu`'nün Topluluk
+kategorisinden de göz atılabilir. Sonuçlar her açılışta veritabanını sorgulamak
+yerine kısa, yapılandırılabilir bir süre için önbelleğe alınır
+(`leaderboards.yml`).
 
-## Titles and cosmetics
+## Unvanlar ve kozmetikler
 
-`titles.yml` and `cosmetics.yml` each configure a catalogue of unlockable
-entries, one milestone condition per entry (reach a level/prestige, complete
-a specific quest/collection, or reach a skill level). `/unvan` and
-`/kozmetik` list what you've unlocked and let you equip one
-(`/unvan sec <id>`, `/kozmetik sec <id>`); the same catalogues are also
-browsable from `/menu`. An equipped title shows before your name in chat.
-An equipped cosmetic plays a short particle effect when you join and every
-time you level up.
+`titles.yml` ve `cosmetics.yml`, her biri tek bir kazanma koşuluna sahip
+(seviye/prestije ulaşma, belirli bir görevi/koleksiyonu tamamlama veya bir
+beceri seviyesine ulaşma) açılabilir öge katalogları tanımlar. `/unvan` ve
+`/kozmetik` neyi açtığınızı listeler ve birini kuşanmanızı sağlar
+(`/unvan sec <id>`, `/kozmetik sec <id>`); aynı kataloglara `/menu`'den de
+göz atılabilir. Kuşanılan bir unvan, sohbette adınızın önünde **kendi
+yapılandırılmış rengi ve kalınlığıyla** görünür (her unvanın kendine özgü bir
+sohbet stili vardır). Kuşanılan bir kozmetik, katıldığınızda ve her seviye
+atladığınızda kısa bir parçacık efekti oynatır.
 
-## Visual feedback
+## Görsel geri bildirim
 
-Level-up, quest completion, whole-collection completion and prestige each
-show a short boss bar and on-screen title to every player, independent of
-any equipped cosmetic (`feedback.yml` controls how long they stay visible).
+Her XP kazanımı, kaynağını belirten kısa bir cübuk (boss bar) gösterir (blok
+kırma, yaratık öldürme, oynama süresi, görevler, koleksiyonlar, beceriler);
+beceri cübuğu ayrıca hangi cevherin/yaratığın XP verdiğini de parantez
+içinde gösterir. Seçili sınıfınızın sinerji becerisinden XP kazandığınızda,
+beceri cübuğuyla **aynı anda**, her sınıfa özgü kendi renginde ayrı bir sınıf
+XP cübuğu de görünür. Seviye atlamanın kendisi kişisel bir sohbet mesajıdır,
+asla yayın veya ekran efekti değildir. Görev tamamlama, koleksiyon tamamlama
+ve prestij hâlâ her oyuncuya kısa bir cübuk ve ekran başlığı gösterir, kuşanılan
+kozmetikten bağımsız olarak (`feedback.yml` her şeyin ne kadar süre görünür
+kalacağını denetler).
 
-## Inventory menu
+## Envanter menüsü
 
-`/menu` opens a central hub with icons for leaderboards, your profile, skills,
-abilities, class/talents, prestige, quests, collections, adventure journal,
-titles and cosmetics. Every menu is a view over the same systems the text
-commands use - selecting a class or spending a talent point in the GUI does
-exactly what `/sinif sec`/`/sinif ac` does, and abilities activate the same
-way `/kabiliyet` does.
+`/menu`, dört kategoriye ayrılmış bir merkez menü açar: **İlerleme** (profil,
+beceriler, sınıf/yetenekler, prestij), **Kabiliyetlerim**, **Görevler**
+(görevler, koleksiyonlar, macera günlüğü) ve **Topluluk** (liderlik tabloları,
+unvanlar, kozmetikler). Her menü, ilgili metin komutlarının kullandığı aynı
+sistemler üzerinden çalışır — GUI'de bir sınıf seçmek veya yetenek puanı
+harcamak, tam olarak sınıf/kabiliyet menülerinin arka planda çağırdığı
+servislerle aynı sonucu verir. Kabiliyetler menüsü bir kabiliyeti seçer
+(simgesini parlatarak) ama doğrudan etkinleştirmez; etkinleştirme hâlâ
+oyun içinde uygun alete sağ tıklayarak ya da `/kabiliyet <id>` ile olur.
+Henüz açılmamış kabiliyetler menüde kilitli gösterilir.
 
-## PlaceholderAPI and LuckPerms (optional)
+## Yönetici paneli
 
-Both are genuinely optional soft dependencies — the server boots identically
-whether either, both, or neither is installed. When **PlaceholderAPI** is
-present, this plugin registers a `halilibrahimmmo` expansion exposing
-`%halilibrahimmmo_level%`, `_xp`, `_xp_to_next_level`, `_prestige`, `_class`,
-`_title`, `_cosmetic`, and `_skill_<id>_level`/`_skill_<id>_xp` per configured
-skill. When **LuckPerms** is present, this plugin registers a read-only
-context calculator feeding `halilibrahimmmo:level`, `halilibrahimmmo:prestige`
-and `halilibrahimmmo:class` into LuckPerms, so server admins can write their
-own permission rules conditioned on progression — this plugin never writes to
-LuckPerms itself.
+`/haliladmin` (`halilibrahimmmo.admin` izni gerektirir, varsayılan op) tamamen
+GUI üzerinden çalışan bir yönetici paneli açar — artık sohbet argümanlı bir
+yönetici komutu yoktur. Sunduğu işlemler: `config.yml`/`messages.yml`/tüm
+oyun verisi dosyalarını yeniden yükleme, mevcut oturum için ayrıntılı hata
+ayıklama kaydını açıp kapatma, çalışan eklenti/Paper sürümünü görüntüleme ve
+çevrimiçi oyuncuları gezip herhangi birinin salt okunur profil/sınıf/beceri
+özetini görüntüleme. Buradan bir oyuncunun XP'sini, seviyesini, sınıfını veya
+beceri değerlerini elle ayarlamanın bilinçli olarak hiçbir yolu yoktur — tüm
+ilerleme yalnızca normal oynanış üzerinden gerçekleşir.
 
-## Testing
+## PlaceholderAPI ve LuckPerms (isteğe bağlı)
 
-`./gradlew test` runs the fast unit/config suite (no external services
-needed, including a migration-execution check against a real SQLite file).
-`./gradlew integrationTest` additionally runs every shipped database
-migration and a representative sample of repository read/write round-trips
-against real MySQL, MariaDB and PostgreSQL containers via Testcontainers —
-this requires a running Docker daemon and is intentionally excluded from
-`build`/`test`/`check`, so it must be run explicitly and separately.
+İkisi de gerçek anlamda isteğe bağlı yumuşak bağımlılıktır — sunucu, ikisinden
+biri, her ikisi ya da hiçbiri kurulu olmasa da aynı şekilde açılır.
+**PlaceholderAPI** kuruluyken bu eklenti, `%halilibrahimmmo_level%`, `_xp`,
+`_xp_to_next_level`, `_prestige`, `_class`, `_title`, `_cosmetic` ve her
+yapılandırılmış beceri için `_skill_<id>_level`/`_skill_<id>_xp` yer
+tutucularını sunan bir `halilibrahimmmo` eklentisi (expansion) kaydeder.
+**LuckPerms** kuruluyken bu eklenti, `halilibrahimmmo:level`,
+`halilibrahimmmo:prestige` ve `halilibrahimmmo:class` değerlerini LuckPerms'e
+besleyen salt okunur bir bağlam hesaplayıcı (context calculator) kaydeder;
+böylece sunucu yöneticileri ilerlemeye bağlı kendi izin kurallarını
+yazabilir — bu eklenti LuckPerms'e asla kendisi yazmaz.
 
-## Language policy
+## Test
 
-Everything a player or server admin sees in-game (messages, GUIs, commands, BossBars,
-titles, config comments) is Turkish. Java source code — packages, classes, methods,
-variables — stays in English.
+`./gradlew test`, hızlı birim/yapılandırma test paketini çalıştırır (harici
+servis gerektirmez; gerçek bir SQLite dosyasına karşı bir göç/migration
+çalıştırma kontrolü dahildir). `./gradlew integrationTest` ayrıca
+Testcontainers üzerinden gerçek MySQL, MariaDB ve PostgreSQL konteynerlerine
+karşı her gönderilen veritabanı göçünü ve temsili bir repository okuma/yazma
+örneklem setini çalıştırır — bu, çalışan bir Docker daemon'u gerektirir ve
+bilinçli olarak `build`/`test`/`check`'ten hariç tutulmuştur; bu yüzden ayrı
+ve açıkça çalıştırılmalıdır.
+
+## Dil politikası
+
+Bir oyuncunun veya sunucu yöneticisinin oyun içinde gördüğü her şey (mesajlar,
+GUI'ler, komutlar, BossBar'lar, unvanlar, config yorumları) Türkçedir. Java
+kaynak kodu — paketler, sınıflar, metodlar, değişkenler — İngilizce kalır.
