@@ -2,7 +2,8 @@ package com.halilibrahim.halilibrahimmmo.quests;
 
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
-import com.halilibrahim.halilibrahimmmo.api.progression.ProgressionCause;
+import com.halilibrahim.halilibrahimmmo.classes.ClassExperienceAwardResult;
+import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticDefinition;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticService;
 import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
@@ -10,12 +11,11 @@ import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.journal.JournalService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
-import com.halilibrahim.halilibrahimmmo.progression.ProgressionAwardResult;
-import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
+import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.scoreboard.SidebarService;
 import com.halilibrahim.halilibrahimmmo.titles.TitleDefinition;
 import com.halilibrahim.halilibrahimmmo.titles.TitleService;
-import net.kyori.adventure.bossbar.BossBar;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -34,7 +34,8 @@ public final class QuestListener implements Listener {
     private final JavaPlugin plugin;
     private final QuestService quests;
     private final AbilityService abilities;
-    private final ProgressionService progression;
+    private final ProfileService profiles;
+    private final ClassService classes;
     private final TitleService titles;
     private final CosmeticService cosmetics;
     private final FeedbackService feedback;
@@ -48,7 +49,8 @@ public final class QuestListener implements Listener {
             JavaPlugin plugin,
             QuestService quests,
             AbilityService abilities,
-            ProgressionService progression,
+            ProfileService profiles,
+            ClassService classes,
             TitleService titles,
             CosmeticService cosmetics,
             FeedbackService feedback,
@@ -61,7 +63,8 @@ public final class QuestListener implements Listener {
         this.plugin = plugin;
         this.quests = quests;
         this.abilities = abilities;
-        this.progression = progression;
+        this.profiles = profiles;
+        this.classes = classes;
         this.titles = titles;
         this.cosmetics = cosmetics;
         this.feedback = feedback;
@@ -86,7 +89,7 @@ public final class QuestListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        if (!activation.cached(player.getUniqueId()) || abilities.isSecondaryBreak(event)) {
+        if (!activation.cached(player.getUniqueId()) || abilities.isSecondaryBreak(event) || !isGameplayGameMode(player)) {
             return;
         }
         if (!breakRateLimiter.allow(player.getUniqueId())) {
@@ -99,11 +102,17 @@ public final class QuestListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onEntityDeath(EntityDeathEvent event) {
         Player killer = event.getEntity().getKiller();
-        if (killer == null || event.getEntity() instanceof Player || !activation.cached(killer.getUniqueId())) {
+        if (killer == null || event.getEntity() instanceof Player || !activation.cached(killer.getUniqueId())
+                || !isGameplayGameMode(killer)) {
             return;
         }
         quests.awardMob(killer.getUniqueId(), event.getEntity().getType())
                 .thenAccept(completed -> notify(killer, completed));
+    }
+
+    /** Creative/Spectator players never progress quests - no risk, no reward, matches skill/class XP gating. */
+    private boolean isGameplayGameMode(Player player) {
+        return player.getGameMode() != GameMode.CREATIVE && player.getGameMode() != GameMode.SPECTATOR;
     }
 
     private void notify(Player player, List<QuestProgress> completed) {
@@ -116,27 +125,53 @@ public final class QuestListener implements Listener {
                 ));
                 feedback.celebrateQuestCompleted(player, definition.displayName());
             }, null);
-            progression.award(player.getUniqueId(), player.getName(), definition.rewardExperience(), ProgressionCause.QUEST)
-                    .thenAccept(result -> showExperienceProgress(player, definition.rewardExperience(), result));
+            if (definition.type() == QuestType.DAILY || definition.type() == QuestType.WEEKLY) {
+                messages.broadcast(MessageKey.QUEST_COMPLETION_BROADCAST, Map.of("oyuncu", player.getName(), "gorev", definition.displayName()));
+            }
+            String classId = profiles.cached(player.getUniqueId()).map(profile -> profile.selectedClass()).orElse("");
+            if (!classId.isEmpty()) {
+                classes.awardClassExperience(player.getUniqueId(), player.getName(), classId, definition.rewardExperience())
+                        .thenAccept(result -> showExperienceProgress(player, classId, definition.rewardExperience(), result));
+            }
             journal.recordQuestCompleted(player.getUniqueId(), definition.id(), definition.displayName(), definition.rewardExperience());
             titles.evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyTitles(player, unlocked));
             cosmetics.evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyCosmetics(player, unlocked));
         });
     }
 
-    private void showExperienceProgress(Player player, long amount, ProgressionAwardResult result) {
+    private void showExperienceProgress(Player player, String classId, long amount, ClassExperienceAwardResult result) {
         if (amount <= 0) {
             return;
         }
-        int level = result.snapshot().globalLevel();
-        long requiredForLevel = level >= progression.settings().curve().maximumLevel()
+        var classDefinition = classes.settings().definitions().get(classId);
+        if (classDefinition == null) {
+            return;
+        }
+        var classProgress = classes.classProgress(player.getUniqueId(), classId);
+        long requiredForLevel = classProgress.level() >= classes.settings().classLevelCurve().maximumLevel()
                 ? 0L
-                : progression.settings().curve().requiredForCurrentLevel(level);
+                : classes.settings().classLevelCurve().requiredForCurrentLevel(classProgress.level());
         player.getScheduler().run(plugin, task -> {
-            feedback.showExperienceProgress(player, MessageKey.FEEDBACK_XP_QUEST_BOSSBAR, Map.of("kazanilan", Long.toString(amount)),
-                    result.snapshot().globalExperience(), requiredForLevel, "global", BossBar.Color.GREEN);
+            feedback.showExperienceProgress(player, MessageKey.FEEDBACK_XP_CLASS_BOSSBAR, Map.of(
+                    "sinif", classDefinition.displayName(), "kazanilan", Long.toString(amount)
+            ), classProgress.experience(), requiredForLevel, "class", classDefinition.barColor().color());
+            if (result.leveledUp()) {
+                feedback.celebrateClassLevelUp(player, classDefinition.displayName(), result.newLevel());
+                notifyUnlockedAbilities(player, classId, result.previousLevel(), result.newLevel());
+            }
             sidebar.refresh(player);
         }, null);
+    }
+
+    private void notifyUnlockedAbilities(Player player, String classId, int previousLevel, int newLevel) {
+        for (var ability : abilities.definitions()) {
+            if (!ability.classId().equals(classId)) {
+                continue;
+            }
+            if (ability.requiredLevel() > previousLevel && ability.requiredLevel() <= newLevel) {
+                feedback.celebrateAbilityUnlocked(player, ability.displayName());
+            }
+        }
     }
 
     private void notifyTitles(Player player, List<TitleDefinition> unlocked) {

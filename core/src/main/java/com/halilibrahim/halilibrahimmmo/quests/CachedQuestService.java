@@ -8,8 +8,11 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -18,6 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -32,6 +36,7 @@ public final class CachedQuestService implements QuestService {
     private final AtomicReference<QuestSettings> settings = new AtomicReference<>();
     private final ConcurrentHashMap<QuestKey, QuestProgress> cache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<QuestKey, CompletableFuture<Optional<QuestProgress>>> updateChains = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<AssignmentKey, QuestAssignment> assignmentCache = new ConcurrentHashMap<>();
 
     public CachedQuestService(JavaPlugin plugin, QuestRepository repository) {
         this.plugin = plugin;
@@ -47,6 +52,7 @@ public final class CachedQuestService implements QuestService {
     public void disable() {
         cache.clear();
         updateChains.clear();
+        assignmentCache.clear();
     }
 
     @Override
@@ -87,15 +93,68 @@ public final class CachedQuestService implements QuestService {
 
     @Override
     public CompletableFuture<Map<String, QuestProgress>> loadAll(UUID playerId) {
-        return repository.findAll(playerId).thenApply(found -> {
-            Map<String, QuestProgress> merged = new LinkedHashMap<>();
-            for (QuestDefinition definition : settings().definitions().values()) {
-                QuestProgress progress = found.getOrDefault(definition.id(), freshProgress(playerId, definition));
-                cache.put(new QuestKey(playerId, definition.id()), progress);
-                merged.put(definition.id(), progress);
+        return ensureAssignment(playerId, QuestType.DAILY).thenCompose(daily ->
+                ensureAssignment(playerId, QuestType.WEEKLY).thenCompose(weekly ->
+                        repository.findAll(playerId).thenApply(found -> {
+                            Map<String, QuestProgress> merged = new LinkedHashMap<>();
+                            for (QuestDefinition definition : settings().definitions().values()) {
+                                if (!isRelevant(definition, daily, weekly)) {
+                                    continue;
+                                }
+                                QuestProgress progress = found.getOrDefault(definition.id(), freshProgress(playerId, definition));
+                                cache.put(new QuestKey(playerId, definition.id()), progress);
+                                merged.put(definition.id(), progress);
+                            }
+                            return Map.copyOf(merged);
+                        })));
+    }
+
+    /** {@code true} for every PERMANENT quest, or a DAILY/WEEKLY quest currently assigned to this player. */
+    private boolean isRelevant(QuestDefinition definition, QuestAssignment dailyAssignment, QuestAssignment weeklyAssignment) {
+        return switch (definition.type()) {
+            case PERMANENT -> true;
+            case DAILY -> dailyAssignment.questIds().contains(definition.id());
+            case WEEKLY -> weeklyAssignment.questIds().contains(definition.id());
+        };
+    }
+
+    /**
+     * Loads (assigning fresh, randomly-picked quest ids from the pool if
+     * missing or expired) this player's current DAILY/WEEKLY assignment.
+     * Never called for PERMANENT - those are never pooled.
+     */
+    private CompletableFuture<QuestAssignment> ensureAssignment(UUID playerId, QuestType type) {
+        AssignmentKey key = new AssignmentKey(playerId, type);
+        long now = System.currentTimeMillis();
+        QuestAssignment cached = assignmentCache.get(key);
+        if (cached != null && !QuestResetRules.isExpired(type, cached.periodEndMillis(), now)) {
+            return CompletableFuture.completedFuture(cached);
+        }
+        return repository.findAssignment(playerId, type).thenCompose(found -> {
+            if (found.isPresent() && !QuestResetRules.isExpired(type, found.get().periodEndMillis(), now)) {
+                assignmentCache.put(key, found.get());
+                return CompletableFuture.completedFuture(found.get());
             }
-            return Map.copyOf(merged);
+            QuestAssignment fresh = randomAssignment(type, now);
+            return repository.saveAssignment(playerId, type, fresh).thenApply(ignored -> {
+                assignmentCache.put(key, fresh);
+                return fresh;
+            });
         });
+    }
+
+    private QuestAssignment randomAssignment(QuestType type, long now) {
+        List<String> pool = new ArrayList<>(settings().definitions().values().stream()
+                .filter(definition -> definition.type() == type)
+                .map(QuestDefinition::id)
+                .toList());
+        Collections.shuffle(pool, ThreadLocalRandom.current());
+        int count = Math.min(pool.size(), settings().assignedCount(type));
+        Set<String> chosen = new LinkedHashSet<>(pool.subList(0, count));
+        return new QuestAssignment(Set.copyOf(chosen), QuestResetRules.nextPeriodEnd(type, now));
+    }
+
+    private record AssignmentKey(UUID playerId, QuestType type) {
     }
 
     @Override
@@ -123,21 +182,31 @@ public final class CachedQuestService implements QuestService {
     @Override
     public void evict(UUID playerId) {
         cache.keySet().removeIf(key -> key.playerId().equals(playerId));
+        assignmentCache.keySet().removeIf(key -> key.playerId().equals(playerId));
     }
 
     private CompletableFuture<List<QuestProgress>> awardMatching(UUID playerId, QuestObjectiveType objectiveType, Predicate<QuestDefinition> matches) {
-        List<QuestDefinition> matching = settings().definitions().values().stream()
+        List<QuestDefinition> candidates = settings().definitions().values().stream()
                 .filter(definition -> definition.objectiveType() == objectiveType)
                 .filter(matches)
                 .toList();
-        if (matching.isEmpty()) {
+        if (candidates.isEmpty()) {
             return CompletableFuture.completedFuture(List.of());
         }
-        List<CompletableFuture<Optional<QuestProgress>>> futures = matching.stream()
-                .map(definition -> incrementSerially(playerId, definition))
-                .toList();
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .thenApply(ignored -> futures.stream().map(CompletableFuture::join).flatMap(Optional::stream).toList());
+        return ensureAssignment(playerId, QuestType.DAILY).thenCompose(daily ->
+                ensureAssignment(playerId, QuestType.WEEKLY).thenCompose(weekly -> {
+                    List<QuestDefinition> matching = candidates.stream()
+                            .filter(definition -> isRelevant(definition, daily, weekly))
+                            .toList();
+                    if (matching.isEmpty()) {
+                        return CompletableFuture.completedFuture(List.<QuestProgress>of());
+                    }
+                    List<CompletableFuture<Optional<QuestProgress>>> futures = matching.stream()
+                            .map(definition -> incrementSerially(playerId, definition))
+                            .toList();
+                    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                            .thenApply(ignored -> futures.stream().map(CompletableFuture::join).flatMap(Optional::stream).toList());
+                }));
     }
 
     private CompletableFuture<Optional<QuestProgress>> incrementSerially(UUID playerId, QuestDefinition definition) {
@@ -179,6 +248,12 @@ public final class CachedQuestService implements QuestService {
         }
         return repository.findAll(playerId).thenApply(found -> {
             for (QuestDefinition other : settings().definitions().values()) {
+                // Only ever resurrect an unassigned DAILY/WEEKLY pool quest into the
+                // cache for the one specifically requested here - backfilling the
+                // whole pool would defeat loadAll(...)'s assignment filtering.
+                if (other.type() != QuestType.PERMANENT && !other.id().equals(definition.id())) {
+                    continue;
+                }
                 cache.putIfAbsent(new QuestKey(playerId, other.id()), found.getOrDefault(other.id(), freshProgress(playerId, other)));
             }
             return cache.computeIfAbsent(key, ignored -> freshProgress(playerId, definition));
@@ -225,7 +300,12 @@ public final class CachedQuestService implements QuestService {
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("quests.yml must define at least one quest.");
         }
-        return new QuestSettings(Map.copyOf(definitions));
+        int dailyAssignedCount = yaml.getInt("gunluk-atanan-sayisi", 3);
+        int weeklyAssignedCount = yaml.getInt("haftalik-atanan-sayisi", 2);
+        if (dailyAssignedCount < 1 || weeklyAssignedCount < 1) {
+            throw new IllegalArgumentException("Assigned daily/weekly quest counts must be positive.");
+        }
+        return new QuestSettings(Map.copyOf(definitions), dailyAssignedCount, weeklyAssignedCount);
     }
 
     private ConfigurationSection requiredSection(ConfigurationSection parent, String path) {

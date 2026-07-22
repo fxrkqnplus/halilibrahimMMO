@@ -30,6 +30,13 @@ public interface MessageService extends PluginService {
     void send(Audience audience, MessageKey key);
 
     /**
+     * Sends a rendered, prefixed message to every currently online player -
+     * for server-wide announcements (e.g. a prestige milestone), never used
+     * for routine per-player feedback.
+     */
+    void broadcast(MessageKey key, Map<String, String> placeholders);
+
+    /**
      * Prepends the configured {@link MessageKey#PREFIX} to an already-rendered message.
      */
     Component prefixed(Component message);

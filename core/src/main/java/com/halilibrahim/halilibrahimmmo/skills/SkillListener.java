@@ -1,14 +1,15 @@
 package com.halilibrahim.halilibrahimmmo.skills;
 
-import com.halilibrahim.halilibrahimmmo.abilities.AbilityDefinition;
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
 import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
-import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
+import com.halilibrahim.halilibrahimmmo.locale.MessageService;
+import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import net.kyori.adventure.bossbar.BossBar;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -29,28 +30,32 @@ public final class SkillListener implements Listener {
     private final AbilityService abilities;
     private final EnergyService energy;
     private final FeedbackService feedback;
-    private final ProfileService profiles;
     private final ActivationService activation;
     private final BlockBreakRateLimiter breakRateLimiter;
+    private final ProgressionService progression;
+    private final MessageService messages;
 
     public SkillListener(
             JavaPlugin plugin, SkillService skills, AbilityService abilities, EnergyService energy,
-            FeedbackService feedback, ProfileService profiles, ActivationService activation, BlockBreakRateLimiter breakRateLimiter
+            FeedbackService feedback, ActivationService activation, BlockBreakRateLimiter breakRateLimiter,
+            ProgressionService progression, MessageService messages
     ) {
         this.plugin = plugin;
         this.skills = skills;
         this.abilities = abilities;
         this.energy = energy;
         this.feedback = feedback;
-        this.profiles = profiles;
         this.activation = activation;
         this.breakRateLimiter = breakRateLimiter;
+        this.progression = progression;
+        this.messages = messages;
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        skills.loadAll(player.getUniqueId());
+        skills.loadAll(player.getUniqueId())
+                .thenAccept(ignored -> player.getScheduler().run(plugin, task -> skills.applyMilestoneEffects(player), null));
         energy.initialize(player);
     }
 
@@ -66,7 +71,7 @@ public final class SkillListener implements Listener {
         abilities.handleBlockBreak(event);
         Player player = event.getPlayer();
         if (activation.cached(player.getUniqueId()) && !abilities.isSecondaryBreak(event)
-                && breakRateLimiter.allow(player.getUniqueId())) {
+                && isGameplayGameMode(player) && breakRateLimiter.allow(player.getUniqueId())) {
             skills.awardBlock(player.getUniqueId(), player.getName(), event.getBlock().getType())
                     .thenAccept(result -> handleAward(player, result));
         }
@@ -75,10 +80,16 @@ public final class SkillListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onEntityDeath(EntityDeathEvent event) {
         Player killer = event.getEntity().getKiller();
-        if (killer != null && !(event.getEntity() instanceof Player) && activation.cached(killer.getUniqueId())) {
+        if (killer != null && !(event.getEntity() instanceof Player) && activation.cached(killer.getUniqueId())
+                && isGameplayGameMode(killer)) {
             skills.awardMob(killer.getUniqueId(), killer.getName(), event.getEntity().getType())
                     .thenAccept(result -> handleAward(killer, result));
         }
+    }
+
+    /** Creative/Spectator players never earn skill, class or Güç experience - no risk, no reward. */
+    private boolean isGameplayGameMode(Player player) {
+        return player.getGameMode() != GameMode.CREATIVE && player.getGameMode() != GameMode.SPECTATOR;
     }
 
     private void handleAward(Player player, Optional<SkillAwardResult> result) {
@@ -102,23 +113,36 @@ public final class SkillListener implements Listener {
             );
             if (award.leveledUp()) {
                 feedback.celebrateSkillLevelUp(player, definition.displayName(), progress.level());
-                notifyUnlockedAbilities(player, progress.skillId(), award.previousLevel(), progress.level());
+                announceGucMilestones(player, progress.level() - award.previousLevel());
+                skills.applyMilestoneEffects(player);
             }
         }, null);
     }
 
-    private void notifyUnlockedAbilities(Player player, String skillId, int previousLevel, int newLevel) {
-        String selectedClass = profiles.cached(player.getUniqueId()).map(profile -> profile.selectedClass()).orElse("");
-        if (selectedClass.isEmpty()) {
+    /**
+     * Güç only ever changes as a byproduct of a skill level-up (it has no
+     * independent XP source, see {@code ProgressionService}) - {@code delta}
+     * is exactly how much the leveled skill's level just increased, so
+     * {@code previousGuc} can be derived from the already-updated
+     * {@code newGuc} without a second read.
+     */
+    private void announceGucMilestones(Player player, int delta) {
+        if (delta <= 0) {
             return;
         }
-        for (AbilityDefinition ability : abilities.definitions()) {
-            if (!ability.skillId().equals(skillId) || !ability.classId().equals(selectedClass)) {
-                continue;
-            }
-            if (ability.requiredLevel() > previousLevel && ability.requiredLevel() <= newLevel) {
-                feedback.celebrateAbilityUnlocked(player, ability.displayName());
+        int newGuc = progression.cachedGlobalLevel(player.getUniqueId());
+        int previousGuc = newGuc - delta;
+        if (crossedMultipleOf(previousGuc, newGuc, 10)) {
+            feedback.celebrateGucMilestone(player, newGuc);
+        }
+        for (int milestone : new int[] {25, 50, 75, 100}) {
+            if (previousGuc < milestone && newGuc >= milestone) {
+                messages.broadcast(MessageKey.GUC_BROADCAST, Map.of("oyuncu", player.getName(), "guc", Integer.toString(newGuc)));
             }
         }
+    }
+
+    private boolean crossedMultipleOf(int previousValue, int newValue, int step) {
+        return newValue / step > previousValue / step;
     }
 }

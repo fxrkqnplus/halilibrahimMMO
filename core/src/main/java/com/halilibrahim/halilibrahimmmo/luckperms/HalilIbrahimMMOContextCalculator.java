@@ -11,6 +11,8 @@ import org.bukkit.entity.Player;
  * (e.g. class or prestige) without this plugin ever writing to LuckPerms
  * itself. Reads exclusively through {@link HalilIbrahimMMOAPI}'s synchronous
  * cached-snapshot methods - LuckPerms recalculates contexts synchronously.
+ * {@code halilibrahimmmo:level} is Güç (the sum of every configured skill's
+ * level, Phase 11), not an independent XP-tracked level.
  */
 public final class HalilIbrahimMMOContextCalculator implements ContextCalculator<Player> {
 

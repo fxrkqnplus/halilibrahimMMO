@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.gui;
 
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityDefinition;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
+import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingTask;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -46,9 +47,26 @@ public final class AbilitiesMenu implements GuiView {
     @Override
     public void populate(Player player, Inventory inventory) {
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
+        completeOnboarding(player);
         services.profiles().load(player.getUniqueId(), player.getName())
                 .thenAccept(profile -> player.getScheduler().run(services.plugin(), task ->
                         render(inventory, player, profile.selectedClass()), null));
+    }
+
+    private void completeOnboarding(Player player) {
+        services.onboarding().complete(player.getUniqueId(), player.getName(), OnboardingTask.KABILIYETLERI_INCELEME).thenAccept(newlyCompleted -> {
+            if (!newlyCompleted) {
+                return;
+            }
+            String classId = services.profiles().cached(player.getUniqueId()).map(profile -> profile.selectedClass()).orElse("");
+            if (!classId.isEmpty()) {
+                services.classes().awardClassExperience(player.getUniqueId(), player.getName(), classId, OnboardingTask.KABILIYETLERI_INCELEME.rewardExperience());
+            }
+            player.getScheduler().run(services.plugin(), task -> {
+                services.messages().send(player, MessageKey.ONBOARDING_ABILITIES_COMPLETED, Map.of("xp", Long.toString(OnboardingTask.KABILIYETLERI_INCELEME.rewardExperience())));
+                services.sidebar().refresh(player);
+            }, null);
+        });
     }
 
     private void render(Inventory inventory, Player player, String selectedClassId) {
@@ -65,9 +83,8 @@ public final class AbilitiesMenu implements GuiView {
                 }).toList();
         int slot = FIRST_SLOT;
         for (AbilityDefinition definition : definitions) {
-            int skillLevel = services.skills().cached(player.getUniqueId(), definition.skillId())
-                    .map(progress -> progress.level()).orElse(1);
-            if (skillLevel < definition.requiredLevel()) {
+            int classLevel = services.classes().classProgress(player.getUniqueId(), definition.classId()).level();
+            if (classLevel < definition.requiredLevel()) {
                 inventory.setItem(slot++, GuiItems.of(
                         Material.BARRIER,
                         services.messages().render(MessageKey.GUI_ABILITY_LOCKED_ITEM, Map.of("kabiliyet", definition.displayName())),

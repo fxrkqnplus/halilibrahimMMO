@@ -51,18 +51,17 @@ public final class AdminPlayerInfoMenu implements GuiView {
                 .map(definition -> definition.displayName() + " " + skillLevelOf(definition))
                 .reduce((left, right) -> left + ", " + right)
                 .orElse("-");
+        String guc = Integer.toString(services.progression().cachedGlobalLevel(target.getUniqueId()));
         Component lore = profile.selectedClass().isEmpty()
                 ? services.messages().render(MessageKey.ADMIN_PLAYER_INFO_NO_CLASS, Map.of(
                         "oyuncu", profile.playerName(),
-                        "seviye", Integer.toString(profile.globalLevel()),
-                        "xp", Long.toString(profile.globalExperience()),
+                        "seviye", guc,
                         "prestij", Integer.toString(profile.prestige()),
                         "beceriler", skillList
                 ))
                 : services.messages().render(MessageKey.ADMIN_PLAYER_INFO, Map.of(
                         "oyuncu", profile.playerName(),
-                        "seviye", Integer.toString(profile.globalLevel()),
-                        "xp", Long.toString(profile.globalExperience()),
+                        "seviye", guc,
                         "prestij", Integer.toString(profile.prestige()),
                         "sinif", services.classes().displayName(profile.selectedClass()),
                         "beceriler", skillList

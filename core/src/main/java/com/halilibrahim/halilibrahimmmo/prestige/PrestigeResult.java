@@ -1,6 +1,8 @@
 package com.halilibrahim.halilibrahimmmo.prestige;
 
-/** Outcome of a confirmed prestige attempt. */
-public record PrestigeResult(Status status, int prestige) {
-    public enum Status { PRESTIGED, LEVEL_REQUIRED, MAXIMUM_REACHED }
+import java.util.Optional;
+
+/** Outcome of a confirmed prestige attempt. {@code report} is empty for {@code PRESTIGED}/{@code MAXIMUM_REACHED}. */
+public record PrestigeResult(Status status, int prestige, Optional<PrestigeEligibilityReport> report) {
+    public enum Status { PRESTIGED, REQUIREMENTS_NOT_MET, MAXIMUM_REACHED }
 }

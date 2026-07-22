@@ -1,19 +1,19 @@
 package com.halilibrahim.halilibrahimmmo.collections;
 
 import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
-import com.halilibrahim.halilibrahimmmo.api.progression.ProgressionCause;
+import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
+import com.halilibrahim.halilibrahimmmo.classes.ClassExperienceAwardResult;
+import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticDefinition;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticService;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.journal.JournalService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
-import com.halilibrahim.halilibrahimmmo.progression.ProgressionAwardResult;
-import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
+import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.scoreboard.SidebarService;
 import com.halilibrahim.halilibrahimmmo.titles.TitleDefinition;
 import com.halilibrahim.halilibrahimmmo.titles.TitleService;
-import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -30,7 +30,9 @@ public final class CollectionListener implements Listener {
 
     private final JavaPlugin plugin;
     private final CollectionService collections;
-    private final ProgressionService progression;
+    private final ProfileService profiles;
+    private final ClassService classes;
+    private final AbilityService abilities;
     private final TitleService titles;
     private final CosmeticService cosmetics;
     private final FeedbackService feedback;
@@ -42,7 +44,9 @@ public final class CollectionListener implements Listener {
     public CollectionListener(
             JavaPlugin plugin,
             CollectionService collections,
-            ProgressionService progression,
+            ProfileService profiles,
+            ClassService classes,
+            AbilityService abilities,
             TitleService titles,
             CosmeticService cosmetics,
             FeedbackService feedback,
@@ -53,7 +57,9 @@ public final class CollectionListener implements Listener {
     ) {
         this.plugin = plugin;
         this.collections = collections;
-        this.progression = progression;
+        this.profiles = profiles;
+        this.classes = classes;
+        this.abilities = abilities;
         this.titles = titles;
         this.cosmetics = cosmetics;
         this.feedback = feedback;
@@ -83,6 +89,7 @@ public final class CollectionListener implements Listener {
     }
 
     private void notify(Player player, List<CollectionEntryAward> awards) {
+        String classId = profiles.cached(player.getUniqueId()).map(profile -> profile.selectedClass()).orElse("");
         awards.forEach(award -> {
             player.getScheduler().run(plugin, task -> {
                 messages.send(player, MessageKey.COLLECTION_ENTRY_OBTAINED, Map.of(
@@ -98,12 +105,16 @@ public final class CollectionListener implements Listener {
                     feedback.celebrateCollectionCompleted(player, award.collectionDisplayName());
                 }
             }, null);
-            progression.award(player.getUniqueId(), player.getName(), award.entryExperience(), ProgressionCause.COLLECTION)
-                    .thenAccept(result -> showExperienceProgress(player, award.entryExperience(), result));
+            if (!classId.isEmpty()) {
+                classes.awardClassExperience(player.getUniqueId(), player.getName(), classId, award.entryExperience())
+                        .thenAccept(result -> showExperienceProgress(player, classId, award.entryExperience(), result));
+            }
             journal.recordCollectionEntryObtained(player.getUniqueId(), award.entryId(), award.entryDisplayName(), award.collectionDisplayName(), award.entryExperience());
             if (award.collectionCompleted()) {
-                progression.award(player.getUniqueId(), player.getName(), award.completionExperience(), ProgressionCause.COLLECTION)
-                        .thenAccept(result -> showExperienceProgress(player, award.completionExperience(), result));
+                if (!classId.isEmpty()) {
+                    classes.awardClassExperience(player.getUniqueId(), player.getName(), classId, award.completionExperience())
+                            .thenAccept(result -> showExperienceProgress(player, classId, award.completionExperience(), result));
+                }
                 journal.recordCollectionCompleted(player.getUniqueId(), award.collectionId(), award.collectionDisplayName(), award.completionExperience());
                 titles.evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyTitles(player, unlocked));
                 cosmetics.evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyCosmetics(player, unlocked));
@@ -111,19 +122,39 @@ public final class CollectionListener implements Listener {
         });
     }
 
-    private void showExperienceProgress(Player player, long amount, ProgressionAwardResult result) {
+    private void showExperienceProgress(Player player, String classId, long amount, ClassExperienceAwardResult result) {
         if (amount <= 0) {
             return;
         }
-        int level = result.snapshot().globalLevel();
-        long requiredForLevel = level >= progression.settings().curve().maximumLevel()
+        var classDefinition = classes.settings().definitions().get(classId);
+        if (classDefinition == null) {
+            return;
+        }
+        var classProgress = classes.classProgress(player.getUniqueId(), classId);
+        long requiredForLevel = classProgress.level() >= classes.settings().classLevelCurve().maximumLevel()
                 ? 0L
-                : progression.settings().curve().requiredForCurrentLevel(level);
+                : classes.settings().classLevelCurve().requiredForCurrentLevel(classProgress.level());
         player.getScheduler().run(plugin, task -> {
-            feedback.showExperienceProgress(player, MessageKey.FEEDBACK_XP_COLLECTION_BOSSBAR, Map.of("kazanilan", Long.toString(amount)),
-                    result.snapshot().globalExperience(), requiredForLevel, "global", BossBar.Color.GREEN);
+            feedback.showExperienceProgress(player, MessageKey.FEEDBACK_XP_CLASS_BOSSBAR, Map.of(
+                    "sinif", classDefinition.displayName(), "kazanilan", Long.toString(amount)
+            ), classProgress.experience(), requiredForLevel, "class", classDefinition.barColor().color());
+            if (result.leveledUp()) {
+                feedback.celebrateClassLevelUp(player, classDefinition.displayName(), result.newLevel());
+                notifyUnlockedAbilities(player, classId, result.previousLevel(), result.newLevel());
+            }
             sidebar.refresh(player);
         }, null);
+    }
+
+    private void notifyUnlockedAbilities(Player player, String classId, int previousLevel, int newLevel) {
+        for (var ability : abilities.definitions()) {
+            if (!ability.classId().equals(classId)) {
+                continue;
+            }
+            if (ability.requiredLevel() > previousLevel && ability.requiredLevel() <= newLevel) {
+                feedback.celebrateAbilityUnlocked(player, ability.displayName());
+            }
+        }
     }
 
     private void notifyTitles(Player player, List<TitleDefinition> unlocked) {

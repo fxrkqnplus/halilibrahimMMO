@@ -2,10 +2,17 @@ package com.halilibrahim.halilibrahimmmo.skills;
 
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.io.File;
 import java.util.Collection;
@@ -13,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +39,7 @@ public final class CachedSkillService implements SkillService {
     private final AtomicReference<SkillSettings> settings = new AtomicReference<>();
     private final ConcurrentHashMap<SkillKey, SkillProgress> cache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<SkillKey, CompletableFuture<SkillProgress>> updateChains = new ConcurrentHashMap<>();
+    private final NamespacedKey milestoneHealthKey;
 
     public CachedSkillService(
             JavaPlugin plugin, SkillRepository repository,
@@ -40,6 +49,7 @@ public final class CachedSkillService implements SkillService {
         this.repository = repository;
         this.classSynergyMultiplier = classSynergyMultiplier;
         this.experienceListener = experienceListener;
+        this.milestoneHealthKey = new NamespacedKey(plugin, "skill-milestone-health");
     }
 
     @Override
@@ -124,6 +134,120 @@ public final class CachedSkillService implements SkillService {
     }
 
     @Override
+    public CompletableFuture<Void> resetAll(UUID playerId) {
+        CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
+        for (SkillDefinition definition : settings().definitions().values()) {
+            SkillKey key = new SkillKey(playerId, definition.id());
+            chain = chain.thenCompose(ignored -> setProgress(key, new SkillProgress(key.playerId(), key.skillId(), 1, 0)));
+        }
+        return chain;
+    }
+
+    @Override
+    public CompletableFuture<SkillAdminAwardResult> adminSetLevel(UUID playerId, String skillId, int level) {
+        int clamped = Math.max(1, Math.min(level, settings().curve().maximumLevel()));
+        SkillKey key = new SkillKey(playerId, skillId);
+        int previousLevel = cached(playerId, skillId).map(progress -> progress.level()).orElse(1);
+        return setProgress(key, new SkillProgress(playerId, skillId, clamped, 0))
+                .thenApply(ignored -> new SkillAdminAwardResult(previousLevel, clamped, clamped != previousLevel));
+    }
+
+    @Override
+    public CompletableFuture<SkillAdminAwardResult> adminAddExperience(UUID playerId, String skillId, long amount) {
+        SkillKey key = new SkillKey(playerId, skillId);
+        synchronized (updateChains) {
+            CompletableFuture<SkillProgress> previous = updateChains.getOrDefault(key, CompletableFuture.completedFuture(null));
+            CompletableFuture<SkillProgress> base = previous.handle((ignored, throwable) -> null)
+                    .thenCompose(ignored -> load(playerId, skillId));
+            CompletableFuture<SkillAdminAwardResult> resultFuture = base.thenCompose(progress -> {
+                int previousLevel = progress.level();
+                SkillProgress awarded = settings().curve().award(progress, amount);
+                return repository.save(awarded).thenApply(saved -> {
+                    cache.put(key, awarded);
+                    return new SkillAdminAwardResult(previousLevel, awarded.level(), awarded.level() != previousLevel);
+                });
+            });
+            CompletableFuture<SkillProgress> tail = resultFuture.thenApply(ignored -> cache.get(key));
+            updateChains.put(key, tail);
+            tail.whenComplete((ignored, throwable) -> updateChains.remove(key, tail));
+            return resultFuture;
+        }
+    }
+
+    @Override
+    public SkillMilestoneModifiers milestoneModifiers(UUID playerId) {
+        double maxHealthBonus = 0;
+        double pveDamageBonus = 0;
+        int maxEnergyBonus = 0;
+        int hasteAmplifier = -1;
+        int speedAmplifier = -1;
+        for (SkillDefinition definition : settings().definitions().values()) {
+            int level = cached(playerId, definition.id()).map(progress -> progress.level()).orElse(1);
+            for (Map.Entry<Integer, SkillMilestoneEffect> entry : definition.milestones().entrySet()) {
+                if (level < entry.getKey()) {
+                    continue;
+                }
+                SkillMilestoneEffect effect = entry.getValue();
+                switch (effect.type()) {
+                    case MAX_HEALTH -> maxHealthBonus += effect.value();
+                    case PVE_DAMAGE_MULTIPLIER -> pveDamageBonus += effect.value();
+                    case MAX_ENERGY -> maxEnergyBonus += (int) effect.value();
+                    case HASTE -> hasteAmplifier = Math.max(hasteAmplifier, (int) effect.value());
+                    case SPEED -> speedAmplifier = Math.max(speedAmplifier, (int) effect.value());
+                }
+            }
+        }
+        return new SkillMilestoneModifiers(maxHealthBonus, pveDamageBonus, maxEnergyBonus, hasteAmplifier, speedAmplifier);
+    }
+
+    @Override
+    public void applyMilestoneEffects(Player player) {
+        SkillMilestoneModifiers modifiers = milestoneModifiers(player.getUniqueId());
+        AttributeInstance attribute = player.getAttribute(Attribute.MAX_HEALTH);
+        if (attribute != null) {
+            attribute.getModifiers().stream().filter(modifier -> modifier.getKey().equals(milestoneHealthKey)).toList()
+                    .forEach(attribute::removeModifier);
+            if (modifiers.maxHealthBonus() != 0) {
+                attribute.addModifier(new AttributeModifier(milestoneHealthKey, modifiers.maxHealthBonus(), AttributeModifier.Operation.ADD_NUMBER));
+            }
+            player.setHealth(Math.min(player.getHealth(), attribute.getValue()));
+        }
+        applyMilestonePotionEffect(player, PotionEffectType.HASTE, modifiers.hasteAmplifier());
+        applyMilestonePotionEffect(player, PotionEffectType.SPEED, modifiers.speedAmplifier());
+    }
+
+    /**
+     * Removes any previous milestone-driven potion effect of this type and
+     * reapplies it at the currently-reached amplifier - idempotent, mirroring
+     * the attribute-modifier remove-then-reapply trick above. Unlike
+     * attribute modifiers, Bukkit potion effects carry no per-source key, so
+     * this can also clear a genuinely player-drunk potion of the same type;
+     * an accepted tradeoff since milestone recomputation only runs at
+     * discrete moments (join/level-up/prestige), not continuously.
+     */
+    private void applyMilestonePotionEffect(Player player, PotionEffectType type, int amplifier) {
+        player.removePotionEffect(type);
+        if (amplifier >= 0) {
+            player.addPotionEffect(new PotionEffect(type, Integer.MAX_VALUE, amplifier, true, false, false));
+        }
+    }
+
+    private CompletableFuture<Void> setProgress(SkillKey key, SkillProgress target) {
+        synchronized (updateChains) {
+            CompletableFuture<SkillProgress> previous = updateChains.getOrDefault(key, CompletableFuture.completedFuture(null));
+            CompletableFuture<SkillProgress> tail = previous.handle((ignored, throwable) -> null)
+                    .thenCompose(ignored -> repository.save(target).thenApply(saved -> target))
+                    .thenApply(progress -> {
+                        cache.put(key, progress);
+                        return progress;
+                    });
+            updateChains.put(key, tail);
+            tail.whenComplete((ignored, throwable) -> updateChains.remove(key, tail));
+            return tail.thenAccept(ignored -> { });
+        }
+    }
+
+    @Override
     public void evict(UUID playerId) {
         cache.keySet().removeIf(key -> key.playerId().equals(playerId));
     }
@@ -188,6 +312,7 @@ public final class CachedSkillService implements SkillService {
             if (displayName == null || displayName.isBlank()) {
                 throw new IllegalArgumentException("Skill display name is required: " + id);
             }
+            Map<Integer, SkillMilestoneEffect> milestones = parseMilestones(section, id);
             SkillSource source = SkillSource.valueOf(section.getString("kaynak.tur", "").toUpperCase(Locale.ROOT));
             Map<Material, SkillRewardEntry> materialRewards;
             Map<EntityType, SkillRewardEntry> entityRewards;
@@ -216,12 +341,41 @@ public final class CachedSkillService implements SkillService {
                 entityRewards = Map.copyOf(parsed);
                 materialRewards = Map.of();
             }
-            definitions.put(id, new SkillDefinition(id, displayName, source, materialRewards, entityRewards, defaultEntityReward));
+            definitions.put(id, new SkillDefinition(id, displayName, source, materialRewards, entityRewards, defaultEntityReward, milestones));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("skills.yml must define at least one skill.");
         }
         return new SkillSettings(curve, Map.copyOf(definitions));
+    }
+
+    private static final Set<Integer> MILESTONE_TIERS = Set.of(25, 50, 75, 100);
+
+    private Map<Integer, SkillMilestoneEffect> parseMilestones(ConfigurationSection section, String skillId) {
+        ConfigurationSection milestonesSection = requireSection(section, "kilometre-taslari");
+        Map<Integer, SkillMilestoneEffect> parsed = new LinkedHashMap<>();
+        for (String tierKey : milestonesSection.getKeys(false)) {
+            int tier = Integer.parseInt(tierKey);
+            if (!MILESTONE_TIERS.contains(tier)) {
+                throw new IllegalArgumentException("Milestone tier must be one of 25/50/75/100 in skill " + skillId + ": " + tier);
+            }
+            ConfigurationSection entry = requireSection(milestonesSection, tierKey);
+            SkillMilestoneEffectType type;
+            try {
+                type = SkillMilestoneEffectType.valueOf(entry.getString("tur", "").toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException exception) {
+                throw new IllegalArgumentException("Invalid milestone effect type in skill " + skillId + " tier " + tier, exception);
+            }
+            double value = entry.getDouble("deger", -1);
+            if (value < 0) {
+                throw new IllegalArgumentException("Milestone effect value must not be negative in skill " + skillId + " tier " + tier);
+            }
+            parsed.put(tier, new SkillMilestoneEffect(type, value));
+        }
+        if (parsed.size() != MILESTONE_TIERS.size()) {
+            throw new IllegalArgumentException("Skill must define all 4 milestone tiers (25/50/75/100): " + skillId);
+        }
+        return Map.copyOf(parsed);
     }
 
     private SkillRewardEntry parseRewardEntry(ConfigurationSection parent, String path, String skillId) {

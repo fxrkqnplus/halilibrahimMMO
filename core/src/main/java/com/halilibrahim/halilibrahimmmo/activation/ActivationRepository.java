@@ -4,6 +4,8 @@ import com.halilibrahim.halilibrahimmmo.database.DatabaseService;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -44,6 +46,26 @@ public final class ActivationRepository {
                 insert.setLong(2, System.currentTimeMillis());
                 insert.executeUpdate();
             }
+        });
+    }
+
+    /** Every activated player's id/name, including offline ones - for the admin all-players panel. */
+    CompletableFuture<List<ActivatedPlayer>> findAllActivated() {
+        return database.execute(connection -> {
+            List<ActivatedPlayer> found = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT p.player_id, p.player_name
+                    FROM hmmo_player_activation a
+                    JOIN hmmo_player_profiles p ON p.player_id = a.player_id
+                    ORDER BY p.player_name
+                    """)) {
+                try (ResultSet result = statement.executeQuery()) {
+                    while (result.next()) {
+                        found.add(new ActivatedPlayer(UUID.fromString(result.getString("player_id")), result.getString("player_name")));
+                    }
+                }
+            }
+            return List.copyOf(found);
         });
     }
 }

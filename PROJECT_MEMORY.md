@@ -1720,3 +1720,589 @@ never moved into a category).
   redesigned sidebar across all states; confirming locked abilities render
   correctly in `AbilitiesMenu`; clicking through the new `/haliladmin`
   panel and `/menu` category screens.
+
+## 25. Phase 11 — class-gated abilities, derived Güç, prestige rework, admin
+    all-players panel, quest pools, onboarding, skill milestones (Phase 11
+    complete)
+
+A large, user-requested follow-on phase covering 10 concrete bugs/design
+gaps plus one new feature (per-skill milestone boosts) and a sidebar
+polish pass, built in ten stop-and-report sub-phases (11.1-11.10, in the
+dependency order 11.1→11.2→11.3→11.6, everything else independent). The
+load-bearing design fork was resolved before implementation started: making
+Güç (global power) a pure derived sum of skill levels conflicts with
+prestige's old "reset global level, re-hit the cap" design, since skills
+live in `SkillService`/`ClassService`, not on `PlayerProfile`. Resolution:
+**prestige now resets the player's currently-selected class's class-level
+and all 4 skill levels back to 1/0 XP (losing skill-milestone passive
+boosts as a result), in exchange for a permanent +25%-per-rank XP
+multiplier and a permanent per-class "prestige boost"; prestiged players
+always outrank non-prestiged players on the leaderboard regardless of raw
+level.**
+
+### 11.1 - Ability unlock gated by class level, not skill level
+
+- `YamlAbilityService#activate` no longer needs the async
+  `skills.load(...).thenAccept(...)` round-trip at all: `ClassService#
+  classProgress` is already synchronous (in-memory `progressCache`,
+  defaults to level 1), so activation now reads the class level directly
+  through the existing `AtomicReference<ClassService>` bootstrap bridge
+  (the same one already backing the `classModifiers` lambda) and schedules
+  straight onto the player's region. One async hop removed, not added.
+- `AbilitiesMenu#render`'s gate switched from `services.skills().cached(...)`
+  to `services.classes().classProgress(playerId, definition.classId())`.
+- `definition.skillId()` stays on `AbilityDefinition` unchanged - it is
+  still independently used by `isEligibleBlock()`'s material-set check and
+  by `abilities.yml` validation. Only the unlock *comparison* moved from
+  skill level to class level.
+
+### 11.2 - Güç becomes a derived sum of skill levels; independent Güç-XP removed
+
+- `ProgressionService` gained `int cachedGlobalLevel(UUID)` (synchronous:
+  sums every configured skill's cached level, defaulting each to 1 if
+  uncached) and `CompletableFuture<Integer> globalLevel(UUID)` (async,
+  offline-safe equivalent used by §11.4's admin panel).
+- **Deleted outright, not left as dead code** (matching Phase 10.1's
+  "delete fully" precedent): `ProgressionService#award`/`awardConfigured`,
+  `progression.ExperienceCurve`, `progression.ProgressionSettings`,
+  `progression.ProgressionAwardResult`, `resources/progression.yml`,
+  `api.progression.ProgressionCause` (every member, including the
+  already-dead `EXTERNAL`), and `HalilIbrahimMMOAPI#awardGlobalExperience`
+  (+ its `HalilIbrahimMMOApiImpl` implementation). `PlayerProfile.
+  globalLevel`/`globalExperience` remain DB columns - they simply stop
+  being written; nothing reads them for gameplay anymore.
+  `ProgressionListener` survives, shrunk to just `onJoin`/`onQuit` (profile
+  load/evict, activation warm/evict, clearing the experience-progress HUD).
+- **Quest and collection XP now redirect to the player's selected class's
+  XP** instead of global XP: `QuestListener#notify` and both award call
+  sites in `CollectionListener` resolve `profileService.cached(playerId)
+  .selectedClass()` and call `ClassService#awardClassExperience`; the
+  award is skipped (completion/journal/broadcast still fire) if no class
+  is selected.
+- **Fixed, not originally scoped**: `HalilIbrahimMMOApiImpl#findCachedPlayer`
+  used to read `profile.globalLevel()` (a PlaceholderAPI/LuckPerms-facing
+  method, backing `%halilibrahimmmo_level%` and the `halilibrahimmmo:level`
+  LuckPerms context from Phase 7) - left alone, it would have silently
+  frozen at whatever value happened to exist when this phase shipped.
+  Fixed to source `globalLevel` from `progression.cachedGlobalLevel(...)`.
+  `globalExperience`/`experienceToNextLevel` have no meaning under a
+  derived, whole-integer Güç, so `CachedPlayerSnapshot` now reports both as
+  `0` - documented with a Javadoc note on both `HalilIbrahimMMOExpansion`
+  and `HalilIbrahimMMOContextCalculator` so a server admin who built a
+  placeholder display around `%halilibrahimmmo_xp%`/`_xp_to_next_level%`
+  isn't silently surprised.
+- Skill/class XP bossbars (categories `"skill"`/`"class"`) are unaffected -
+  only the `"global"`-category bossbar's *trigger* changed, see §11.6.
+
+### 11.3 - Prestige rework
+
+- New `SkillService#resetAll(UUID)` (every configured skill → level 1/XP 0,
+  same write-through path `awardMatching` uses) and `ClassService#
+  resetClassLevel(UUID, String, String)` (one specific class's
+  `ClassLevelProgress` → level 1/XP 0, mirroring `awardClassExperience`'s
+  update shape). `YamlPrestigeService#prestige` now chains: bump
+  `prestige` only (globalLevel/globalExperience are dead fields, no longer
+  touched by `PrestigeRules.apply`) → `skillService.resetAll(...)` → (if a
+  class is selected) `classService.resetClassLevel(...)`.
+- **Eligibility** moved from `profile.globalLevel()` against a curve-based
+  cap to `progressionService.cachedGlobalLevel(playerId)` against a new
+  `prestige.yml` key `gerekli-guc-seviyesi` (400 = 4 skills × 100 by
+  default). `PrestigeService`'s constructor widened to take
+  `SkillService`/`ClassService` - both were already constructed before
+  `PrestigeService` in `HalilIbrahimMMOPlugin#onEnable()`, so no bootstrap
+  reordering was needed.
+- Skill-milestone passive boosts (§11.9) fall away automatically once
+  skills reset to level 1 - no separate strip step needed, they recompute
+  the same way class modifiers already recompute from talent ranks.
+- **Permanent rewards.** +25% XP per prestige rank (`1 + 0.25 * prestige`,
+  stacking additively), folded into the existing `classSynergyMultiplier`
+  lambda in `CachedSkillService` (skill XP) and into
+  `YamlClassService#awardClassExperience` (class XP) - admin-granted XP
+  (§11.4) deliberately does **not** get this multiplier, since those are
+  exact-amount corrections. Per-class permanent "prestige boost": new
+  `classes.yml` field per class, `prestij-etkisi: { tur: <ClassEffectType>,
+  deger-basina: <double> }`, reusing the existing bounded `ClassEffectType`
+  enum (restricted at parse time to `MAX_HEALTH`/`PVE_DAMAGE_MULTIPLIER`/
+  `MAX_ENERGY`) - `YamlClassService#modifiers` sums
+  `prestigeCount * definition.prestigeEffectValuePerRank()` into the
+  player's selected class's existing talent-summing switch, reusing the
+  same stable-`NamespacedKey` remove-then-reapply pattern `applyPlayerEffects`
+  already uses for `MAX_HEALTH`.
+- **Leaderboard** query rewritten to a `LEFT JOIN` against
+  `hmmo_player_skills`, `ORDER BY p.prestige DESC, total_level DESC` -
+  prestige always outranks raw level regardless of magnitude. The `IN (...)`
+  skill-id placeholder list is built dynamically from
+  `skillService.definitions().keySet()` at query time, not hardcoded to 4
+  `?`s, since `skills.yml` is data-driven. `LeaderboardRepository`'s
+  constructor widened to take `SkillService` (already constructed earlier
+  in bootstrap - pure widening, no reorder). Board secondary-metric lore
+  switched from XP to prestige count.
+- **Fanfare, additive to the existing personal `celebratePrestige`** (kept
+  exactly as-is - this is not a replacement): new `MessageService#
+  broadcast(MessageKey, Map)` (first broadcast mechanism in the codebase,
+  iterates `Bukkit.getOnlinePlayers()`, reused by §11.6/§11.7) announces
+  the player + new rank server-wide; a `Firework` (first use in the
+  codebase) spawns at the prestiging player's own location (inherently
+  local, not broadcast); `Sound.ENTITY_ENDER_DRAGON_DEATH` +
+  `Sound.ENTITY_PLAYER_LEVELUP` play to every online player. Both
+  `PrestigeCommand` and `PrestigeMenu` call the same sequence.
+  `PrestigeMenu`'s info lore now explains the reset scope + the +25% XP +
+  the per-class permanent boost before a player confirms.
+
+### 11.4 - Admin panel: all-registered-players tab + skill/class/XP mutation
+
+- New `ActivationRepository#findAllActivated()` (joins
+  `hmmo_player_activation` with `hmmo_player_profiles` for the name, no
+  migration needed) and its `ActivationService` async wrapper, backing a
+  new `ActivatedPlayer(UUID playerId, String playerName)` record.
+- Re-added offline-capable admin mutation, this time GUI-only and scoped
+  to `/haliladmin` (Phase 8.4 had chat-argument equivalents; Phase 10.1
+  deleted them entirely; this phase deliberately reintroduces the
+  capability behind the GUI-only click model instead):
+  `SkillService#adminSetLevel`/`adminAddExperience`, `ClassService#
+  adminSetClassLevel`/`adminAddClassExperience`/`adminForceSetClass`. Every
+  method writes straight to the repository/cache regardless of whether the
+  target is online, matching the online path's write-through shape so a
+  currently-online target's live cache stays correct too.
+- New `gui.AdminAllPlayersMenu` (every activated player, online or not,
+  capped like `AdminOnlinePlayersMenu`, no pagination v1) →
+  `gui.AdminPlayerEditMenu` (read-only summary + click-increment rows -
+  `LEFT`/`SHIFT_LEFT`/`RIGHT`/`SHIFT_RIGHT` → ±1/±10 skill/class level,
+  `LEFT`/`SHIFT_LEFT` → +50/+500 skill/class XP) → `gui.
+  AdminClassPickerMenu` (force-sets or clears the target's class,
+  bypassing the change cooldown). `AdminMenu` gained a button; every
+  mutation logs a Turkish `PluginLogger` line naming the acting admin, the
+  target, and the new value.
+
+### 11.5 - Ability activation polish: item-switch bug fix + selection cooldown
+
+- **Fixed a real bug**: `AbilityActivationListener#onHeldItemChange`
+  cleared activation feedback unconditionally on *every* hotbar slot
+  change - now only clears when the newly-held item no longer matches the
+  active/armed ability's configured tool.
+- `YamlAbilityService#select` gained a configurable switch cooldown
+  (`abilities.yml` `secim-bekleme-saniye`, default 120s) via a
+  `ConcurrentHashMap<UUID, Long> lastSwitchMillis` - re-selecting the same
+  ability id stays free. New `MessageKey.ABILITY_SELECTION_COOLDOWN`
+  (`kabiliyet.secim-bekleme`) shows remaining seconds on rejection.
+
+### 11.6 - Güç bossbar only at multiples of 10, broadcast at 25/50/75/100
+
+Mirrors Phase 9.4's `(previousLevel, newLevel]` range-check pattern.
+`SkillListener` now computes Güç before/after any skill award with
+`leveledUp()`, shows the `"global"`-category bossbar only if a multiple of
+10 falls in that range (replacing the old always-on-every-XP-gain bar,
+already removed in §11.2), and calls `MessageService#broadcast` if
+25/50/75/100 falls in that range.
+
+### 11.7 - Quest pools: random daily/weekly assignment + completion broadcast
+
+- `quests.yml`'s DAILY/WEEKLY catalogues expanded into real pools (10
+  daily, 8 weekly entries; the 2 existing PERMANENT quests stay
+  unpooled - every player always has both). New keys
+  `gunluk-atanan-sayisi`/`haftalik-atanan-sayisi` (default 3/2) control how
+  many each player is randomly assigned per period.
+- New migration **V9** (`QuestAssignmentSchemaMigration`):
+  `hmmo_player_quest_assignments` (`player_id`, `quest_type`,
+  `assigned_quest_ids` comma-joined, `period_end_millis`), same
+  single-`CREATE TABLE IF NOT EXISTS` shape as V7/V8.
+  `CachedQuestService#randomAssignment` shuffles the type's pool
+  (`Collections.shuffle`+`ThreadLocalRandom`) and takes
+  `Math.min(pool.size(), assignedCount)` - safe even if a future config
+  edit shrinks a pool below the configured assignment count. Every read
+  path that used to iterate "every DAILY/WEEKLY quest in the catalogue"
+  (`CachedQuestService`, `QuestsMenu`, `/gorev`, the sidebar's daily-quest
+  lines) now filters to the player's currently-assigned ids plus all
+  PERMANENT quests.
+- **Self-found bug, not originally scoped**: `CachedQuestService`'s
+  pre-existing private `load(...)` backfill loop unconditionally
+  repopulated the cache for *every* configured quest definition, which
+  would have silently defeated the new pool filtering the first time
+  `find()`/`incrementNow()` ran for an unassigned pool quest - fixed by
+  scoping that backfill to PERMANENT quests plus the one
+  specifically-requested definition.
+- `QuestListener#notify` now calls `messages.broadcast(...)` for
+  DAILY/WEEKLY completions specifically (naming the player and quest, no
+  XP amount shown - explicit requirement), leaving PERMANENT completions
+  as personal-only feedback.
+
+### 11.8 - New-player onboarding nudges
+
+- New `onboarding` package (`OnboardingTask` - a fixed, deliberately
+  non-YAML-configurable 3-entry enum, `OnboardingRepository`,
+  `OnboardingService`/`CachedOnboardingService` - mirrors `activation`'s
+  INSERT-only cache shape). New migration **V10**
+  (`OnboardingSchemaMigration`): `hmmo_player_onboarding_tasks`
+  (`player_id`, `task_id`, composite primary key preventing double-award).
+- Three one-time tasks, each rewarding 25 XP through the player's selected
+  class (§11.2's redirect target): `ilk-menu-acma` (hooked into
+  `MenuCommand`), `becerileri-inceleme` (hooked into `SkillsMenu#populate`),
+  `kabiliyetleri-inceleme` (hooked into `AbilitiesMenu#populate`). Each
+  completion is personal chat feedback only, not a broadcast.
+- Sidebar gained a section, visible only while incomplete tasks remain,
+  omitted entirely once complete - the same "omitted not blank" convention
+  §9.6/§10.7 already established.
+
+### 11.9 - Per-skill milestone boosts, per-skill commands, GUI, leaderboard reuse
+
+- `SkillDefinition` gained `milestoneHealthPerTier` (`skills.yml`
+  `kilometre-tasi-can-kademe-basina`, default per-skill: 1). At skill
+  levels 25/50/75/100, `CachedSkillService#applyMilestoneEffects` applies a
+  cumulative `MAX_HEALTH` boost, reusing the exact stable-`NamespacedKey`
+  remove-then-reapply pattern `YamlClassService#applyPlayerEffects`
+  established for class effects. **Deliberate scope decision**: all four
+  skills use `MAX_HEALTH` rather than four distinct per-skill `Attribute`
+  constants, since `MAX_HEALTH` is the one `Attribute` already proven to
+  compile in this codebase - with no compiler or live server available
+  this session (see Verification below), an unverified newer attribute
+  name risked an `IllegalArgumentException` at plugin-enable time that
+  would break the whole plugin. Recomputed on join/level-up, and naturally
+  zeroed by §11.3's prestige skill reset (no special-case strip needed).
+- New commands `/madencilik`, `/odunculuk`, `/kazicilik`, `/avcilik`
+  (matching the four skill ids exactly) → `command.SkillDetailCommand` →
+  new `gui.SkillDetailMenu` (current level/XP, the skill's owning class via
+  a reverse `sinerji-beceri` lookup, a milestone-info button, and a
+  leaderboard button that opens the **existing, unmodified**
+  `LeaderboardDetailMenu(services, skillId, displayName)` - zero
+  duplication). New `gui.SkillMilestoneInfoMenu`: static per-tier
+  explanation of what 25/50/75/100 grant for that one skill.
+
+### 11.10 - Sidebar visual polish
+
+Cosmetic only: `ScoreboardSidebarService`'s `lineEntry(int index)`
+generator (already variable-length since §10.7) gained plain divider
+`Component`s between existing logical groups (name/Güç, prestige,
+class/class-level, active-ability list, onboarding [§11.8, only while
+incomplete], daily/weekly quests, footer). No service-layer changes.
+
+### Verification (this phase)
+
+- **`./gradlew build`/`test`/`runServer` could not be executed this
+  session.** This sandbox's network policy returns 403 for both
+  `services.gradle.org` (the Gradle wrapper distribution) and
+  `repo.papermc.io` (the Paper API Maven repository); `/root/.ccr/README.md`
+  explicitly instructs not to retry or route around an organization egress
+  policy denial, only to report the blocked host - which is what happened,
+  disclosed up front before implementation began. **This is a materially
+  larger verification gap than any prior phase and must be closed locally
+  before merging**: run the full build/test suite, then a live
+  `runServer` boot with `core/run/plugins/HalilIbrahimMMO/`'s bundled YAML
+  deleted first (the established pattern since §10), checking for zero
+  "eksik mesaj anahtari" warnings and all 10 migrations applying cleanly.
+- In lieu of compiler feedback, an extensive manual verification pass was
+  done instead of the usual build/test loop:
+  - **Every `MessageKey` enum constant cross-checked programmatically
+    against `messages.yml` in both directions** (261 keys, exact 1:1
+    match, zero missing, zero orphaned) - this caught 5 genuinely dead
+    keys (`FEEDBACK_XP_BLOCK_BREAK_BOSSBAR`/`_MOB_KILL_BOSSBAR`/
+    `_PLAYTIME_BOSSBAR`/`_QUEST_BOSSBAR`/`_COLLECTION_BOSSBAR`) left over
+    from the per-cause global bossbar path §11.2 deleted; removed from
+    both `MessageKey.java` and `messages.yml`, matching the "delete fully,
+    don't leave dead members" convention.
+  - A systematic unused-import scan across all 83 changed/new Java files
+    found and removed 3 genuinely unused imports (`Material` in
+    `YamlAbilityService`, `PlayerProfile` in `YamlPrestigeService`,
+    `AbilityDefinition` in `ScoreboardSidebarService`).
+  - Every rewired constructor (`GuiServices`, `ScoreboardSidebarService`,
+    `SkillListener`, `YamlClassService`, `YamlAbilityService`,
+    `YamlPrestigeService`, `LeaderboardRepository`, `PrestigeCommand`,
+    `SidebarListener`) was traced by hand to confirm
+    `HalilIbrahimMMOPlugin#onEnable()` is the only call site and its
+    argument list matches the new signature; confirmed no test constructs
+    any of these directly.
+  - `ClassConfigTest`/`SkillMaterialConfigTest` gained assertions for the
+    new `classes.yml` `prestij-etkisi` field and `skills.yml`
+    `kilometre-tasi-can-kademe-basina` field; new `PrestigeConfigTest` for
+    `prestige.yml`'s `gerekli-guc-seviyesi`. `SqliteMigrationContractTest`
+    and `AbstractMigrationCrossEngineTest`/`IntegrationDatabaseSupport`
+    updated to include V9/V10 (both were already missing V7/V8 from Phase
+    9 before this session started - fixed as part of the same pass); new
+    `QuestAssignmentSchemaMigrationTest`/`OnboardingSchemaMigrationTest`
+    pin their versions.
+- **Not verified this session, requires a live client** (compounding the
+  build gap above - none of this has been exercised at all, not even
+  build-verified): the prestige fanfare (broadcast/firework/sounds)
+  actually firing together; clicking through the new admin all-players
+  panel end-to-end including an offline target; the onboarding sidebar
+  section appearing/disappearing correctly; skill milestone `MAX_HEALTH`
+  boosts actually applying in real combat; the four new per-skill commands
+  and their GUI chain; quest pool rotation across a real period boundary;
+  the new sidebar dividers rendering as intended.
+
+## 26. Phase 12 — bugfixes, prestige rework, XP economy, sidebar polish (Phase 12 complete)
+
+A user-requested follow-on phase covering 12 playtesting-driven
+items, built in twelve stop-and-report sub-phases (12.1-12.12), plus one
+bundled bugfix the user explicitly approved (12.2's class-XP prestige
+double-dip). The two load-bearing design forks: (1) the sidebar's stale-
+until-`/panel`-toggle problem was fixed by adding a periodic re-render
+sweep rather than auditing every XP mutation call site for a missing
+`refresh(...)` call - robust against any future XP source that forgets to
+call it; (2) prestige's new multi-condition eligibility (all 4 skills ≥25,
+selected class at its level cap, that class's synergy skill at its level
+cap) required inventing a Güç-banking mechanism, since Güç had been a pure
+derived sum since Phase 11 with nothing to preserve across a skill-level
+reset.
+
+### 12.1 - Creative-mode XP/progress exploit fix
+
+- Confirmed via repo-wide grep that no `GameMode` check existed anywhere:
+  `SkillListener.onBlockBreak`/`onEntityDeath` awarded full skill and
+  (transitively, via `ClassSynergyBridge`) class XP regardless of gamemode.
+  Fixed by adding an `isGameplayGameMode(player)` guard (excludes
+  `CREATIVE`/`SPECTATOR`) to both handlers.
+- Per explicit user decision, the same gate was added to
+  `QuestListener.onBlockBreak`/`onEntityDeath` so quest progress is also
+  blocked in Creative/Spectator, for full consistency with skill/class XP.
+  `CollectionListener` was deliberately left untouched - it triggers off
+  `EntityPickupItemEvent` (picking up an item), not block-break/mob-kill,
+  so it isn't the same kind of no-risk grinding exploit.
+
+### 12.2 - XP doubling (+ bundled prestige double-dip fix)
+
+- Every flat XP number in `skills.yml` (all 4 skills' material/entity
+  rewards), `quests.yml` (11 quests), `collections.yml` (2 collections'
+  per-item and completion XP), and `onboarding.OnboardingTask`'s 3 (now 4,
+  see 12.7) hardcoded rewards was doubled. `classes.yml`'s
+  `sinerji-xp-bonusu` (a multiplier, not a flat reward) was left alone -
+  it scales automatically once its inputs double.
+- **Bundled fix, user-approved, not silently folded in**: found that
+  `YamlClassService#awardClassExperience` re-applied the `1.0 + 0.25*prestige`
+  multiplier on top of an amount from `ClassSynergyBridge` that, for a
+  synergy skill, already carried that same multiplier via
+  `CachedSkillService`'s `classSynergyMultiplier` lambda - i.e. class XP
+  mirrored from a synergy skill compounded to `(1+0.25p)²` instead of the
+  intended `(1+0.25p)`. Fixed by splitting `awardClassExperience` into a
+  private `applyClassExperience(..., adjustedAmount)` helper, with a new
+  `ClassService#awardClassExperienceExact(...)` (no multiplier applied,
+  since the caller's amount already carries it) used exclusively by
+  `ClassSynergyBridge`; every other caller (quests, collections, onboarding)
+  still goes through the original `awardClassExperience`, unaffected.
+
+### 12.3 + 12.4 - Prestige rework + Güç banking
+
+- **Eligibility replaced entirely**: the flat `gerekli-guc-seviyesi: 400`
+  check is gone. New `prestige.yml` key `gerekli-beceri-seviyesi: 25`
+  backs a 3-condition check: every one of the 4 skills ≥ that level, the
+  selected class's class-level == `classes.yml`'s
+  `sinif-ilerleme.maksimum-seviye` (50), and that class's synergy skill's
+  level == `skills.yml`'s `maksimum-seviye` (100). No class selected is
+  automatically ineligible.
+- New pure-logic types: `PrestigeEligibilityInput` (record of raw
+  numbers), `PrestigeEligibilityReport` (per-condition booleans +
+  `allMet()`), `PrestigeEligibility` (status + report holder).
+  `PrestigeRules.eligibility(...)` now takes the input record and returns
+  the holder; `PrestigeResult.Status.LEVEL_REQUIRED` was renamed
+  `REQUIREMENTS_NOT_MET` (the `messages.yml` key path
+  `prestij.seviye-gerekli` was deliberately kept stable to avoid comment
+  churn, just its text updated). `PrestigeResult` gained an
+  `Optional<PrestigeEligibilityReport> report` field.
+- **Güç banking**: new migration **V11**
+  (`PrestigeBankedPowerSchemaMigration` → `hmmo_player_banked_power`, one
+  row per player, mirroring `hmmo_player_equipped_title`'s "new table over
+  ALTER TABLE" precedent), a new tiny `prestige.BankedPowerService`/
+  `CachedBankedPowerService` (join-warmed cache, same shape as
+  `CachedActivationService`) - deliberately **not** bolted onto
+  `ProgressionService`, keeping that service's "pure derived sum" contract
+  intact in its own Javadoc. `ProgressionService#cachedGlobalLevel`/
+  `globalLevel` became `bankedPower(playerId) + sum(skill levels)`.
+  `YamlPrestigeService#prestige` computes `cachedGlobalLevel` **before**
+  resetting skills and overwrites (not adds - the pre-reset value already
+  transitively includes any prior banked amount) the player's banked
+  power with it. Worked/verified example: skills sum to 190 → prestige
+  banks 190 → skills reset to 1 each (sum 4) → Güç reads 194 → skills
+  regrind back to a 190 sum → Güç reads 380 → second prestige banks 380 →
+  reset → Güç reads 384. `ProgressionListener` now warms/evicts the banked-
+  power cache on join/quit alongside profile/activation.
+  `LeaderboardRepository`'s Güç board query gained a
+  `LEFT JOIN hmmo_player_banked_power` folded into its `total_level` sum,
+  so a heavily-prestiged player's rank reflects true Güç.
+- **Display rework**: `/prestij` and `PrestigeMenu` no longer show a
+  single "Güç X/Y" number - both render a per-condition checklist (4
+  skill lines, class-level line, synergy-skill line, or a "no class
+  selected" line) via new `MessageKey`s
+  (`PRESTIGE_REQUIREMENT_SKILL_MET/_UNMET`,
+  `_CLASS_LEVEL_MET/_UNMET`, `_SYNERGY_MET/_UNMET`, `_NO_CLASS`,
+  `_HEADER`), built as a `List<Component>` (chat: joined with
+  `Component.join(JoinConfiguration.newlines(), ...)` then sent once
+  through `MessageService#prefixed`; GUI: appended straight into the info
+  item's lore list) rather than the "join fragments into one placeholder"
+  pattern - a multi-line checklist is naturally a list of already-rendered
+  lines, not one inline value. `PrestigeCommand`/`PrestigeMenu` each
+  duplicate the same requirement-line-building logic (new `ClassService`
+  dependency added to `PrestigeCommand`'s constructor) - same accepted
+  command/GUI-pair duplication as every other cross-linked feature in this
+  codebase.
+
+### 12.5 - Ability duration/cooldown tuning
+
+`avci-odagi` (Avcı Odağı)'s `etki-suresi-saniye`: 120 → 30. `yikici-darbe`
+(Amansız Savaşçı's last-tier ability, class id `avci` - **not** `savasci`,
+which is "Define Avcısı")'s `bekleme-suresi-saniye`: 100 → 30, per explicit
+user-specified value.
+
+### 12.6 - Energy regen slowdown
+
+`abilities.yml`'s `enerji.yenilenme-saniye-basina`: 4 → 3. The regen
+*amount* is the correct lever, not `PlayerEnergyService`'s tick interval
+(`runAtFixedRate(..., 20L, 20L)`, left untouched) - changing the interval
+would also perturb the action-bar update rhythm and isn't independently
+retunable in YAML later.
+
+### 12.7 - Onboarding 4th task (use a skill command)
+
+New `OnboardingTask.BECERI_KOMUTU_KULLANMA` (id `beceri-komutu-kullanma`,
+50 XP), hooked into `SkillDetailCommand#execute` (fires on any one of
+`/madencilik`/`/odunculuk`/`/kazicilik`/`/avcilik` - "used a command", not
+"used all 4"), mirroring `SkillsMenu`/`AbilitiesMenu`'s existing
+`completeOnboarding` pattern exactly. `ScoreboardSidebarService
+.addOnboardingLines` gained a 4th `if` branch;
+`MessageKey.SIDEBAR_LINE_ONBOARDING_SKILL_COMMAND`/
+`ONBOARDING_COMMAND_COMPLETED` are the new keys.
+
+### 12.8 - Admin XP/level mutation: full feedback parity
+
+- **Confirmed and fixed a real gap**: `AdminPlayerEditMenu`'s four skill/
+  class level/XP mutation actions bypassed the entire
+  `FeedbackService`/Güç-milestone-broadcast/ability-unlock-notification/
+  sidebar-refresh pipeline every organic level-up already gets - a target
+  player saw no bossbar, chat message, sound, or "yeni kabiliyet açıldı"
+  toast, and the sidebar stayed stale until `/panel` toggled.
+- `SkillService.adminSetLevel`/`adminAddExperience` and
+  `ClassService.adminSetClassLevel`/`adminAddClassExperience` all widened
+  their return type from `CompletableFuture<Void>` to a result carrying
+  previous/new level + `leveledUp` (new `skills.SkillAdminAwardResult` for
+  the skill pair; the class pair reuses the already-existing
+  `ClassExperienceAwardResult`, identical shape). `AdminPlayerEditMenu`
+  gained `celebrateSkillLevelUpIfNeeded`/`celebrateClassLevelUpIfNeeded`
+  (private helpers, one per pair) that replicate
+  `SkillListener#handleAward`'s and `ClassSynergyBridge
+  #onSkillExperienceGained`'s feedback exactly - deliberately duplicated
+  rather than shared, matching this codebase's established tolerance for
+  small duplication across independent call sites (§16/§19). A no-op if
+  the target is currently offline (feedback needs a live `Player`).
+  Admin-granted XP still deliberately skips the prestige/synergy
+  multiplier (unchanged, existing behavior) - only feedback was added.
+
+### 12.9 - Differentiated per-skill milestone boosts
+
+- `SkillDefinition.milestoneHealthPerTier` (one shared `double`, all 4
+  skills used the same formula) replaced with
+  `milestones: Map<Integer, SkillMilestoneEffect>` keyed by tier level
+  (25/50/75/100). New `SkillMilestoneEffectType` enum (`MAX_HEALTH`,
+  `PVE_DAMAGE_MULTIPLIER`, `MAX_ENERGY`, `HASTE`, `SPEED`) - deliberately
+  separate from `classes.ClassEffectType`, which also carries
+  ability-scoped members that don't apply to a skill milestone.
+  `skills.yml`'s `kilometre-tasi-can-kademe-basina` key replaced with a
+  per-skill `kilometre-taslari` map (`{25: {tur, deger}, 50: {...}, ...}`,
+  all 4 tiers required).
+- Shipped tiers (each skill thematically distinct, no non-health effect
+  type repeated across skills): **avcılık** 25→+10% PvE damage, 50→+4 can,
+  75→+10% PvE damage (cumulative +20%), 100→+4 can (cumulative +8) -
+  matches the user's own 25/50 example exactly. **madencilik** 25→Acele I,
+  50→+2 can, 75→Acele II, 100→+15 enerji. **odunculuk** 25→Hız I, 50→+2
+  can, 75→Hız II, 100→+15 enerji. **kazıcılık** 25→+10 enerji, 50→+2 can,
+  75→+10 enerji (cumulative +20), 100→+10 enerji (cumulative +30) - purely
+  energy-flavored to stay distinct from the other three.
+- `CachedSkillService` gained `milestoneModifiers(UUID)` (synchronous,
+  sums every reached tier's bonus by type - `HASTE`/`SPEED` take the
+  *highest* reached amplifier, not a sum, so Haste I + Haste II reads as
+  Haste II) and rewrote `applyMilestoneEffects` to apply `MAX_HEALTH` via
+  the existing stable-`NamespacedKey` attribute-modifier trick, plus
+  `HASTE`/`SPEED` via a `removePotionEffect`-then-`addPotionEffect`
+  idempotent pair (**accepted tradeoff**: unlike the attribute-modifier
+  key trick, Bukkit potion effects carry no per-source key, so this can
+  also strip a genuinely player-drunk potion of the same type - only
+  possible at the discrete moments this recomputes: join/level-up/
+  prestige, not continuously).
+- **New plumbing required and added**: `PlayerEnergyService`'s
+  `maximumEnergyBonus` wiring (in `HalilIbrahimMMOPlugin`) now adds
+  `skillService.milestoneModifiers(playerId).maxEnergyBonus()` alongside
+  the existing class-modifier source. `ClassListener.onDamage` (the sole
+  `PVE_DAMAGE_MULTIPLIER` consumer) widened to take `SkillService` and add
+  `skills.milestoneModifiers(...).pveDamageBonus()` into its damage
+  multiplier expression. `MAX_HEALTH` needed no new plumbing (already had
+  an independent, co-existing modifier-key pattern).
+- `SkillMilestoneInfoMenu` rewrote its hardcoded health-only lore to
+  branch per effect type, one new `MessageKey` per type
+  (`GUI_SKILL_MILESTONE_TIER_LORE_HEALTH/_DAMAGE/_ENERGY/_HASTE/_SPEED`).
+
+### 12.10 - Sidebar periodic auto-refresh
+
+`ScoreboardSidebarService.enable()` previously did nothing (comment: "every
+player gets their own Scoreboard on join") - `SkillListener`
+(skill XP/level-up) and `ClassSynergyBridge` (class-synergy XP) never
+called `refresh(...)`, so those two very-high-frequency XP sources left
+the sidebar visibly stale until a `/panel` off→on forced a fresh render.
+Fixed by adding a periodic re-render, mirroring `PlayerEnergyService
+.enable()`'s exact `runAtFixedRate` pattern, at a **2-second** interval
+(`40L, 40L` - not 1s, since `refresh()` re-renders the whole line list,
+heavier per-call than energy's O(1) tick; `refresh()`'s existing
+early-return for a hidden sidebar makes idle players free). Existing
+explicit `refresh(...)` call sites (quest/collection progress, class/
+ability selection, prestige) were left in place for their lower-latency
+value on those specific events - the periodic sweep is the safety net for
+everything else (including 12.8's admin mutations, which also still call
+`refresh(...)` explicitly for instant feedback on top).
+
+### 12.11 - Sidebar color scheme
+
+Every sidebar line was gray-label/white-value, monotone (`lineEntry(int)`
+is an unrelated scoreboard-entry-key generator, not a color mechanism -
+confirmed before touching anything). `messages.yml`'s `sidebar:` section
+value-portion colors only: Güç → gold, Prestij → light_purple, Sınıf/
+sınıf-seviye → aqua, daily/weekly quest progress → yellow, active-ability
+→ gold. Ability selected/unselected (already green/red) and onboarding
+lines (deliberately kept muted gray) were left unchanged. No Java changes.
+
+### 12.12 - Title-in-sidebar-name order fix
+
+**Confirmed and fixed a real bug**: `ScoreboardSidebarService#nameLine`
+built `base` = the fully-rendered `"Oyuncu: <name>"` template, then did
+`tag.append(base)` - prepending the equipped title tag before the *entire*
+line instead of between the label and the name (rendered as
+`"[EFSANE] Oyuncu: Vesen"` instead of the intended
+`"Oyuncu: [EFSANE] Vesen"`). Fixed by adding a new no-placeholder
+`MessageKey.SIDEBAR_LINE_NAME_LABEL` (`sidebar.oyuncu-etiket`, just the
+gray "Oyuncu: " label) and rebuilding the line in Java as
+label + title-tag + name. The title tag's per-title dynamic color (from
+`TitleChatStyle`) still has to be built in Java regardless - the same
+documented `MessageKey`-bypass exception §10.6 already established for
+per-title chat-tag coloring, now with a second instance.
+
+### Verification (this phase)
+
+- `./gradlew build`/`./gradlew test` are green with Java 26
+  (`JAVA_HOME=C:\Program Files\Java\jdk-26.0.1`), including a forced
+  `--rerun` pass - 23 test classes, 34 individual test cases, 0 failures/
+  errors. `PrestigeRulesTest` was fully rewritten (6 cases) for the new
+  `PrestigeEligibilityInput`/`PrestigeEligibility` signature.
+  `PrestigeConfigTest` updated for `gerekli-beceri-seviyesi`.
+  `SkillMaterialConfigTest` updated to validate the new per-skill
+  `kilometre-taslari` tier/type/value structure instead of the old flat
+  key. `SqliteMigrationContractTest`/`AbstractMigrationCrossEngineTest`/
+  `IntegrationDatabaseSupport` updated to include V11.
+- **A live `./gradlew runServer` boot was performed**, with
+  `core/run/plugins/HalilIbrahimMMO/`'s stale bundled YAML *and* its
+  SQLite database file deleted first (this phase's new migration made a
+  clean-database boot the meaningful check) so every changed resource
+  regenerated and all 11 migrations - including the new V11 - applied
+  against a fresh database. The plugin enabled with zero exceptions, the
+  server reached `Done` in ~7.7s, and the log had zero "eksik mesaj
+  anahtari" (missing message key) warnings, confirming every new/renamed
+  `MessageKey` (including the prestige checklist keys, the two new
+  sidebar keys, the onboarding 4th-task keys, and all 5 milestone-lore
+  keys) resolves against `messages.yml`, and the new `SkillMilestoneEffectType`/
+  bounded-enum YAML values in `skills.yml` all parse without error.
+- **Not verified this session, requires a live client** (same honest
+  caveat every feature-touching phase since §17 has carried): actually
+  observing the sidebar auto-refresh within ~2s during real skill/class
+  XP gain without a `/panel` toggle; the prestige checklist rendering
+  correctly for a partially-eligible player and the two-prestige Güç-
+  banking arithmetic (194 → 384) across a real double-prestige; Haste/
+  Speed milestone potion effects surviving a relog and not clobbering a
+  genuinely-drunk potion in the exact same tick; the admin panel's
+  bossbar/sound/toast parity on an online target; the differentiated
+  milestone boosts (PvE damage, energy cap) actually taking effect in
+  real combat; the creative-mode gate across skills/class/quests
+  together.

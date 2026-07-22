@@ -1,76 +1,53 @@
 package com.halilibrahim.halilibrahimmmo.progression;
 
-import com.halilibrahim.halilibrahimmmo.api.progression.ProgressionCause;
-import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
-import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
+import com.halilibrahim.halilibrahimmmo.prestige.BankedPowerService;
+import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 
-import java.io.File;
-import java.util.EnumMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
-/** Global capped XP progression and its YAML-authored reward values. */
+/**
+ * Güç calculator: sums every configured skill's level, live from
+ * {@link SkillService}, plus any Güç permanently banked across past
+ * prestiges ({@link BankedPowerService}) - so a prestige reset (which drops
+ * every skill back to level 1) never lowers a player's Güç.
+ */
 public final class YamlProgressionService implements ProgressionService {
 
-    private static final String FILE_NAME = "progression.yml";
+    private final SkillService skills;
+    private final BankedPowerService bankedPower;
 
-    private final JavaPlugin plugin;
-    private final ProfileService profiles;
-    private final AtomicReference<ProgressionSettings> settings = new AtomicReference<>();
-
-    public YamlProgressionService(JavaPlugin plugin, ProfileService profiles) {
-        this.plugin = plugin;
-        this.profiles = profiles;
+    public YamlProgressionService(SkillService skills, BankedPowerService bankedPower) {
+        this.skills = skills;
+        this.bankedPower = bankedPower;
     }
 
     @Override
-    public void enable() { reload(); }
+    public void enable() {
+        // Nothing to load - Güç has no configuration or persistence of its own.
+    }
 
     @Override
-    public void disable() { }
+    public void disable() {
+        // Nothing to release.
+    }
 
     @Override
-    public void reload() {
-        File file = new File(plugin.getDataFolder(), FILE_NAME);
-        if (!file.exists()) plugin.saveResource(FILE_NAME, false);
-        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
-        int maximumLevel = yaml.getInt("maksimum-seviye", 100);
-        ConfigurationSection levels = yaml.getConfigurationSection("seviyeler");
-        if (levels == null) throw new IllegalArgumentException("progression.yml must contain seviyeler.");
-        Map<Integer, Long> requirements = new LinkedHashMap<>();
-        for (String key : levels.getKeys(false)) requirements.put(Integer.parseInt(key), levels.getLong(key));
-        Map<ProgressionCause, Long> rewards = new EnumMap<>(ProgressionCause.class);
-        for (ProgressionCause cause : ProgressionCause.values()) {
-            rewards.put(cause, Math.max(0L, yaml.getLong("oduller." + cause.name(), 0L)));
+    public int cachedGlobalLevel(UUID playerId) {
+        int total = bankedPower.cached(playerId);
+        for (var definition : skills.definitions()) {
+            total += skills.cached(playerId, definition.id()).map(progress -> progress.level()).orElse(1);
         }
-        settings.set(new ProgressionSettings(new ExperienceCurve(maximumLevel, requirements), Map.copyOf(rewards)));
+        return total;
     }
 
     @Override
-    public ProgressionSettings settings() { return settings.get(); }
-
-    @Override
-    public CompletableFuture<ProgressionAwardResult> award(UUID playerId, String playerName, long amount, ProgressionCause cause) {
-        if (amount <= 0) {
-            return profiles.load(playerId, playerName).thenApply(profile -> new ProgressionAwardResult(profile.snapshot(), false));
+    public CompletableFuture<Integer> globalLevel(UUID playerId) {
+        CompletableFuture<Integer> total = bankedPower.load(playerId).thenApply(Integer::intValue);
+        for (var definition : skills.definitions()) {
+            total = total.thenCompose(sum -> skills.load(playerId, definition.id())
+                    .thenApply(progress -> sum + progress.level()));
         }
-        ExperienceCurve curve = settings().curve();
-        AtomicInteger previousLevel = new AtomicInteger();
-        return profiles.update(playerId, playerName, profile -> {
-            previousLevel.set(profile.globalLevel());
-            return curve.award(profile, amount);
-        }).thenApply(updated -> new ProgressionAwardResult(updated.snapshot(), updated.globalLevel() != previousLevel.get()));
-    }
-
-    @Override
-    public CompletableFuture<ProgressionAwardResult> awardConfigured(UUID playerId, String playerName, ProgressionCause cause) {
-        return award(playerId, playerName, settings().rewardFor(cause), cause);
+        return total;
     }
 }

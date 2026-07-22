@@ -6,8 +6,11 @@ import com.halilibrahim.halilibrahimmmo.database.migration.ClassSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.CoreSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.Migration;
 import com.halilibrahim.halilibrahimmmo.database.migration.MigrationRunner;
+import com.halilibrahim.halilibrahimmmo.database.migration.OnboardingSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerActivationSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerProfileSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.PrestigeBankedPowerSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.QuestAssignmentSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.QuestSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.SkillSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.TitleCosmeticSchemaMigration;
@@ -43,7 +46,8 @@ public final class IntegrationDatabaseSupport {
         return List.of(
                 new CoreSchemaMigration(), new PlayerProfileSchemaMigration(), new SkillSchemaMigration(),
                 new ClassSchemaMigration(), new QuestSchemaMigration(), new TitleCosmeticSchemaMigration(),
-                new ClassProgressSchemaMigration(), new PlayerActivationSchemaMigration()
+                new ClassProgressSchemaMigration(), new PlayerActivationSchemaMigration(), new QuestAssignmentSchemaMigration(),
+                new OnboardingSchemaMigration(), new PrestigeBankedPowerSchemaMigration()
         );
     }
 

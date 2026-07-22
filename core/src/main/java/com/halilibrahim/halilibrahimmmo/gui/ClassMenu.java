@@ -69,7 +69,8 @@ public final class ClassMenu implements GuiView {
         }
 
         int levelsPerPoint = services.classes().settings().levelsPerTalentPoint();
-        int budget = levelsPerPoint == 0 ? 0 : profile.prestige() * 4 + profile.globalLevel() / levelsPerPoint;
+        int guc = services.progression().cachedGlobalLevel(profile.playerId());
+        int budget = levelsPerPoint == 0 ? 0 : profile.prestige() * 4 + guc / levelsPerPoint;
         inventory.setItem(INFO_SLOT, GuiItems.of(Material.GOLD_NUGGET,
                 services.messages().render(MessageKey.GUI_CLASS_INFO_ITEM),
                 List.of(services.messages().render(MessageKey.GUI_CLASS_INFO_ITEM_LORE, Map.of(

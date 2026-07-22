@@ -92,7 +92,7 @@ public final class LeaderboardDetailMenu implements GuiView {
             return levelLore(entry);
         }
         return switch (category) {
-            case GLOBAL_LEVEL -> levelLore(entry);
+            case GLOBAL_LEVEL -> gucLore(entry);
             case PRESTIGE -> services.messages().render(MessageKey.GUI_LEADERBOARD_ENTRY_PRESTIGE_LORE, Map.of(
                     "prestij", Long.toString(entry.primaryValue())
             ));
@@ -105,10 +105,18 @@ public final class LeaderboardDetailMenu implements GuiView {
         };
     }
 
+    /** Skill boards only - {@code GLOBAL_LEVEL} moved to {@link #gucLore(LeaderboardEntry)} since its secondary metric is prestige, not XP. */
     private Component levelLore(LeaderboardEntry entry) {
         return services.messages().render(MessageKey.GUI_LEADERBOARD_ENTRY_LEVEL_LORE, Map.of(
                 "seviye", Long.toString(entry.primaryValue()),
                 "xp", Long.toString(entry.secondaryValue())
+        ));
+    }
+
+    private Component gucLore(LeaderboardEntry entry) {
+        return services.messages().render(MessageKey.GUI_LEADERBOARD_ENTRY_GUC_LORE, Map.of(
+                "seviye", Long.toString(entry.primaryValue()),
+                "prestij", Long.toString(entry.secondaryValue())
         ));
     }
 

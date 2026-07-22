@@ -1,6 +1,5 @@
 package com.halilibrahim.halilibrahimmmo.scoreboard;
 
-import com.halilibrahim.halilibrahimmmo.abilities.AbilityDefinition;
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.abilities.ActiveAbilityStatus;
 import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
@@ -8,6 +7,8 @@ import com.halilibrahim.halilibrahimmmo.classes.ClassLevelProgress;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
+import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingService;
+import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingTask;
 import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
@@ -15,9 +16,9 @@ import com.halilibrahim.halilibrahimmmo.quests.QuestDefinition;
 import com.halilibrahim.halilibrahimmmo.quests.QuestProgress;
 import com.halilibrahim.halilibrahimmmo.quests.QuestService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestType;
-import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import com.halilibrahim.halilibrahimmmo.titles.TitleChatStyle;
 import com.halilibrahim.halilibrahimmmo.titles.TitleService;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -71,11 +73,12 @@ public final class ScoreboardSidebarService implements SidebarService {
     private final ClassService classes;
     private final ProgressionService progression;
     private final ActivationService activation;
-    private final SkillService skills;
     private final AbilityService abilities;
     private final QuestService quests;
     private final TitleService titles;
+    private final OnboardingService onboarding;
     private final ConcurrentHashMap<UUID, Boolean> visible = new ConcurrentHashMap<>();
+    private ScheduledTask refreshTask;
 
     public ScoreboardSidebarService(
             JavaPlugin plugin,
@@ -84,10 +87,10 @@ public final class ScoreboardSidebarService implements SidebarService {
             ClassService classes,
             ProgressionService progression,
             ActivationService activation,
-            SkillService skills,
             AbilityService abilities,
             QuestService quests,
-            TitleService titles
+            TitleService titles,
+            OnboardingService onboarding
     ) {
         this.plugin = plugin;
         this.messages = messages;
@@ -95,20 +98,32 @@ public final class ScoreboardSidebarService implements SidebarService {
         this.classes = classes;
         this.progression = progression;
         this.activation = activation;
-        this.skills = skills;
         this.abilities = abilities;
         this.quests = quests;
         this.titles = titles;
+        this.onboarding = onboarding;
     }
 
     @Override
     public void enable() {
-        // Nothing shared to initialize - every player gets their own Scoreboard on join.
+        // Every skill/class XP gain and title change updates its backing cache instantly, but
+        // only a hand-picked set of call sites (quest/collection progress, class/ability selection,
+        // prestige) ever explicitly call refresh(...) - this periodic sweep is the safety net that
+        // makes every other stat (skill XP, class-synergy XP, admin edits, title equips) show up
+        // live instead of only after a /panel toggle. Mirrors PlayerEnergyService's exact
+        // once-per-player-per-tick pattern; refresh(...) is already a no-op for a hidden sidebar.
+        refreshTask = plugin.getServer().getGlobalRegionScheduler().runAtFixedRate(plugin, task ->
+                Bukkit.getOnlinePlayers().forEach(player -> player.getScheduler().run(plugin, ignored -> refresh(player), null)),
+                40L, 40L);
     }
 
     @Override
     public void disable() {
         visible.clear();
+        if (refreshTask != null) {
+            refreshTask.cancel();
+            refreshTask = null;
+        }
     }
 
     @Override
@@ -206,42 +221,51 @@ public final class ScoreboardSidebarService implements SidebarService {
         return messages.render(MessageKey.SIDEBAR_LINE_FOOTER_PANEL_HINT);
     }
 
+    /**
+     * The equipped title's tag is inserted between the "Oyuncu:" label and
+     * the player's name (e.g. "Oyuncu: [EFSANE] Vesen"), not prepended before
+     * the whole line - fixed from an earlier bug where {@code tag.append(base)}
+     * put the tag first. The label is rendered from its own no-placeholder
+     * {@code MessageKey} rather than reusing {@link MessageKey#SIDEBAR_LINE_NAME}'s
+     * "Oyuncu: <name>" template, since the title tag's per-title dynamic
+     * color (from {@link TitleChatStyle}) has to be built in Java either way -
+     * the same documented exception §10.6 already established for chat tags.
+     */
     private Component nameLine(UUID playerId, PlayerProfile profile) {
-        Component base = messages.render(MessageKey.SIDEBAR_LINE_NAME, Map.of("oyuncu", profile.playerName()));
         Optional<String> titleName = titles.equippedDisplayName(playerId);
         if (titleName.isEmpty()) {
-            return base;
+            return messages.render(MessageKey.SIDEBAR_LINE_NAME, Map.of("oyuncu", profile.playerName()));
         }
         TitleChatStyle style = titles.equippedStyle(playerId).orElse(TitleChatStyle.MAVI);
         Component tag = Component.text("[", NamedTextColor.GRAY)
                 .append(Component.text(titleName.get()).color(style.color()).decoration(TextDecoration.BOLD, style.bold()))
                 .append(Component.text("] ", NamedTextColor.GRAY));
-        return tag.append(base);
+        return messages.render(MessageKey.SIDEBAR_LINE_NAME_LABEL)
+                .append(tag)
+                .append(Component.text(profile.playerName(), NamedTextColor.WHITE));
     }
 
     private List<Component> activatedLines(UUID playerId, PlayerProfile profile) {
         List<Component> lines = new ArrayList<>();
         lines.add(nameLine(playerId, profile));
 
-        long requiredForLevel = profile.globalLevel() >= progression.settings().curve().maximumLevel()
-                ? 0L
-                : progression.settings().curve().requiredForCurrentLevel(profile.globalLevel());
         lines.add(messages.render(MessageKey.SIDEBAR_LINE_LEVEL, Map.of(
-                "seviye", Integer.toString(profile.globalLevel()),
-                "xp", Long.toString(profile.globalExperience()),
-                "gereken", Long.toString(requiredForLevel)
+                "seviye", Integer.toString(progression.cachedGlobalLevel(playerId))
         )));
 
+        lines.add(divider());
         lines.add(messages.render(MessageKey.SIDEBAR_LINE_PRESTIGE, Map.of("prestij", Integer.toString(profile.prestige()))));
 
         String classId = profile.selectedClass();
         if (classId.isEmpty()) {
+            lines.add(divider());
             lines.add(messages.render(MessageKey.SIDEBAR_LINE_CLASS_NONE));
             lines.add(messages.render(MessageKey.SIDEBAR_LINE_NO_CLASS_NUDGE));
             lines.add(footer());
             return lines;
         }
 
+        lines.add(divider());
         String className = classes.displayName(classId);
         lines.add(messages.render(MessageKey.SIDEBAR_LINE_CLASS, Map.of("sinif", className)));
 
@@ -256,6 +280,7 @@ public final class ScoreboardSidebarService implements SidebarService {
                 "gereken", Long.toString(requiredForClassLevel)
         )));
 
+        lines.add(divider());
         Optional<ActiveAbilityStatus> active = abilities.activeStatus(playerId);
         active.ifPresent(status -> abilities.definitions().stream()
                 .filter(definition -> definition.id().equals(status.abilityId()))
@@ -266,11 +291,10 @@ public final class ScoreboardSidebarService implements SidebarService {
                 )))));
 
         String selectedAbilityId = abilities.selected(playerId).orElse(null);
+        int currentClassLevel = classProgress.level();
         abilities.definitions().stream()
                 .filter(definition -> definition.classId().equals(classId))
-                .filter(definition -> skills.cached(playerId, definition.skillId())
-                        .map(progress -> progress.level() >= definition.requiredLevel())
-                        .orElse(definition.requiredLevel() <= 1))
+                .filter(definition -> currentClassLevel >= definition.requiredLevel())
                 .sorted((left, right) -> Integer.compare(left.requiredLevel(), right.requiredLevel()))
                 .forEach(definition -> {
                     boolean selected = definition.id().equals(selectedAbilityId);
@@ -280,29 +304,64 @@ public final class ScoreboardSidebarService implements SidebarService {
                     ));
                 });
 
+        addOnboardingLines(lines, playerId);
+
+        lines.add(divider());
         Map<String, QuestProgress> questProgress = quests.cachedAll(playerId);
         quests.definitions().stream()
                 .filter(definition -> definition.type() == QuestType.DAILY)
+                .filter(definition -> questProgress.containsKey(definition.id()))
                 .forEach(definition -> {
                     QuestProgress progress = questProgress.get(definition.id());
-                    int current = progress == null ? 0 : progress.progress();
                     lines.add(messages.render(MessageKey.SIDEBAR_LINE_QUEST_DAILY_ENTRY, Map.of(
                             "gorev", definition.displayName(),
-                            "ilerleme", current + "/" + definition.target(),
+                            "ilerleme", progress.progress() + "/" + definition.target(),
                             "xp", Long.toString(definition.rewardExperience())
                     )));
                 });
         lines.add(messages.render(MessageKey.SIDEBAR_LINE_QUESTS_WEEKLY, questCounts(questProgress, QuestType.WEEKLY)));
 
+        lines.add(divider());
         lines.add(footer());
         return lines;
     }
 
+    /** Purely cosmetic separator between sidebar sections - no service-layer meaning. */
+    private Component divider() {
+        return Component.text("――――――――――", NamedTextColor.DARK_GRAY).decoration(TextDecoration.STRIKETHROUGH, true);
+    }
+
+    /** {@code toplam} is the player's currently-assigned count for this pooled type, not the whole catalogue pool size. */
+    /** Omitted entirely once every onboarding task is complete, per the "omitted not blank" convention. */
+    private void addOnboardingLines(List<Component> lines, UUID playerId) {
+        Set<String> completed = onboarding.cachedCompleted(playerId);
+        List<MessageKey> remaining = new ArrayList<>();
+        if (!completed.contains(OnboardingTask.ILK_MENU_ACMA.id())) {
+            remaining.add(MessageKey.SIDEBAR_LINE_ONBOARDING_MENU);
+        }
+        if (!completed.contains(OnboardingTask.BECERILERI_INCELEME.id())) {
+            remaining.add(MessageKey.SIDEBAR_LINE_ONBOARDING_SKILLS);
+        }
+        if (!completed.contains(OnboardingTask.KABILIYETLERI_INCELEME.id())) {
+            remaining.add(MessageKey.SIDEBAR_LINE_ONBOARDING_ABILITIES);
+        }
+        if (!completed.contains(OnboardingTask.BECERI_KOMUTU_KULLANMA.id())) {
+            remaining.add(MessageKey.SIDEBAR_LINE_ONBOARDING_SKILL_COMMAND);
+        }
+        if (remaining.isEmpty()) {
+            return;
+        }
+        lines.add(divider());
+        lines.add(messages.render(MessageKey.SIDEBAR_LINE_ONBOARDING_HEADER));
+        remaining.forEach(key -> lines.add(messages.render(key)));
+    }
+
     private Map<String, String> questCounts(Map<String, QuestProgress> progress, QuestType type) {
-        List<QuestDefinition> definitions = quests.definitions().stream().filter(definition -> definition.type() == type).toList();
-        long completed = definitions.stream()
-                .filter(definition -> progress.getOrDefault(definition.id(), null) != null && progress.get(definition.id()).completed())
-                .count();
-        return Map.of("tamamlanan", Long.toString(completed), "toplam", Integer.toString(definitions.size()));
+        List<QuestDefinition> assigned = quests.definitions().stream()
+                .filter(definition -> definition.type() == type)
+                .filter(definition -> progress.containsKey(definition.id()))
+                .toList();
+        long completed = assigned.stream().filter(definition -> progress.get(definition.id()).completed()).count();
+        return Map.of("tamamlanan", Long.toString(completed), "toplam", Integer.toString(assigned.size()));
     }
 }

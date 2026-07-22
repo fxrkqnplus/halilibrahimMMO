@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.scoreboard;
 
 import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
+import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -28,16 +29,18 @@ public final class SidebarListener implements Listener {
     private final ProfileService profiles;
     private final ClassService classes;
     private final ActivationService activation;
+    private final OnboardingService onboarding;
 
     public SidebarListener(
             JavaPlugin plugin, SidebarService sidebar, ProfileService profiles,
-            ClassService classes, ActivationService activation
+            ClassService classes, ActivationService activation, OnboardingService onboarding
     ) {
         this.plugin = plugin;
         this.sidebar = sidebar;
         this.profiles = profiles;
         this.classes = classes;
         this.activation = activation;
+        this.onboarding = onboarding;
     }
 
     @EventHandler
@@ -46,11 +49,13 @@ public final class SidebarListener implements Listener {
         profiles.load(player.getUniqueId(), player.getName())
                 .thenCompose(profile -> classes.load(player.getUniqueId(), player.getName()).thenApply(ignored -> profile))
                 .thenCompose(profile -> activation.isActivated(player.getUniqueId()).thenApply(ignored -> profile))
+                .thenCompose(profile -> onboarding.loadCompleted(player.getUniqueId()).thenApply(ignored -> profile))
                 .thenAccept(ignored -> player.getScheduler().run(plugin, task -> sidebar.initialize(player), null));
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         sidebar.remove(event.getPlayer());
+        onboarding.evict(event.getPlayer().getUniqueId());
     }
 }

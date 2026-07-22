@@ -1,6 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.gui;
 
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
+import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.api.HalilIbrahimMMOAPI;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.collections.CollectionService;
@@ -11,6 +12,8 @@ import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.journal.JournalService;
 import com.halilibrahim.halilibrahimmmo.leaderboards.LeaderboardService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
+import com.halilibrahim.halilibrahimmmo.logging.PluginLogger;
+import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingService;
 import com.halilibrahim.halilibrahimmmo.prestige.PrestigeService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
@@ -44,6 +47,9 @@ public record GuiServices(
         FeedbackService feedback,
         SidebarService sidebar,
         ConfigService config,
-        HalilIbrahimMMOAPI api
+        HalilIbrahimMMOAPI api,
+        ActivationService activation,
+        PluginLogger logger,
+        OnboardingService onboarding
 ) {
 }

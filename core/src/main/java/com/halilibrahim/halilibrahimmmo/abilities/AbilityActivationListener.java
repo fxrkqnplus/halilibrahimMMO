@@ -12,6 +12,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Optional;
+
 /**
  * Right-click activation trigger for the menu-selected ability
  * ({@link AbilityService#select}): a right click while holding a tool that
@@ -69,9 +71,34 @@ public final class AbilityActivationListener implements Listener {
         abilities.clearActivationFeedback(event.getPlayer());
     }
 
+    /**
+     * Only clears feedback when the newly-held item no longer matches the
+     * active/armed ability's tool - clearing unconditionally on every hotbar
+     * slot change (the original bug) wiped the glint/countdown even when a
+     * player briefly tabbed away from the matching tool and back, or held two
+     * matching tools in different slots.
+     */
     @EventHandler
     public void onHeldItemChange(PlayerItemHeldEvent event) {
-        abilities.clearActivationFeedback(event.getPlayer());
+        Player player = event.getPlayer();
+        Optional<ActiveAbilityStatus> active = abilities.activeStatus(player.getUniqueId());
+        if (active.isEmpty()) {
+            return;
+        }
+        AbilityDefinition definition = abilities.definitions().stream()
+                .filter(candidate -> candidate.id().equals(active.get().abilityId()))
+                .findFirst()
+                .orElse(null);
+        if (definition == null) {
+            abilities.clearActivationFeedback(player);
+            return;
+        }
+        ItemStack newItem = player.getInventory().getItem(event.getNewSlot());
+        boolean stillMatches = definition.tool() == AbilityToolTag.ANY
+                || (newItem != null && !newItem.getType().isAir() && definition.tool().matches(newItem.getType()));
+        if (!stillMatches) {
+            abilities.clearActivationFeedback(player);
+        }
     }
 
     @EventHandler

@@ -22,6 +22,13 @@ final class ClassConfigTest {
         assertEquals(7, classes.getLong("sinif-degistirme-bekleme-gun"));
         assertEquals(25, classes.getInt("seviye-basina-yetenek-puani"));
         for (String classId : definitions.getKeys(false)) {
+            ConfigurationSection prestigeEffect = definitions.getConfigurationSection(classId + ".prestij-etkisi");
+            assertNotNull(prestigeEffect, classId + " is missing prestij-etkisi");
+            ClassEffectType prestigeType = ClassEffectType.valueOf(prestigeEffect.getString("tur"));
+            assertTrue(prestigeType == ClassEffectType.MAX_HEALTH
+                    || prestigeType == ClassEffectType.PVE_DAMAGE_MULTIPLIER
+                    || prestigeType == ClassEffectType.MAX_ENERGY, classId + " has an unsupported prestij-etkisi tur");
+            assertTrue(prestigeEffect.getDouble("deger-basina") > 0, classId + " prestij-etkisi deger-basina must be positive");
             ConfigurationSection talents = definitions.getConfigurationSection(classId + ".yetenekler");
             assertNotNull(talents);
             assertEquals(3, talents.getKeys(false).size());

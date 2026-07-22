@@ -40,7 +40,7 @@ public final class UnlockContextLoader {
                 quests.loadAll(playerId).thenCompose(questProgress ->
                         collections.loadAll(playerId).thenCompose(collectionProgress ->
                                 loadSkillLevels(playerId).thenApply(skillLevels -> new UnlockContext(
-                                        profile.globalLevel(),
+                                        skillLevels.values().stream().mapToInt(Integer::intValue).sum(),
                                         profile.prestige(),
                                         completedQuestIds(questProgress),
                                         completedCollectionIds(collectionProgress),

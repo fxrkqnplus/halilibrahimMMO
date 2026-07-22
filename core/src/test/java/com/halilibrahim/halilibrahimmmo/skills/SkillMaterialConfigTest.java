@@ -8,10 +8,16 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class SkillMaterialConfigTest {
+
+    private static final Set<String> SUPPORTED_MILESTONE_TIERS = Set.of("25", "50", "75", "100");
+    private static final Set<String> SUPPORTED_MILESTONE_EFFECT_TYPES = Set.of(
+            "MAX_HEALTH", "PVE_DAMAGE_MULTIPLIER", "MAX_ENERGY", "HASTE", "SPEED"
+    );
 
     private static final Set<String> SUPPORTED_BLOCK_MATERIALS = Set.of(
             "DIRT", "GRASS_BLOCK", "COARSE_DIRT", "ROOTED_DIRT", "PODZOL", "MYCELIUM", "SAND", "RED_SAND", "GRAVEL", "CLAY", "SOUL_SAND", "SOUL_SOIL",
@@ -26,6 +32,14 @@ final class SkillMaterialConfigTest {
         ConfigurationSection skills = yaml.getConfigurationSection("beceriler");
         assertNotNull(skills);
         for (String id : skills.getKeys(false)) {
+            ConfigurationSection milestones = skills.getConfigurationSection(id + ".kilometre-taslari");
+            assertNotNull(milestones, () -> "Missing kilometre-taslari for skill " + id);
+            assertEquals(SUPPORTED_MILESTONE_TIERS, milestones.getKeys(false), () -> "Skill " + id + " must define exactly tiers 25/50/75/100");
+            for (String tier : milestones.getKeys(false)) {
+                String type = milestones.getString(tier + ".tur");
+                assertTrue(SUPPORTED_MILESTONE_EFFECT_TYPES.contains(type), () -> "Unknown milestone effect type in skill " + id + " tier " + tier + ": " + type);
+                assertTrue(milestones.getDouble(tier + ".deger", -1) >= 0, () -> "Negative milestone effect value in skill " + id + " tier " + tier);
+            }
             if (!"BLOCK".equals(skills.getString(id + ".kaynak.tur"))) {
                 continue;
             }

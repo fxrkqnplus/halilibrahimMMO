@@ -61,11 +61,14 @@ sinif-ilerleme:
     49: 2500
     50: 0
 
+# prestij-etkisi: her prestij rankinda kalici olarak eklenen, secili sinif icin
+# gecerli bonus (MAX_HEALTH/PVE_DAMAGE_MULTIPLIER/MAX_ENERGY turlerinden biri).
 siniflar:
   savasci:
     gorunen-ad: "Define Avcısı"
     sinerji-beceri: kazicilik
     bossbar-rengi: SARI
+    prestij-etkisi: { tur: MAX_HEALTH, deger-basina: 1 }
     yetenekler:
       canlilik: { gorunen-ad: "Canlılık", maksimum-rank: 4, etki: { tur: MAX_HEALTH, deger-rank-basina: 2 } }
       guc: { gorunen-ad: "Güç", maksimum-rank: 4, etki: { tur: PVE_DAMAGE_MULTIPLIER, deger-rank-basina: 0.03 } }
@@ -74,6 +77,7 @@ siniflar:
     gorunen-ad: "Amansız Savaşçı"
     sinerji-beceri: avcilik
     bossbar-rengi: KIRMIZI
+    prestij-etkisi: { tur: PVE_DAMAGE_MULTIPLIER, deger-basina: 0.02 }
     yetenekler:
       nisancilik: { gorunen-ad: "Nişancılık", maksimum-rank: 4, etki: { tur: PVE_DAMAGE_MULTIPLIER, deger-rank-basina: 0.03 } }
       odak-tasarrufu: { gorunen-ad: "Odak Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: avci-odagi, deger-rank-basina: 0.05 } }
@@ -82,6 +86,7 @@ siniflar:
     gorunen-ad: "Mağara Adamı"
     sinerji-beceri: madencilik
     bossbar-rengi: MAVI
+    prestij-etkisi: { tur: MAX_ENERGY, deger-basina: 3 }
     yetenekler:
       cevher-tasarrufu: { gorunen-ad: "Cevher Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: cevher-sezgisi, deger-rank-basina: 0.05 } }
       damar-tasarrufu: { gorunen-ad: "Damar Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: damar-kirici, deger-rank-basina: 0.05 } }
@@ -90,6 +95,7 @@ siniflar:
     gorunen-ad: "Orman Bekçisi"
     sinerji-beceri: odunculuk
     bossbar-rengi: YESIL
+    prestij-etkisi: { tur: MAX_HEALTH, deger-basina: 1 }
     yetenekler:
       kesim-tasarrufu: { gorunen-ad: "Kesim Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }
       kesim-ritmi: { gorunen-ad: "Kesim Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }

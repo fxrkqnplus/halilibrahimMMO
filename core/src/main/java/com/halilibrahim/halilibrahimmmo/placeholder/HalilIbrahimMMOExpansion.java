@@ -18,6 +18,12 @@ import java.util.Optional;
  * cached-snapshot methods, the same way any third-party integration would -
  * PlaceholderAPI calls {@link #onPlaceholderRequest(Player, String)}
  * synchronously and cannot await a future.
+ *
+ * <p>{@code %halilibrahimmmo_level%} is Güç - the sum of every configured
+ * skill's level (Phase 11) - and, unlike a per-skill level, has no XP curve
+ * of its own: {@code %halilibrahimmmo_xp%}/{@code _xp_to_next_level%} always
+ * resolve to {@code "0"} now. Per-skill {@code %halilibrahimmmo_skill_<id>_xp%}
+ * is unaffected.</p>
  */
 public final class HalilIbrahimMMOExpansion extends PlaceholderExpansion {
 

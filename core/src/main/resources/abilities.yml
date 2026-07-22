@@ -16,7 +16,11 @@
 
 enerji:
   maksimum: 100
-  yenilenme-saniye-basina: 4
+  yenilenme-saniye-basina: 3
+
+# Menüden farklı bir kabiliyet secmeden once beklenmesi gereken sure (ayni
+# kabiliyeti yeniden secmek her zaman ucretsizdir).
+secim-bekleme-saniye: 120
 
 kabiliyetler:
   # ----- Define Avcısı (savasci) - sinerji: kazicilik -----
@@ -133,7 +137,7 @@ kabiliyetler:
     gerekli-seviye: 10
     enerji: 25
     bekleme-suresi-saniye: 90
-    etki-suresi-saniye: 120
+    etki-suresi-saniye: 30
     sure-modu: ENERJI
     enerji-vurus-basi: 8
     # Menuden secilip sag tikla etkinlestirmek icin gereken alet: herhangi bir kilic.
@@ -151,7 +155,7 @@ kabiliyetler:
     sinif: avci
     gerekli-seviye: 30
     enerji: 30
-    bekleme-suresi-saniye: 100
+    bekleme-suresi-saniye: 30
     etki-suresi-saniye: 2
     arac:
       tur: SWORD

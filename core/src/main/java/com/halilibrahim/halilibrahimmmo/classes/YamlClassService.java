@@ -5,6 +5,7 @@ import com.halilibrahim.halilibrahimmmo.api.classes.PlayerClassSnapshot;
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
 import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
+import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
@@ -35,18 +36,23 @@ public final class YamlClassService implements ClassService {
     private final ClassRepository repository;
     private final AbilityService abilities;
     private final SkillService skills;
+    private final ProgressionService progression;
     private final AtomicReference<ClassSettings> settings = new AtomicReference<>();
     private final ConcurrentHashMap<UUID, PlayerClassProgress> progressCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, String> selectedClasses = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, CompletableFuture<Void>> updateChains = new ConcurrentHashMap<>();
     private final NamespacedKey healthModifierKey;
 
-    public YamlClassService(JavaPlugin plugin, ProfileService profiles, ClassRepository repository, AbilityService abilities, SkillService skills) {
+    public YamlClassService(
+            JavaPlugin plugin, ProfileService profiles, ClassRepository repository, AbilityService abilities,
+            SkillService skills, ProgressionService progression
+    ) {
         this.plugin = plugin;
         this.profiles = profiles;
         this.repository = repository;
         this.abilities = abilities;
         this.skills = skills;
+        this.progression = progression;
         this.healthModifierKey = new NamespacedKey(plugin, "class-health");
     }
 
@@ -172,6 +178,18 @@ public final class YamlClassService implements ClassService {
                 case ABILITY_LIMIT_BONUS -> limits.merge(talent.abilityId(), (int) total, Integer::sum);
             }
         }
+        int prestigeCount = profiles.cached(playerId).map(PlayerProfile::prestige).orElse(0);
+        double prestigeTotal = prestigeCount * definition.prestigeEffectValuePerRank();
+        switch (definition.prestigeEffectType()) {
+            case MAX_HEALTH -> health += prestigeTotal;
+            case PVE_DAMAGE_MULTIPLIER -> damage += prestigeTotal;
+            case MAX_ENERGY -> energy += (int) prestigeTotal;
+            case ABILITY_ENERGY_COST_REDUCTION, ABILITY_COOLDOWN_REDUCTION, ABILITY_LIMIT_BONUS -> {
+                // Prestige boosts are deliberately restricted to MAX_HEALTH/PVE_DAMAGE_MULTIPLIER/MAX_ENERGY
+                // at parse time (see parse(...)) - per-ability modifiers need an ability id this
+                // class-wide bonus does not have.
+            }
+        }
         return new ClassModifiers(health, damage, energy, Map.copyOf(costs), Map.copyOf(cooldowns), Map.copyOf(limits));
     }
 
@@ -189,17 +207,38 @@ public final class YamlClassService implements ClassService {
 
     @Override
     public CompletableFuture<ClassExperienceAwardResult> awardClassExperience(UUID playerId, String playerName, String classId, long amount) {
-        return serial(playerId, () -> load(playerId, playerName).thenCompose(progress -> {
+        return serial(playerId, () -> profiles.load(playerId, playerName).thenCompose(profile -> {
+            double prestigeMultiplier = 1.0 + 0.25 * profile.prestige();
+            long adjustedAmount = Math.round(amount * prestigeMultiplier);
+            return applyClassExperience(playerId, playerName, classId, adjustedAmount);
+        }));
+    }
+
+    /**
+     * Awards class XP without applying the prestige multiplier - the one
+     * caller of this method, {@code ClassSynergyBridge}, mirrors an amount
+     * that already went through the skill-side prestige bonus
+     * ({@code classSynergyMultiplier} in the plugin bootstrap); reapplying it
+     * here would compound prestige quadratically for synergy-skill class XP
+     * instead of the single +25%-per-rank bonus every other XP source gets.
+     */
+    @Override
+    public CompletableFuture<ClassExperienceAwardResult> awardClassExperienceExact(UUID playerId, String playerName, String classId, long amount) {
+        return serial(playerId, () -> applyClassExperience(playerId, playerName, classId, amount));
+    }
+
+    private CompletableFuture<ClassExperienceAwardResult> applyClassExperience(UUID playerId, String playerName, String classId, long adjustedAmount) {
+        return load(playerId, playerName).thenCompose(progress -> {
             ClassLevelProgress before = progress.levelProgress(classId);
-            ClassLevelProgress after = settings().classLevelCurve().award(before, amount);
+            ClassLevelProgress after = settings().classLevelCurve().award(before, adjustedAmount);
             Map<String, ClassLevelProgress> updatedLevels = new LinkedHashMap<>(progress.classLevels());
             updatedLevels.put(classId, after);
             PlayerClassProgress next = new PlayerClassProgress(playerId, progress.talentRanks(), progress.classChangeReadyAtMillis(), Map.copyOf(updatedLevels));
             return repository.saveClassLevel(playerId, classId, after.level(), after.experience()).thenApply(ignored -> {
                 progressCache.put(playerId, next);
-                return new ClassExperienceAwardResult(after.level(), after.level() != before.level());
+                return new ClassExperienceAwardResult(before.level(), after.level(), after.level() != before.level());
             });
-        }));
+        });
     }
 
     @Override
@@ -208,8 +247,59 @@ public final class YamlClassService implements ClassService {
         return progress == null ? new ClassLevelProgress(classId, 1, 0L) : progress.levelProgress(classId);
     }
 
+    @Override
+    public CompletableFuture<Void> resetClassLevel(UUID playerId, String playerName, String classId) {
+        return serial(playerId, () -> load(playerId, playerName).thenCompose(progress -> {
+            ClassLevelProgress reset = new ClassLevelProgress(classId, 1, 0L);
+            Map<String, ClassLevelProgress> updatedLevels = new LinkedHashMap<>(progress.classLevels());
+            updatedLevels.put(classId, reset);
+            PlayerClassProgress next = new PlayerClassProgress(playerId, progress.talentRanks(), progress.classChangeReadyAtMillis(), Map.copyOf(updatedLevels));
+            return repository.saveClassLevel(playerId, classId, reset.level(), reset.experience()).thenAccept(ignored -> progressCache.put(playerId, next));
+        }));
+    }
+
+    @Override
+    public CompletableFuture<ClassExperienceAwardResult> adminSetClassLevel(UUID playerId, String playerName, String classId, int level) {
+        return serial(playerId, () -> load(playerId, playerName).thenCompose(progress -> {
+            int clamped = Math.max(1, Math.min(level, settings().classLevelCurve().maximumLevel()));
+            int previousLevel = progress.levelProgress(classId).level();
+            ClassLevelProgress target = new ClassLevelProgress(classId, clamped, 0L);
+            Map<String, ClassLevelProgress> updatedLevels = new LinkedHashMap<>(progress.classLevels());
+            updatedLevels.put(classId, target);
+            PlayerClassProgress next = new PlayerClassProgress(playerId, progress.talentRanks(), progress.classChangeReadyAtMillis(), Map.copyOf(updatedLevels));
+            return repository.saveClassLevel(playerId, classId, target.level(), target.experience()).thenApply(ignored -> {
+                progressCache.put(playerId, next);
+                return new ClassExperienceAwardResult(previousLevel, clamped, clamped != previousLevel);
+            });
+        }));
+    }
+
+    @Override
+    public CompletableFuture<ClassExperienceAwardResult> adminAddClassExperience(UUID playerId, String playerName, String classId, long amount) {
+        return serial(playerId, () -> load(playerId, playerName).thenCompose(progress -> {
+            ClassLevelProgress before = progress.levelProgress(classId);
+            ClassLevelProgress after = settings().classLevelCurve().award(before, amount);
+            Map<String, ClassLevelProgress> updatedLevels = new LinkedHashMap<>(progress.classLevels());
+            updatedLevels.put(classId, after);
+            PlayerClassProgress next = new PlayerClassProgress(playerId, progress.talentRanks(), progress.classChangeReadyAtMillis(), Map.copyOf(updatedLevels));
+            return repository.saveClassLevel(playerId, classId, after.level(), after.experience()).thenApply(ignored -> {
+                progressCache.put(playerId, next);
+                return new ClassExperienceAwardResult(before.level(), after.level(), after.level() != before.level());
+            });
+        }));
+    }
+
+    @Override
+    public CompletableFuture<Void> adminForceSetClass(UUID playerId, String playerName, String classId) {
+        return serial(playerId, () -> load(playerId, playerName).thenCompose(progress ->
+                profiles.update(playerId, playerName, old -> withClass(old, classId)).thenAccept(ignored -> {
+                    selectedClasses.put(playerId, classId);
+                    progressCache.put(playerId, new PlayerClassProgress(playerId, progress.talentRanks(), progress.classChangeReadyAtMillis(), progress.classLevels()));
+                })));
+    }
+
     public int pointsFor(PlayerProfile profile) {
-        return TalentPointBudget.pointsFor(profile.globalLevel(), profile.prestige(), settings().levelsPerTalentPoint());
+        return TalentPointBudget.pointsFor(progression.cachedGlobalLevel(profile.playerId()), profile.prestige(), settings().levelsPerTalentPoint());
     }
 
     private ClassSettings parse(YamlConfiguration yaml) {
@@ -258,7 +348,16 @@ public final class YamlClassService implements ClassService {
                 nodes.put(talentId, new TalentNodeDefinition(talentId, nodeName, maximumRank, type, abilityId, value));
             }
             if (nodes.isEmpty()) throw new IllegalArgumentException("Class must define talents: " + id);
-            definitions.put(id, new PlayerClassDefinition(id, displayName, synergySkillId, barColor, Map.copyOf(nodes)));
+            ConfigurationSection prestigeEffect = requiredSection(section, "prestij-etkisi");
+            ClassEffectType prestigeEffectType = ClassEffectType.valueOf(prestigeEffect.getString("tur", "").toUpperCase(Locale.ROOT));
+            double prestigeEffectValue = prestigeEffect.getDouble("deger-basina", 0);
+            boolean prestigeTypeAllowed = prestigeEffectType == ClassEffectType.MAX_HEALTH
+                    || prestigeEffectType == ClassEffectType.PVE_DAMAGE_MULTIPLIER
+                    || prestigeEffectType == ClassEffectType.MAX_ENERGY;
+            if (!prestigeTypeAllowed || prestigeEffectValue <= 0) {
+                throw new IllegalArgumentException("Class prestige effect must be a positive MAX_HEALTH/PVE_DAMAGE_MULTIPLIER/MAX_ENERGY value: " + id);
+            }
+            definitions.put(id, new PlayerClassDefinition(id, displayName, synergySkillId, barColor, Map.copyOf(nodes), prestigeEffectType, prestigeEffectValue));
         }
         if (definitions.isEmpty()) throw new IllegalArgumentException("classes.yml must define classes.");
         return new ClassSettings(Math.multiplyExact(cooldownDays, 86_400_000L), levelsPerPoint, classLevelCurve, synergyBonus, Map.copyOf(definitions));

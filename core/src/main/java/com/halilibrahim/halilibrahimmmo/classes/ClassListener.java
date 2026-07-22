@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.classes;
 
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
+import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,9 +22,9 @@ import org.bukkit.plugin.java.JavaPlugin;
  * but had no event source wired to it until this phase.</p>
  */
 public final class ClassListener implements Listener {
-    private final JavaPlugin plugin; private final ClassService classes; private final AbilityService abilities; private final EnergyService energy;
-    public ClassListener(JavaPlugin plugin, ClassService classes, AbilityService abilities, EnergyService energy) {
-        this.plugin = plugin; this.classes = classes; this.abilities = abilities; this.energy = energy;
+    private final JavaPlugin plugin; private final ClassService classes; private final AbilityService abilities; private final EnergyService energy; private final SkillService skills;
+    public ClassListener(JavaPlugin plugin, ClassService classes, AbilityService abilities, EnergyService energy, SkillService skills) {
+        this.plugin = plugin; this.classes = classes; this.abilities = abilities; this.energy = energy; this.skills = skills;
     }
     @EventHandler public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
@@ -32,7 +33,8 @@ public final class ClassListener implements Listener {
     @EventHandler public void onQuit(PlayerQuitEvent event) { classes.evict(event.getPlayer().getUniqueId()); }
     @EventHandler(ignoreCancelled = true) public void onDamage(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player player) || !(event.getEntity() instanceof LivingEntity) || event.getEntity() instanceof Player) return;
-        event.setDamage(event.getDamage() * (1.0D + classes.modifiers(player.getUniqueId()).pveDamageBonus()));
+        double pveDamageBonus = classes.modifiers(player.getUniqueId()).pveDamageBonus() + skills.milestoneModifiers(player.getUniqueId()).pveDamageBonus();
+        event.setDamage(event.getDamage() * (1.0D + pveDamageBonus));
         abilities.handleEntityDamage(event, energy);
     }
 }

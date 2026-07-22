@@ -23,15 +23,20 @@ final class QuestConfigTest {
     // Paper server, so - like SkillMaterialConfigTest - block-ness is asserted
     // against a known-block allow list rather than calling it from this test.
     private static final Set<String> SUPPORTED_BLOCK_MATERIALS = Set.of(
-            "OAK_LOG", "SPRUCE_LOG", "BIRCH_LOG", "JUNGLE_LOG", "ACACIA_LOG", "DARK_OAK_LOG",
-            "DEEPSLATE_DIAMOND_ORE", "DEEPSLATE_EMERALD_ORE", "ANCIENT_DEBRIS",
-            "COAL_ORE", "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE"
+            "OAK_LOG", "SPRUCE_LOG", "BIRCH_LOG", "JUNGLE_LOG", "ACACIA_LOG", "DARK_OAK_LOG", "MANGROVE_LOG", "CHERRY_LOG", "PALE_OAK_LOG",
+            "DEEPSLATE_DIAMOND_ORE", "DEEPSLATE_EMERALD_ORE", "ANCIENT_DEBRIS", "EMERALD_ORE", "DIAMOND_ORE",
+            "COAL_ORE", "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE",
+            "GOLD_ORE", "DEEPSLATE_GOLD_ORE", "LAPIS_ORE", "DEEPSLATE_LAPIS_ORE", "REDSTONE_ORE", "DEEPSLATE_REDSTONE_ORE",
+            "DIRT", "COARSE_DIRT", "GRASS_BLOCK", "GRAVEL", "SAND", "RED_SAND", "CLAY", "PODZOL", "MYCELIUM", "ROOTED_DIRT",
+            "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "CRIMSON_STEM"
     );
 
     @Test
     void bundledQuestsDeclareValidTypesObjectivesAndPositiveRewards() {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(
                 getClass().getClassLoader().getResourceAsStream("quests.yml"), StandardCharsets.UTF_8));
+        assertTrue(yaml.getInt("gunluk-atanan-sayisi") > 0);
+        assertTrue(yaml.getInt("haftalik-atanan-sayisi") > 0);
         ConfigurationSection quests = yaml.getConfigurationSection("gorevler");
         assertNotNull(quests);
         assertTrue(quests.getKeys(false).size() >= 1);

@@ -3,7 +3,6 @@ package com.halilibrahim.halilibrahimmmo;
 import com.halilibrahim.halilibrahimmmo.api.CachedPlayerSnapshot;
 import com.halilibrahim.halilibrahimmmo.api.HalilIbrahimMMOAPI;
 import com.halilibrahim.halilibrahimmmo.api.profile.PlayerProfileSnapshot;
-import com.halilibrahim.halilibrahimmmo.api.progression.ProgressionCause;
 import com.halilibrahim.halilibrahimmmo.api.skills.SkillDefinitionSnapshot;
 import com.halilibrahim.halilibrahimmmo.api.skills.SkillSnapshot;
 import com.halilibrahim.halilibrahimmmo.api.classes.ClassDefinitionSnapshot;
@@ -30,8 +29,6 @@ import com.halilibrahim.halilibrahimmmo.leaderboards.LeaderboardService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.logging.PluginLogger;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
-import com.halilibrahim.halilibrahimmmo.progression.ExperienceCurve;
-import com.halilibrahim.halilibrahimmmo.progression.ProgressionAwardResult;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestDefinition;
 import com.halilibrahim.halilibrahimmmo.quests.QuestProgress;
@@ -155,15 +152,6 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
     }
 
     @Override
-    public CompletableFuture<PlayerProfileSnapshot> awardGlobalExperience(UUID playerId, long amount, ProgressionCause cause) {
-        if (amount <= 0 || cause == null) {
-            return CompletableFuture.failedFuture(new IllegalArgumentException("Amount must be positive and cause must be set."));
-        }
-        return progression.award(playerId, playerId.toString().substring(0, 16), amount, cause)
-                .thenApply(ProgressionAwardResult::snapshot);
-    }
-
-    @Override
     public Collection<SkillDefinitionSnapshot> getSkills() {
         return skills.definitions().stream().map(this::snapshot).toList();
     }
@@ -245,22 +233,16 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
 
     @Override
     public Optional<CachedPlayerSnapshot> findCachedPlayer(UUID playerId) {
-        return profiles.cached(playerId).map(profile -> {
-            ExperienceCurve curve = progression.settings().curve();
-            long experienceToNextLevel = profile.globalLevel() >= curve.maximumLevel()
-                    ? 0L
-                    : Math.max(0L, curve.requiredForCurrentLevel(profile.globalLevel()) - profile.globalExperience());
-            return new CachedPlayerSnapshot(
-                    playerId,
-                    profile.globalLevel(),
-                    profile.globalExperience(),
-                    experienceToNextLevel,
-                    profile.prestige(),
-                    profile.selectedClass(),
-                    titles.equippedDisplayName(playerId).orElse(""),
-                    cosmetics.equippedDisplayName(playerId).orElse("")
-            );
-        });
+        return profiles.cached(playerId).map(profile -> new CachedPlayerSnapshot(
+                playerId,
+                progression.cachedGlobalLevel(playerId),
+                0L,
+                0L,
+                profile.prestige(),
+                profile.selectedClass(),
+                titles.equippedDisplayName(playerId).orElse(""),
+                cosmetics.equippedDisplayName(playerId).orElse("")
+        ));
     }
 
     @Override

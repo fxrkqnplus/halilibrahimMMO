@@ -236,6 +236,12 @@ public final class BossBarFeedbackService implements FeedbackService {
         playSound(player, "beceri-seviye-atlama");
     }
 
+    @Override
+    public void celebrateGucMilestone(Player player, int newGuc) {
+        show(player, MessageKey.FEEDBACK_GUC_BOSSBAR, MessageKey.FEEDBACK_GUC_TITLE, MessageKey.FEEDBACK_GUC_SUBTITLE,
+                Map.of("guc", Integer.toString(newGuc)), BossBar.Color.GREEN);
+    }
+
     private void show(
             Player player, MessageKey bossBarKey, MessageKey titleKey, MessageKey subtitleKey,
             Map<String, String> placeholders, BossBar.Color color

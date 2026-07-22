@@ -4,6 +4,7 @@ import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
+import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import org.bukkit.entity.Player;
@@ -20,12 +21,14 @@ public final class ProfileCommand implements BasicCommand {
     private final MessageService messages;
     private final JavaPlugin plugin;
     private final ClassService classes;
+    private final ProgressionService progression;
 
-    public ProfileCommand(JavaPlugin plugin, ProfileService profiles, MessageService messages, ClassService classes) {
+    public ProfileCommand(JavaPlugin plugin, ProfileService profiles, MessageService messages, ClassService classes, ProgressionService progression) {
         this.plugin = plugin;
         this.profiles = profiles;
         this.messages = messages;
         this.classes = classes;
+        this.progression = progression;
     }
 
     @Override
@@ -36,16 +39,15 @@ public final class ProfileCommand implements BasicCommand {
         }
         profiles.load(player.getUniqueId(), player.getName()).thenAccept(profile ->
                 player.getScheduler().run(plugin, task -> {
+                    String guc = Integer.toString(progression.cachedGlobalLevel(player.getUniqueId()));
                     if (profile.selectedClass().isEmpty()) {
                         messages.send(player, MessageKey.PROFILE_OVERVIEW_NO_CLASS, Map.of(
-                                "seviye", Integer.toString(profile.globalLevel()),
-                                "xp", Long.toString(profile.globalExperience()),
+                                "seviye", guc,
                                 "prestij", Integer.toString(profile.prestige())
                         ));
                     } else {
                         messages.send(player, MessageKey.PROFILE_OVERVIEW, Map.of(
-                                "seviye", Integer.toString(profile.globalLevel()),
-                                "xp", Long.toString(profile.globalExperience()),
+                                "seviye", guc,
                                 "prestij", Integer.toString(profile.prestige()),
                                 "sinif", classes.displayName(profile.selectedClass())
                         ));

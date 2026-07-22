@@ -113,98 +113,119 @@ seviyeler:
 beceriler:
   kazicilik:
     gorunen-ad: "Kazıcılık"
+    # 25/50/75/100. seviyelerde kazanilan kalici, farklilastirilmis kilometre tasi bonuslari.
+    kilometre-taslari:
+      25: { tur: MAX_ENERGY, deger: 10 }
+      50: { tur: MAX_HEALTH, deger: 2 }
+      75: { tur: MAX_ENERGY, deger: 10 }
+      100: { tur: MAX_ENERGY, deger: 10 }
     kaynak:
       tur: BLOCK
       malzemeler:
-        DIRT: { xp: 1, gorunen-ad: "Toprak" }
-        GRASS_BLOCK: { xp: 1, gorunen-ad: "Çimen Bloğu" }
-        COARSE_DIRT: { xp: 1, gorunen-ad: "Sert Toprak" }
-        SAND: { xp: 1, gorunen-ad: "Kum" }
-        ROOTED_DIRT: { xp: 2, gorunen-ad: "Köklü Toprak" }
-        PODZOL: { xp: 2, gorunen-ad: "Podzol" }
-        MYCELIUM: { xp: 2, gorunen-ad: "Misel" }
-        RED_SAND: { xp: 2, gorunen-ad: "Kızıl Kum" }
-        GRAVEL: { xp: 2, gorunen-ad: "Çakıl" }
-        SOUL_SAND: { xp: 2, gorunen-ad: "Ruh Kumu" }
-        SOUL_SOIL: { xp: 2, gorunen-ad: "Ruh Toprağı" }
-        CLAY: { xp: 3, gorunen-ad: "Kil" }
+        DIRT: { xp: 2, gorunen-ad: "Toprak" }
+        GRASS_BLOCK: { xp: 2, gorunen-ad: "Çimen Bloğu" }
+        COARSE_DIRT: { xp: 2, gorunen-ad: "Sert Toprak" }
+        SAND: { xp: 2, gorunen-ad: "Kum" }
+        ROOTED_DIRT: { xp: 4, gorunen-ad: "Köklü Toprak" }
+        PODZOL: { xp: 4, gorunen-ad: "Podzol" }
+        MYCELIUM: { xp: 4, gorunen-ad: "Misel" }
+        RED_SAND: { xp: 4, gorunen-ad: "Kızıl Kum" }
+        GRAVEL: { xp: 4, gorunen-ad: "Çakıl" }
+        SOUL_SAND: { xp: 4, gorunen-ad: "Ruh Kumu" }
+        SOUL_SOIL: { xp: 4, gorunen-ad: "Ruh Toprağı" }
+        CLAY: { xp: 6, gorunen-ad: "Kil" }
 
   odunculuk:
     gorunen-ad: "Odunculuk"
+    kilometre-taslari:
+      25: { tur: SPEED, deger: 0 }
+      50: { tur: MAX_HEALTH, deger: 2 }
+      75: { tur: SPEED, deger: 1 }
+      100: { tur: MAX_ENERGY, deger: 15 }
     kaynak:
       tur: BLOCK
       malzemeler:
-        OAK_LOG: { xp: 2, gorunen-ad: "Meşe Kütüğü" }
-        SPRUCE_LOG: { xp: 2, gorunen-ad: "Ladin Kütüğü" }
-        BIRCH_LOG: { xp: 2, gorunen-ad: "Huş Kütüğü" }
-        JUNGLE_LOG: { xp: 3, gorunen-ad: "Orman Kütüğü" }
-        ACACIA_LOG: { xp: 3, gorunen-ad: "Akasya Kütüğü" }
-        DARK_OAK_LOG: { xp: 3, gorunen-ad: "Kara Meşe Kütüğü" }
-        MANGROVE_LOG: { xp: 3, gorunen-ad: "Mangrov Kütüğü" }
-        CHERRY_LOG: { xp: 4, gorunen-ad: "Kiraz Kütüğü" }
-        PALE_OAK_LOG: { xp: 4, gorunen-ad: "Solgun Meşe Kütüğü" }
-        CRIMSON_STEM: { xp: 4, gorunen-ad: "Kızıl Sap" }
-        WARPED_STEM: { xp: 4, gorunen-ad: "Çarpık Sap" }
+        OAK_LOG: { xp: 4, gorunen-ad: "Meşe Kütüğü" }
+        SPRUCE_LOG: { xp: 4, gorunen-ad: "Ladin Kütüğü" }
+        BIRCH_LOG: { xp: 4, gorunen-ad: "Huş Kütüğü" }
+        JUNGLE_LOG: { xp: 6, gorunen-ad: "Orman Kütüğü" }
+        ACACIA_LOG: { xp: 6, gorunen-ad: "Akasya Kütüğü" }
+        DARK_OAK_LOG: { xp: 6, gorunen-ad: "Kara Meşe Kütüğü" }
+        MANGROVE_LOG: { xp: 6, gorunen-ad: "Mangrov Kütüğü" }
+        CHERRY_LOG: { xp: 8, gorunen-ad: "Kiraz Kütüğü" }
+        PALE_OAK_LOG: { xp: 8, gorunen-ad: "Solgun Meşe Kütüğü" }
+        CRIMSON_STEM: { xp: 8, gorunen-ad: "Kızıl Sap" }
+        WARPED_STEM: { xp: 8, gorunen-ad: "Çarpık Sap" }
 
   madencilik:
     gorunen-ad: "Madencilik"
+    kilometre-taslari:
+      25: { tur: HASTE, deger: 0 }
+      50: { tur: MAX_HEALTH, deger: 2 }
+      75: { tur: HASTE, deger: 1 }
+      100: { tur: MAX_ENERGY, deger: 15 }
     kaynak:
       tur: BLOCK
       malzemeler:
-        COAL_ORE: { xp: 3, gorunen-ad: "Kömür Cevheri" }
-        DEEPSLATE_COAL_ORE: { xp: 3, gorunen-ad: "Kömür Cevheri" }
-        COPPER_ORE: { xp: 4, gorunen-ad: "Bakır Cevheri" }
-        DEEPSLATE_COPPER_ORE: { xp: 4, gorunen-ad: "Bakır Cevheri" }
-        IRON_ORE: { xp: 5, gorunen-ad: "Demir Cevheri" }
-        DEEPSLATE_IRON_ORE: { xp: 5, gorunen-ad: "Demir Cevheri" }
-        NETHER_GOLD_ORE: { xp: 5, gorunen-ad: "Nether Altın Cevheri" }
-        NETHER_QUARTZ_ORE: { xp: 5, gorunen-ad: "Kuvars Cevheri" }
-        GOLD_ORE: { xp: 6, gorunen-ad: "Altın Cevheri" }
-        DEEPSLATE_GOLD_ORE: { xp: 6, gorunen-ad: "Altın Cevheri" }
-        REDSTONE_ORE: { xp: 6, gorunen-ad: "Redstone Cevheri" }
-        DEEPSLATE_REDSTONE_ORE: { xp: 6, gorunen-ad: "Redstone Cevheri" }
-        LAPIS_ORE: { xp: 7, gorunen-ad: "Lapis Cevheri" }
-        DEEPSLATE_LAPIS_ORE: { xp: 7, gorunen-ad: "Lapis Cevheri" }
-        DIAMOND_ORE: { xp: 14, gorunen-ad: "Elmas Cevheri" }
-        DEEPSLATE_DIAMOND_ORE: { xp: 14, gorunen-ad: "Elmas Cevheri" }
-        EMERALD_ORE: { xp: 16, gorunen-ad: "Zümrüt Cevheri" }
-        DEEPSLATE_EMERALD_ORE: { xp: 16, gorunen-ad: "Zümrüt Cevheri" }
-        ANCIENT_DEBRIS: { xp: 20, gorunen-ad: "Kadim Kalıntı" }
+        COAL_ORE: { xp: 6, gorunen-ad: "Kömür Cevheri" }
+        DEEPSLATE_COAL_ORE: { xp: 6, gorunen-ad: "Kömür Cevheri" }
+        COPPER_ORE: { xp: 8, gorunen-ad: "Bakır Cevheri" }
+        DEEPSLATE_COPPER_ORE: { xp: 8, gorunen-ad: "Bakır Cevheri" }
+        IRON_ORE: { xp: 10, gorunen-ad: "Demir Cevheri" }
+        DEEPSLATE_IRON_ORE: { xp: 10, gorunen-ad: "Demir Cevheri" }
+        NETHER_GOLD_ORE: { xp: 10, gorunen-ad: "Nether Altın Cevheri" }
+        NETHER_QUARTZ_ORE: { xp: 10, gorunen-ad: "Kuvars Cevheri" }
+        GOLD_ORE: { xp: 12, gorunen-ad: "Altın Cevheri" }
+        DEEPSLATE_GOLD_ORE: { xp: 12, gorunen-ad: "Altın Cevheri" }
+        REDSTONE_ORE: { xp: 12, gorunen-ad: "Redstone Cevheri" }
+        DEEPSLATE_REDSTONE_ORE: { xp: 12, gorunen-ad: "Redstone Cevheri" }
+        LAPIS_ORE: { xp: 14, gorunen-ad: "Lapis Cevheri" }
+        DEEPSLATE_LAPIS_ORE: { xp: 14, gorunen-ad: "Lapis Cevheri" }
+        DIAMOND_ORE: { xp: 28, gorunen-ad: "Elmas Cevheri" }
+        DEEPSLATE_DIAMOND_ORE: { xp: 28, gorunen-ad: "Elmas Cevheri" }
+        EMERALD_ORE: { xp: 32, gorunen-ad: "Zümrüt Cevheri" }
+        DEEPSLATE_EMERALD_ORE: { xp: 32, gorunen-ad: "Zümrüt Cevheri" }
+        ANCIENT_DEBRIS: { xp: 40, gorunen-ad: "Kadim Kalıntı" }
 
   avcilik:
     gorunen-ad: "Avcılık"
+    kilometre-taslari:
+      25: { tur: PVE_DAMAGE_MULTIPLIER, deger: 0.10 }
+      50: { tur: MAX_HEALTH, deger: 4 }
+      75: { tur: PVE_DAMAGE_MULTIPLIER, deger: 0.10 }
+      100: { tur: MAX_HEALTH, deger: 4 }
     kaynak:
       tur: MOB
       # Listelenmemiş bir yaratık öldürüldüğünde bu değer kullanılır.
-      varsayilan: { xp: 5, gorunen-ad: "Yaratık" }
+      varsayilan: { xp: 10, gorunen-ad: "Yaratık" }
       varliklar:
-        ZOMBIE: { xp: 5, gorunen-ad: "Zombi" }
-        HUSK: { xp: 5, gorunen-ad: "Husk" }
-        DROWNED: { xp: 5, gorunen-ad: "Boğulmuş" }
-        SLIME: { xp: 5, gorunen-ad: "Slime" }
-        SKELETON: { xp: 6, gorunen-ad: "İskelet" }
-        STRAY: { xp: 6, gorunen-ad: "Kayıp" }
-        SPIDER: { xp: 6, gorunen-ad: "Örümcek" }
-        CAVE_SPIDER: { xp: 7, gorunen-ad: "Mağara Örümceği" }
-        MAGMA_CUBE: { xp: 7, gorunen-ad: "Magma Küpü" }
-        PILLAGER: { xp: 8, gorunen-ad: "Yağmacı" }
-        PIGLIN: { xp: 8, gorunen-ad: "Piglin" }
-        CREEPER: { xp: 9, gorunen-ad: "Creeper" }
-        PHANTOM: { xp: 10, gorunen-ad: "Hayalet" }
-        VINDICATOR: { xp: 10, gorunen-ad: "İntikamcı" }
-        ZOGLIN: { xp: 14, gorunen-ad: "Zoglin" }
-        WITCH: { xp: 12, gorunen-ad: "Cadı" }
-        HOGLIN: { xp: 12, gorunen-ad: "Hoglin" }
-        ENDERMAN: { xp: 14, gorunen-ad: "Enderman" }
-        WITHER_SKELETON: { xp: 16, gorunen-ad: "Wither İskeleti" }
-        PIGLIN_BRUTE: { xp: 16, gorunen-ad: "Piglin Vahşisi" }
-        BLAZE: { xp: 16, gorunen-ad: "Blaze" }
-        GHAST: { xp: 18, gorunen-ad: "Ghast" }
-        GUARDIAN: { xp: 18, gorunen-ad: "Gardiyan" }
-        SHULKER: { xp: 20, gorunen-ad: "Shulker" }
-        EVOKER: { xp: 20, gorunen-ad: "Ayin Yapıcı" }
-        RAVAGER: { xp: 30, gorunen-ad: "Yıkıcı" }
-        ELDER_GUARDIAN: { xp: 60, gorunen-ad: "Kadim Gardiyan" }
-        WITHER: { xp: 150, gorunen-ad: "Wither" }
-        WARDEN: { xp: 200, gorunen-ad: "Warden" }
-        ENDER_DRAGON: { xp: 250, gorunen-ad: "Ejderha" }
+        ZOMBIE: { xp: 10, gorunen-ad: "Zombi" }
+        HUSK: { xp: 10, gorunen-ad: "Husk" }
+        DROWNED: { xp: 10, gorunen-ad: "Boğulmuş" }
+        SLIME: { xp: 10, gorunen-ad: "Slime" }
+        SKELETON: { xp: 12, gorunen-ad: "İskelet" }
+        STRAY: { xp: 12, gorunen-ad: "Kayıp" }
+        SPIDER: { xp: 12, gorunen-ad: "Örümcek" }
+        CAVE_SPIDER: { xp: 14, gorunen-ad: "Mağara Örümceği" }
+        MAGMA_CUBE: { xp: 14, gorunen-ad: "Magma Küpü" }
+        PILLAGER: { xp: 16, gorunen-ad: "Yağmacı" }
+        PIGLIN: { xp: 16, gorunen-ad: "Piglin" }
+        CREEPER: { xp: 18, gorunen-ad: "Creeper" }
+        PHANTOM: { xp: 20, gorunen-ad: "Hayalet" }
+        VINDICATOR: { xp: 20, gorunen-ad: "İntikamcı" }
+        ZOGLIN: { xp: 28, gorunen-ad: "Zoglin" }
+        WITCH: { xp: 24, gorunen-ad: "Cadı" }
+        HOGLIN: { xp: 24, gorunen-ad: "Hoglin" }
+        ENDERMAN: { xp: 28, gorunen-ad: "Enderman" }
+        WITHER_SKELETON: { xp: 32, gorunen-ad: "Wither İskeleti" }
+        PIGLIN_BRUTE: { xp: 32, gorunen-ad: "Piglin Vahşisi" }
+        BLAZE: { xp: 32, gorunen-ad: "Blaze" }
+        GHAST: { xp: 36, gorunen-ad: "Ghast" }
+        GUARDIAN: { xp: 36, gorunen-ad: "Gardiyan" }
+        SHULKER: { xp: 40, gorunen-ad: "Shulker" }
+        EVOKER: { xp: 40, gorunen-ad: "Ayin Yapıcı" }
+        RAVAGER: { xp: 60, gorunen-ad: "Yıkıcı" }
+        ELDER_GUARDIAN: { xp: 120, gorunen-ad: "Kadim Gardiyan" }
+        WITHER: { xp: 300, gorunen-ad: "Wither" }
+        WARDEN: { xp: 400, gorunen-ad: "Warden" }
+        ENDER_DRAGON: { xp: 500, gorunen-ad: "Ejderha" }

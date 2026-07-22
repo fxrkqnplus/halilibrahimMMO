@@ -61,6 +61,9 @@ public interface FeedbackService extends PluginService {
     /** Sends the invoking player a chat-only, non-broadcast skill level-up message. */
     void celebrateSkillLevelUp(Player player, String skillDisplayName, int newLevel);
 
+    /** Bossbar+title/subtitle fade for the invoking player only, fired when derived Güç crosses a multiple of 10. */
+    void celebrateGucMilestone(Player player, int newGuc);
+
     /** Plays the class-selection sound cue only - the confirmation chat message is sent separately by the caller. */
     void celebrateClassSelected(Player player);
 

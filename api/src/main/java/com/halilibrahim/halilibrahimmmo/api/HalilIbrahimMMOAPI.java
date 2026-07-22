@@ -9,7 +9,6 @@ import com.halilibrahim.halilibrahimmmo.api.cosmetics.CosmeticDefinitionSnapshot
 import com.halilibrahim.halilibrahimmmo.api.cosmetics.CosmeticSnapshot;
 import com.halilibrahim.halilibrahimmmo.api.leaderboards.LeaderboardCategory;
 import com.halilibrahim.halilibrahimmmo.api.leaderboards.LeaderboardEntrySnapshot;
-import com.halilibrahim.halilibrahimmmo.api.progression.ProgressionCause;
 import com.halilibrahim.halilibrahimmmo.api.quests.QuestDefinitionSnapshot;
 import com.halilibrahim.halilibrahimmmo.api.quests.QuestSnapshot;
 import com.halilibrahim.halilibrahimmmo.api.skills.SkillDefinitionSnapshot;
@@ -67,12 +66,6 @@ public interface HalilIbrahimMMOAPI {
      * implementation state.
      */
     CompletableFuture<Optional<PlayerProfileSnapshot>> findProfile(UUID playerId);
-
-    /**
-     * Awards validated global experience through the same capped progression path
-     * used by the plugin itself.
-     */
-    CompletableFuture<PlayerProfileSnapshot> awardGlobalExperience(UUID playerId, long amount, ProgressionCause cause);
 
     /**
      * Returns the current configured skill catalogue. The returned objects are

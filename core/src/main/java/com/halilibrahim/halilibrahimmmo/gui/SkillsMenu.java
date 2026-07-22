@@ -1,6 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.gui;
 
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
+import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingTask;
 import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -37,6 +38,7 @@ public final class SkillsMenu implements GuiView {
     @Override
     public void populate(Player player, Inventory inventory) {
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
+        completeOnboarding(player);
         List<SkillDefinition> definitions = services.skills().definitions().stream()
                 .sorted((left, right) -> left.displayName().compareToIgnoreCase(right.displayName())).toList();
         int slot = FIRST_SLOT;
@@ -59,5 +61,21 @@ public final class SkillsMenu implements GuiView {
         if (slot == BACK_SLOT) {
             GuiManager.open(player, new ProgressionMenu(services));
         }
+    }
+
+    private void completeOnboarding(Player player) {
+        services.onboarding().complete(player.getUniqueId(), player.getName(), OnboardingTask.BECERILERI_INCELEME).thenAccept(newlyCompleted -> {
+            if (!newlyCompleted) {
+                return;
+            }
+            String classId = services.profiles().cached(player.getUniqueId()).map(profile -> profile.selectedClass()).orElse("");
+            if (!classId.isEmpty()) {
+                services.classes().awardClassExperience(player.getUniqueId(), player.getName(), classId, OnboardingTask.BECERILERI_INCELEME.rewardExperience());
+            }
+            player.getScheduler().run(services.plugin(), task -> {
+                services.messages().send(player, MessageKey.ONBOARDING_SKILLS_COMPLETED, Map.of("xp", Long.toString(OnboardingTask.BECERILERI_INCELEME.rewardExperience())));
+                services.sidebar().refresh(player);
+            }, null);
+        });
     }
 }

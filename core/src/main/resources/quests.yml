@@ -5,8 +5,15 @@
 #  hedef.tur: BLOCK_BREAK (blok kırma) | MOB_KILL (yaratık öldürme)
 #  hedef.malzemeler sadece BLOCK_BREAK, hedef.varliklar sadece MOB_KILL için
 #  kullanılır. varliklar boş bırakılırsa herhangi bir yaratık sayılır.
+#
+#  DAILY/WEEKLY görevler artık bir havuzdan rastgele seçilir: her oyuncuya
+#  her gün/hafta bu havuzdan gunluk-atanan-sayisi/haftalik-atanan-sayisi kadar
+#  görev atanır (PERMANENT görevler havuzlanmaz, herkese her zaman atanmıştır).
 #  Bu dosyayı /haliladmin panelindeki "Yeniden Yükle" düğmesiyle yükleyin.
 # =====================================================================
+
+gunluk-atanan-sayisi: 3
+haftalik-atanan-sayisi: 2
 
 gorevler:
   odun-ustasi:
@@ -16,7 +23,7 @@ gorevler:
       tur: BLOCK_BREAK
       malzemeler: [OAK_LOG, SPRUCE_LOG, BIRCH_LOG, JUNGLE_LOG, ACACIA_LOG, DARK_OAK_LOG]
     sayi: 500
-    xp: 500
+    xp: 1000
 
   derinlik-kazicisi:
     gorunen-ad: "Derinlik Kazıcısı"
@@ -25,8 +32,9 @@ gorevler:
       tur: BLOCK_BREAK
       malzemeler: [DEEPSLATE_DIAMOND_ORE, DEEPSLATE_EMERALD_ORE, ANCIENT_DEBRIS]
     sayi: 50
-    xp: 1000
+    xp: 2000
 
+  # ----- Gunluk havuz -----
   gunluk-maden-turu:
     gorunen-ad: "Günlük Maden Turu"
     tur: DAILY
@@ -34,7 +42,7 @@ gorevler:
       tur: BLOCK_BREAK
       malzemeler: [COAL_ORE, DEEPSLATE_COAL_ORE, IRON_ORE, DEEPSLATE_IRON_ORE, COPPER_ORE, DEEPSLATE_COPPER_ORE]
     sayi: 50
-    xp: 150
+    xp: 300
 
   gunluk-avlanma:
     gorunen-ad: "Günlük Avlanma"
@@ -43,8 +51,90 @@ gorevler:
       tur: MOB_KILL
       varliklar: []
     sayi: 20
-    xp: 150
+    xp: 300
 
+  gunluk-oduncu:
+    gorunen-ad: "Günlük Oduncu"
+    tur: DAILY
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [OAK_LOG, SPRUCE_LOG, BIRCH_LOG, JUNGLE_LOG, ACACIA_LOG, DARK_OAK_LOG, MANGROVE_LOG, CHERRY_LOG, PALE_OAK_LOG]
+    sayi: 40
+    xp: 240
+
+  gunluk-degerli-madenler:
+    gorunen-ad: "Değerli Madenler"
+    tur: DAILY
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [GOLD_ORE, DEEPSLATE_GOLD_ORE, LAPIS_ORE, DEEPSLATE_LAPIS_ORE, REDSTONE_ORE, DEEPSLATE_REDSTONE_ORE]
+    sayi: 30
+    xp: 280
+
+  gunluk-zombi-temizligi:
+    gorunen-ad: "Zombi Temizliği"
+    tur: DAILY
+    hedef:
+      tur: MOB_KILL
+      varliklar: [ZOMBIE, HUSK, DROWNED]
+    sayi: 15
+    xp: 260
+
+  gunluk-iskelet-avi:
+    gorunen-ad: "İskelet Avı"
+    tur: DAILY
+    hedef:
+      tur: MOB_KILL
+      varliklar: [SKELETON, STRAY, WITHER_SKELETON]
+    sayi: 15
+    xp: 260
+
+  gunluk-toprak-temizligi:
+    gorunen-ad: "Toprak Temizliği"
+    tur: DAILY
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [DIRT, COARSE_DIRT, GRASS_BLOCK, GRAVEL, SAND, RED_SAND]
+    sayi: 80
+    xp: 200
+
+  gunluk-orumcek-avi:
+    gorunen-ad: "Örümcek Avı"
+    tur: DAILY
+    hedef:
+      tur: MOB_KILL
+      varliklar: [SPIDER, CAVE_SPIDER]
+    sayi: 15
+    xp: 260
+
+  gunluk-nether-madenciligi:
+    gorunen-ad: "Nether Madenciliği"
+    tur: DAILY
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [NETHER_GOLD_ORE, NETHER_QUARTZ_ORE, CRIMSON_STEM]
+    sayi: 30
+    xp: 280
+
+  gunluk-creeper-avi:
+    gorunen-ad: "Creeper Avı"
+    tur: DAILY
+    hedef:
+      tur: MOB_KILL
+      varliklar: [CREEPER]
+    sayi: 10
+    xp: 280
+
+  gunluk-derin-maden:
+    gorunen-ad: "Derin Maden Taraması"
+    tur: DAILY
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [DEEPSLATE_DIAMOND_ORE, DEEPSLATE_EMERALD_ORE, EMERALD_ORE, DIAMOND_ORE]
+    sayi: 10
+    xp: 360
+
+  # ----- Haftalik havuz -----
   haftalik-zombi-avi:
     gorunen-ad: "Haftalık Zombi Avı"
     tur: WEEKLY
@@ -52,4 +142,67 @@ gorevler:
       tur: MOB_KILL
       varliklar: [ZOMBIE, HUSK, DROWNED]
     sayi: 100
-    xp: 750
+    xp: 1500
+
+  haftalik-derin-kazi:
+    gorunen-ad: "Haftalık Derin Kazı"
+    tur: WEEKLY
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [DEEPSLATE_DIAMOND_ORE, DEEPSLATE_EMERALD_ORE, DEEPSLATE_GOLD_ORE, ANCIENT_DEBRIS]
+    sayi: 80
+    xp: 1600
+
+  haftalik-orman-kesimi:
+    gorunen-ad: "Haftalık Orman Kesimi"
+    tur: WEEKLY
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [OAK_LOG, SPRUCE_LOG, BIRCH_LOG, JUNGLE_LOG, ACACIA_LOG, DARK_OAK_LOG, MANGROVE_LOG, CHERRY_LOG]
+    sayi: 300
+    xp: 1400
+
+  haftalik-nether-avi:
+    gorunen-ad: "Haftalık Nether Avı"
+    tur: WEEKLY
+    hedef:
+      tur: MOB_KILL
+      varliklar: [BLAZE, GHAST, PIGLIN, PIGLIN_BRUTE, HOGLIN]
+    sayi: 60
+    xp: 1700
+
+  haftalik-magara-taramasi:
+    gorunen-ad: "Haftalık Mağara Taraması"
+    tur: WEEKLY
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [COAL_ORE, DEEPSLATE_COAL_ORE, IRON_ORE, DEEPSLATE_IRON_ORE, COPPER_ORE, DEEPSLATE_COPPER_ORE, GOLD_ORE, DEEPSLATE_GOLD_ORE]
+    sayi: 250
+    xp: 1500
+
+  haftalik-guclu-canavarlar:
+    gorunen-ad: "Güçlü Canavarlar"
+    tur: WEEKLY
+    hedef:
+      tur: MOB_KILL
+      varliklar: [RAVAGER, EVOKER, PILLAGER, VINDICATOR]
+    sayi: 30
+    xp: 1800
+
+  haftalik-magma-avi:
+    gorunen-ad: "Mağma Avı"
+    tur: WEEKLY
+    hedef:
+      tur: MOB_KILL
+      varliklar: [MAGMA_CUBE, SLIME]
+    sayi: 50
+    xp: 1400
+
+  haftalik-tas-ustasi:
+    gorunen-ad: "Taş Ustası"
+    tur: WEEKLY
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [DIRT, COARSE_DIRT, GRAVEL, SAND, RED_SAND, CLAY, PODZOL, MYCELIUM, ROOTED_DIRT]
+    sayi: 400
+    xp: 1300

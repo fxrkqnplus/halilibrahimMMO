@@ -35,6 +35,7 @@ public final class QuestCommand implements BasicCommand {
         }
         quests.loadAll(player.getUniqueId()).thenAccept(progressById -> player.getScheduler().run(plugin, task -> {
             String summary = quests.definitions().stream()
+                    .filter(definition -> progressById.containsKey(definition.id()))
                     .sorted((left, right) -> left.displayName().compareToIgnoreCase(right.displayName()))
                     .map(definition -> summarize(definition, progressById.get(definition.id())))
                     .reduce((left, right) -> left + ", " + right)

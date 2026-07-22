@@ -23,7 +23,8 @@ public final class AdminMenu implements GuiView {
     private static final int RELOAD_SLOT = 11;
     private static final int DEBUG_SLOT = 13;
     private static final int VERSION_SLOT = 15;
-    private static final int ONLINE_PLAYERS_SLOT = 22;
+    private static final int ONLINE_PLAYERS_SLOT = 20;
+    private static final int ALL_PLAYERS_SLOT = 24;
 
     private final GuiServices services;
 
@@ -72,6 +73,11 @@ public final class AdminMenu implements GuiView {
                 services.messages().render(MessageKey.GUI_ADMIN_ONLINE_PLAYERS_ITEM),
                 List.of(services.messages().render(MessageKey.GUI_ADMIN_ONLINE_PLAYERS_LORE))
         ));
+        inventory.setItem(ALL_PLAYERS_SLOT, GuiItems.of(
+                Material.BOOKSHELF,
+                services.messages().render(MessageKey.GUI_ADMIN_ALL_PLAYERS_ITEM),
+                List.of(services.messages().render(MessageKey.GUI_ADMIN_ALL_PLAYERS_LORE))
+        ));
     }
 
     @Override
@@ -89,6 +95,7 @@ public final class AdminMenu implements GuiView {
                 GuiManager.open(player, new AdminMenu(services));
             }
             case ONLINE_PLAYERS_SLOT -> GuiManager.open(player, new AdminOnlinePlayersMenu(services));
+            case ALL_PLAYERS_SLOT -> GuiManager.open(player, new AdminAllPlayersMenu(services));
             default -> {
             }
         }

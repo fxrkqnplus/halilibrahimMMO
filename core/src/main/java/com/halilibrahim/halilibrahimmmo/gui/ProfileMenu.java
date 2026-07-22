@@ -38,15 +38,14 @@ public final class ProfileMenu implements GuiView {
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
         services.profiles().load(player.getUniqueId(), player.getName()).thenAccept(profile ->
                 player.getScheduler().run(services.plugin(), task -> {
+                    String guc = Integer.toString(services.progression().cachedGlobalLevel(player.getUniqueId()));
                     Component lore = profile.selectedClass().isEmpty()
                             ? services.messages().render(MessageKey.GUI_PROFILE_ITEM_LORE_NO_CLASS, Map.of(
-                                    "seviye", Integer.toString(profile.globalLevel()),
-                                    "xp", Long.toString(profile.globalExperience()),
+                                    "seviye", guc,
                                     "prestij", Integer.toString(profile.prestige())
                             ))
                             : services.messages().render(MessageKey.GUI_PROFILE_ITEM_LORE, Map.of(
-                                    "seviye", Integer.toString(profile.globalLevel()),
-                                    "xp", Long.toString(profile.globalExperience()),
+                                    "seviye", guc,
                                     "prestij", Integer.toString(profile.prestige()),
                                     "sinif", services.classes().displayName(profile.selectedClass())
                             ));

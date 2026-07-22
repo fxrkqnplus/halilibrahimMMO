@@ -10,7 +10,6 @@ import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -43,6 +42,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Function;
 
@@ -57,6 +57,7 @@ public final class YamlAbilityService implements AbilityService {
     private final ProfileService profiles;
     private final FeedbackService feedback;
     private final Function<UUID, ClassModifiers> classModifiers;
+    private final BiFunction<UUID, String, Integer> classLevelLookup;
     private final AtomicReference<AbilitySettings> settings = new AtomicReference<>();
     private final ConcurrentHashMap<UUID, ArmedAbility> armed = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ArmedAbility> damageBuffs = new ConcurrentHashMap<>();
@@ -64,12 +65,14 @@ public final class YamlAbilityService implements AbilityService {
     private final ConcurrentHashMap<UUID, ArmedAbility> activeEffects = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<CooldownKey, Long> cooldowns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, String> selectedAbility = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Long> lastSwitchMillis = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ScheduledTask> activationFeedbackTasks = new ConcurrentHashMap<>();
     private final ThreadLocal<Set<Block>> secondaryBreaks = ThreadLocal.withInitial(HashSet::new);
 
     public YamlAbilityService(
             JavaPlugin plugin, SkillService skills, MessageService messages, ProfileService profiles,
-            FeedbackService feedback, Function<UUID, ClassModifiers> classModifiers
+            FeedbackService feedback, Function<UUID, ClassModifiers> classModifiers,
+            BiFunction<UUID, String, Integer> classLevelLookup
     ) {
         this.plugin = plugin;
         this.skills = skills;
@@ -77,6 +80,7 @@ public final class YamlAbilityService implements AbilityService {
         this.profiles = profiles;
         this.feedback = feedback;
         this.classModifiers = classModifiers;
+        this.classLevelLookup = classLevelLookup;
     }
 
     @Override
@@ -142,8 +146,8 @@ public final class YamlAbilityService implements AbilityService {
             messages.send(player, MessageKey.ABILITY_WRONG_CLASS, Map.of("kabiliyet", definition.displayName()));
             return;
         }
-        skills.load(player.getUniqueId(), definition.skillId()).thenAccept(progress ->
-                player.getScheduler().run(plugin, task -> activateOnPlayerRegion(player, definition, progress.level(), energy), null));
+        int classLevel = classLevelLookup.apply(player.getUniqueId(), definition.classId());
+        player.getScheduler().run(plugin, task -> activateOnPlayerRegion(player, definition, classLevel, energy), null);
     }
 
     @Override
@@ -236,7 +240,20 @@ public final class YamlAbilityService implements AbilityService {
             messages.send(player, MessageKey.ABILITY_UNKNOWN, Map.of("kabiliyet", abilityId));
             return;
         }
-        selectedAbility.put(player.getUniqueId(), definition.id());
+        UUID playerId = player.getUniqueId();
+        String currentlySelected = selectedAbility.get(playerId);
+        if (currentlySelected != null && !currentlySelected.equals(definition.id())) {
+            long now = System.currentTimeMillis();
+            long readyAt = lastSwitchMillis.getOrDefault(playerId, 0L) + settings().selectionCooldownMillis();
+            if (readyAt > now) {
+                messages.send(player, MessageKey.ABILITY_SELECTION_COOLDOWN, Map.of(
+                        "sure", Long.toString(Math.max(1L, (readyAt - now + 999L) / 1000L))
+                ));
+                return;
+            }
+        }
+        selectedAbility.put(playerId, definition.id());
+        lastSwitchMillis.put(playerId, System.currentTimeMillis());
         messages.send(player, MessageKey.ABILITY_SELECTED, Map.of("kabiliyet", definition.displayName()));
     }
 
@@ -359,8 +376,8 @@ public final class YamlAbilityService implements AbilityService {
      * per-key serial chains every persistent cached service uses. Calling
      * this from any other thread would reintroduce a double-activation race.
      */
-    private void activateOnPlayerRegion(Player player, AbilityDefinition definition, int skillLevel, EnergyService energy) {
-        if (skillLevel < definition.requiredLevel()) {
+    private void activateOnPlayerRegion(Player player, AbilityDefinition definition, int classLevel, EnergyService energy) {
+        if (classLevel < definition.requiredLevel()) {
             messages.send(player, MessageKey.ABILITY_LOCKED, Map.of(
                     "kabiliyet", definition.displayName(),
                     "seviye", Integer.toString(definition.requiredLevel())
@@ -521,6 +538,7 @@ public final class YamlAbilityService implements AbilityService {
         if (maximumEnergy <= 0 || regeneration < 0) {
             throw new IllegalArgumentException("Energy settings must be non-negative and maximum positive.");
         }
+        long selectionCooldownMillis = secondsToMillis(yaml.getLong("secim-bekleme-saniye", 120));
         ConfigurationSection abilities = requireSection(yaml, "kabiliyetler");
         Map<String, AbilityDefinition> definitions = new LinkedHashMap<>();
         for (String rawId : abilities.getKeys(false)) {
@@ -584,7 +602,7 @@ public final class YamlAbilityService implements AbilityService {
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("abilities.yml must define at least one ability.");
         }
-        return new AbilitySettings(maximumEnergy, regeneration, Map.copyOf(definitions));
+        return new AbilitySettings(maximumEnergy, regeneration, selectionCooldownMillis, Map.copyOf(definitions));
     }
 
     private ConfigurationSection requireSection(ConfigurationSection parent, String path) {

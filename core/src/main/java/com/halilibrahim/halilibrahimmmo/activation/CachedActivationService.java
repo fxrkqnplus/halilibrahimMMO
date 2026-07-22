@@ -1,5 +1,6 @@
 package com.halilibrahim.halilibrahimmmo.activation;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,6 +48,11 @@ public final class CachedActivationService implements ActivationService {
             return CompletableFuture.completedFuture(null);
         }
         return repository.activate(playerId).thenAccept(ignored -> cache.put(playerId, true));
+    }
+
+    @Override
+    public CompletableFuture<List<ActivatedPlayer>> findAllActivated() {
+        return repository.findAllActivated();
     }
 
     @Override

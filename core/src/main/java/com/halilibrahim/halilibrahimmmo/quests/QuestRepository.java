@@ -6,6 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -68,6 +70,56 @@ public final class QuestRepository {
                 insert.setInt(3, progress.progress());
                 insert.setInt(4, progress.completed() ? 1 : 0);
                 insert.setLong(5, progress.periodEndMillis());
+                insert.executeUpdate();
+            }
+        });
+    }
+
+    /** {@code assignedQuestIds} is a comma-joined list of quest ids - see {@link QuestAssignment}. */
+    CompletableFuture<Optional<QuestAssignment>> findAssignment(UUID playerId, QuestType type) {
+        return database.execute(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT assigned_quest_ids, period_end_millis FROM hmmo_player_quest_assignments
+                    WHERE player_id = ? AND quest_type = ?
+                    """)) {
+                statement.setString(1, playerId.toString());
+                statement.setString(2, type.name());
+                try (ResultSet result = statement.executeQuery()) {
+                    if (!result.next()) {
+                        return Optional.empty();
+                    }
+                    return Optional.of(new QuestAssignment(
+                            Set.of(result.getString("assigned_quest_ids").split(",")),
+                            result.getLong("period_end_millis")
+                    ));
+                }
+            }
+        });
+    }
+
+    CompletableFuture<Void> saveAssignment(UUID playerId, QuestType type, QuestAssignment assignment) {
+        String joined = String.join(",", assignment.questIds());
+        return database.executeVoid(connection -> {
+            try (PreparedStatement update = connection.prepareStatement("""
+                    UPDATE hmmo_player_quest_assignments SET assigned_quest_ids = ?, period_end_millis = ?
+                    WHERE player_id = ? AND quest_type = ?
+                    """)) {
+                update.setString(1, joined);
+                update.setLong(2, assignment.periodEndMillis());
+                update.setString(3, playerId.toString());
+                update.setString(4, type.name());
+                if (update.executeUpdate() != 0) {
+                    return;
+                }
+            }
+            try (PreparedStatement insert = connection.prepareStatement("""
+                    INSERT INTO hmmo_player_quest_assignments (player_id, quest_type, assigned_quest_ids, period_end_millis)
+                    VALUES (?, ?, ?, ?)
+                    """)) {
+                insert.setString(1, playerId.toString());
+                insert.setString(2, type.name());
+                insert.setString(3, joined);
+                insert.setLong(4, assignment.periodEndMillis());
                 insert.executeUpdate();
             }
         });

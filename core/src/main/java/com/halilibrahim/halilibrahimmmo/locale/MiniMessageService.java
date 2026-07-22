@@ -74,6 +74,12 @@ public final class MiniMessageService implements MessageService {
     }
 
     @Override
+    public void broadcast(MessageKey key, Map<String, String> placeholders) {
+        Component rendered = prefixed(render(key, placeholders));
+        plugin.getServer().getOnlinePlayers().forEach(player -> player.sendMessage(rendered));
+    }
+
+    @Override
     public Component prefixed(Component message) {
         return render(MessageKey.PREFIX).append(message);
     }

@@ -44,6 +44,9 @@ public final class QuestsMenu implements GuiView {
                     int slot = 0;
                     for (QuestDefinition definition : definitions) {
                         QuestProgress progress = progressById.get(definition.id());
+                        if (progress == null) {
+                            continue;
+                        }
                         inventory.setItem(slot++, GuiItems.of(
                                 materialFor(definition),
                                 services.messages().render(MessageKey.GUI_QUEST_ITEM, Map.of("gorev", definition.displayName())),

@@ -1,3 +1,11 @@
 # HalilIbrahimMMO - Prestij ayarlari
-# Oyuncu maksimum genel seviyeye ulastiginda prestij yapabilir.
+# Oyuncu prestij yapabilmek icin ayni anda su 3 sarti saglamalidir:
+#  1) 4 becerinin (kazicilik/odunculuk/madencilik/avcilik) her biri en az
+#     "gerekli-beceri-seviyesi" seviyesinde olmali,
+#  2) secili sinifinin sinif seviyesi maksimum seviyede olmali (bkz classes.yml),
+#  3) o sinifin sinerji becerisi de maksimum seviyede olmali (bkz skills.yml).
+# Prestij; secili sinifin sinif seviyesini ve 4 becerinin tumunu 1. seviye/0
+# XP'ye sifirlar (Guc dusmez, kalici olarak "biriktirilir"), karsiliginda
+# kalici +%25/rank XP bonusu ve sinifa ozel kalici bir bonus verir.
 maksimum-prestij: 10
+gerekli-beceri-seviyesi: 25

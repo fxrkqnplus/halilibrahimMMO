@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.activation;
 
 import com.halilibrahim.halilibrahimmmo.core.PluginService;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -21,6 +22,9 @@ public interface ActivationService extends PluginService {
 
     /** Idempotent: marks a player as activated, a no-op if already activated. */
     CompletableFuture<Void> activate(UUID playerId);
+
+    /** Every activated player's id/name, including offline ones - for the admin all-players panel. */
+    CompletableFuture<List<ActivatedPlayer>> findAllActivated();
 
     void evict(UUID playerId);
 }
