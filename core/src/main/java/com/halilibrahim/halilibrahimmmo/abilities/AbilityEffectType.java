@@ -17,5 +17,13 @@ public enum AbilityEffectType {
     /** Instant: pushes and lightly damages nearby entities within {@code limit} blocks. */
     KNOCKBACK_SLAM,
     /** Instant: {@link org.bukkit.potion.PotionEffectType#NIGHT_VISION} for the ability's duration. */
-    NIGHT_VISION
+    NIGHT_VISION,
+    /**
+     * Instant: outlines every block of the ability's own skill's material set
+     * within {@code limit} blocks with a glowing, see-through-walls
+     * {@link org.bukkit.entity.BlockDisplay} for the ability's duration.
+     * Usable only inside a wide, roofed mine - see {@code damageMultiplier}
+     * on {@link AbilityDefinition} for the open-air ratio that gate reads.
+     */
+    ORE_REVEAL
 }

@@ -2306,3 +2306,248 @@ per-title chat-tag coloring, now with a second instance.
   milestone boosts (PvE damage, energy cap) actually taking effect in
   real combat; the creative-mode gate across skills/class/quests
   together.
+
+## 27. Phase 13 — icon pack, class/milestone icons, ability visuals, ore
+    reveal, item-switch fix, /menu polish and credits (Phase 13 complete)
+
+A user-requested follow-on phase covering 10 playtesting-driven items, built
+as one pass rather than stop-and-report sub-phases (every item is small and
+independent except the three that all land in `abilities`). The one
+load-bearing design decision: "sunucuya özel ikon paketi" was implemented as
+a **named Unicode glyph set exposed as a MiniMessage tag**, not as a shipped
+resource pack - a resource pack would need a texture/font asset, a
+server-side pack URL and a client that accepts it, none of which this plugin
+controls, whereas a named glyph set is authored entirely inside
+`messages.yml` and works on a vanilla client.
+
+### 13.1 - The icon pack (`locale.IconPack` + the `<simge:...>` tag)
+
+- New `locale.IconPack`: a 24-constant enum of `(id, glyph)` pairs (`guc`,
+  `prestij`, `sinif`, `seviye`, `xp`, `kabiliyet`, `enerji`, `can`, `gorev`,
+  `koleksiyon`, `gunluk`, `liderlik`, `unvan`, `kozmetik`, the four skill
+  ids, `tamam`, `eksik`, `ok`, `uyari`, `bilgi`, `kutlama`).
+  **Every glyph is deliberately restricted to the Unicode Basic Multilingual
+  Plane**, which Minecraft's bundled Unifont fallback covers - astral-plane
+  emoji render as a missing-glyph box on a vanilla client and must never be
+  added. The glyph carries no colour: the surrounding `messages.yml` markup
+  owns that, so the same icon is gold on the sidebar and gray in a lore line.
+- `MiniMessageService` registers one shared static `TagResolver` for
+  `simge` alongside the per-call placeholder resolvers, so an icon works in
+  *any* template without any call site knowing about it. **An unknown icon
+  name resolves to `null`, not an exception** - MiniMessage then leaves the
+  tag as literal text, the same way it already treats any other misspelled
+  tag, so one typo can never take a gameplay message down mid-render.
+- Icons were woven into the prefix, the whole `sidebar:` section, both XP
+  bossbars, the `gui.ana`/`gui.krediler`/`gui.kilometre-tasi` items, and the
+  chat lines for level-ups, quest/collection completion, prestige, titles
+  and cosmetics. Every previously-hardcoded checkmark/cross literal in
+  `messages.yml` (prestige checklist, collection entries, titles,
+  cosmetics, sidebar ability list) now goes through `<simge:tamam>` /
+  `<simge:eksik>`, which is the whole point of a *pack* - changing what
+  "done" looks like is one line in `IconPack`.
+
+### 13.2 - Per-class icons
+
+`PlayerClassDefinition` gained a `Material icon` field parsed from a new
+`classes.yml` `simge` key (`Material.matchMaterial`, which is safe
+standalone unlike `Material#isBlock()`, §16). Assigned: Define
+Avcısı=`GOLDEN_SHOVEL`, Amansız Savaşçı=`DIAMOND_SWORD`, Mağara
+Adamı=`DIAMOND_PICKAXE`, Orman Bekçisi=`IRON_AXE`. `ClassIntroMenu`,
+`ClassMenu` and `AdminClassPickerMenu` all rendered a hardcoded
+`DIAMOND_SWORD` before and now read `definition.icon()`.
+
+### 13.3 - Skill and class level on the XP bossbars
+
+`geribildirim.xp-beceri-bossbar`/`xp-sinif-bossbar` gained a `<seviye>`
+placeholder; `SkillListener#handleAward` and
+`ClassSynergyBridge#onSkillExperienceGained` pass the just-updated level from
+the `SkillProgress`/`ClassLevelProgress` they already hold. No signature
+changes anywhere.
+
+### 13.4 - Abilities no longer break when the held item changes
+
+- **Confirmed and fixed the reported bug.** `AbilityActivationListener` had
+  an `onHeldItemChange` and an `onDrop` handler that called
+  `clearActivationFeedback(...)`, which cancels the action-bar
+  countdown/energy readout, strips the glint and plays the
+  `kabiliyet-bitis` (`ENTITY_ITEM_BREAK`) cue. Switching hotbar slots
+  mid-ability therefore *looked and sounded exactly like the ability had
+  broken* even though the underlying armed/buff state was untouched and
+  still expired or triggered on schedule. **Both handlers were deleted
+  outright**: a tool is only required to *start* an ability, and once
+  running it now stays running for its full duration regardless of what the
+  player holds. `onInteract`/`onQuit` are all that remain.
+- **A second, latent bug fixed in the same pass:** `applyGlint` operated on
+  `getItemInMainHand()`, so if a player *did* switch items the glint
+  override was cleared from the wrong (new) item and the real ability tool
+  stayed glowing forever. Glint is now applied to, and cleared from, a
+  remembered hotbar slot (`ConcurrentHashMap<UUID, Integer> glintedSlots`);
+  `startActivationFeedback` also clears any previous glint first, so
+  activating a second ability cannot strand the first one's override.
+
+### 13.5 - Skill milestone tiers reordered weak to strong
+
+Every skill's 25/50/75/100 tiers were retuned so 25 is a simple entry bonus
+and the skill's signature effect is always held back to 75/100 (the
+previous layout put e.g. avcılık's +10% PvE damage at 25 and a flat health
+bump at 100). Shipped: **kazıcılık** 25 = +2 can, 50 = +10 enerji, 75 = +20
+enerji, 100 = +30 enerji. **odunculuk** 25 = +2 can, 50 = +10 enerji,
+75 = Hız I, 100 = Hız II. **madencilik** 25 = +2 can, 50 = +10 enerji,
+75 = Acele I, 100 = Acele II. **avcılık** 25 = +2 can, 50 = +4 can,
+75 = +%10 PvE hasar, 100 = +%20 PvE hasar.
+No Java change - `SkillMilestoneEffectType` and the cumulative/highest-
+amplifier summing in `CachedSkillService#milestoneModifiers` (§12.9) already
+covered every combination used. `SkillMilestoneInfoMenu` additionally stopped
+rendering every tier as a `GOLDEN_APPLE`: it now switches on the effect type
+(health = golden apple, PvE damage = diamond sword, energy = glowstone dust,
+haste = golden pickaxe, speed = sugar).
+
+### 13.6 - Mining's damage-absorb ability replaced with an ore reveal
+
+- `kaya-zirhi` (a second, duplicate `BRIEF_INVULNERABILITY` that only
+  differed from Define Refleksi in flavour) is gone, replaced by
+  **`maden-feneri` ("Maden Feneri")** and a new
+  `AbilityEffectType.ORE_REVEAL`. No `classes.yml` talent referenced
+  `kaya-zirhi`, so its removal needed no retarget (unlike §9.3's
+  `kazici-tasarrufu`).
+- **A `BlockDisplay` clone of each ore, spawned with `setGlowing(true)`, is
+  the mechanism** - blocks themselves cannot glow, the glow flag exists only
+  on entities. Each display is scaled to 1.02 with a -0.01 translation
+  (`org.bukkit.util.Transformation` + `org.joml`, both already on the
+  runtime classpath - confirmed in this session's `runServer` log resolving
+  `joml-1.10.8.jar`) so the outline surrounds the real block instead of
+  z-fighting with it, gets `Display.Brightness(15, 15)` so it reads clearly
+  in a dark cave, is tinted with the ability's own `AbilityColor` via
+  `setGlowColorOverride`, is `setPersistent(false)`, and removes itself
+  through **its own `Entity#getScheduler().runDelayed(...)`** (Folia-correct:
+  an entity is only safely touched from its own region) after the ability's
+  configured duration.
+- **Which blocks count is not a second hardcoded ore list** - it is the
+  ability's own skill's configured material set
+  (`skills.settings().definitions().get(definition.skillId()).materials()`),
+  so `skills.yml` stays the single source of truth for what an ore is. A
+  hard `MAX_REVEALED_ORES = 120` cap bounds the entity count independently
+  of the configured radius (12).
+- **The "only in a wide mine" gate** (`isInsideWideMine`) is two cheap
+  checks, both run *before* any energy is spent or cooldown written: the
+  player must be genuinely underground (`getHighestBlockYAt(location) >
+  blockY + 2`, so an open field never qualifies) and standing in real open
+  space - the fraction of air in a 9x9x9 probe cube must meet the ability's
+  configured `etki.acik-alan-orani` (0.30), which a one-block strip-mining
+  tunnel cannot reach. Rejection sends the new
+  `MessageKey.ABILITY_REQUIRES_MINE`.
+- `AbilityDefinition`'s existing dual-purposing convention was extended
+  rather than growing the record: `limit` doubles as ORE_REVEAL's radius
+  (like `KNOCKBACK_SLAM`'s) and `damageMultiplier` doubles as its open-air
+  ratio (like `EXTRA_DROP_CHANCE`'s chance).
+
+### 13.7 - Per-ability colour, sound and particles
+
+- New bounded `abilities.AbilityColor` (10 constants, each carrying *both* a
+  `NamedTextColor` for text and a Bukkit `Color` for particle/glow tint) and
+  `abilities.AbilityVisual` (`color`, `Optional<Sound>` + volume/pitch,
+  `Optional<Particle>` + count), parsed from a new per-ability `gorsel`
+  section. Same bounded-enum-from-YAML pattern as `ClassBarColor`/
+  `TitleChatStyle`.
+- `gorsel` is **optional**: an ability without one falls back to the single
+  shared `kabiliyet-baslangic` cue in `feedback.yml` and spawns nothing,
+  i.e. exactly the pre-Phase-13 behaviour, so `feedback.yml` stays
+  meaningful and an admin-authored ability still loads. All 12 shipped
+  abilities declare one, each with a distinct colour/sound/particle triple.
+- `YamlAbilityService#playActivationVisual` replaced the single
+  `feedback.celebrateAbilityActivated(player)` call at the end of
+  `activateOnPlayerRegion`. `Particle.DUST` is special-cased in
+  `spawnBurst` because it is the only particle whose colour is
+  caller-controlled (`Particle.DustOptions`).
+- The colour also tints the ability's name in `AbilitiesMenu`, built
+  directly as a `Component.text(displayName, color)` - **the third instance
+  of the documented "`MessageKey` cannot vary a placeholder's own colour"
+  exception** (§10.6 title chat tags, §12.12 sidebar name line).
+  `MessageKey.GUI_ABILITY_ITEM`/`gui.kabiliyetler.oge` was deleted as
+  now-genuinely-dead, matching the same delete-fully convention §10.6 used
+  for `TITLE_CHAT_PREFIX`. The sidebar's ability list was deliberately left
+  green/red - that colour encodes *selection state*, which is more useful
+  there than identity.
+
+### 13.8 - Yıkıcı Darbe reworked into a real shockwave
+
+`knockbackSlam` now plays `ENTITY_GENERIC_EXPLODE`, spawns an
+`EXPLOSION_EMITTER` plus a ring of `EXPLOSION` particles at the caster and
+one more on each thrown target, and throws targets at 2.6 horizontal / 0.85
+vertical velocity (was 1.4 / 0.4). `hasar-carpani` went 2.0 to 9.0 (for this
+effect it is raw damage, not a multiplier - now called out in the YAML
+comment). Its `gorsel` deliberately adds `BLOCK_ANVIL_LAND` + `LARGE_SMOKE`
+*on top of* the built-in explosion rather than duplicating it, giving the
+"çatlama + patlama" the request asked for.
+
+### 13.9 - `/menu` polish and the credits screen
+
+- `AnaMenu` went from 27 to 45 slots: a black-glass outer frame around a
+  gray-glass interior, a real `PLAYER_HEAD` header wearing the viewer's own
+  skin (new `GuiItems.playerHead(OfflinePlayer, ...)` using `SkullMeta` -
+  no menu in this codebase set a skull owner before) showing Güç/prestij/
+  sınıf, the four category icons each with a "what is in here" lore line,
+  and a credits button. The header reads `ProfileService`'s already-warmed
+  synchronous cache rather than adding an async load, keeping this a
+  single-pass render like every other hub menu.
+- New `gui.CreditsMenu`, reachable from **both** `AnaMenu` and `AdminMenu` -
+  a single `boolean fromAdmin` constructor flag decides which one its back
+  button returns to, which is all that is needed given views are rebuilt per
+  open and there is no navigation stack (§17). Lists the plugin + version,
+  **Furkan Okan (`fxrkqnplus`)** as server owner/design, **Claude
+  (Anthropic)** as code-development partner, and a thank-you item.
+
+### Verification (this phase)
+
+- `./gradlew build` / `./gradlew test` / `:core:compileIntegrationTestJava`
+  are all green with Java 26 (`JAVA_HOME=C:\Program Files\Java\jdk-26.0.1`) -
+  40 test cases across 25 test classes, 0 failures. No migration was added this phase (nothing new is
+  persisted), so no migration-version test changed.
+- **Two new tests, both closing gaps previous phases had to check by hand:**
+  `locale.MessageCatalogTest` asserts `MessageKey` and `messages.yml` are an
+  exact 1:1 set match in both directions (the manual pass §11 had to do, and
+  which found 5 dead keys that time) *and* that every `<simge:...>`
+  reference names a real `IconPack` entry; `abilities.AbilityConfigTest`
+  validates every bundled ability's class reference, tool tag, effect type,
+  ORE_REVEAL radius/ratio and full `gorsel` block.
+- **New platform fact, empirically confirmed this session (extends §16's
+  `Material#isBlock()` finding):** on Paper 26.2 **`org.bukkit.Sound` is
+  registry-backed, so merely referencing `Sound.valueOf(...)` from a plain
+  JUnit test throws `ExceptionInInitializerError` caused by
+  `IllegalStateException: No RegistryAccess implementation found`** - the
+  class initialiser itself fails, not the lookup. `abilities.AbilityToolTag`
+  fails the same way (its constants wrap `Tag<Material>` constants).
+  **The fix used, and the pattern to prefer over a hand-maintained
+  allow-list:** read the constant *names* reflectively without initialising
+  the class -
+  `Class.forName("org.bukkit.Sound", false, loader).getDeclaredFields()`
+  filtered to static fields of the class's own type. This yields the exact,
+  always-current valid name set for both `Sound` and `Particle` with no
+  registry and nothing to maintain, and is strictly better than
+  `CosmeticConfigTest`/`QuestConfigTest`'s existing hardcoded allow-lists
+  (which were not migrated in this phase - they still work, they are just
+  now known to have a better option available).
+- **A live `./gradlew runServer` boot was performed**, with
+  `core/run/plugins/HalilIbrahimMMO/`'s stale `abilities.yml`/`classes.yml`/
+  `messages.yml`/`skills.yml` deleted first so all four regenerated from the
+  updated bundled resources (the established pattern since §10). The plugin
+  enabled with zero exceptions, the server reached `Done` in ~8.0s, and the
+  log had zero "eksik mesaj anahtari" warnings - confirming the new
+  `simge` tag resolver, the `simge:` class-icon key, all 12 `gorsel`
+  sections' `Sound`/`Particle`/`AbilityColor` names, the new `ORE_REVEAL`
+  effect type and every new `MessageKey` parse correctly on a real server.
+  The log also confirms `joml-1.10.8.jar` is resolved into the server's
+  runtime classpath, which is what `Transformation` needs.
+- **Not verified this session, requires a live client** (the same honest
+  caveat every feature-touching phase since §17 has carried): whether the
+  chosen Unicode glyphs all render on a vanilla client rather than as
+  missing-glyph boxes (BMP-only was the guard, but only a real client
+  proves it); the `BlockDisplay` ore outlines actually appearing through
+  walls, at the right size, in the ability's colour, and cleanly
+  disappearing after 30s; the wide-mine gate accepting a real cave and
+  rejecting a 1x2 tunnel; activating an ability and then switching/dropping
+  the held item and seeing the countdown and glint survive; the 12
+  per-ability sound/particle pairs actually feeling distinct; Yıkıcı
+  Darbe's new knockback distance and 9 damage being fun rather than
+  overtuned; the redesigned `/menu` and the credits screen rendering as
+  intended at 45 slots.

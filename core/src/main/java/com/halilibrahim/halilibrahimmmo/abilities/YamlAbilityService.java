@@ -10,9 +10,16 @@ import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -23,7 +30,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
+import org.joml.AxisAngle4f;
+import org.joml.Vector3f;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 import java.io.File;
@@ -50,6 +60,12 @@ import java.util.function.Function;
 public final class YamlAbilityService implements AbilityService {
 
     private static final String FILE_NAME = "abilities.yml";
+    /** Hard ceiling on ORE_REVEAL's display entities per activation, independent of the configured radius. */
+    private static final int MAX_REVEALED_ORES = 120;
+    /** Half-edge of the cube ORE_REVEAL's "wide mine" gate samples for open space. */
+    private static final int OPEN_SPACE_PROBE_RADIUS = 4;
+    /** How far an activation particle burst scatters around the caster, in blocks. */
+    private static final double BURST_SPREAD = 0.6D;
 
     private final JavaPlugin plugin;
     private final SkillService skills;
@@ -67,6 +83,7 @@ public final class YamlAbilityService implements AbilityService {
     private final ConcurrentHashMap<UUID, String> selectedAbility = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Long> lastSwitchMillis = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ScheduledTask> activationFeedbackTasks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Integer> glintedSlots = new ConcurrentHashMap<>();
     private final ThreadLocal<Set<Block>> secondaryBreaks = ThreadLocal.withInitial(HashSet::new);
 
     public YamlAbilityService(
@@ -98,6 +115,7 @@ public final class YamlAbilityService implements AbilityService {
         selectedAbility.clear();
         activationFeedbackTasks.values().forEach(ScheduledTask::cancel);
         activationFeedbackTasks.clear();
+        glintedSlots.clear();
     }
 
     @Override
@@ -293,7 +311,7 @@ public final class YamlAbilityService implements AbilityService {
     public void clearActivationFeedback(Player player) {
         boolean wasActive = activationFeedbackTasks.containsKey(player.getUniqueId());
         cancelFeedbackTask(player.getUniqueId());
-        applyGlint(player, null);
+        clearGlint(player);
         if (wasActive) {
             feedback.celebrateAbilityEnded(player);
         }
@@ -307,7 +325,10 @@ public final class YamlAbilityService implements AbilityService {
      * note on why that thread confinement matters here.
      */
     private void startActivationFeedback(Player player, AbilityDefinition definition, long expiresAtMillis, EnergyService energy) {
-        applyGlint(player, Boolean.TRUE);
+        // A second activation while a first is still glinting would otherwise
+        // strand the glint override on the earlier slot forever.
+        clearGlint(player);
+        applyGlint(player, player.getInventory().getHeldItemSlot(), Boolean.TRUE);
         cancelFeedbackTask(player.getUniqueId());
         ScheduledTask task = player.getScheduler().runAtFixedRate(plugin, self -> {
             long remainingMillis = expiresAtMillis - System.currentTimeMillis();
@@ -356,16 +377,38 @@ public final class YamlAbilityService implements AbilityService {
         }
     }
 
-    /** {@code glowing == null} clears any override instead of forcing glint off. */
-    private void applyGlint(Player player, Boolean glowing) {
-        ItemStack item = player.getInventory().getItemInMainHand();
-        if (item.getType().isAir()) {
+    /**
+     * Applies the cosmetic glint to one specific hotbar {@code slot} and
+     * remembers it, rather than to whatever happens to be in the main hand at
+     * the time it is cleared. A player may freely switch hotbar slots while an
+     * ability runs (see {@code AbilityActivationListener}), so "the held item"
+     * is not a stable identity across an ability's lifetime - clearing the
+     * override on the main hand would have both left the real ability tool
+     * glowing forever and stripped an unrelated item's glint.
+     *
+     * <p>{@code glowing == null} clears any override instead of forcing glint off.</p>
+     */
+    private void applyGlint(Player player, int slot, Boolean glowing) {
+        ItemStack item = player.getInventory().getItem(slot);
+        if (item == null || item.getType().isAir()) {
             return;
         }
         ItemMeta meta = item.getItemMeta();
         meta.setEnchantmentGlintOverride(glowing);
         item.setItemMeta(meta);
-        player.getInventory().setItemInMainHand(item);
+        player.getInventory().setItem(slot, item);
+        if (glowing == null) {
+            glintedSlots.remove(player.getUniqueId());
+        } else {
+            glintedSlots.put(player.getUniqueId(), slot);
+        }
+    }
+
+    private void clearGlint(Player player) {
+        Integer slot = glintedSlots.remove(player.getUniqueId());
+        if (slot != null) {
+            applyGlint(player, slot, null);
+        }
     }
 
     /**
@@ -382,6 +425,13 @@ public final class YamlAbilityService implements AbilityService {
                     "kabiliyet", definition.displayName(),
                     "seviye", Integer.toString(definition.requiredLevel())
             ));
+            return;
+        }
+        // Environment precondition, deliberately checked before any energy is
+        // spent or any cooldown is written: ORE_REVEAL is the one ability that
+        // is only meant to be usable somewhere it is actually useful.
+        if (definition.effectType() == AbilityEffectType.ORE_REVEAL && !isInsideWideMine(player, definition)) {
+            messages.send(player, MessageKey.ABILITY_REQUIRES_MINE, Map.of("kabiliyet", definition.displayName()));
             return;
         }
         ClassModifiers modifiers = classModifiers.apply(player.getUniqueId());
@@ -433,6 +483,15 @@ public final class YamlAbilityService implements AbilityService {
                         "sure", Long.toString(Math.max(1L, definition.activeMillis() / 1000L))
                 ));
             }
+            case ORE_REVEAL -> {
+                int revealed = revealOres(player, definition);
+                activeEffects.put(player.getUniqueId(), active);
+                messages.send(player, MessageKey.ABILITY_ACTIVE_ORE_REVEAL, Map.of(
+                        "kabiliyet", definition.displayName(),
+                        "sayi", Integer.toString(revealed),
+                        "sure", Long.toString(Math.max(1L, definition.activeMillis() / 1000L))
+                ));
+            }
             default -> {
                 applyInstantEffect(player, definition);
                 activeEffects.put(player.getUniqueId(), active);
@@ -442,8 +501,38 @@ public final class YamlAbilityService implements AbilityService {
                 ));
             }
         }
-        feedback.celebrateAbilityActivated(player);
+        playActivationVisual(player, definition);
         startActivationFeedback(player, definition, active.expiresAtMillis(), energy);
+    }
+
+    /**
+     * The ability's own sound cue and particle burst, replacing the single
+     * shared {@code kabiliyet-baslangic} cue that used to fire identically for
+     * all twelve abilities. An ability with no configured sound still falls
+     * back to that shared cue, so {@code feedback.yml} stays meaningful.
+     */
+    private void playActivationVisual(Player player, AbilityDefinition definition) {
+        AbilityVisual visual = definition.visual();
+        if (visual.sound().isPresent()) {
+            player.getWorld().playSound(player.getLocation(), visual.sound().get(), visual.volume(), visual.pitch());
+        } else {
+            feedback.celebrateAbilityActivated(player);
+        }
+        spawnBurst(player.getLocation().add(0, 1, 0), visual);
+    }
+
+    /** Tinted for {@link Particle#DUST}, which is the only particle whose colour is caller-controlled. */
+    private void spawnBurst(Location center, AbilityVisual visual) {
+        if (visual.particle().isEmpty() || visual.particleCount() <= 0) {
+            return;
+        }
+        Particle particle = visual.particle().get();
+        if (particle == Particle.DUST) {
+            center.getWorld().spawnParticle(particle, center, visual.particleCount(), BURST_SPREAD, BURST_SPREAD, BURST_SPREAD,
+                    0.0D, new Particle.DustOptions(visual.color().effectColor(), 1.6F));
+            return;
+        }
+        center.getWorld().spawnParticle(particle, center, visual.particleCount(), BURST_SPREAD, BURST_SPREAD, BURST_SPREAD, 0.05D);
     }
 
     private void applyInstantEffect(Player player, AbilityDefinition definition) {
@@ -458,19 +547,119 @@ public final class YamlAbilityService implements AbilityService {
         }
     }
 
+    /**
+     * A shockwave rather than a shove: the blast plays an explosion cue and
+     * emitter at the caster's feet, throws every nearby creature roughly twice
+     * as far and twice as high as the original implementation did, and leaves
+     * an explosion puff on each thrown target. The configured
+     * {@code hasar-carpani} is raw damage, not a multiplier, for this effect.
+     */
     private void knockbackSlam(Player player, AbilityDefinition definition) {
+        Location center = player.getLocation();
+        center.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.4F, 0.9F);
+        center.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 1);
+        center.getWorld().spawnParticle(Particle.EXPLOSION, center.clone().add(0, 1, 0), 12, 1.2D, 0.6D, 1.2D, 0.0D);
         double radius = definition.limit();
         for (Entity nearby : player.getNearbyEntities(radius, radius, radius)) {
             if (!(nearby instanceof LivingEntity target) || target instanceof Player) {
                 continue;
             }
-            Vector push = target.getLocation().toVector().subtract(player.getLocation().toVector());
+            Vector push = target.getLocation().toVector().subtract(center.toVector());
             if (push.lengthSquared() == 0) {
-                push = player.getLocation().getDirection();
+                push = center.getDirection();
             }
-            target.setVelocity(push.normalize().multiply(1.4D).setY(0.4D));
+            target.setVelocity(push.normalize().multiply(2.6D).setY(0.85D));
             target.damage(definition.damageMultiplier(), player);
+            target.getWorld().spawnParticle(Particle.EXPLOSION, target.getLocation().add(0, 0.8D, 0), 3, 0.2D, 0.2D, 0.2D, 0.0D);
         }
+    }
+
+    /**
+     * The "wide mine" gate for {@link AbilityEffectType#ORE_REVEAL}: the
+     * player must be genuinely underground (something solid overhead, so an
+     * open field never qualifies) and standing in an actually open chamber
+     * rather than a one-block strip-mining tunnel. Openness is measured as the
+     * fraction of air in the surrounding cube against the ability's configured
+     * {@code acik-alan-orani}.
+     */
+    private boolean isInsideWideMine(Player player, AbilityDefinition definition) {
+        Location location = player.getLocation();
+        World world = location.getWorld();
+        if (world.getHighestBlockYAt(location) <= location.getBlockY() + 2) {
+            return false;
+        }
+        int originX = location.getBlockX();
+        int originY = location.getBlockY();
+        int originZ = location.getBlockZ();
+        int total = 0;
+        int air = 0;
+        for (int x = -OPEN_SPACE_PROBE_RADIUS; x <= OPEN_SPACE_PROBE_RADIUS; x++) {
+            for (int y = -OPEN_SPACE_PROBE_RADIUS; y <= OPEN_SPACE_PROBE_RADIUS; y++) {
+                for (int z = -OPEN_SPACE_PROBE_RADIUS; z <= OPEN_SPACE_PROBE_RADIUS; z++) {
+                    total++;
+                    if (world.getBlockAt(originX + x, originY + y, originZ + z).getType().isAir()) {
+                        air++;
+                    }
+                }
+            }
+        }
+        return (double) air / total >= definition.damageMultiplier();
+    }
+
+    /**
+     * Outlines every eligible ore within the ability's radius with a glowing,
+     * see-through-walls {@link BlockDisplay} clone of the block itself, tinted
+     * in the ability's own colour and removed again once the ability expires.
+     * A display entity is the only way to make a *block* glow - the glow flag
+     * exists on entities only - and it is scaled a hair larger than the real
+     * block so the outline surrounds it instead of z-fighting with it.
+     *
+     * <p>Which blocks count is not a second hand-maintained ore list: it is
+     * the ability's own skill's configured material set, so
+     * {@code skills.yml} stays the single source of truth for what an ore
+     * is.</p>
+     *
+     * @return how many ores were actually lit up, for the player's feedback message.
+     */
+    private int revealOres(Player player, AbilityDefinition definition) {
+        SkillDefinition skill = skills.settings().definitions().get(definition.skillId());
+        if (skill == null) {
+            return 0;
+        }
+        Set<Material> eligible = skill.materials();
+        World world = player.getWorld();
+        Location origin = player.getLocation();
+        int radius = definition.limit();
+        long expiryTicks = Math.max(1L, definition.activeMillis() / 50L);
+        int revealed = 0;
+        for (int x = -radius; x <= radius && revealed < MAX_REVEALED_ORES; x++) {
+            for (int y = -radius; y <= radius && revealed < MAX_REVEALED_ORES; y++) {
+                for (int z = -radius; z <= radius && revealed < MAX_REVEALED_ORES; z++) {
+                    Block block = world.getBlockAt(origin.getBlockX() + x, origin.getBlockY() + y, origin.getBlockZ() + z);
+                    if (!eligible.contains(block.getType())) {
+                        continue;
+                    }
+                    highlight(block, definition, expiryTicks);
+                    revealed++;
+                }
+            }
+        }
+        return revealed;
+    }
+
+    private void highlight(Block block, AbilityDefinition definition, long expiryTicks) {
+        BlockDisplay display = block.getWorld().spawn(block.getLocation(), BlockDisplay.class, entity -> {
+            entity.setBlock(block.getBlockData());
+            entity.setGlowing(true);
+            entity.setGlowColorOverride(definition.visual().color().effectColor());
+            entity.setBrightness(new Display.Brightness(15, 15));
+            entity.setPersistent(false);
+            entity.setTransformation(new Transformation(
+                    new Vector3f(-0.01F, -0.01F, -0.01F), new AxisAngle4f(),
+                    new Vector3f(1.02F, 1.02F, 1.02F), new AxisAngle4f()
+            ));
+        });
+        display.getScheduler().runDelayed(plugin, task -> display.remove(), null, expiryTicks);
     }
 
     private boolean isEligibleBlock(AbilityDefinition definition, Block block) {
@@ -570,6 +759,8 @@ public final class YamlAbilityService implements AbilityService {
             AbilityToolTag tool = AbilityToolTag.valueOf(section.getString("arac.tur", "").toUpperCase(Locale.ROOT));
             AbilityActivationMode mode = AbilityActivationMode.valueOf(section.getString("sure-modu", "SURE").toUpperCase(Locale.ROOT));
             int energyPerHit = section.getInt("enerji-vurus-basi", 0);
+            AbilityVisual visual = parseVisual(section.getConfigurationSection("gorsel"), id);
+            double openAirRatio = section.getDouble("etki.acik-alan-orani", -1.0D);
             if (requiredLevel < 1 || energyCost < 0 || cooldownMillis < 0 || activeMillis <= 0) {
                 throw new IllegalArgumentException("Invalid ability settings: " + id);
             }
@@ -592,17 +783,53 @@ public final class YamlAbilityService implements AbilityService {
                     if (multiplier < 0) throw new IllegalArgumentException("Knockback damage must not be negative: " + id);
                     limit = radius;
                 }
+                case ORE_REVEAL -> {
+                    if (radius < 1) throw new IllegalArgumentException("Ore reveal ability requires a positive radius: " + id);
+                    if (openAirRatio <= 0 || openAirRatio >= 1.0D) {
+                        throw new IllegalArgumentException("Ore reveal acik-alan-orani must be in (0, 1): " + id);
+                    }
+                    limit = radius;
+                    multiplier = openAirRatio;
+                }
                 case BRIEF_INVULNERABILITY, AREA_HEAL, SPEED_BURST, NIGHT_VISION -> {
                     // No extra numeric fields required beyond duration/energy/cooldown.
                 }
             }
             definitions.put(id, new AbilityDefinition(id, displayName, description, skillId, requiredLevel, energyCost,
-                    cooldownMillis, activeMillis, effect, limit, multiplier, tool, classId, mode, energyPerHit));
+                    cooldownMillis, activeMillis, effect, limit, multiplier, tool, classId, mode, energyPerHit, visual));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("abilities.yml must define at least one ability.");
         }
         return new AbilitySettings(maximumEnergy, regeneration, selectionCooldownMillis, Map.copyOf(definitions));
+    }
+
+    /**
+     * {@code gorsel} is optional so an admin-authored ability without one
+     * still loads; it then falls back to the single shared
+     * {@code kabiliyet-baslangic} sound cue and spawns no particles, which is
+     * exactly how every ability behaved before per-ability visuals existed.
+     */
+    private AbilityVisual parseVisual(ConfigurationSection section, String abilityId) {
+        if (section == null) {
+            return AbilityVisual.defaults();
+        }
+        AbilityColor color = AbilityColor.valueOf(section.getString("renk", "BEYAZ").toUpperCase(Locale.ROOT));
+        String soundName = section.getString("ses", "");
+        String particleName = section.getString("partikul", "");
+        float volume = (float) section.getDouble("ses-seviyesi", 1.0D);
+        float pitch = (float) section.getDouble("ton", 1.0D);
+        int particleCount = section.getInt("partikul-sayisi", 30);
+        if (volume <= 0 || pitch <= 0 || particleCount < 0) {
+            throw new IllegalArgumentException("Ability sound volume/pitch must be positive and particle count non-negative: " + abilityId);
+        }
+        Optional<Sound> sound = soundName.isBlank()
+                ? Optional.empty()
+                : Optional.of(Sound.valueOf(soundName.toUpperCase(Locale.ROOT)));
+        Optional<Particle> particle = particleName.isBlank()
+                ? Optional.empty()
+                : Optional.of(Particle.valueOf(particleName.toUpperCase(Locale.ROOT)));
+        return new AbilityVisual(color, sound, volume, pitch, particle, particleCount);
     }
 
     private ConfigurationSection requireSection(ConfigurationSection parent, String path) {

@@ -3,7 +3,6 @@ package com.halilibrahim.halilibrahimmmo.gui;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
@@ -63,7 +62,7 @@ public final class ClassIntroMenu implements GuiView {
                     .forEach(ability -> lore.add(services.messages().render(MessageKey.GUI_CLASS_INTRO_ABILITY_LINE,
                             Map.of("kabiliyet", ability.displayName()))));
             inventory.setItem(slot, GuiItems.of(
-                    Material.DIAMOND_SWORD,
+                    definition.icon(),
                     services.messages().render(MessageKey.GUI_CLASS_ITEM, Map.of("sinif", definition.displayName())),
                     lore
             ));

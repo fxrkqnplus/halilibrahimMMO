@@ -61,7 +61,7 @@ public final class ClassMenu implements GuiView {
             boolean selected = definition.id().equals(profile.selectedClass());
             slotToClassId.put(slot, definition.id());
             inventory.setItem(slot++, GuiItems.of(
-                    Material.DIAMOND_SWORD,
+                    definition.icon(),
                     services.messages().render(MessageKey.GUI_CLASS_ITEM, Map.of("sinif", definition.displayName())),
                     List.of(services.messages().render(selected ? MessageKey.GUI_CLASS_ITEM_LORE_SELECTED : MessageKey.GUI_CLASS_ITEM_LORE_UNSELECTED)),
                     selected

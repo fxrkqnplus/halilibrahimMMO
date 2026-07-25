@@ -7,11 +7,23 @@
 #  olarak bir sınıfa aittir (sinif alanı) - o sınıf seçili olmayan bir
 #  oyuncu bu kabiliyeti kullanamaz.
 #
+#  Kabiliyet bir kez başladıktan sonra elindeki eşyayı değiştirmen onu
+#  bozmaz; alet yalnızca kabiliyeti BAŞLATMAK için gereklidir.
+#
 #  sure-modu: SURE (varsayılan) kabiliyet sadece etki-suresi-saniye kadar
 #  sürer. ENERJI ise (yalnız etki.tur: DAMAGE_BUFF ile birlikte kullanılabilir)
 #  her isabetli vuruşta enerji-vurus-basi kadar enerji tüketir ve enerji
 #  biterse kabiliyet erken sona erer; etki-suresi-saniye yine de bir üst
 #  sınır (güvenlik freni) olarak kalır.
+#
+#  gorsel: her kabiliyetin kendine ait rengi, etkinleştirme sesi ve
+#  partikülü. Bu bölüm isteğe bağlıdır; yazılmazsa kabiliyet feedback.yml
+#  içindeki ortak "kabiliyet-baslangic" sesini kullanır ve partikül çıkarmaz.
+#    renk           : KIRMIZI, TURUNCU, SARI, YESIL, KOYU_YESIL, TURKUAZ,
+#                     MAVI, MOR, KOYU_MOR, BEYAZ
+#    ses            : bir Bukkit Sound adı
+#    partikul       : bir Bukkit Particle adı (DUST ise "renk" ile boyanır)
+#    partikul-sayisi: kaç partikül saçılacağı
 # =====================================================================
 
 enerji:
@@ -38,6 +50,13 @@ kabiliyetler:
     etki:
       tur: EXTRA_DROP_CHANCE
       sans: 0.5
+    gorsel:
+      renk: SARI
+      ses: BLOCK_AMETHYST_BLOCK_CHIME
+      ses-seviyesi: 0.9
+      ton: 1.4
+      partikul: WAX_ON
+      partikul-sayisi: 40
 
   kazici-darbe:
     gorunen-ad: "Kazıcı Darbesi"
@@ -54,6 +73,13 @@ kabiliyetler:
     etki:
       tur: EXCAVATE
       limit: 9
+    gorsel:
+      renk: TURUNCU
+      ses: BLOCK_GRASS_BREAK
+      ses-seviyesi: 1.0
+      ton: 0.7
+      partikul: DUST_PLUME
+      partikul-sayisi: 45
 
   define-refleksi:
     gorunen-ad: "Define Refleksi"
@@ -68,6 +94,13 @@ kabiliyetler:
       tur: ANY
     etki:
       tur: BRIEF_INVULNERABILITY
+    gorsel:
+      renk: BEYAZ
+      ses: ENTITY_IRON_GOLEM_REPAIR
+      ses-seviyesi: 1.0
+      ton: 1.2
+      partikul: TOTEM_OF_UNDYING
+      partikul-sayisi: 60
 
   # ----- Orman Bekçisi (oduncu) - sinerji: odunculuk -----
   yesil-yol:
@@ -83,6 +116,13 @@ kabiliyetler:
       tur: AXE
     etki:
       tur: SPEED_BURST
+    gorsel:
+      renk: KOYU_YESIL
+      ses: ENTITY_BAT_TAKEOFF
+      ses-seviyesi: 1.0
+      ton: 1.5
+      partikul: HAPPY_VILLAGER
+      partikul-sayisi: 40
 
   agac-kirici:
     gorunen-ad: "Ağaç Kırıcı"
@@ -99,6 +139,13 @@ kabiliyetler:
     etki:
       tur: TREE_FELL
       limit: 32
+    gorsel:
+      renk: YESIL
+      ses: ITEM_AXE_STRIP
+      ses-seviyesi: 1.0
+      ton: 0.8
+      partikul: CHERRY_LEAVES
+      partikul-sayisi: 50
 
   doga-sifasi:
     gorunen-ad: "Doğa Şifası"
@@ -113,6 +160,13 @@ kabiliyetler:
       tur: HOE
     etki:
       tur: AREA_HEAL
+    gorsel:
+      renk: MOR
+      ses: ENTITY_ZOMBIE_VILLAGER_CURE
+      ses-seviyesi: 0.8
+      ton: 1.4
+      partikul: HEART
+      partikul-sayisi: 25
 
   # ----- Amansız Savaşçı (avci) - sinerji: avcilik -----
   gece-gorusu:
@@ -128,10 +182,17 @@ kabiliyetler:
       tur: SWORD
     etki:
       tur: NIGHT_VISION
+    gorsel:
+      renk: KOYU_MOR
+      ses: ENTITY_ILLUSIONER_MIRROR_MOVE
+      ses-seviyesi: 0.9
+      ton: 1.3
+      partikul: SCULK_SOUL
+      partikul-sayisi: 35
 
   avci-odagi:
     gorunen-ad: "Avcı Odağı"
-    aciklama: "Etkinken verdiğin PvE hasarı %50 artar (yalnızca yaratıklara karşı - PvP'de geçerli değildir). Her isabetli vuruşta enerji tüketir; enerjin biterse ya da en fazla 2 dakika sonra kendiliğinden sona erer."
+    aciklama: "Etkinken verdiğin PvE hasarı %50 artar (yalnızca yaratıklara karşı - PvP'de geçerli değildir). Her isabetli vuruşta enerji tüketir; enerjin biterse ya da en fazla 30 saniye sonra kendiliğinden sona erer."
     beceri: avcilik
     sinif: avci
     gerekli-seviye: 10
@@ -147,10 +208,17 @@ kabiliyetler:
       tur: DAMAGE_BUFF
       limit: 1
       hasar-carpani: 1.5
+    gorsel:
+      renk: KIRMIZI
+      ses: ENTITY_PLAYER_ATTACK_SWEEP
+      ses-seviyesi: 1.0
+      ton: 0.7
+      partikul: CRIT
+      partikul-sayisi: 45
 
   yikici-darbe:
     gorunen-ad: "Yıkıcı Darbe"
-    aciklama: "Çevrendeki 4 blok yarıçapındaki yaratıkları geriye iter ve hasar verir."
+    aciklama: "Ayağının altında bir patlama yaratır: 4 blok yarıçapındaki tüm yaratıkları çok uzağa savurur ve ağır hasar verir."
     beceri: avcilik
     sinif: avci
     gerekli-seviye: 30
@@ -162,7 +230,17 @@ kabiliyetler:
     etki:
       tur: KNOCKBACK_SLAM
       yaricap: 4
-      hasar-carpani: 2.0
+      # KNOCKBACK_SLAM icin bu bir carpan degil, dogrudan verilen ham hasardir.
+      hasar-carpani: 9.0
+    # Patlama sesi/partikulu kabiliyetin kendi etkisinde zaten var; buradaki
+    # ses onun uzerine binen "catlama" vurusudur.
+    gorsel:
+      renk: TURUNCU
+      ses: BLOCK_ANVIL_LAND
+      ses-seviyesi: 1.0
+      ton: 0.6
+      partikul: LARGE_SMOKE
+      partikul-sayisi: 40
 
   # ----- Mağara Adamı (madenci) - sinerji: madencilik -----
   cevher-sezgisi:
@@ -179,6 +257,13 @@ kabiliyetler:
     etki:
       tur: EXTRA_DROP_CHANCE
       sans: 0.4
+    gorsel:
+      renk: TURKUAZ
+      ses: BLOCK_AMETHYST_CLUSTER_BREAK
+      ses-seviyesi: 1.0
+      ton: 1.3
+      partikul: GLOW
+      partikul-sayisi: 40
 
   damar-kirici:
     gorunen-ad: "Damar Kırıcı"
@@ -195,17 +280,35 @@ kabiliyetler:
     etki:
       tur: VEIN_MINE
       limit: 16
+    gorsel:
+      renk: MAVI
+      ses: BLOCK_DEEPSLATE_BREAK
+      ses-seviyesi: 1.0
+      ton: 0.6
+      partikul: DUST
+      partikul-sayisi: 50
 
-  kaya-zirhi:
-    gorunen-ad: "Kaya Zırhı"
-    aciklama: "3 saniye boyunca neredeyse tüm hasara karşı dirençli olursun."
+  maden-feneri:
+    gorunen-ad: "Maden Feneri"
+    aciklama: "Yalnızca geniş, üstü kapalı bir madende kullanılabilir: 12 blok yarıçapındaki tüm cevherler 30 saniye boyunca duvarların ardından bile parlar."
     beceri: madencilik
     sinif: madenci
     gerekli-seviye: 35
     enerji: 30
     bekleme-suresi-saniye: 160
-    etki-suresi-saniye: 3
+    etki-suresi-saniye: 30
     arac:
       tur: PICKAXE
     etki:
-      tur: BRIEF_INVULNERABILITY
+      tur: ORE_REVEAL
+      yaricap: 12
+      # Cevrendeki kupun en az bu kadari bos hava olmali; dar bir tunelde
+      # kabiliyet calismaz, genis bir magara/maden salonunda calisir.
+      acik-alan-orani: 0.30
+    gorsel:
+      renk: TURUNCU
+      ses: BLOCK_BEACON_ACTIVATE
+      ses-seviyesi: 1.0
+      ton: 1.4
+      partikul: END_ROD
+      partikul-sayisi: 60

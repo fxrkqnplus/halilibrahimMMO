@@ -47,11 +47,26 @@ public final class SkillMilestoneInfoMenu implements GuiView {
         }
         for (int i = 0; i < TIER_LEVELS.length; i++) {
             SkillMilestoneEffect effect = definition.milestones().get(TIER_LEVELS[i]);
-            inventory.setItem(TIER_SLOTS[i], GuiItems.of(Material.GOLDEN_APPLE,
+            inventory.setItem(TIER_SLOTS[i], GuiItems.of(effectIcon(effect),
                     services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_ITEM, Map.of("seviye", Integer.toString(TIER_LEVELS[i]))),
                     List.of(effectLore(effect))
             ));
         }
+    }
+
+    /**
+     * One icon per {@link SkillMilestoneEffectType} instead of a single golden
+     * apple for every tier, so a player can tell at a glance which boost a tier
+     * grants without reading its lore line.
+     */
+    private Material effectIcon(SkillMilestoneEffect effect) {
+        return switch (effect.type()) {
+            case MAX_HEALTH -> Material.GOLDEN_APPLE;
+            case PVE_DAMAGE_MULTIPLIER -> Material.DIAMOND_SWORD;
+            case MAX_ENERGY -> Material.GLOWSTONE_DUST;
+            case HASTE -> Material.GOLDEN_PICKAXE;
+            case SPEED -> Material.SUGAR;
+        };
     }
 
     private Component effectLore(SkillMilestoneEffect effect) {

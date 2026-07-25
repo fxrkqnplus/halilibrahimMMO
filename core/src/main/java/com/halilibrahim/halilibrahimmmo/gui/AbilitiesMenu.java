@@ -108,11 +108,24 @@ public final class AbilitiesMenu implements GuiView {
             }
             inventory.setItem(slot++, GuiItems.of(
                     Material.BLAZE_POWDER,
-                    services.messages().render(MessageKey.GUI_ABILITY_ITEM, Map.of("kabiliyet", definition.displayName())),
+                    abilityName(definition),
                     lore,
                     selected
             ));
         }
+    }
+
+    /**
+     * Built directly as a coloured {@link Component} rather than through a
+     * {@code MessageKey} template: an ability's colour is per-ability
+     * configured data ({@code gorsel.renk}), and {@code MessageService} only
+     * substitutes unparsed string placeholders, which cannot vary a
+     * placeholder's own colour per invocation. This is the same documented
+     * exception §10.6 established for per-title chat tags and §12.12 reused
+     * for the sidebar name line.
+     */
+    private Component abilityName(AbilityDefinition definition) {
+        return Component.text(definition.displayName(), definition.visual().color().textColor());
     }
 
     @Override

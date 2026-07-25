@@ -113,12 +113,15 @@ seviyeler:
 beceriler:
   kazicilik:
     gorunen-ad: "Kazıcılık"
-    # 25/50/75/100. seviyelerde kazanilan kalici, farklilastirilmis kilometre tasi bonuslari.
+    # 25/50/75/100. seviyelerde kazanilan kalici, farklilastirilmis kilometre
+    # tasi bonuslari. Her beceride kademeler zayiftan gucluye siralanir: 25.
+    # seviye basit bir giris bonusu verir, becerinin asil guclu bonusu her
+    # zaman 75. ve 100. seviyelere saklanir.
     kilometre-taslari:
-      25: { tur: MAX_ENERGY, deger: 10 }
-      50: { tur: MAX_HEALTH, deger: 2 }
-      75: { tur: MAX_ENERGY, deger: 10 }
-      100: { tur: MAX_ENERGY, deger: 10 }
+      25: { tur: MAX_HEALTH, deger: 2 }
+      50: { tur: MAX_ENERGY, deger: 10 }
+      75: { tur: MAX_ENERGY, deger: 20 }
+      100: { tur: MAX_ENERGY, deger: 30 }
     kaynak:
       tur: BLOCK
       malzemeler:
@@ -138,10 +141,10 @@ beceriler:
   odunculuk:
     gorunen-ad: "Odunculuk"
     kilometre-taslari:
-      25: { tur: SPEED, deger: 0 }
-      50: { tur: MAX_HEALTH, deger: 2 }
-      75: { tur: SPEED, deger: 1 }
-      100: { tur: MAX_ENERGY, deger: 15 }
+      25: { tur: MAX_HEALTH, deger: 2 }
+      50: { tur: MAX_ENERGY, deger: 10 }
+      75: { tur: SPEED, deger: 0 }
+      100: { tur: SPEED, deger: 1 }
     kaynak:
       tur: BLOCK
       malzemeler:
@@ -160,10 +163,10 @@ beceriler:
   madencilik:
     gorunen-ad: "Madencilik"
     kilometre-taslari:
-      25: { tur: HASTE, deger: 0 }
-      50: { tur: MAX_HEALTH, deger: 2 }
-      75: { tur: HASTE, deger: 1 }
-      100: { tur: MAX_ENERGY, deger: 15 }
+      25: { tur: MAX_HEALTH, deger: 2 }
+      50: { tur: MAX_ENERGY, deger: 10 }
+      75: { tur: HASTE, deger: 0 }
+      100: { tur: HASTE, deger: 1 }
     kaynak:
       tur: BLOCK
       malzemeler:
@@ -190,10 +193,10 @@ beceriler:
   avcilik:
     gorunen-ad: "Avcılık"
     kilometre-taslari:
-      25: { tur: PVE_DAMAGE_MULTIPLIER, deger: 0.10 }
+      25: { tur: MAX_HEALTH, deger: 2 }
       50: { tur: MAX_HEALTH, deger: 4 }
       75: { tur: PVE_DAMAGE_MULTIPLIER, deger: 0.10 }
-      100: { tur: MAX_HEALTH, deger: 4 }
+      100: { tur: PVE_DAMAGE_MULTIPLIER, deger: 0.20 }
     kaynak:
       tur: MOB
       # Listelenmemiş bir yaratık öldürüldüğünde bu değer kullanılır.

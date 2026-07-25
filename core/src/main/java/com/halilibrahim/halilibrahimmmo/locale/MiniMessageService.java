@@ -4,6 +4,7 @@ import com.halilibrahim.halilibrahimmmo.logging.PluginLogger;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.Tag;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -21,6 +22,24 @@ import java.util.Map;
 public final class MiniMessageService implements MessageService {
 
     private static final String FILE_NAME = "messages.yml";
+
+    /**
+     * Resolves the server's own {@code <simge:xxx>} icon tag against
+     * {@link IconPack}. Registered for every template, so an icon can be used
+     * anywhere a message is authored without each call site knowing about it.
+     *
+     * <p>An unknown icon name deliberately resolves to {@code null} rather
+     * than throwing: MiniMessage then leaves the tag as literal text, exactly
+     * how it already treats any other misspelled tag, so one typo in
+     * {@code messages.yml} can never take a gameplay message down mid-render.
+     * {@code MessageCatalogTest} is what catches such a typo, at build time.</p>
+     */
+    private static final TagResolver ICON_TAGS = TagResolver.resolver("simge", (arguments, context) -> {
+        String name = arguments.popOr("The <simge:...> tag requires an icon name.").value();
+        return IconPack.byId(name)
+                .map(icon -> Tag.selfClosingInserting(Component.text(icon.glyph())))
+                .orElse(null);
+    });
 
     private final JavaPlugin plugin;
     private final PluginLogger logger;
@@ -53,6 +72,7 @@ public final class MiniMessageService implements MessageService {
         String template = templates.getOrDefault(key, key.path());
 
         TagResolver.Builder resolverBuilder = TagResolver.builder();
+        resolverBuilder.resolver(ICON_TAGS);
         placeholders.forEach((name, value) -> resolverBuilder.resolver(Placeholder.unparsed(name, value)));
 
         return miniMessage.deserialize(template, resolverBuilder.build());
