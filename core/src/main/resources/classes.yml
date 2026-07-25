@@ -63,11 +63,15 @@ sinif-ilerleme:
 
 # prestij-etkisi: her prestij rankinda kalici olarak eklenen, secili sinif icin
 # gecerli bonus (MAX_HEALTH/PVE_DAMAGE_MULTIPLIER/MAX_ENERGY turlerinden biri).
+#
+# simge: sinif secim ekranlarinda bu sinifi temsil eden esya. Her sinif kendi
+# temasina uygun bir esya kullanir; gecerli bir Bukkit Material adi olmalidir.
 siniflar:
   savasci:
     gorunen-ad: "Define Avcısı"
     sinerji-beceri: kazicilik
     bossbar-rengi: SARI
+    simge: GOLDEN_SHOVEL
     prestij-etkisi: { tur: MAX_HEALTH, deger-basina: 1 }
     yetenekler:
       canlilik: { gorunen-ad: "Canlılık", maksimum-rank: 4, etki: { tur: MAX_HEALTH, deger-rank-basina: 2 } }
@@ -77,6 +81,7 @@ siniflar:
     gorunen-ad: "Amansız Savaşçı"
     sinerji-beceri: avcilik
     bossbar-rengi: KIRMIZI
+    simge: DIAMOND_SWORD
     prestij-etkisi: { tur: PVE_DAMAGE_MULTIPLIER, deger-basina: 0.02 }
     yetenekler:
       nisancilik: { gorunen-ad: "Nişancılık", maksimum-rank: 4, etki: { tur: PVE_DAMAGE_MULTIPLIER, deger-rank-basina: 0.03 } }
@@ -86,6 +91,7 @@ siniflar:
     gorunen-ad: "Mağara Adamı"
     sinerji-beceri: madencilik
     bossbar-rengi: MAVI
+    simge: DIAMOND_PICKAXE
     prestij-etkisi: { tur: MAX_ENERGY, deger-basina: 3 }
     yetenekler:
       cevher-tasarrufu: { gorunen-ad: "Cevher Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: cevher-sezgisi, deger-rank-basina: 0.05 } }
@@ -95,6 +101,7 @@ siniflar:
     gorunen-ad: "Orman Bekçisi"
     sinerji-beceri: odunculuk
     bossbar-rengi: YESIL
+    simge: IRON_AXE
     prestij-etkisi: { tur: MAX_HEALTH, deger-basina: 1 }
     yetenekler:
       kesim-tasarrufu: { gorunen-ad: "Kesim Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }

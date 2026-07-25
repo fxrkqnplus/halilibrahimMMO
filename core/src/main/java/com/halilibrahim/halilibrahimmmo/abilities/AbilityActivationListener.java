@@ -5,14 +5,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-
-import java.util.Optional;
 
 /**
  * Right-click activation trigger for the menu-selected ability
@@ -21,11 +17,18 @@ import java.util.Optional;
  * the exact same {@link AbilityService#activate} path {@code /kabiliyet}
  * already uses, so level/energy/cooldown checks stay identical either way.
  *
- * <p>Also clears activation visual feedback (glint/action-bar countdown) on
- * the handful of interactions that would otherwise leave it stale - dropping
- * an item, switching hotbar slots, or leaving. This never touches the
- * underlying armed/buff game state, which keeps expiring or triggering
- * exactly as it always has.</p>
+ * <p><strong>Switching or dropping the held item deliberately does nothing
+ * here.</strong> Earlier phases cleared the activation feedback (glint,
+ * action-bar countdown/energy readout, ability-end sound) whenever the held
+ * item stopped matching the running ability's tool, which made an ability look
+ * and sound like it had broken the moment a player reached for anything else -
+ * even though the underlying armed/buff state was still perfectly alive and
+ * still expired or triggered on schedule. A tool is only required to
+ * <em>start</em> an ability; once running, it stays running for its full
+ * duration regardless of what the player holds. The only remaining cleanup
+ * point is leaving the server; every other teardown is driven by the ability
+ * itself (expiry, consumption, energy depletion) inside
+ * {@code YamlAbilityService}.</p>
  */
 public final class AbilityActivationListener implements Listener {
 
@@ -64,41 +67,6 @@ public final class AbilityActivationListener implements Listener {
             return;
         }
         abilities.activate(player, definition.id(), energy);
-    }
-
-    @EventHandler
-    public void onDrop(PlayerDropItemEvent event) {
-        abilities.clearActivationFeedback(event.getPlayer());
-    }
-
-    /**
-     * Only clears feedback when the newly-held item no longer matches the
-     * active/armed ability's tool - clearing unconditionally on every hotbar
-     * slot change (the original bug) wiped the glint/countdown even when a
-     * player briefly tabbed away from the matching tool and back, or held two
-     * matching tools in different slots.
-     */
-    @EventHandler
-    public void onHeldItemChange(PlayerItemHeldEvent event) {
-        Player player = event.getPlayer();
-        Optional<ActiveAbilityStatus> active = abilities.activeStatus(player.getUniqueId());
-        if (active.isEmpty()) {
-            return;
-        }
-        AbilityDefinition definition = abilities.definitions().stream()
-                .filter(candidate -> candidate.id().equals(active.get().abilityId()))
-                .findFirst()
-                .orElse(null);
-        if (definition == null) {
-            abilities.clearActivationFeedback(player);
-            return;
-        }
-        ItemStack newItem = player.getInventory().getItem(event.getNewSlot());
-        boolean stillMatches = definition.tool() == AbilityToolTag.ANY
-                || (newItem != null && !newItem.getType().isAir() && definition.tool().matches(newItem.getType()));
-        if (!stillMatches) {
-            abilities.clearActivationFeedback(player);
-        }
     }
 
     @EventHandler

@@ -7,6 +7,7 @@ import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -329,6 +330,10 @@ public final class YamlClassService implements ClassService {
                 throw new IllegalArgumentException("Class synergy skill must reference a known skill id: " + id);
             }
             ClassBarColor barColor = ClassBarColor.valueOf(section.getString("bossbar-rengi", "").toUpperCase(Locale.ROOT));
+            Material icon = Material.matchMaterial(section.getString("simge", ""));
+            if (icon == null) {
+                throw new IllegalArgumentException("Class must declare a known simge material: " + id);
+            }
             ConfigurationSection talents = requiredSection(section, "yetenekler");
             Map<String, TalentNodeDefinition> nodes = new LinkedHashMap<>();
             for (String rawTalentId : talents.getKeys(false)) {
@@ -357,7 +362,7 @@ public final class YamlClassService implements ClassService {
             if (!prestigeTypeAllowed || prestigeEffectValue <= 0) {
                 throw new IllegalArgumentException("Class prestige effect must be a positive MAX_HEALTH/PVE_DAMAGE_MULTIPLIER/MAX_ENERGY value: " + id);
             }
-            definitions.put(id, new PlayerClassDefinition(id, displayName, synergySkillId, barColor, Map.copyOf(nodes), prestigeEffectType, prestigeEffectValue));
+            definitions.put(id, new PlayerClassDefinition(id, displayName, synergySkillId, barColor, icon, Map.copyOf(nodes), prestigeEffectType, prestigeEffectValue));
         }
         if (definitions.isEmpty()) throw new IllegalArgumentException("classes.yml must define classes.");
         return new ClassSettings(Math.multiplyExact(cooldownDays, 86_400_000L), levelsPerPoint, classLevelCurve, synergyBonus, Map.copyOf(definitions));

@@ -78,7 +78,11 @@ public final class ClassSynergyBridge implements SkillExperienceListener {
                 player.getScheduler().run(plugin, task -> {
                     feedback.showExperienceProgress(
                             player, MessageKey.FEEDBACK_XP_CLASS_BOSSBAR,
-                            Map.of("sinif", definition.displayName(), "kazanilan", Long.toString(grantedAmount)),
+                            Map.of(
+                                    "sinif", definition.displayName(),
+                                    "seviye", Integer.toString(progress.level()),
+                                    "kazanilan", Long.toString(grantedAmount)
+                            ),
                             progress.experience(), requiredForLevel, "class", definition.barColor().color()
                     );
                     if (result.leveledUp()) {

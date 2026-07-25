@@ -6,9 +6,11 @@ package com.halilibrahim.halilibrahimmmo.abilities;
  * than growing this record further: {@code limit} is a block count for
  * {@link AbilityEffectType#EXCAVATE}/{@link AbilityEffectType#TREE_FELL}/
  * {@link AbilityEffectType#VEIN_MINE} and a radius in blocks for
- * {@link AbilityEffectType#KNOCKBACK_SLAM}; {@code damageMultiplier} is a
- * damage multiplier for {@link AbilityEffectType#DAMAGE_BUFF} and a
- * 0-1 chance for {@link AbilityEffectType#EXTRA_DROP_CHANCE}.
+ * {@link AbilityEffectType#KNOCKBACK_SLAM}/{@link AbilityEffectType#ORE_REVEAL};
+ * {@code damageMultiplier} is a damage multiplier for
+ * {@link AbilityEffectType#DAMAGE_BUFF}, a 0-1 chance for
+ * {@link AbilityEffectType#EXTRA_DROP_CHANCE} and a 0-1 minimum open-air ratio
+ * for {@link AbilityEffectType#ORE_REVEAL}'s "wide mine" precondition.
  */
 public record AbilityDefinition(
         String id,
@@ -25,6 +27,7 @@ public record AbilityDefinition(
         AbilityToolTag tool,
         String classId,
         AbilityActivationMode mode,
-        int energyPerHit
+        int energyPerHit,
+        AbilityVisual visual
 ) {
 }

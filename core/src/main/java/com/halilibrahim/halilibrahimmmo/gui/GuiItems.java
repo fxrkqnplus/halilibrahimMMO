@@ -5,8 +5,10 @@ import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.List;
 
@@ -36,8 +38,27 @@ public final class GuiItems {
         return item;
     }
 
+    /** A {@link Material#PLAYER_HEAD} actually wearing {@code owner}'s skin, not a generic Steve head. */
+    public static ItemStack playerHead(OfflinePlayer owner, Component name, List<Component> lore) {
+        ItemStack item = of(Material.PLAYER_HEAD, name, lore);
+        if (item.getItemMeta() instanceof SkullMeta skull) {
+            skull.setOwningPlayer(owner);
+            item.setItemMeta(skull);
+        }
+        return item;
+    }
+
     public static ItemStack backButton(MessageService messages) {
         return of(Material.ARROW, messages.render(MessageKey.GUI_BACK));
+    }
+
+    /** Darker filler used for a menu's outer frame, so the interactive middle stands out. */
+    public static ItemStack border() {
+        ItemStack item = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(Component.empty());
+        item.setItemMeta(meta);
+        return item;
     }
 
     public static ItemStack filler() {

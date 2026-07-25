@@ -67,10 +67,13 @@ dosyasında yapılandırılır; her beceri artık kırılan bloğun veya öldür
 yaratığın **nadirliğine göre** farklı miktarda XP verir (ör. toprak çok az,
 elmas/kadim kalıntı çok daha fazla; zombi az, warden/ejderha çok daha fazla).
 Bir beceri 25/50/75/100. seviyelere ulaştığında kalıcı bir bonus kazandırır
-— her beceri kendine özgü, farklılaştırılmış bonuslar verir: avcılık ekstra
-yaratık hasarı ve can, madencilik Acele (Haste) ve enerji, odunculuk Hız ve
-enerji, kazıcılık ise ekstra enerji ve can (bonuslar, prestij ile o beceri
-sıfırlanınca kaybedilir). Her becerinin kendi detay ekranı `/madencilik`, `/odunculuk`, `/kazicilik`
+— her beceri kendine özgü, farklılaştırılmış bonuslar verir ve **kademeler
+zayıftan güçlüye sıralanmıştır**: 25. seviye basit bir giriş bonusu (genelde
++can) verirken, becerinin asıl güçlü bonusu her zaman 75. ve 100. seviyelere
+saklanır. Avcılık cana, sonra artan yaratık hasarına; madencilik cana ve
+enerjiye, sonra Acele (Haste) I/II'ye; odunculuk cana ve enerjiye, sonra Hız
+I/II'ye; kazıcılık ise kademeli olarak artan maksimum enerjiye yönelir
+(bonuslar, prestij ile o beceri sıfırlanınca kaybedilir). Her becerinin kendi detay ekranı `/madencilik`, `/odunculuk`, `/kazicilik`
 ve `/avcilik` komutlarıyla açılır: mevcut seviye/XP, becerinin beslediği
 sınıf, kilometre taşı açıklamaları ve o becerinin liderlik tablosu buradan
 görüntülenir. `abilities.yml`, paylaşılan kalıcı olmayan enerji havuzunu ve
@@ -82,14 +85,25 @@ seviyesine göre değil) ve iki şekilde etkinleştirilebilir: doğrudan
 (kazma/balta/kürek/kılıç, kabiliyete göre değişir) sağ tıklayarak — seçili
 alet, kabiliyetin süresi boyunca parlar ve eylem çubuğunda hangi kabiliyetin
 etkin olduğu ile ne kadar süre (ya da tek seferlik kabiliyetlerde bekleme
-penceresi) kaldığı gösterilir. Farklı bir kabiliyete geçmek kısa bir bekleme
+penceresi) kaldığı gösterilir. **Alet yalnızca kabiliyeti başlatmak için
+gereklidir**: kabiliyet bir kez etkinleştikten sonra elindeki eşyayı
+değiştirmen, hatta düşürmen onu bozmaz — süresi dolana kadar çalışmaya devam
+eder. Her kabiliyetin `abilities.yml` içinde kendine ait bir rengi,
+etkinleştirme sesi ve partikül efekti vardır, böylece iki kabiliyet birbirine
+benzemez. Farklı bir kabiliyete geçmek kısa bir bekleme
 süresine tabidir (varsayılan 120 saniye); aynı kabiliyeti yeniden seçmek
 serbesttir. Bazı kabiliyetler tamamen süreye dayalıdır (ör. Gece Görüşü);
 Amansız Savaşçı'nın Avcı Odağı gibi savaşa dayalı bazı kabiliyetler ise her
 isabetli vuruşta enerji tüketir ve enerji biterse ya da en fazla 30 saniye
 sonra kendiliğinden sona erer — ve yalnızca yaratıklara (PvE) karşı
-geçerlidir, PvP'de hiçbir etkisi yoktur. Henüz açılmamış kabiliyetler menüde
-kilitli olarak gösterilir, detayları açılana kadar gizli kalır.
+geçerlidir, PvP'de hiçbir etkisi yoktur. Amansız Savaşçı'nın Yıkıcı Darbe'si
+ayağının altında gerçek bir şok dalgası yaratır: patlama sesi ve efektiyle
+çevredeki yaratıkları çok uzağa savurur ve ağır hasar verir. Mağara Adamı'nın
+Maden Feneri ise **yalnızca geniş, üstü kapalı bir madende** kullanılabilir
+(dar bir tünelde ya da açık arazide çalışmaz): çevrendeki 12 blok
+yarıçapındaki tüm cevherleri 30 saniye boyunca duvarların ardından bile
+görünecek şekilde parlatır. Henüz açılmamış kabiliyetler menüde kilitli olarak
+gösterilir, detayları açılana kadar gizli kalır.
 
 Geliştirici API'si, değişmez beceri tanımlarını ve asenkron salt okunur oyuncu
 beceri sorgularını sunar. Harici eklentilerin beceri XP'si vermesine veya
@@ -180,12 +194,13 @@ atladığınızda kısa bir parçacık efekti oynatır.
 
 ## Görsel geri bildirim
 
-Bir beceriden XP kazanıldığında, hangi cevherin/yaratığın XP verdiğini
-parantez içinde gösteren bir beceri cübuğu (boss bar) görünür. Seçili
+Bir beceriden XP kazanıldığında, o becerinin **güncel seviyesini** ve hangi
+cevherin/yaratığın XP verdiğini gösteren bir beceri cübuğu (boss bar)
+görünür. Seçili
 sınıfınızın sinerji becerisinden XP kazandığınızda, beceri cübuğuyla
-**aynı anda**, her sınıfa özgü kendi renginde ayrı bir sınıf XP cübuğu de
-görünür (görev/koleksiyon ödülleri de bu sınıf XP cübuğu üzerinden
-gösterilir). Seviye atlamanın kendisi kişisel bir sohbet mesajıdır. Güç
+**aynı anda**, her sınıfa özgü kendi renginde ve o sınıfın güncel seviyesini
+gösteren ayrı bir sınıf XP cübuğu de görünür (görev/koleksiyon ödülleri de bu
+sınıf XP cübuğu üzerinden gösterilir). Seviye atlamanın kendisi kişisel bir sohbet mesajıdır. Güç
 (dört becerinin toplamı) yalnızca 10'un katlarına ulaşıldığında kişisel bir
 cübukla belirtilir; 25/50/75/100. Güç seviyelerine ulaşmak sunucu genelinde
 duyurulur. Görev tamamlama, koleksiyon tamamlama ve prestij hâlâ her
@@ -196,16 +211,27 @@ genelinde duyurulur, prestij bir havai fişek ve ses efektiyle de kutlanır
 
 ## Envanter menüsü
 
-`/menu`, dört kategoriye ayrılmış bir merkez menü açar: **İlerleme** (profil,
-beceriler, sınıf/yetenekler, prestij), **Kabiliyetlerim**, **Görevler**
-(görevler, koleksiyonlar, macera günlüğü) ve **Topluluk** (liderlik tabloları,
-unvanlar, kozmetikler). Her menü, ilgili metin komutlarının kullandığı aynı
+`/menu`, çerçeveli bir merkez menü açar: en üstte kendi kafanı taşıyan,
+Gücünü/prestijini/sınıfını özetleyen kişisel bir başlık, altında dört kategori
+— **İlerleme** (profil, beceriler, sınıf/yetenekler, prestij),
+**Kabiliyetlerim**, **Görevler** (görevler, koleksiyonlar, macera günlüğü) ve
+**Topluluk** (liderlik tabloları, unvanlar, kozmetikler) — her biri ne
+içerdiğini anlatan bir açıklama satırıyla, ve en altta **Eklenti Hakkında**
+düğmesi. Her menü, ilgili metin komutlarının kullandığı aynı
 sistemler üzerinden çalışır — GUI'de bir sınıf seçmek veya yetenek puanı
 harcamak, tam olarak sınıf/kabiliyet menülerinin arka planda çağırdığı
 servislerle aynı sonucu verir. Kabiliyetler menüsü bir kabiliyeti seçer
 (simgesini parlatarak) ama doğrudan etkinleştirmez; etkinleştirme hâlâ
 oyun içinde uygun alete sağ tıklayarak ya da `/kabiliyet <id>` ile olur.
-Henüz açılmamış kabiliyetler menüde kilitli gösterilir.
+Henüz açılmamış kabiliyetler menüde kilitli gösterilir. Sınıf seçim
+ekranlarında her sınıf artık kendi temasına uygun bir simgeyle (Define Avcısı
+altın kürek, Amansız Savaşçı elmas kılıç, Mağara Adamı elmas kazma, Orman
+Bekçisi demir balta) gösterilir; kilometre taşı ekranındaki her kademe de
+verdiği bonusa uygun bir simge kullanır.
+
+**Eklenti Hakkında** ekranı (hem `/menu`'den hem `/haliladmin`'den açılır)
+sürüm bilgisini ve emeği geçenleri listeler: **Furkan Okan (fxrkqnplus)** ve
+**Claude (Anthropic)**.
 
 ## Yönetici paneli
 
@@ -220,8 +246,9 @@ listeleyip beceri/sınıf seviyesini ve XP'sini tıklamalarla ayarlama ya da
 oyuncunun sınıfını zorla değiştirme. Bir seviye atlamaya yol açan her
 müdahale, hedef oyuncu çevrimiçiyse organik bir seviye atlamayla birebir
 aynı geri bildirimi (cübuk, ses, "yeni kabiliyet açıldı" ekran yazısı,
-panel güncellemesi) tetikler. Her yönetici müdahalesi Türkçe bir sunucu
-günlüğü kaydı bırakır.
+panel güncellemesi) tetikler. Panelde ayrıca sürüm ve emeği geçenleri
+gösteren **Eklenti Hakkında** ekranına bir kısayol vardır. Her yönetici
+müdahalesi Türkçe bir sunucu günlüğü kaydı bırakır.
 
 ## PlaceholderAPI ve LuckPerms (isteğe bağlı)
 
@@ -250,6 +277,19 @@ karşı her gönderilen veritabanı göçünü ve temsili bir repository okuma/y
 örneklem setini çalıştırır — bu, çalışan bir Docker daemon'u gerektirir ve
 bilinçli olarak `build`/`test`/`check`'ten hariç tutulmuştur; bu yüzden ayrı
 ve açıkça çalıştırılmalıdır.
+
+## Sunucuya özel ikon paketi
+
+Eklenti, kendi adlandırılmış ikon setini taşır: `messages.yml` içinde
+`<simge:guc>`, `<simge:prestij>`, `<simge:kabiliyet>`, `<simge:tamam>` gibi
+bir etiket yazdığınız her yerde ilgili simge basılır. İkonlar panelde,
+menülerde, boss cübuklarında ve sohbet mesajlarında kullanılır. Simgenin
+kendi rengi yoktur — etrafındaki MiniMessage renk etiketi neyse onu alır,
+böylece aynı simge panelde altın, menüde gri görünebilir. Kullanılabilir
+adların tam listesi `messages.yml` başlığındaki yorumdadır. Tüm simgeler
+kasıtlı olarak Minecraft'ın varsayılan yazı tipinin kapsadığı Unicode
+aralığından seçilmiştir; ayrıca bir kaynak paketi (resource pack) kurmanız
+gerekmez.
 
 ## Dil politikası
 

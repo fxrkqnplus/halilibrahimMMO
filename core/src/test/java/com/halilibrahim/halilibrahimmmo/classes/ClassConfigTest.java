@@ -1,5 +1,6 @@
 package com.halilibrahim.halilibrahimmmo.classes;
 
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,8 @@ final class ClassConfigTest {
         assertEquals(7, classes.getLong("sinif-degistirme-bekleme-gun"));
         assertEquals(25, classes.getInt("seviye-basina-yetenek-puani"));
         for (String classId : definitions.getKeys(false)) {
+            String icon = definitions.getString(classId + ".simge", "");
+            assertNotNull(Material.matchMaterial(icon), classId + " has an unknown simge material: " + icon);
             ConfigurationSection prestigeEffect = definitions.getConfigurationSection(classId + ".prestij-etkisi");
             assertNotNull(prestigeEffect, classId + " is missing prestij-etkisi");
             ClassEffectType prestigeType = ClassEffectType.valueOf(prestigeEffect.getString("tur"));

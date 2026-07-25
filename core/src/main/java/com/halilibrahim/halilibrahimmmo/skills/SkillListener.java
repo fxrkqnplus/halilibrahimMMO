@@ -108,7 +108,12 @@ public final class SkillListener implements Listener {
         player.getScheduler().run(plugin, task -> {
             feedback.showExperienceProgress(
                     player, MessageKey.FEEDBACK_XP_SKILL_BOSSBAR,
-                    Map.of("beceri", definition.displayName(), "kazanilan", Long.toString(award.grantedAmount()), "kaynak", award.sourceDisplayName()),
+                    Map.of(
+                            "beceri", definition.displayName(),
+                            "seviye", Integer.toString(progress.level()),
+                            "kazanilan", Long.toString(award.grantedAmount()),
+                            "kaynak", award.sourceDisplayName()
+                    ),
                     progress.experience(), requiredForLevel, "skill", BossBar.Color.GREEN
             );
             if (award.leveledUp()) {

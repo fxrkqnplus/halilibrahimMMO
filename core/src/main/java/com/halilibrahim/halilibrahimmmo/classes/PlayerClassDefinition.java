@@ -1,5 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.classes;
 
+import org.bukkit.Material;
+
 import java.util.Map;
 
 /**
@@ -14,9 +16,14 @@ import java.util.Map;
  * the same bounded {@link ClassEffectType} talents already use, so prestige
  * boosts recompute through the exact same {@code modifiers(...)} summing
  * path.</p>
+ *
+ * <p>{@code icon} is the {@link Material} every class-picking screen renders
+ * this class as ({@code simge} in {@code classes.yml}), so a class is
+ * recognisable by its own tool/theme instead of every option sharing one
+ * generic sword.</p>
  */
 public record PlayerClassDefinition(
-        String id, String displayName, String synergySkillId, ClassBarColor barColor,
+        String id, String displayName, String synergySkillId, ClassBarColor barColor, Material icon,
         Map<String, TalentNodeDefinition> talents,
         ClassEffectType prestigeEffectType, double prestigeEffectValuePerRank
 ) {
