@@ -7,6 +7,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.Tag;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -81,6 +82,11 @@ public final class MiniMessageService implements MessageService {
     @Override
     public Component render(MessageKey key) {
         return render(key, Map.of());
+    }
+
+    @Override
+    public String plain(MessageKey key, Map<String, String> placeholders) {
+        return PlainTextComponentSerializer.plainText().serialize(render(key, placeholders));
     }
 
     @Override

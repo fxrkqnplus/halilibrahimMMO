@@ -1,5 +1,6 @@
 package com.halilibrahim.halilibrahimmmo.abilities;
 
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,7 @@ final class AbilityConfigTest {
             assertNotNull(ability, id);
             assertNotNull(ability.getString("gorunen-ad"), id + " is missing gorunen-ad");
             assertNotNull(ability.getString("aciklama"), id + " is missing aciklama");
+            assertNotNull(Material.matchMaterial(ability.getString("simge", "")), id + " has an unknown simge material");
             assertTrue(classes.contains("siniflar." + ability.getString("sinif", "")), id + " references an unknown class");
             assertTrue(SUPPORTED_TOOL_TAGS.contains(ability.getString("arac.tur", "")), id + " has an unknown arac.tur");
             AbilityEffectType effect = assertDoesNotThrow(

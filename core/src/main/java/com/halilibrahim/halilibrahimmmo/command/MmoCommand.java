@@ -16,9 +16,16 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * {@code /mmo aktif} - the one-time onboarding gate. A brand-new player's
- * progression stays completely inert until this runs; success immediately
- * opens the class-introduction menu.
+ * {@code /mmo} - the one-time onboarding gate. A brand-new player's progression
+ * stays completely inert until this runs; success immediately opens the
+ * class-introduction menu, which is where everything after this point happens.
+ *
+ * <p>This is the one command that still accepts an argument, and it accepts it
+ * only for backwards compatibility with the {@code /mmo aktif} form the
+ * sidebar prompt has always shown - the bare command does exactly the same
+ * thing. It is not a chat-driven feature screen (there is nothing to look at
+ * before activation), so it is deliberately outside the "every command just
+ * opens a GUI" rule the rest of the command surface now follows.</p>
  */
 public final class MmoCommand implements BasicCommand {
 
@@ -38,10 +45,6 @@ public final class MmoCommand implements BasicCommand {
     public void execute(CommandSourceStack stack, String[] args) {
         if (!(stack.getSender() instanceof Player player)) {
             messages.send(stack.getSender(), MessageKey.PLAYER_ONLY);
-            return;
-        }
-        if (args.length != 1 || !args[0].equalsIgnoreCase("aktif")) {
-            messages.send(player, MessageKey.MMO_USAGE);
             return;
         }
         if (activation.cached(player.getUniqueId())) {

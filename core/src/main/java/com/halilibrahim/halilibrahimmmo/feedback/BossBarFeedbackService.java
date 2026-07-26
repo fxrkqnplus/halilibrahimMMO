@@ -109,6 +109,20 @@ public final class BossBarFeedbackService implements FeedbackService {
     }
 
     @Override
+    public void celebrateClassChanged(Player player, String classDisplayName) {
+        Map<String, String> placeholders = Map.of("sinif", classDisplayName);
+        show(player, MessageKey.FEEDBACK_CLASS_CHANGED_BOSSBAR, MessageKey.FEEDBACK_CLASS_CHANGED_TITLE,
+                MessageKey.FEEDBACK_CLASS_CHANGED_SUBTITLE, placeholders, BossBar.Color.PURPLE);
+        messages.send(player, MessageKey.FEEDBACK_CLASS_CHANGED_CHAT, placeholders);
+        playSound(player, "sinif-degistirildi");
+    }
+
+    @Override
+    public void celebrateAbilitySelected(Player player) {
+        playSound(player, "kabiliyet-secildi");
+    }
+
+    @Override
     public void celebrateAbilityActivated(Player player) {
         playSound(player, "kabiliyet-baslangic");
     }

@@ -14,5 +14,12 @@ public interface EnergyService extends PluginService {
 
     int currentEnergy(Player player);
 
+    /**
+     * The player's own energy ceiling - the configured base plus every class
+     * and skill-milestone bonus. Public because every place that shows energy
+     * shows it as "current/maximum", never as a bare number.
+     */
+    int maximumEnergy(Player player);
+
     void reconcile(Player player);
 }

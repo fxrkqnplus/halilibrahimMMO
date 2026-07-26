@@ -67,6 +67,17 @@ public interface FeedbackService extends PluginService {
     /** Plays the class-selection sound cue only - the confirmation chat message is sent separately by the caller. */
     void celebrateClassSelected(Player player);
 
+    /**
+     * The full "Sınıf Değiştirildi" announcement for the changing player alone:
+     * on-screen title, bossbar, personal chat line and sound cue together.
+     * Unlike {@link #celebrateClassSelected} this one owns its own chat message,
+     * because the three surfaces are meant to carry the same wording.
+     */
+    void celebrateClassChanged(Player player, String classDisplayName);
+
+    /** Plays the short confirmation cue for picking an ability in the menu - the chat line is sent by the caller. */
+    void celebrateAbilitySelected(Player player);
+
     /** Plays the ability-activation-start sound cue only. */
     void celebrateAbilityActivated(Player player);
 

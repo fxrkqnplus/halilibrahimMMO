@@ -1,5 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.gui;
 
+import com.halilibrahim.halilibrahimmmo.abilities.AbilityDefinition;
+import com.halilibrahim.halilibrahimmmo.classes.ClassEffectType;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassProgress;
 import com.halilibrahim.halilibrahimmmo.classes.TalentNodeDefinition;
@@ -13,11 +15,17 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
-/** Class selection and talent spending, mirroring {@code /sinif sec}/{@code /sinif ac}. */
+/**
+ * The class hub behind {@code /sinif}: the four class icons (clicking any of
+ * them opens the full picker, {@link ClassIntroMenu}) plus the selected class's
+ * own talent tree, where every rankable node explains what one more rank buys.
+ */
 public final class ClassMenu implements GuiView {
 
     private static final int FIRST_CLASS_SLOT = 10;
@@ -88,16 +96,67 @@ public final class ClassMenu implements GuiView {
         for (TalentNodeDefinition talent : selectedDefinition.talents().values()) {
             slotToTalentId.put(talentSlot, talent.id());
             int rank = ranks.getOrDefault(talent.id(), 0);
+            List<Component> lore = new ArrayList<>();
+            lore.add(effectLore(talent));
+            lore.add(currentEffectLore(talent, rank));
+            lore.add(services.messages().render(MessageKey.GUI_TALENT_ITEM_LORE, Map.of(
+                    "rank", Integer.toString(rank),
+                    "maksimum", Integer.toString(talent.maximumRank())
+            )));
             inventory.setItem(talentSlot++, GuiItems.of(
                     Material.BOOK,
                     services.messages().render(MessageKey.GUI_TALENT_ITEM, Map.of("yetenek", talent.displayName())),
-                    List.of(services.messages().render(MessageKey.GUI_TALENT_ITEM_LORE, Map.of(
-                            "rank", Integer.toString(rank),
-                            "maksimum", Integer.toString(talent.maximumRank())
-                    ))),
+                    lore,
                     rank >= talent.maximumRank()
             ));
         }
+    }
+
+    /**
+     * What one rank of this talent actually buys, branched per
+     * {@link com.halilibrahim.halilibrahimmmo.classes.ClassEffectType} so the
+     * player never has to guess from the name alone. Mirrors
+     * {@link SkillMilestoneInfoMenu}'s per-effect-type lore, including its
+     * multiplier-to-percentage conversion for the two ratio-shaped effects.
+     */
+    private Component effectLore(TalentNodeDefinition talent) {
+        return switch (talent.effectType()) {
+            case MAX_HEALTH -> services.messages().render(MessageKey.GUI_TALENT_LORE_HEALTH,
+                    Map.of("deger", formatAmount(talent.valuePerRank())));
+            case PVE_DAMAGE_MULTIPLIER -> services.messages().render(MessageKey.GUI_TALENT_LORE_DAMAGE,
+                    Map.of("yuzde", formatAmount(talent.valuePerRank() * 100)));
+            case MAX_ENERGY -> services.messages().render(MessageKey.GUI_TALENT_LORE_ENERGY,
+                    Map.of("deger", formatAmount(talent.valuePerRank())));
+            case ABILITY_ENERGY_COST_REDUCTION -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_COST,
+                    Map.of("kabiliyet", abilityName(talent.abilityId()), "yuzde", formatAmount(talent.valuePerRank() * 100)));
+            case ABILITY_COOLDOWN_REDUCTION -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_COOLDOWN,
+                    Map.of("kabiliyet", abilityName(talent.abilityId()), "yuzde", formatAmount(talent.valuePerRank() * 100)));
+            case ABILITY_LIMIT_BONUS -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_LIMIT,
+                    Map.of("kabiliyet", abilityName(talent.abilityId()), "deger", formatAmount(talent.valuePerRank())));
+        };
+    }
+
+    /** The total already earned, so spending the next point is an informed decision rather than a blind one. */
+    private Component currentEffectLore(TalentNodeDefinition talent, int rank) {
+        double total = talent.valuePerRank() * rank;
+        boolean percentage = talent.effectType() != ClassEffectType.MAX_HEALTH
+                && talent.effectType() != ClassEffectType.MAX_ENERGY
+                && talent.effectType() != ClassEffectType.ABILITY_LIMIT_BONUS;
+        return services.messages().render(percentage ? MessageKey.GUI_TALENT_LORE_CURRENT_PERCENT : MessageKey.GUI_TALENT_LORE_CURRENT,
+                Map.of("deger", formatAmount(percentage ? total * 100 : total)));
+    }
+
+    private String abilityName(String abilityId) {
+        return services.abilities().definitions().stream()
+                .filter(definition -> definition.id().equals(abilityId))
+                .map(AbilityDefinition::displayName)
+                .findFirst()
+                .orElse(abilityId);
+    }
+
+    /** Whole numbers read as "2", not "2.0"; fractional talent values keep one decimal. */
+    private String formatAmount(double value) {
+        return value == Math.rint(value) ? Long.toString(Math.round(value)) : String.format(Locale.ROOT, "%.1f", value);
     }
 
     @Override
@@ -106,35 +165,18 @@ public final class ClassMenu implements GuiView {
             GuiManager.open(player, new ProgressionMenu(services));
             return;
         }
-        String classId = slotToClassId.get(slot);
-        if (classId != null) {
-            selectClass(player, classId);
+        // Selecting from here no longer changes the class on the spot: it hands
+        // off to the same picker a brand-new player sees, which explains each
+        // class again and routes through the confirmation screen where the
+        // cooldown and the class-level reset are spelled out.
+        if (slotToClassId.containsKey(slot)) {
+            GuiManager.open(player, new ClassIntroMenu(services, true));
             return;
         }
         String talentId = slotToTalentId.get(slot);
         if (talentId != null) {
             spendTalent(player, talentId);
         }
-    }
-
-    private void selectClass(Player player, String classId) {
-        services.classes().select(player.getUniqueId(), player.getName(), classId).thenAccept(result ->
-                player.getScheduler().run(services.plugin(), task -> {
-                    switch (result.status()) {
-                        case SELECTED -> {
-                            services.classes().applyPlayerEffects(player);
-                            services.energy().reconcile(player);
-                            services.abilities().clearSelection(player.getUniqueId());
-                            services.sidebar().refresh(player);
-                            services.feedback().celebrateClassSelected(player);
-                            services.messages().send(player, MessageKey.CLASS_SELECTED, Map.of("sinif", services.classes().displayName(result.classId())));
-                        }
-                        case ALREADY_SELECTED -> services.messages().send(player, MessageKey.CLASS_ALREADY_SELECTED, Map.of("sinif", services.classes().displayName(result.classId())));
-                        case UNKNOWN_CLASS -> services.messages().send(player, MessageKey.CLASS_UNKNOWN, Map.of("sinif", result.classId()));
-                        case COOLDOWN -> services.messages().send(player, MessageKey.CLASS_COOLDOWN, Map.of("sure", Long.toString(Math.max(1, (result.remainingMillis() + 999) / 1000))));
-                    }
-                    GuiManager.open(player, new ClassMenu(services));
-                }, null));
     }
 
     private void spendTalent(Player player, String talentId) {

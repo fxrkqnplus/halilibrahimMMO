@@ -122,7 +122,8 @@ public final class PlayerEnergyService implements EnergyService {
         )));
     }
 
-    private int maximumEnergy(Player player) {
+    @Override
+    public int maximumEnergy(Player player) {
         return Math.addExact(settings.get().maximumEnergy(), maximumEnergyBonus.applyAsInt(player));
     }
 }

@@ -4,7 +4,6 @@ import com.halilibrahim.halilibrahimmmo.database.DatabaseService;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;

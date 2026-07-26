@@ -7,6 +7,7 @@ import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticDefinition;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticService;
 import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
+import com.halilibrahim.halilibrahimmmo.exploit.PlacedBlockTracker;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.journal.JournalService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
@@ -42,6 +43,7 @@ public final class QuestListener implements Listener {
     private final MessageService messages;
     private final JournalService journal;
     private final BlockBreakRateLimiter breakRateLimiter;
+    private final PlacedBlockTracker placedBlocks;
     private final SidebarService sidebar;
     private final ActivationService activation;
 
@@ -57,6 +59,7 @@ public final class QuestListener implements Listener {
             MessageService messages,
             JournalService journal,
             BlockBreakRateLimiter breakRateLimiter,
+            PlacedBlockTracker placedBlocks,
             SidebarService sidebar,
             ActivationService activation
     ) {
@@ -71,6 +74,7 @@ public final class QuestListener implements Listener {
         this.messages = messages;
         this.journal = journal;
         this.breakRateLimiter = breakRateLimiter;
+        this.placedBlocks = placedBlocks;
         this.sidebar = sidebar;
         this.activation = activation;
     }
@@ -92,7 +96,7 @@ public final class QuestListener implements Listener {
         if (!activation.cached(player.getUniqueId()) || abilities.isSecondaryBreak(event) || !isGameplayGameMode(player)) {
             return;
         }
-        if (!breakRateLimiter.allow(player.getUniqueId())) {
+        if (placedBlocks.isPlayerPlaced(event.getBlock()) || !breakRateLimiter.allow(player.getUniqueId())) {
             return;
         }
         quests.awardBlock(player.getUniqueId(), event.getBlock().getType())

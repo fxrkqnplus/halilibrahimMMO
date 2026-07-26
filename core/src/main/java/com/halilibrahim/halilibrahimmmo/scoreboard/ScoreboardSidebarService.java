@@ -5,6 +5,7 @@ import com.halilibrahim.halilibrahimmmo.abilities.ActiveAbilityStatus;
 import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.classes.ClassLevelProgress;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
+import com.halilibrahim.halilibrahimmmo.locale.DurationFormatter;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingService;
@@ -12,7 +13,6 @@ import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingTask;
 import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
-import com.halilibrahim.halilibrahimmmo.quests.QuestDefinition;
 import com.halilibrahim.halilibrahimmmo.quests.QuestProgress;
 import com.halilibrahim.halilibrahimmmo.quests.QuestService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestType;
@@ -287,7 +287,7 @@ public final class ScoreboardSidebarService implements SidebarService {
                 .findFirst()
                 .ifPresent(definition -> lines.add(messages.render(MessageKey.SIDEBAR_LINE_ACTIVE_ABILITY, Map.of(
                         "kabiliyet", definition.displayName(),
-                        "kalan", Long.toString(Math.max(1L, (status.expiresAtMillis() - System.currentTimeMillis() + 999L) / 1000L))
+                        "kalan", DurationFormatter.ofMillis(messages, status.expiresAtMillis() - System.currentTimeMillis())
                 )))));
 
         String selectedAbilityId = abilities.selected(playerId).orElse(null);
@@ -308,18 +308,8 @@ public final class ScoreboardSidebarService implements SidebarService {
 
         lines.add(divider());
         Map<String, QuestProgress> questProgress = quests.cachedAll(playerId);
-        quests.definitions().stream()
-                .filter(definition -> definition.type() == QuestType.DAILY)
-                .filter(definition -> questProgress.containsKey(definition.id()))
-                .forEach(definition -> {
-                    QuestProgress progress = questProgress.get(definition.id());
-                    lines.add(messages.render(MessageKey.SIDEBAR_LINE_QUEST_DAILY_ENTRY, Map.of(
-                            "gorev", definition.displayName(),
-                            "ilerleme", progress.progress() + "/" + definition.target(),
-                            "xp", Long.toString(definition.rewardExperience())
-                    )));
-                });
-        lines.add(messages.render(MessageKey.SIDEBAR_LINE_QUESTS_WEEKLY, questCounts(questProgress, QuestType.WEEKLY)));
+        addQuestLines(lines, questProgress, QuestType.DAILY);
+        addQuestLines(lines, questProgress, QuestType.WEEKLY);
 
         lines.add(divider());
         lines.add(footer());
@@ -356,12 +346,30 @@ public final class ScoreboardSidebarService implements SidebarService {
         remaining.forEach(key -> lines.add(messages.render(key)));
     }
 
-    private Map<String, String> questCounts(Map<String, QuestProgress> progress, QuestType type) {
-        List<QuestDefinition> assigned = quests.definitions().stream()
+    /**
+     * One line per currently-assigned quest of {@code type}. A finished quest
+     * switches to its own green "Tamamlandı" template carrying the XP it paid
+     * out, instead of sitting at a maxed-out progress fraction that looks
+     * identical to an unclaimed one.
+     */
+    private void addQuestLines(List<Component> lines, Map<String, QuestProgress> progress, QuestType type) {
+        quests.definitions().stream()
                 .filter(definition -> definition.type() == type)
                 .filter(definition -> progress.containsKey(definition.id()))
-                .toList();
-        long completed = assigned.stream().filter(definition -> progress.get(definition.id()).completed()).count();
-        return Map.of("tamamlanan", Long.toString(completed), "toplam", Integer.toString(assigned.size()));
+                .forEach(definition -> {
+                    QuestProgress current = progress.get(definition.id());
+                    if (current.completed()) {
+                        lines.add(messages.render(MessageKey.SIDEBAR_LINE_QUEST_COMPLETED_ENTRY, Map.of(
+                                "gorev", definition.displayName(),
+                                "xp", Long.toString(definition.rewardExperience())
+                        )));
+                        return;
+                    }
+                    lines.add(messages.render(MessageKey.SIDEBAR_LINE_QUEST_DAILY_ENTRY, Map.of(
+                            "gorev", definition.displayName(),
+                            "ilerleme", current.progress() + "/" + definition.target(),
+                            "xp", Long.toString(definition.rewardExperience())
+                    )));
+                });
     }
 }

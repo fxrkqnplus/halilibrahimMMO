@@ -1,5 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.abilities;
 
+import org.bukkit.Material;
+
 /**
  * Immutable configured ability definition. {@code limit} and
  * {@code damageMultiplier} are dual-purposed per {@code effectType} rather
@@ -16,6 +18,7 @@ public record AbilityDefinition(
         String id,
         String displayName,
         String description,
+        Material icon,
         String skillId,
         int requiredLevel,
         int energyCost,

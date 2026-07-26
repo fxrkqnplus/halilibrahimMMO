@@ -10,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -29,6 +30,21 @@ public final class ClassListener implements Listener {
     @EventHandler public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         classes.load(player.getUniqueId(), player.getName()).thenAccept(ignored -> player.getScheduler().run(plugin, task -> classes.applyPlayerEffects(player), null));
+    }
+    /**
+     * The selected class's MAX_HEALTH modifier is lost on death together with
+     * the skill milestone bonuses (see {@code SkillListener#onRespawn}), and is
+     * reapplied the same way: one tick after the respawn, once the server has
+     * finished resetting the player's own attributes. Energy is reconciled in
+     * the same pass so a class/milestone maximum-energy bonus is not left
+     * clamped to the base value.
+     */
+    @EventHandler public void onRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        player.getScheduler().runDelayed(plugin, task -> {
+            classes.applyPlayerEffects(player);
+            energy.reconcile(player);
+        }, null, 1L);
     }
     @EventHandler public void onQuit(PlayerQuitEvent event) { classes.evict(event.getPlayer().getUniqueId()); }
     @EventHandler(ignoreCancelled = true) public void onDamage(EntityDamageByEntityEvent event) {

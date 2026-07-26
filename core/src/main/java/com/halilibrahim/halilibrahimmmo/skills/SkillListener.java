@@ -4,6 +4,7 @@ import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
 import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
+import com.halilibrahim.halilibrahimmmo.exploit.PlacedBlockTracker;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
@@ -17,6 +18,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
@@ -32,13 +34,14 @@ public final class SkillListener implements Listener {
     private final FeedbackService feedback;
     private final ActivationService activation;
     private final BlockBreakRateLimiter breakRateLimiter;
+    private final PlacedBlockTracker placedBlocks;
     private final ProgressionService progression;
     private final MessageService messages;
 
     public SkillListener(
             JavaPlugin plugin, SkillService skills, AbilityService abilities, EnergyService energy,
             FeedbackService feedback, ActivationService activation, BlockBreakRateLimiter breakRateLimiter,
-            ProgressionService progression, MessageService messages
+            PlacedBlockTracker placedBlocks, ProgressionService progression, MessageService messages
     ) {
         this.plugin = plugin;
         this.skills = skills;
@@ -47,6 +50,7 @@ public final class SkillListener implements Listener {
         this.feedback = feedback;
         this.activation = activation;
         this.breakRateLimiter = breakRateLimiter;
+        this.placedBlocks = placedBlocks;
         this.progression = progression;
         this.messages = messages;
     }
@@ -57,6 +61,21 @@ public final class SkillListener implements Listener {
         skills.loadAll(player.getUniqueId())
                 .thenAccept(ignored -> player.getScheduler().run(plugin, task -> skills.applyMilestoneEffects(player), null));
         energy.initialize(player);
+    }
+
+    /**
+     * Death strips the milestone bonuses: the HASTE/SPEED potion effects are
+     * cleared outright and the MAX_HEALTH attribute modifier does not survive
+     * the respawn either, so a player used to permanently lose every
+     * 25/50/75/100 boost until they relogged. Reapplied one tick after the
+     * respawn rather than inside the event, because the server finishes
+     * resetting the player's attributes and effects after this event returns -
+     * anything applied during it would be wiped again immediately.
+     */
+    @EventHandler
+    public void onRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        player.getScheduler().runDelayed(plugin, task -> skills.applyMilestoneEffects(player), null, 1L);
     }
 
     @EventHandler
@@ -71,7 +90,8 @@ public final class SkillListener implements Listener {
         abilities.handleBlockBreak(event);
         Player player = event.getPlayer();
         if (activation.cached(player.getUniqueId()) && !abilities.isSecondaryBreak(event)
-                && isGameplayGameMode(player) && breakRateLimiter.allow(player.getUniqueId())) {
+                && isGameplayGameMode(player) && !placedBlocks.isPlayerPlaced(event.getBlock())
+                && breakRateLimiter.allow(player.getUniqueId())) {
             skills.awardBlock(player.getUniqueId(), player.getName(), event.getBlock().getType())
                     .thenAccept(result -> handleAward(player, result));
         }
