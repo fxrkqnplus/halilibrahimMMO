@@ -16,8 +16,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Bridges skill XP gains into the class-level track: whenever a player gains
- * XP in their currently selected class's one synergy skill, this awards the
- * same amount as class-track XP and, on a class level-up, celebrates it on
+ * XP in any of their currently selected class's synergy skills, this awards
+ * the same amount as class-track XP and, on a class level-up, celebrates it on
  * the player's own region scheduler (a no-op if they have since gone offline).
  *
  * <p>Also owns the "new ability unlocked" toast: since ability unlock is
@@ -63,7 +63,7 @@ public final class ClassSynergyBridge implements SkillExperienceListener {
                 return;
             }
             PlayerClassDefinition definition = classes.settings().definitions().get(classId);
-            if (definition == null || !definition.synergySkillId().equals(skillId)) {
+            if (definition == null || !definition.hasSynergyWith(skillId)) {
                 return;
             }
             classes.awardClassExperienceExact(playerId, playerName, classId, grantedAmount).thenAccept(result -> {

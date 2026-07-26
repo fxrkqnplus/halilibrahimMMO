@@ -54,23 +54,29 @@ Eklentinin **hiçbir oyuncu komutunun argümanı yoktur**. Her komut yalnızca
 ilgili GUI ekranını açan bir kısayoldur; sohbete liste basan, sohbetten
 değer değiştiren hiçbir komut kalmamıştır.
 
-| Komut | Ne açar |
-|---|---|
-| `/menu` | Ana menü (dört kategori + kişisel başlık + Eklenti Hakkında) |
-| `/mmo` | MMO sistemini ilk kez aktifleştirir, ardından sınıf tanıtım ekranını açar |
-| `/profil` | Profil ekranı (Güç, prestij, sınıf) |
-| `/sinif` | Sınıf ekranı: sınıf simgeleri + seçili sınıfın yetenek ağacı |
-| `/kabiliyet` | Kabiliyet menüsü (seçim yapılır, etkinleştirme oyun içindedir) |
-| `/gorev` | Görev panosu (günlük / haftalık / kalıcı / tamamlananlar) |
-| `/koleksiyon` | Koleksiyon ekranı |
-| `/gunluk` | Macera günlüğü |
-| `/prestij` | Prestij şart listesi ve onay düğmesi |
-| `/liderlik` | Liderlik tabloları |
-| `/unvan` | Unvan gardırobu |
-| `/kozmetik` | Kozmetik gardırobu |
-| `/madencilik`, `/odunculuk`, `/kazicilik`, `/avcilik` | O becerinin detay ekranı |
-| `/panel` | Sağdaki bilgi panelini gizler/gösterir |
-| `/haliladmin` | Yönetici paneli (`halilibrahimmmo.admin` izni gerekir) |
+Komutlar **gerçek Türkçe harflerle** yazılır. Türkçe karakter içeren her
+komutun eski ASCII yazımı da **takma ad (alias)** olarak çalışmaya devam eder,
+yani `/menü` ve `/menu` aynı ekranı açar — Türkçe klavyesi olmayan bir oyuncu
+da her ekrana ulaşabilir.
+
+| Komut | Takma ad | Ne açar |
+|---|---|---|
+| `/menü` | `/menu` | Ana menü (dört kategori + kişisel başlık + Eklenti Hakkında) |
+| `/mmo` | — | MMO sistemini ilk kez aktifleştirir, ardından sınıf tanıtım ekranını açar |
+| `/profil` | — | Profil ekranı (Güç, prestij, sınıf) |
+| `/sınıf` | `/sinif` | Sınıf ekranı: sınıf simgeleri + seçili sınıfın yetenek ağacı |
+| `/kabiliyet` | — | Kabiliyet menüsü (seçim yapılır, etkinleştirme oyun içindedir) |
+| `/görev` | `/gorev` | Görev panosu (günlük / haftalık / kalıcı / tamamlananlar) |
+| `/koleksiyon` | — | Koleksiyon ekranı |
+| `/günlük` | `/gunluk` | Macera günlüğü |
+| `/prestij` | — | Prestij şart listesi ve onay düğmesi |
+| `/liderlik` | — | Liderlik tabloları |
+| `/ünvan` | `/unvan` | Unvan gardırobu |
+| `/kozmetik` | — | Kozmetik gardırobu |
+| `/madencilik`, `/odunculuk` | — | O becerinin detay ekranı |
+| `/kazıcılık`, `/avcılık`, `/tarımcılık`, `/hayvancılık` | `/kazicilik`, `/avcilik`, `/tarimcilik`, `/hayvancilik` | O becerinin detay ekranı |
+| `/panel` | — | Sağdaki bilgi panelini gizler/gösterir |
+| `/haliladmin` | — | Yönetici paneli (`halilibrahimmmo.admin` izni gerekir) |
 
 **Ekranda görünen her süre** saat/dakika/saniye olarak yazılır: kabiliyet
 bekleme süresi, sınıf değiştirme bekleme süresi, geri sayımlar. "130 saniye"
@@ -82,10 +88,10 @@ içindeki `sure:` bölümünden değiştirilebilir.
 ## İlerleme temeli
 
 Oyun içinde **Güç** olarak adlandırılan genel seviye, bağımsız bir XP
-kaynağına sahip değildir — dört becerinin (kazıcılık, odunculuk, madencilik,
-avcılık) seviyelerinin toplamına, prestij yaptıkça kalıcı olarak biriken
-Güç'ün eklenmesiyle hesaplanır. Prestij, sıfırladığı seviyelere rağmen Güç'ü
-asla düşürmez.
+kaynağına sahip değildir — altı becerinin (kazıcılık, odunculuk, madencilik,
+avcılık, tarımcılık, hayvancılık) seviyelerinin toplamına, prestij yaptıkça
+kalıcı olarak biriken Güç'ün eklenmesiyle hesaplanır. Prestij, sıfırladığı
+seviyelere rağmen Güç'ü asla düşürmez.
 
 İki kalıcı kural her XP kaynağı için geçerlidir:
 
@@ -99,6 +105,13 @@ asla düşürmez.
   kendi kalıcı verisinde saklanır; sunucu yeniden başlasa da unutulmazlar.
   (Eklenti kurulmadan *önce* yerleştirilmiş eski yapılar bu kaydın dışındadır.)
 
+  **Ekinler bu kuralın tek istisnasıdır**, çünkü tarım zaten "ek ve biç"
+  demektir: kendi ektiğiniz buğday, havuç, patates, pancar da tam olarak
+  olgunlaştığında XP verir. Olmamış bir ekini kırmak hiçbir şey kazandırmaz,
+  dolayısıyla ekip-sökerek XP çevirmek mümkün değildir. Saman balyaları ekin
+  değildir: yalnızca **köylerdeki doğal balyalar** sayılır, kendi koyduğunuz
+  balya sayılmaz.
+
 Her Gradle komutu için Java 26 kullanın; çalışma alanında kurulu JDK
 `C:\Program Files\Java\jdk-26.0.1` konumundadır.
 
@@ -106,22 +119,63 @@ Her Gradle komutu için Java 26 kullanın; çalışma alanında kurulu JDK
 
 ## Beceriler
 
-Dört bağımsız olarak seviyelenen beceri vardır. Hepsi `skills.yml` içindeki
-aynı açık 1–100 seviye eğrisini kullanır, ama her biri farklı bir eylemden
-beslenir ve her blok/yaratık **oyun içindeki gerçek değerine göre** XP verir.
+**Altı** bağımsız olarak seviyelenen beceri vardır. Hepsi `skills.yml`
+içindeki aynı açık 1–100 seviye eğrisini kullanır, ama her biri farklı bir
+eylemden beslenir ve her blok/yaratık/iş **oyun içindeki gerçek değerine
+göre** XP verir.
 
 | Beceri | Nasıl kazanılır | En az → en çok XP |
 |---|---|---|
-| **Kazıcılık** (`/kazicilik`) | Toprak, kum, çakıl, kil gibi yumuşak blokları kazmak | 6 (toprak) → 18 (kil) |
+| **Kazıcılık** (`/kazıcılık`) | Toprak, kum, çakıl, kil gibi yumuşak blokları kazmak | 6 (toprak) → 18 (kil) |
 | **Odunculuk** (`/odunculuk`) | Kütük kesmek | 9 (meşe) → 21 (nether sapları) |
 | **Madencilik** (`/madencilik`) | Cevher kırmak | 12 (kömür) → 300 (kadim kalıntı) |
-| **Avcılık** (`/avcilik`) | Yaratık öldürmek | 15 (zararsız hayvanlar) → 2400 (Ejderha) |
+| **Avcılık** (`/avcılık`) | Yaratık öldürmek | 15 (zararsız hayvanlar) → 2400 (Ejderha) |
+| **Tarımcılık** (`/tarımcılık`) | Tarlada yapılan her iş (aşağıda) | 3 (çapalama) → 30 (köylü ticareti) |
+| **Hayvancılık** (`/hayvancılık`) | Hayvan yetiştirmenin her adımı (aşağıda) | 3 (süt sağma) → 45 (evcilleştirme) |
 
 Aradaki farklar bilinçli olarak büyük tutulmuştur. Örneğin madencilikte
 redstone 21, altın 60, elmas 135, zümrüt 180 XP verir; avcılıkta bir inek ya
 da domuz 15, bir zombi 24, bir Wither İskeleti 90, bir Warden 1800 XP verir.
 Listelenmemiş her yaratık en düşük değeri alır, çünkü listelenmemiş yaratıklar
 neredeyse her zaman çiftlikte sınırsız üretilebilen hayvanlardır.
+
+### Tarımcılık
+
+Tarımcılık hem blok kırmaktan hem de tarlanın etrafındaki işlerden beslenen
+tek beceridir:
+
+| Nasıl | XP |
+|---|---|
+| Toprağa çapa ile vurup tarla açmak | 3 |
+| Ekinlere kemik tozu kullanmak | 6 |
+| Saman balyası kırmak (yalnızca köylerdeki doğal balyalar) | 6 |
+| Olgunlaşmış ekin biçmek (buğday, havuç, patates, pancar, böğürtlen) | 9 |
+| Ocakta patates veya deniz yosunu pişirmek | 9 |
+| Ekmek üretmek | 12 |
+| Karpuz, balkabağı veya kakao kesmek | 12 |
+| Nether mantarı toplamak | 15 |
+| Meşale çiçeği / testi bitkisi biçmek | 18 |
+| Köylülerle ticaret yapmak | 30 |
+
+### Hayvancılık
+
+Hayvancılık, hayvanı **yaşatmakla** ilgilidir; hayvan öldürmek her zaman
+avcılığa yazılır, hayvancılığa değil. Hiçbir blok veya yaratık kaynağı yoktur,
+tamamen şu eylemlerden beslenir:
+
+| Nasıl | XP |
+|---|---|
+| Kova ile inek/mooshroom/keçi sağmak | 3 |
+| Kayışla inek, domuz veya koyun taşımak (her 20 saniyede bir) | 6 |
+| Koyun kırpmak | 9 |
+| Ocakta hayvan eti pişirmek (biftek, pirzola, kuzu, tavşan, tavuk) | 12 |
+| İki hayvanı çiftleştirip yavru elde etmek | 24 |
+| Pasta üretmek | 30 |
+| Kurt, at, eşek, katır, lama, kedi, papağan evcilleştirmek | 45 |
+
+Kayışla taşıma ödülü **sürünün büyüklüğünden bağımsızdır**: on ineği götürmek
+bir ineği götürmekle aynı iştir, hayvan başına ödemek yalnızca sürü
+yığmayı ödüllendirirdi.
 
 ### Kilometre taşları
 
@@ -132,9 +186,22 @@ becerinin asıl güçlü bonusu her zaman 75. ve 100. seviyelerde.
 | Beceri | 25 | 50 | 75 | 100 |
 |---|---|---|---|---|
 | Kazıcılık | +2 can | +10 enerji | +20 enerji | +30 enerji |
-| Odunculuk | +2 can | +10 enerji | Hız I | Hız II |
+| Odunculuk | **Ağaç devirme** | +10 enerji | Hız I | Hız II |
 | Madencilik | +2 can | +10 enerji | Acele I | Acele II |
 | Avcılık | +2 can | +4 can | Yaratıklara +%10 hasar | Yaratıklara +%20 hasar |
+| Tarımcılık | +2 can | +12 enerji | +6 can | +30 enerji |
+| Hayvancılık | **Yem iadesi** | +4 can | +6 can | +25 enerji |
+
+İki kilometre taşı bir istatistik değil, **açılan bir özelliktir**:
+
+- **Ağaç devirme** (odunculuk 25) — bir ağacın toprakla temas eden **kök**
+  kütüğünü kestiğinizde ağacın tamamı devrilir; bağlı bütün kütükler (en
+  fazla 48) birden düşer. Gövdenin ortasından kesmek bunu tetiklemez, yoksa
+  her kütük kırışı zincirleme bir yıkıma dönerdi.
+- **Yem iadesi** (hayvancılık 25) — bir yavru doğduktan sonra %15 ihtimalle
+  çiftleştirme yeminin **iki adedi birden** (iki ebeveyn için harcadığınız
+  kadarı) elinize geri döner. Zar yavru doğduktan *sonra* atılır, yani
+  şansınız tutmasa da zaten harcayacağınızdan fazlasını kaybetmezsiniz.
 
 Bu bonuslar **ölünce kaybolmaz** — yeniden doğduğunuzda otomatik olarak geri
 yüklenir. Yalnızca prestij ile o beceri sıfırlandığında düşerler. Her becerinin
@@ -146,31 +213,58 @@ gösterir.
 
 ## Sınıflar
 
-Dört sınıf vardır; her birinin bir **sinerji becerisi** ve o sınıfa özel üç
-kabiliyeti bulunur. Sinerji becerisinden kazanılan XP'nin bir kısmı otomatik
-olarak sınıfın kendi seviye izine de yansır, dolayısıyla sınıfınıza uygun
-oynamak hem beceriyi hem sınıfı birlikte büyütür.
+**Üç** sınıf vardır. Her sınıfın bir veya birden fazla **sinerji becerisi**
+vardır: o becerilerden kazanılan XP'nin bir kısmı otomatik olarak sınıfın
+kendi seviye izine de yansır ve ayrıca **+%20 beceri XP bonusu** kazandırır,
+dolayısıyla sınıfınıza uygun oynamak hem beceriyi hem sınıfı birlikte büyütür.
 
-| Sınıf | Sinerji becerisi | Simge | Kalıcı prestij bonusu |
+| Sınıf | Sinerji becerileri | Simge | Kabiliyet sayısı |
 |---|---|---|---|
-| **Define Avcısı** (`savasci`) | Kazıcılık | Altın kürek | Sınıfa özgü |
-| **Amansız Savaşçı** (`avci`) | Avcılık | Elmas kılıç | Sınıfa özgü |
-| **Mağara Adamı** (`madenci`) | Madencilik | Elmas kazma | Sınıfa özgü |
-| **Orman Bekçisi** (`oduncu`) | Odunculuk | Demir balta | Sınıfa özgü |
+| **Amansız Savaşçı** (`avci`) | Avcılık | Elmas kılıç | 3 |
+| **Mağara Adamı** (`madenci`) | Madencilik | Elmas kazma | 3 |
+| **Tabiat Vârisi** (`tabiat-varisi`) | Odunculuk, Kazıcılık, Tarımcılık, Hayvancılık | Demir balta | 8 |
 
-### Yetenek ağacı
+**Tabiat Vârisi** tek başına dört beceriyi birden besler — toprağın, ormanın,
+tarlanın ve sürünün vârisidir. Karşılığında en geniş kabiliyet listesine ve en
+geniş yetenek ağacına sahiptir, ama kabiliyetleri tek tek daha az yıkıcı ve
+daha çok yardımcı niteliktedir, ve sınıf seviyesinin tamamına (5'ten 40'a)
+yayılarak açılır. Amansız Savaşçı ve Mağara Adamı ise dar ama derin
+uzmanlardır.
 
-Seçili sınıfın altında üç arttırılabilir özellik (yetenek) bulunur. Bunlar
-tüm sınıflar arasında **paylaşılan** tek bir yetenek puanı havuzundan
-harcanır, dolayısıyla sınıf değiştirmek harcanmış rankları silmez. Menüde bir
-yeteneğin üstüne geldiğinizde artık **ne işe yaradığı** yazar: her rankın ne
-kadar can / hasar / enerji verdiği, ya da hangi kabiliyetin enerji maliyetini
-veya bekleme süresini ne kadar azalttığı, ve şu ana kadar biriken toplam etki.
+Her sınıf ayrıca prestij yaptıkça büyüyen, kendine özgü kalıcı bir bonus
+taşır: Amansız Savaşçı PvE hasarı, Mağara Adamı maksimum enerji, Tabiat Vârisi
+maksimum can.
+
+### Yetenek ağacı: iki ayrı puan havuzu
+
+Seçili sınıfın altında arttırılabilir yetenekler bulunur ve bunlar **birbirinin
+yerine geçmeyen iki ayrı puan havuzundan** harcanır:
+
+| Havuz | Ne alır | Nasıl kazanılır |
+|---|---|---|
+| **Özellik Puanı** | Kalıcı karakter istatistikleri: can, yaratıklara karşı hasar, maksimum enerji | Her 25 Güç seviyesinde 1, her prestijde 4 |
+| **Kabiliyet Puanı** | Tek bir kabiliyete özel iyileştirmeler | Her 40 Güç seviyesinde 1, her prestijde 2 |
+
+Bir kabiliyet puanı asla bir özellik yeteneğine, bir özellik puanı da asla bir
+kabiliyet yeteneğine harcanamaz. Bölünmenin bütün amacı budur: kabiliyetlerini
+güçlendirmek isteyen bir oyuncu bunu ham istatistiklerinden vazgeçerek satın
+alamaz, tersi de geçerlidir. **Kabiliyet puanı bilerek daha nadirdir.**
+
+Kabiliyet yetenekleri bir kabiliyetin **enerji maliyetini azaltabilir**,
+**bekleme süresini kısaltabilir**, **etki sınırını genişletebilir**, **etki
+süresini uzatabilir** veya **etkisinin gücünü arttırabilir** (bir hasar
+çarpanını, bir düşme ihtimalini ya da ham hasarı). Menüde bir yeteneğin üstüne
+geldiğinizde hangi havuzdan ödendiği, her rankın tam olarak ne verdiği ve şu
+ana kadar biriken toplam etki yazar. Özellik yetenekleri kitap, kabiliyet
+yetenekleri büyülü kitap simgesiyle ayrılır.
+
+Her iki havuz da tüm sınıflar arasında **paylaşılır**, dolayısıyla sınıf
+değiştirmek harcanmış rankları silmez.
 
 ### Sınıf değiştirme
 
 Sınıf değiştirme, ilk sınıf seçiminde kullanılan ekranın **aynısını** açar:
-dört sınıf, her birinin tanıtım yazısı ve kabiliyet listesiyle. Ekranın
+üç sınıf, her birinin tanıtım yazısı ve kabiliyet listesiyle. Ekranın
 üstündeki durum ögesi mevcut sınıfınızı ve şu anda değiştirip
 değiştiremeyeceğinizi (değiştiremiyorsanız ne kadar kaldığını) söyler.
 
@@ -193,12 +287,14 @@ kullanılamaz. Açılma koşulu **sınıf seviyesidir** (beceri seviyesi değil)
 
 | Sınıf | Kabiliyet | Sv. | Enerji | Bekleme | Etki |
 |---|---|---|---|---|---|
-| Define Avcısı | Hazine Sezgisi | 5 | 20 | 1 dk 30 sn | Kırdığın bloklardan %50 ihtimalle ekstra düşme |
-| Define Avcısı | Kazıcı Darbesi | 10 | 20 | 1 dk | Sonraki kırışta çevredeki 9 bloğu birden kazar |
-| Define Avcısı | Define Refleksi | 30 | 30 | 2 dk 30 sn | 3 saniye neredeyse tüm hasara dirençlilik |
-| Orman Bekçisi | Yeşil Yol | 5 | 20 | 1 dk 15 sn | 10 saniye artan hareket hızı |
-| Orman Bekçisi | Ağaç Kırıcı | 15 | 25 | 1 dk 15 sn | Bağlı tüm kütükleri (en fazla 32) birden keser |
-| Orman Bekçisi | Doğa Şifası | 30 | 25 | 2 dk | 8 saniye hızlı can yenilenmesi |
+| Tabiat Vârisi | Toprak Sezgisi | 5 | 20 | 1 dk 30 sn | Kırdığın bloklardan %50 ihtimalle ekstra düşme |
+| Tabiat Vârisi | Kazıcı Darbesi | 10 | 20 | 1 dk | Sonraki kırışta çevredeki 9 bloğu birden kazar |
+| Tabiat Vârisi | Yeşil Yol | 15 | 20 | 1 dk 15 sn | 10 saniye artan hareket hızı |
+| Tabiat Vârisi | Filiz Patlaması | 20 | 25 | 3 dk | 6 blok yarıçapındaki tüm ekinleri anında olgunlaştırır |
+| Tabiat Vârisi | Ağaç Kırıcı | 25 | 25 | 1 dk 15 sn | Bağlı tüm kütükleri (en fazla 32) birden keser |
+| Tabiat Vârisi | Doğa Kalkanı | 30 | 30 | 2 dk 30 sn | 3 saniye neredeyse tüm hasara dirençlilik |
+| Tabiat Vârisi | Sürü Çağrısı | 35 | 30 | 4 dk | 8 blok yarıçapındaki tüm yetişkin hayvanları yem harcamadan çiftleşme moduna sokar |
+| Tabiat Vârisi | Doğa Şifası | 40 | 25 | 2 dk | 8 saniye hızlı can yenilenmesi |
 | Amansız Savaşçı | Gece Görüşü | 5 | 15 | 2 dk | 60 saniye karanlıkta net görüş |
 | Amansız Savaşçı | Avcı Odağı | 10 | 25 | 1 dk 30 sn | PvE hasarı %50 artar (enerji tüketir) |
 | Amansız Savaşçı | Yıkıcı Darbe | 30 | 30 | 30 sn | Ayağının altında şok dalgası, 4 blok yarıçapı |
@@ -238,6 +334,16 @@ tüketir, enerjiniz biterse ya da en fazla 30 saniye sonra kendiliğinden sona
 erer — ve yalnızca yaratıklara (PvE) karşı geçerlidir, PvP'de hiçbir etkisi
 yoktur.
 
+**Filiz Patlaması** çevrenizdeki 6 blok yarıçapındaki bütün olmamış ekinleri
+tek seferde hasada hazır hâle getirir — bir kova kemik tozu gibi, ama hiç
+kemik tozu harcamadan. Zaten olgunlaşmış ekinlere dokunmaz, dolayısıyla size
+kaç bitkinin gerçekten büyüdüğünü söyler.
+
+**Sürü Çağrısı** çevrenizdeki 8 blok yarıçapındaki bütün **yetişkin**
+hayvanları tek bir yem harcamadan çiftleşme moduna sokar. Yavrular ve zaten
+çiftleşme modundaki hayvanlar atlanır, dolayısıyla aynı sürüye tekrar
+kullanmak bir işe yaramaz.
+
 ### Enerji
 
 Enerji, tüm kabiliyetlerin paylaştığı, kaydedilmeyen bir havuzdur (varsayılan
@@ -269,13 +375,16 @@ yeniden başladığında panel varsayılan olarak görünür duruma döner.
 
 ## Prestij
 
-Prestij yapabilmek için üç şart birden sağlanmalıdır: dört becerinin de en
+Prestij yapabilmek için üç şart birden sağlanmalıdır: altı becerinin de en
 az 25. seviyede olması, seçili sınıfın kendi sınıf seviyesinin maksimuma
-(varsayılan 50) ulaşmış olması, ve o sınıfın sinerji becerisinin de kendi
-maksimum seviyesine (100) ulaşmış olması. `/prestij` bu şartları ayrı ayrı
-✔/✘ olarak listeler ve onay düğmesini aynı ekranda sunar.
+(varsayılan 50) ulaşmış olması, ve o sınıfın sinerji becerilerinin
+**hepsinin** kendi maksimum seviyesine (100) ulaşmış olması. `/prestij` bu
+şartları ayrı ayrı ✔/✘ olarak listeler — sinerji becerilerinin her biri
+kendi satırında görünür, böylece dört beceriyi birden besleyen Tabiat Vârisi
+oynarken hangisinin sizi geciktirdiğini tek bakışta görürsünüz — ve onay
+düğmesini aynı ekranda sunar.
 
-Prestij, seçili sınıfın sınıf seviyesini ve dört becerinin tümünü sıfırlar —
+Prestij, seçili sınıfın sınıf seviyesini ve altı becerinin tümünü sıfırlar —
 **ancak Güç düşmez**: sıfırlanmadan önceki Güç kalıcı olarak "biriktirilir" ve
 becerileriniz tekrar seviye atladıkça Güç kaldığı yerden artmaya devam eder.
 Karşılığında kalıcı olarak her prestij rankında +%25 XP kazanımı (hem beceri
@@ -289,7 +398,7 @@ sayısı 10'dur.
 
 ## Görevler
 
-`/gorev` dört bölümlü bir görev panosu açar:
+`/görev` dört bölümlü bir görev panosu açar:
 
 - **Günlük Görevler** — geniş bir havuzdan her gün rastgele atanan 3 görev.
 - **Haftalık Görevler** — havuzdan her hafta rastgele atanan 2 görev.
@@ -310,7 +419,7 @@ duyurulur.
 ## Koleksiyonlar ve macera günlüğü
 
 `/koleksiyon` koleksiyonlarınızı ve her koleksiyonun içinde hangi ögeleri
-topladığınızı ✔/✘ olarak gösterir. `/gunluk` son on görev tamamlama ve
+topladığınızı ✔/✘ olarak gösterir. `/günlük` son on görev tamamlama ve
 koleksiyon kilometre taşınızı listeler. Bir görevi tamamlamak, bir koleksiyon
 ögesi edinmek ve bir koleksiyonun tamamını tamamlamak, **seçili sınıfınızın**
 XP'sini kazandırır (sınıf seçili değilse ödül verilmez).
@@ -320,7 +429,7 @@ XP'sini kazandırır (sınıf seçili değilse ödül verilmez).
 `/liderlik`; Güç (önce prestij, sonra toplam beceri seviyesi sırasına göre),
 prestij, tamamlanan görev sayısı, edinilen koleksiyon ögesi sayısı ve her
 yapılandırılmış beceri için en üst sıradaki oyuncuları gösteren tablolara
-açılır. Aynı tablolara `/menu`'nün Topluluk kategorisinden de göz atılabilir.
+açılır. Aynı tablolara `/menü`'nün Topluluk kategorisinden de göz atılabilir.
 Sonuçlar her açılışta veritabanını sorgulamak yerine kısa, yapılandırılabilir
 bir süre için önbelleğe alınır (`leaderboards.yml`).
 
@@ -328,9 +437,9 @@ bir süre için önbelleğe alınır (`leaderboards.yml`).
 
 `titles.yml` ve `cosmetics.yml`, her biri tek bir kazanma koşuluna sahip
 (seviye/prestije ulaşma, belirli bir görevi/koleksiyonu tamamlama veya bir
-beceri seviyesine ulaşma) açılabilir öge katalogları tanımlar. `/unvan` ve
+beceri seviyesine ulaşma) açılabilir öge katalogları tanımlar. `/ünvan` ve
 `/kozmetik` neyi açtığınızı gösterir ve tıklayarak kuşanmanızı sağlar; aynı
-kataloglara `/menu`'den de göz atılabilir. Kuşanılan bir unvan, sohbette
+kataloglara `/menü`'den de göz atılabilir. Kuşanılan bir unvan, sohbette
 adınızın önünde **kendi yapılandırılmış rengi ve kalınlığıyla** görünür.
 Kuşanılan bir kozmetik, katıldığınızda ve her seviye atladığınızda kısa bir
 parçacık efekti oynatır.
@@ -351,7 +460,7 @@ süre görünür kalacağını ve hangi ses efektinin çalacağını denetler).
 
 ## Envanter menüsü
 
-`/menu`, çerçeveli bir merkez menü açar: en üstte kendi kafanı taşıyan,
+`/menü`, çerçeveli bir merkez menü açar: en üstte kendi kafanı taşıyan,
 Gücünü/prestijini/sınıfını özetleyen kişisel bir başlık, altında dört kategori
 — **İlerleme** (profil, beceriler, sınıf/yetenekler, prestij),
 **Kabiliyetlerim**, **Görevler** (görevler, koleksiyonlar, macera günlüğü) ve
@@ -359,7 +468,7 @@ Gücünü/prestijini/sınıfını özetleyen kişisel bir başlık, altında dö
 içerdiğini anlatan bir açıklama satırıyla, ve en altta **Eklenti Hakkında**
 düğmesi.
 
-**Eklenti Hakkında** ekranı (hem `/menu`'den hem `/haliladmin`'den açılır)
+**Eklenti Hakkında** ekranı (hem `/menü`'den hem `/haliladmin`'den açılır)
 sürüm bilgisini ve emeği geçenleri listeler: **Furkan Okan (fxrkqnplus)** ve
 **Claude (Anthropic)**.
 
@@ -386,7 +495,7 @@ biri, her ikisi ya da hiçbiri kurulu olmasa da aynı şekilde açılır.
 `_xp_to_next_level`, `_prestige`, `_class`, `_title`, `_cosmetic` ve her
 yapılandırılmış beceri için `_skill_<id>_level`/`_skill_<id>_xp` yer
 tutucularını sunan bir `halilibrahimmmo` eklentisi (expansion) kaydeder.
-Güç artık dört becerinin toplamından türetildiği için (bkz. "İlerleme
+Güç artık altı becerinin toplamından türetildiği için (bkz. "İlerleme
 temeli") `_xp` ve `_xp_to_next_level` her zaman `0` döner — `_level` ise
 güncel Gücü göstermeye devam eder.
 **LuckPerms** kuruluyken bu eklenti, `halilibrahimmmo:level`,

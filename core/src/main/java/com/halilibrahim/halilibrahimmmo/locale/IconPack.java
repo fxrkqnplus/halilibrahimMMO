@@ -60,6 +60,10 @@ public enum IconPack {
     KAZICILIK("kazicilik", "⚒"),
     /** The avcilik skill. */
     AVCILIK("avcilik", "☠"),
+    /** The tarimcilik skill. */
+    TARIMCILIK("tarimcilik", "❀"),
+    /** The hayvancilik skill. */
+    HAYVANCILIK("hayvancilik", "❦"),
     /** A satisfied requirement / obtained entry. */
     TAMAM("tamam", "✔"),
     /** An unsatisfied requirement / missing entry. */

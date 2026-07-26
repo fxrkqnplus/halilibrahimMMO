@@ -18,8 +18,10 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.Ageable;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Animals;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
@@ -71,6 +73,8 @@ public final class YamlAbilityService implements AbilityService {
     private static final int MAX_REVEALED_ORES = 200;
     /** Half-edge of the cube ORE_REVEAL's "wide mine" gate samples for open space. */
     private static final int OPEN_SPACE_PROBE_RADIUS = 4;
+    /** Hard ceiling on GROWTH_SURGE's crops per activation, independent of the configured radius. */
+    private static final int MAX_SURGED_CROPS = 256;
     /** How far an activation particle burst scatters around the caster, in blocks. */
     private static final double BURST_SPREAD = 0.6D;
 
@@ -228,7 +232,9 @@ public final class YamlAbilityService implements AbilityService {
         if (definition == null || definition.effectType() != AbilityEffectType.EXTRA_DROP_CHANCE) {
             return;
         }
-        if (ThreadLocalRandom.current().nextDouble() >= definition.damageMultiplier()) {
+        double chance = classModifiers.apply(player.getUniqueId())
+                .adjustedEffectValue(definition.id(), definition.damageMultiplier());
+        if (ThreadLocalRandom.current().nextDouble() >= chance) {
             return;
         }
         Block block = event.getBlock();
@@ -254,7 +260,8 @@ public final class YamlAbilityService implements AbilityService {
         if (definition == null || definition.effectType() != AbilityEffectType.DAMAGE_BUFF) {
             return;
         }
-        event.setDamage(event.getDamage() * definition.damageMultiplier());
+        event.setDamage(event.getDamage() * classModifiers.apply(player.getUniqueId())
+                .adjustedEffectValue(definition.id(), definition.damageMultiplier()));
         if (definition.mode() != AbilityActivationMode.ENERJI) {
             return;
         }
@@ -267,6 +274,18 @@ public final class YamlAbilityService implements AbilityService {
     @Override
     public boolean isSecondaryBreak(BlockBreakEvent event) {
         return secondaryBreaks.get().contains(event.getBlock());
+    }
+
+    /**
+     * Unlike {@code agac-kirici}, which only ever fires on a log the ability's
+     * own skill lists, this accepts any block matching the broken one's own
+     * type - the caller has already decided the block is a tree's root log.
+     */
+    @Override
+    public void fellTree(BlockBreakEvent event, int limit) {
+        Block origin = event.getBlock();
+        breakSecondaryBlocks(event.getPlayer(), origin,
+                connectedBlocks(origin, block -> block.getType() == origin.getType(), limit), limit);
     }
 
     @Override
@@ -462,6 +481,7 @@ public final class YamlAbilityService implements AbilityService {
         int energyCost = modifiers.adjustedEnergyCost(definition.id(), definition.energyCost());
         long cooldownMillis = modifiers.adjustedCooldownMillis(definition.id(), definition.cooldownMillis());
         int limit = modifiers.adjustedLimit(definition.id(), definition.limit());
+        long activeMillis = modifiers.adjustedDurationMillis(definition.id(), definition.activeMillis());
         CooldownKey cooldownKey = new CooldownKey(player.getUniqueId(), definition.id());
         long now = System.currentTimeMillis();
         long readyAt = cooldowns.getOrDefault(cooldownKey, 0L);
@@ -484,44 +504,55 @@ public final class YamlAbilityService implements AbilityService {
             return;
         }
         cooldowns.put(cooldownKey, now + cooldownMillis);
-        ArmedAbility active = new ArmedAbility(definition.id(), now + definition.activeMillis(), limit);
+        ArmedAbility active = new ArmedAbility(definition.id(), now + activeMillis, limit);
+        String duration = DurationFormatter.ofMillis(messages, activeMillis);
         switch (definition.effectType()) {
             case EXCAVATE, TREE_FELL, VEIN_MINE -> {
                 armed.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ARMED, Map.of(
-                        "kabiliyet", definition.displayName(),
-                        "sure", DurationFormatter.ofMillis(messages, definition.activeMillis())
+                        "kabiliyet", definition.displayName(), "sure", duration
                 ));
             }
             case DAMAGE_BUFF -> {
                 damageBuffs.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ACTIVE, Map.of(
-                        "kabiliyet", definition.displayName(),
-                        "sure", DurationFormatter.ofMillis(messages, definition.activeMillis())
+                        "kabiliyet", definition.displayName(), "sure", duration
                 ));
             }
             case EXTRA_DROP_CHANCE -> {
                 dropBuffs.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ACTIVE_DROP, Map.of(
-                        "kabiliyet", definition.displayName(),
-                        "sure", DurationFormatter.ofMillis(messages, definition.activeMillis())
+                        "kabiliyet", definition.displayName(), "sure", duration
                 ));
             }
             case ORE_REVEAL -> {
-                int revealed = revealOres(player, definition);
+                int revealed = revealOres(player, definition, activeMillis);
                 activeEffects.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ACTIVE_ORE_REVEAL, Map.of(
                         "kabiliyet", definition.displayName(),
                         "sayi", Integer.toString(revealed),
-                        "sure", DurationFormatter.ofMillis(messages, definition.activeMillis())
+                        "sure", duration
+                ));
+            }
+            case GROWTH_SURGE -> {
+                int grown = surgeGrowth(player, limit);
+                activeEffects.put(player.getUniqueId(), active);
+                messages.send(player, MessageKey.ABILITY_ACTIVE_GROWTH, Map.of(
+                        "kabiliyet", definition.displayName(), "sayi", Integer.toString(grown)
+                ));
+            }
+            case LOVE_CALL -> {
+                int called = callHerd(player, limit, activeMillis);
+                activeEffects.put(player.getUniqueId(), active);
+                messages.send(player, MessageKey.ABILITY_ACTIVE_LOVE_CALL, Map.of(
+                        "kabiliyet", definition.displayName(), "sayi", Integer.toString(called)
                 ));
             }
             default -> {
-                applyInstantEffect(player, definition);
+                applyInstantEffect(player, definition, activeMillis, modifiers);
                 activeEffects.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ACTIVE_GENERIC, Map.of(
-                        "kabiliyet", definition.displayName(),
-                        "sure", DurationFormatter.ofMillis(messages, definition.activeMillis())
+                        "kabiliyet", definition.displayName(), "sure", duration
                 ));
             }
         }
@@ -559,14 +590,15 @@ public final class YamlAbilityService implements AbilityService {
         center.getWorld().spawnParticle(particle, center, visual.particleCount(), BURST_SPREAD, BURST_SPREAD, BURST_SPREAD, 0.05D);
     }
 
-    private void applyInstantEffect(Player player, AbilityDefinition definition) {
-        int durationTicks = (int) Math.max(1L, definition.activeMillis() / 50L);
+    private void applyInstantEffect(Player player, AbilityDefinition definition, long activeMillis, ClassModifiers modifiers) {
+        int durationTicks = (int) Math.max(1L, activeMillis / 50L);
         switch (definition.effectType()) {
             case BRIEF_INVULNERABILITY -> player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, durationTicks, 4));
             case AREA_HEAL -> player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, durationTicks, 1));
             case SPEED_BURST -> player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, durationTicks, 1));
             case NIGHT_VISION -> player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, durationTicks, 0));
-            case KNOCKBACK_SLAM -> knockbackSlam(player, definition);
+            case KNOCKBACK_SLAM -> knockbackSlam(player, definition,
+                    modifiers.adjustedEffectValue(definition.id(), definition.damageMultiplier()));
             default -> throw new IllegalStateException("Not an instant ability effect: " + definition.effectType());
         }
     }
@@ -578,7 +610,7 @@ public final class YamlAbilityService implements AbilityService {
      * an explosion puff on each thrown target. The configured
      * {@code hasar-carpani} is raw damage, not a multiplier, for this effect.
      */
-    private void knockbackSlam(Player player, AbilityDefinition definition) {
+    private void knockbackSlam(Player player, AbilityDefinition definition, double damage) {
         Location center = player.getLocation();
         center.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.4F, 0.9F);
         center.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 1);
@@ -593,7 +625,7 @@ public final class YamlAbilityService implements AbilityService {
                 push = center.getDirection();
             }
             target.setVelocity(push.normalize().multiply(2.6D).setY(0.85D));
-            target.damage(definition.damageMultiplier(), player);
+            target.damage(damage, player);
             target.getWorld().spawnParticle(Particle.EXPLOSION, target.getLocation().add(0, 0.8D, 0), 3, 0.2D, 0.2D, 0.2D, 0.0D);
         }
     }
@@ -645,7 +677,7 @@ public final class YamlAbilityService implements AbilityService {
      *
      * @return how many ores were actually lit up, for the player's feedback message.
      */
-    private int revealOres(Player player, AbilityDefinition definition) {
+    private int revealOres(Player player, AbilityDefinition definition, long activeMillis) {
         SkillDefinition skill = skills.settings().definitions().get(definition.skillId());
         if (skill == null) {
             return 0;
@@ -654,7 +686,7 @@ public final class YamlAbilityService implements AbilityService {
         World world = player.getWorld();
         Location origin = player.getLocation();
         int radius = definition.limit();
-        long expiryTicks = Math.max(1L, definition.activeMillis() / 50L);
+        long expiryTicks = Math.max(1L, activeMillis / 50L);
         int originX = origin.getBlockX();
         int originY = origin.getBlockY();
         int originZ = origin.getBlockZ();
@@ -680,6 +712,67 @@ public final class YamlAbilityService implements AbilityService {
             }
         }
         return revealed;
+    }
+
+    /**
+     * {@link AbilityEffectType#GROWTH_SURGE}: brings every immature crop within
+     * {@code radius} straight to harvest. Deliberately only touches
+     * {@link Ageable} blocks that are not already at maximum age, so the count
+     * the player is shown is the number of plants that actually changed, and
+     * saplings/leaves/vines are left alone.
+     *
+     * @return how many crops were advanced, for the player's feedback message.
+     */
+    private int surgeGrowth(Player player, int radius) {
+        World world = player.getWorld();
+        Location origin = player.getLocation();
+        int originX = origin.getBlockX();
+        int originY = origin.getBlockY();
+        int originZ = origin.getBlockZ();
+        int minY = Math.max(world.getMinHeight(), originY - radius);
+        int maxY = Math.min(world.getMaxHeight() - 1, originY + radius);
+        int grown = 0;
+        for (int x = originX - radius; x <= originX + radius && grown < MAX_SURGED_CROPS; x++) {
+            for (int z = originZ - radius; z <= originZ + radius && grown < MAX_SURGED_CROPS; z++) {
+                if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+                    continue;
+                }
+                for (int y = minY; y <= maxY && grown < MAX_SURGED_CROPS; y++) {
+                    Block block = world.getBlockAt(x, y, z);
+                    if (!(block.getBlockData() instanceof Ageable crop) || crop.getAge() >= crop.getMaximumAge()) {
+                        continue;
+                    }
+                    crop.setAge(crop.getMaximumAge());
+                    block.setBlockData(crop);
+                    world.spawnParticle(Particle.HAPPY_VILLAGER, block.getLocation().add(0.5D, 0.5D, 0.5D), 6, 0.3D, 0.3D, 0.3D, 0.0D);
+                    grown++;
+                }
+            }
+        }
+        return grown;
+    }
+
+    /**
+     * {@link AbilityEffectType#LOVE_CALL}: puts every breedable adult animal
+     * within {@code radius} into love mode for the ability's duration, so a
+     * whole herd pairs up at once without spending a single item on them.
+     * Babies and animals already in love are skipped, which is also what keeps
+     * re-casting it on the same herd from doing anything.
+     *
+     * @return how many animals answered, for the player's feedback message.
+     */
+    private int callHerd(Player player, int radius, long activeMillis) {
+        int loveTicks = (int) Math.max(1L, activeMillis / 50L);
+        int called = 0;
+        for (Entity nearby : player.getNearbyEntities(radius, radius, radius)) {
+            if (!(nearby instanceof Animals animal) || !animal.isAdult() || animal.isLoveMode()) {
+                continue;
+            }
+            animal.setLoveModeTicks(loveTicks);
+            animal.getWorld().spawnParticle(Particle.HEART, animal.getLocation().add(0, 1, 0), 3, 0.3D, 0.3D, 0.3D, 0.0D);
+            called++;
+        }
+        return called;
     }
 
     private void highlight(Block block, AbilityDefinition definition, long expiryTicks) {
@@ -855,6 +948,10 @@ public final class YamlAbilityService implements AbilityService {
                     }
                     limit = radius;
                     multiplier = openAirRatio;
+                }
+                case GROWTH_SURGE, LOVE_CALL -> {
+                    if (radius < 1) throw new IllegalArgumentException("Area ability requires a positive radius: " + id);
+                    limit = radius;
                 }
                 case BRIEF_INVULNERABILITY, AREA_HEAL, SPEED_BURST, NIGHT_VISION -> {
                     // No extra numeric fields required beyond duration/energy/cooldown.

@@ -1,11 +1,24 @@
 # HalilIbrahimMMO - Sinif ve yetenek agaci ayarlari
 # Degerleri degistirebilir, yeni sinif/dal ekleyebilirsiniz. ID'ler ASCII kalmalidir.
 sinif-degistirme-bekleme-gun: 7
-seviye-basina-yetenek-puani: 25
 
-# Sinif seviyesi: sadece secili sinifin "sinerji-beceri"sinden XP kazanildikca
-# artar (bkz. her sinifin sinerji-beceri alani). Bu tamamen gorsel/prestij
-# amacli bir ilerleme cizgisidir; hicbir kabiliyetin acilmasini etkilemez.
+# YETENEK PUANLARI IKI AYRI HAVUZDUR ve birbirinin yerine harcanamaz:
+#   OZELLIK  puani  -> kalici karakter istatistikleri (can, PvE hasar, enerji)
+#   KABILIYET puani -> tek bir kabiliyete ozel iyilestirmeler (enerji maliyeti,
+#                      bekleme suresi, etki siniri, etki suresi, etki gucu)
+# Bir yetenegin hangi havuzdan odendigi "etki.tur" degerinden belirlenir, ayrica
+# yazilmaz - kabiliyete ozel her tur zaten bir "kabiliyet" alani ister, digerleri
+# istemez. Kabiliyet puani bilerek daha nadirdir.
+yetenek-puani:
+  ozellik-seviye-basina: 25
+  kabiliyet-seviye-basina: 40
+  prestij-basina-ozellik: 4
+  prestij-basina-kabiliyet: 2
+
+# Sinif seviyesi: sadece secili sinifin "sinerji-beceriler" listesindeki
+# becerilerden XP kazanildikca artar. Bir sinif birden fazla beceriyi
+# besleyebilir (Tabiat Varisi dordunu birden besler). Bu tamamen gorsel/prestij
+# amacli bir ilerleme cizgisi degildir: kabiliyetlerin acilmasi buna baglidir.
 sinif-ilerleme:
   maksimum-seviye: 50
   sinerji-xp-bonusu: 0.20
@@ -66,44 +79,61 @@ sinif-ilerleme:
 #
 # simge: sinif secim ekranlarinda bu sinifi temsil eden esya. Her sinif kendi
 # temasina uygun bir esya kullanir; gecerli bir Bukkit Material adi olmalidir.
+# Her sinifin yetenek agacinda hem OZELLIK hem KABILIYET yetenekleri vardir;
+# ikisi ayri puan havuzundan odenir (bkz. yetenek-puani).
 siniflar:
-  savasci:
-    gorunen-ad: "Define Avcısı"
-    sinerji-beceri: kazicilik
-    bossbar-rengi: SARI
-    simge: GOLDEN_SHOVEL
-    prestij-etkisi: { tur: MAX_HEALTH, deger-basina: 1 }
-    yetenekler:
-      canlilik: { gorunen-ad: "Canlılık", maksimum-rank: 4, etki: { tur: MAX_HEALTH, deger-rank-basina: 2 } }
-      guc: { gorunen-ad: "Güç", maksimum-rank: 4, etki: { tur: PVE_DAMAGE_MULTIPLIER, deger-rank-basina: 0.03 } }
-      dayaniklilik: { gorunen-ad: "Dayanıklılık", maksimum-rank: 4, etki: { tur: MAX_ENERGY, deger-rank-basina: 5 } }
   avci:
     gorunen-ad: "Amansız Savaşçı"
-    sinerji-beceri: avcilik
+    sinerji-beceriler: [avcilik]
     bossbar-rengi: KIRMIZI
     simge: DIAMOND_SWORD
     prestij-etkisi: { tur: PVE_DAMAGE_MULTIPLIER, deger-basina: 0.02 }
     yetenekler:
+      # --- Özellik yetenekleri ---
       nisancilik: { gorunen-ad: "Nişancılık", maksimum-rank: 4, etki: { tur: PVE_DAMAGE_MULTIPLIER, deger-rank-basina: 0.03 } }
+      savas-canliligi: { gorunen-ad: "Savaş Canlılığı", maksimum-rank: 4, etki: { tur: MAX_HEALTH, deger-rank-basina: 2 } }
+      savas-dayanikliligi: { gorunen-ad: "Savaş Dayanıklılığı", maksimum-rank: 4, etki: { tur: MAX_ENERGY, deger-rank-basina: 5 } }
+      # --- Kabiliyet yetenekleri ---
       odak-tasarrufu: { gorunen-ad: "Odak Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: avci-odagi, deger-rank-basina: 0.05 } }
       odak-ritmi: { gorunen-ad: "Odak Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: avci-odagi, deger-rank-basina: 0.05 } }
+      odak-suresi: { gorunen-ad: "Odak Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: avci-odagi, deger-rank-basina: 0.10 } }
+      yikim-gucu: { gorunen-ad: "Yıkım Gücü", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: yikici-darbe, deger-rank-basina: 0.08 } }
+
   madenci:
     gorunen-ad: "Mağara Adamı"
-    sinerji-beceri: madencilik
+    sinerji-beceriler: [madencilik]
     bossbar-rengi: MAVI
     simge: DIAMOND_PICKAXE
     prestij-etkisi: { tur: MAX_ENERGY, deger-basina: 3 }
     yetenekler:
+      # --- Özellik yetenekleri ---
+      maden-canliligi: { gorunen-ad: "Maden Canlılığı", maksimum-rank: 4, etki: { tur: MAX_HEALTH, deger-rank-basina: 2 } }
+      maden-dayanikliligi: { gorunen-ad: "Maden Dayanıklılığı", maksimum-rank: 4, etki: { tur: MAX_ENERGY, deger-rank-basina: 5 } }
+      # --- Kabiliyet yetenekleri ---
       cevher-tasarrufu: { gorunen-ad: "Cevher Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: cevher-sezgisi, deger-rank-basina: 0.05 } }
+      cevher-bereketi: { gorunen-ad: "Cevher Bereketi", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: cevher-sezgisi, deger-rank-basina: 0.10 } }
       damar-tasarrufu: { gorunen-ad: "Damar Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: damar-kirici, deger-rank-basina: 0.05 } }
       damar-uzmanligi: { gorunen-ad: "Damar Uzmanlığı", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: damar-kirici, deger-rank-basina: 1 } }
-  oduncu:
-    gorunen-ad: "Orman Bekçisi"
-    sinerji-beceri: odunculuk
+      fener-ritmi: { gorunen-ad: "Fener Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: maden-feneri, deger-rank-basina: 0.05 } }
+
+  tabiat-varisi:
+    gorunen-ad: "Tabiat Vârisi"
+    # Tek sinif dort beceriyi birden besler: bu yuzden hem daha genis bir
+    # kabiliyet listesi hem de daha genis bir yetenek agaci vardir.
+    sinerji-beceriler: [odunculuk, kazicilik, tarimcilik, hayvancilik]
     bossbar-rengi: YESIL
     simge: IRON_AXE
     prestij-etkisi: { tur: MAX_HEALTH, deger-basina: 1 }
     yetenekler:
+      # --- Özellik yetenekleri ---
+      canlilik: { gorunen-ad: "Canlılık", maksimum-rank: 4, etki: { tur: MAX_HEALTH, deger-rank-basina: 2 } }
+      guc: { gorunen-ad: "Güç", maksimum-rank: 4, etki: { tur: PVE_DAMAGE_MULTIPLIER, deger-rank-basina: 0.03 } }
+      dayaniklilik: { gorunen-ad: "Dayanıklılık", maksimum-rank: 4, etki: { tur: MAX_ENERGY, deger-rank-basina: 5 } }
+      # --- Kabiliyet yetenekleri ---
       kesim-tasarrufu: { gorunen-ad: "Kesim Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }
       kesim-ritmi: { gorunen-ad: "Kesim Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }
       kesim-uzmanligi: { gorunen-ad: "Kesim Uzmanlığı", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: agac-kirici, deger-rank-basina: 1 } }
+      toprak-bereketi: { gorunen-ad: "Toprak Bereketi", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: toprak-sezgisi, deger-rank-basina: 0.10 } }
+      sifa-suresi: { gorunen-ad: "Şifa Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: doga-sifasi, deger-rank-basina: 0.15 } }
+      filiz-genisligi: { gorunen-ad: "Filiz Genişliği", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: filiz-patlamasi, deger-rank-basina: 1 } }
+      suru-suresi: { gorunen-ad: "Sürü Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: suru-cagrisi, deger-rank-basina: 0.15 } }

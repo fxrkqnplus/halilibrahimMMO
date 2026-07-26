@@ -15,10 +15,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * One skill's detail screen, opened from {@code /madencilik}/{@code /odunculuk}/
- * {@code /kazicilik}/{@code /avcilik}: current level/XP, the class this skill
- * powers (reverse {@code sinerji-beceri} lookup), a milestone-info button and
- * a leaderboard button reusing the existing, unmodified {@link LeaderboardDetailMenu}.
+ * One skill's detail screen, opened from its own command ({@code /madencilik},
+ * {@code /tarımcılık}, ...): current level/XP, the class this skill powers
+ * (reverse {@code sinerji-beceriler} lookup), a milestone-info button and a
+ * leaderboard button reusing the existing, unmodified {@link LeaderboardDetailMenu}.
  */
 public final class SkillDetailMenu implements GuiView {
 
@@ -61,7 +61,7 @@ public final class SkillDetailMenu implements GuiView {
 
     private void render(Inventory inventory, SkillDefinition definition, SkillProgress progress) {
         String className = services.classes().definitions().stream()
-                .filter(classDefinition -> classDefinition.synergySkillId().equals(skillId))
+                .filter(classDefinition -> classDefinition.hasSynergyWith(skillId))
                 .findFirst()
                 .map(PlayerClassDefinition::displayName)
                 .orElse("-");

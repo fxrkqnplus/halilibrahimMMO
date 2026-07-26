@@ -56,11 +56,11 @@ abstract class AbstractClassRepositoryCrossEngineTest {
             ClassRepository repository = new ClassRepository(database);
             UUID playerId = UUID.randomUUID();
 
-            repository.saveRank(playerId, "savasci", "guc", 1).get();
-            repository.saveRank(playerId, "savasci", "guc", 3).get();
+            repository.saveRank(playerId, "tabiat-varisi", "guc", 1).get();
+            repository.saveRank(playerId, "tabiat-varisi", "guc", 3).get();
 
             PlayerClassProgress progress = repository.load(playerId).get();
-            assertEquals(3, progress.talentRanks().get("savasci").get("guc"));
+            assertEquals(3, progress.talentRanks().get("tabiat-varisi").get("guc"));
         } finally {
             database.disable();
         }

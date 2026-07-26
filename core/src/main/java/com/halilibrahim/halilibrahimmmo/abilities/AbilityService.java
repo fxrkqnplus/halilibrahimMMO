@@ -33,6 +33,18 @@ public interface AbilityService extends PluginService {
     boolean isSecondaryBreak(BlockBreakEvent event);
 
     /**
+     * Brings down every log connected to the one just broken, up to
+     * {@code limit}. Lives here rather than in {@code skills} because the
+     * secondary-break bookkeeping it needs - re-firing a {@link BlockBreakEvent}
+     * per extra block for protection-plugin compatibility, and marking each one
+     * so it never earns a second round of XP or quest progress - is this
+     * service's machinery, already used by the {@code agac-kirici} ability.
+     * Called by the odunculuk {@code TREE_FELLING} milestone, which owns the
+     * decision of <em>when</em> a tree should fall.
+     */
+    void fellTree(BlockBreakEvent event, int limit);
+
+    /**
      * Marks {@code abilityId} as the player's menu-selected ability, ready to
      * be right-click activated with the matching {@link AbilityToolTag}. Does
      * not itself activate anything.

@@ -3,12 +3,19 @@ package com.halilibrahim.halilibrahimmmo.classes;
 import org.bukkit.Material;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Immutable configured class with its rankable talent branches and the one
- * skill ({@code synergySkillId}) whose XP this class both boosts (see
+ * Immutable configured class with its rankable talent branches and the set of
+ * skills ({@code synergySkillIds}) whose XP this class both boosts (see
  * {@code sinerji-xp-bonusu} in {@code classes.yml}) and mirrors into this
  * class's own level track while it is the player's selected class.
+ *
+ * <p>A set rather than a single id since Phase 15: Tabiat Vârisi covers four
+ * skills at once (odunculuk, kazıcılık, tarımcılık, hayvancılık), while the
+ * other two classes still name exactly one. Everything reading it - the
+ * synergy multiplier, the class-XP bridge, prestige eligibility and the
+ * per-skill detail screen - treats one and four alike.</p>
  *
  * <p>{@code prestigeEffectType}/{@code prestigeEffectValuePerRank} is a
  * permanent, stacking-per-prestige-rank modifier applied whenever this class
@@ -23,8 +30,11 @@ import java.util.Map;
  * generic sword.</p>
  */
 public record PlayerClassDefinition(
-        String id, String displayName, String synergySkillId, ClassBarColor barColor, Material icon,
+        String id, String displayName, Set<String> synergySkillIds, ClassBarColor barColor, Material icon,
         Map<String, TalentNodeDefinition> talents,
         ClassEffectType prestigeEffectType, double prestigeEffectValuePerRank
 ) {
+    public boolean hasSynergyWith(String skillId) {
+        return synergySkillIds.contains(skillId);
+    }
 }

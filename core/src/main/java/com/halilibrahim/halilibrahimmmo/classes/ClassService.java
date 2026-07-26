@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.classes;
 
 import com.halilibrahim.halilibrahimmmo.api.classes.PlayerClassSnapshot;
 import com.halilibrahim.halilibrahimmmo.core.PluginService;
+import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
 import org.bukkit.entity.Player;
 
 import java.util.Collection;
@@ -21,6 +22,12 @@ public interface ClassService extends PluginService {
     ClassModifiers modifiers(UUID playerId);
     void applyPlayerEffects(Player player);
     void evict(UUID playerId);
+
+    /** How many points of one pool this player has earned in total (Güç cadence plus prestige grants). */
+    int pointsFor(PlayerProfile profile, TalentPointCategory category);
+
+    /** Earned minus already-spent points of one pool - what the player may still spend right now. */
+    int availablePoints(PlayerProfile profile, PlayerClassProgress progress, TalentPointCategory category);
 
     /**
      * Internal: awards class-track XP to one specific (player, class) pair

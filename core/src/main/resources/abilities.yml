@@ -40,13 +40,20 @@ enerji:
 secim-bekleme-saniye: 120
 
 kabiliyetler:
-  # ----- Define Avcısı (savasci) - sinerji: kazicilik -----
-  hazine-sezgisi:
-    gorunen-ad: "Hazine Sezgisi"
+  # =====================================================================
+  #  Tabiat Vârisi (tabiat-varisi)
+  #  Sinerji: odunculuk + kazicilik + tarimcilik + hayvancilik
+  #  Tek basina dort beceriyi birden besledigi icin diger iki siniftan daha
+  #  fazla kabiliyeti vardir; karsiliginda hepsi tekil olarak daha yardimci
+  #  ve daha az yikici tasarlanmistir, ve sinif seviyesi boyunca cok daha
+  #  genis bir araliga yayilarak acilirlar.
+  # =====================================================================
+  toprak-sezgisi:
+    gorunen-ad: "Toprak Sezgisi"
     aciklama: "Etkinken kırdığın bloklardan %50 ihtimalle ekstra bir düşme kazanırsın."
     simge: GOLDEN_SHOVEL
     beceri: kazicilik
-    sinif: savasci
+    sinif: tabiat-varisi
     gerekli-seviye: 5
     enerji: 20
     bekleme-suresi-saniye: 90
@@ -69,7 +76,7 @@ kabiliyetler:
     aciklama: "Sonraki uygun blok kırmanda çevredeki 9 bloğu birden kazır."
     simge: IRON_SHOVEL
     beceri: kazicilik
-    sinif: savasci
+    sinif: tabiat-varisi
     gerekli-seviye: 10
     enerji: 20
     bekleme-suresi-saniye: 60
@@ -88,12 +95,12 @@ kabiliyetler:
       partikul: DUST_PLUME
       partikul-sayisi: 45
 
-  define-refleksi:
-    gorunen-ad: "Define Refleksi"
+  doga-kalkani:
+    gorunen-ad: "Doğa Kalkanı"
     aciklama: "3 saniye boyunca neredeyse tüm hasara karşı dirençli olursun."
     simge: SHIELD
     beceri: kazicilik
-    sinif: savasci
+    sinif: tabiat-varisi
     gerekli-seviye: 30
     enerji: 30
     bekleme-suresi-saniye: 150
@@ -110,14 +117,13 @@ kabiliyetler:
       partikul: TOTEM_OF_UNDYING
       partikul-sayisi: 60
 
-  # ----- Orman Bekçisi (oduncu) - sinerji: odunculuk -----
   yesil-yol:
     gorunen-ad: "Yeşil Yol"
     aciklama: "10 saniye boyunca hareket hızın artar."
     simge: SUGAR
     beceri: odunculuk
-    sinif: oduncu
-    gerekli-seviye: 5
+    sinif: tabiat-varisi
+    gerekli-seviye: 15
     enerji: 20
     bekleme-suresi-saniye: 75
     etki-suresi-saniye: 10
@@ -138,8 +144,8 @@ kabiliyetler:
     aciklama: "Sonraki ağaç kırmanda bağlı tüm kütükleri (en fazla 32) birden keser."
     simge: IRON_AXE
     beceri: odunculuk
-    sinif: oduncu
-    gerekli-seviye: 15
+    sinif: tabiat-varisi
+    gerekli-seviye: 25
     enerji: 25
     bekleme-suresi-saniye: 75
     etki-suresi-saniye: 15
@@ -162,8 +168,8 @@ kabiliyetler:
     aciklama: "8 saniye boyunca can yenilenmen hızlanır."
     simge: GLISTERING_MELON_SLICE
     beceri: odunculuk
-    sinif: oduncu
-    gerekli-seviye: 30
+    sinif: tabiat-varisi
+    gerekli-seviye: 40
     enerji: 25
     bekleme-suresi-saniye: 120
     etki-suresi-saniye: 8
@@ -179,7 +185,55 @@ kabiliyetler:
       partikul: HEART
       partikul-sayisi: 25
 
-  # ----- Amansız Savaşçı (avci) - sinerji: avcilik -----
+  filiz-patlamasi:
+    gorunen-ad: "Filiz Patlaması"
+    aciklama: "Çevrendeki 6 blok yarıçapındaki bütün olmamış ekinler bir anda hasada hazır hâle gelir. Hiç kemik tozu harcamazsın."
+    simge: BONE_MEAL
+    beceri: tarimcilik
+    sinif: tabiat-varisi
+    gerekli-seviye: 20
+    enerji: 25
+    bekleme-suresi-saniye: 180
+    etki-suresi-saniye: 3
+    arac:
+      tur: HOE
+    etki:
+      tur: GROWTH_SURGE
+      yaricap: 6
+    gorsel:
+      renk: YESIL
+      ses: ITEM_BONE_MEAL_USE
+      ses-seviyesi: 1.0
+      ton: 1.2
+      partikul: COMPOSTER
+      partikul-sayisi: 50
+
+  suru-cagrisi:
+    gorunen-ad: "Sürü Çağrısı"
+    aciklama: "Çevrendeki 8 blok yarıçapındaki bütün yetişkin hayvanlar tek bir yem harcamadan çiftleşme moduna girer."
+    simge: WHEAT
+    beceri: hayvancilik
+    sinif: tabiat-varisi
+    gerekli-seviye: 35
+    enerji: 30
+    bekleme-suresi-saniye: 240
+    etki-suresi-saniye: 20
+    arac:
+      tur: ANY
+    etki:
+      tur: LOVE_CALL
+      yaricap: 8
+    gorsel:
+      renk: MOR
+      ses: ENTITY_CAT_PURR
+      ses-seviyesi: 1.0
+      ton: 1.3
+      partikul: HEART
+      partikul-sayisi: 40
+
+  # =====================================================================
+  #  Amansız Savaşçı (avci) - sinerji: avcilik
+  # =====================================================================
   gece-gorusu:
     gorunen-ad: "Gece Görüşü"
     aciklama: "60 saniye boyunca karanlıkta net görürsün."
@@ -256,7 +310,9 @@ kabiliyetler:
       partikul: LARGE_SMOKE
       partikul-sayisi: 40
 
-  # ----- Mağara Adamı (madenci) - sinerji: madencilik -----
+  # =====================================================================
+  #  Mağara Adamı (madenci) - sinerji: madencilik
+  # =====================================================================
   cevher-sezgisi:
     gorunen-ad: "Cevher Sezgisi"
     aciklama: "Etkinken kırdığın bloklardan %40 ihtimalle ekstra bir düşme kazanırsın."

@@ -24,9 +24,14 @@ import java.util.Map;
  */
 public final class AbilitiesMenu implements GuiView {
 
-    private static final int FIRST_SLOT = 10;
+    /**
+     * Two explicit rows rather than a running counter: Tabiat Vârisi alone owns
+     * eight abilities, which would otherwise spill past the first row's inner
+     * slots and into the frame.
+     */
+    private static final int[] ABILITY_SLOTS = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25};
     private static final int NO_CLASS_SLOT = 13;
-    private static final int BACK_SLOT = 26;
+    private static final int BACK_SLOT = 35;
 
     private final GuiServices services;
     private final Map<Integer, String> slotToAbilityId = new LinkedHashMap<>();
@@ -42,7 +47,7 @@ public final class AbilitiesMenu implements GuiView {
 
     @Override
     public int size() {
-        return 27;
+        return 36;
     }
 
     @Override
@@ -82,11 +87,15 @@ public final class AbilitiesMenu implements GuiView {
                     int byLevel = Integer.compare(left.requiredLevel(), right.requiredLevel());
                     return byLevel != 0 ? byLevel : left.displayName().compareToIgnoreCase(right.displayName());
                 }).toList();
-        int slot = FIRST_SLOT;
+        int index = 0;
         for (AbilityDefinition definition : definitions) {
+            if (index >= ABILITY_SLOTS.length) {
+                break;
+            }
+            int slot = ABILITY_SLOTS[index++];
             int classLevel = services.classes().classProgress(player.getUniqueId(), definition.classId()).level();
             if (classLevel < definition.requiredLevel()) {
-                inventory.setItem(slot++, GuiItems.of(
+                inventory.setItem(slot, GuiItems.of(
                         Material.BARRIER,
                         services.messages().render(MessageKey.GUI_ABILITY_LOCKED_ITEM, Map.of("kabiliyet", definition.displayName())),
                         List.of(services.messages().render(MessageKey.GUI_ABILITY_LOCKED_LORE, Map.of("seviye", Integer.toString(definition.requiredLevel()))))
@@ -107,7 +116,7 @@ public final class AbilitiesMenu implements GuiView {
             if (selected) {
                 lore.add(services.messages().render(MessageKey.GUI_ABILITY_SELECTED_MARKER));
             }
-            inventory.setItem(slot++, GuiItems.of(
+            inventory.setItem(slot, GuiItems.of(
                     definition.icon(),
                     abilityName(definition),
                     lore,

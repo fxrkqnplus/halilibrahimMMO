@@ -20,9 +20,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -131,12 +133,12 @@ public final class YamlClassService implements ClassService {
     private CompletableFuture<TalentSpendResult> spendNow(UUID playerId, String playerName, String talentId) {
         return profiles.load(playerId, playerName).thenCompose(profile -> load(playerId, playerName).thenCompose(progress -> {
             String classId = profile.selectedClass();
-            if (classId.isEmpty()) return CompletableFuture.completedFuture(new TalentSpendResult(TalentSpendResult.Status.NO_CLASS, talentId, 0, pointsFor(profile) - progress.spentPoints()));
+            if (classId.isEmpty()) return CompletableFuture.completedFuture(new TalentSpendResult(TalentSpendResult.Status.NO_CLASS, talentId, 0, 0));
             PlayerClassDefinition definition = settings().definitions().get(classId);
             TalentNodeDefinition talent = definition == null ? null : definition.talents().get(talentId);
-            if (talent == null) return CompletableFuture.completedFuture(new TalentSpendResult(TalentSpendResult.Status.UNKNOWN_TALENT, talentId, 0, pointsFor(profile) - progress.spentPoints()));
+            if (talent == null) return CompletableFuture.completedFuture(new TalentSpendResult(TalentSpendResult.Status.UNKNOWN_TALENT, talentId, 0, 0));
             int currentRank = progress.talentRanks().getOrDefault(classId, Map.of()).getOrDefault(talentId, 0);
-            int available = pointsFor(profile) - progress.spentPoints();
+            int available = availablePoints(profile, progress, talent.effectType().category());
             if (currentRank >= talent.maximumRank()) return CompletableFuture.completedFuture(new TalentSpendResult(TalentSpendResult.Status.MAXIMUM_RANK, talentId, currentRank, available));
             if (available <= 0) return CompletableFuture.completedFuture(new TalentSpendResult(TalentSpendResult.Status.NO_POINTS, talentId, currentRank, available));
             int nextRank = currentRank + 1;
@@ -166,6 +168,7 @@ public final class YamlClassService implements ClassService {
         int energy = 0;
         Map<String, Double> costs = new LinkedHashMap<>(), cooldowns = new LinkedHashMap<>();
         Map<String, Integer> limits = new LinkedHashMap<>();
+        Map<String, Double> durations = new LinkedHashMap<>(), effects = new LinkedHashMap<>();
         Map<String, Integer> ranks = progress.talentRanks().getOrDefault(classId, Map.of());
         for (TalentNodeDefinition talent : definition.talents().values()) {
             int rank = ranks.getOrDefault(talent.id(), 0);
@@ -177,6 +180,8 @@ public final class YamlClassService implements ClassService {
                 case ABILITY_ENERGY_COST_REDUCTION -> costs.merge(talent.abilityId(), total, Double::sum);
                 case ABILITY_COOLDOWN_REDUCTION -> cooldowns.merge(talent.abilityId(), total, Double::sum);
                 case ABILITY_LIMIT_BONUS -> limits.merge(talent.abilityId(), (int) total, Integer::sum);
+                case ABILITY_DURATION_BONUS -> durations.merge(talent.abilityId(), total, Double::sum);
+                case ABILITY_EFFECT_BONUS -> effects.merge(talent.abilityId(), total, Double::sum);
             }
         }
         int prestigeCount = profiles.cached(playerId).map(PlayerProfile::prestige).orElse(0);
@@ -185,13 +190,15 @@ public final class YamlClassService implements ClassService {
             case MAX_HEALTH -> health += prestigeTotal;
             case PVE_DAMAGE_MULTIPLIER -> damage += prestigeTotal;
             case MAX_ENERGY -> energy += (int) prestigeTotal;
-            case ABILITY_ENERGY_COST_REDUCTION, ABILITY_COOLDOWN_REDUCTION, ABILITY_LIMIT_BONUS -> {
+            case ABILITY_ENERGY_COST_REDUCTION, ABILITY_COOLDOWN_REDUCTION, ABILITY_LIMIT_BONUS,
+                 ABILITY_DURATION_BONUS, ABILITY_EFFECT_BONUS -> {
                 // Prestige boosts are deliberately restricted to MAX_HEALTH/PVE_DAMAGE_MULTIPLIER/MAX_ENERGY
                 // at parse time (see parse(...)) - per-ability modifiers need an ability id this
                 // class-wide bonus does not have.
             }
         }
-        return new ClassModifiers(health, damage, energy, Map.copyOf(costs), Map.copyOf(cooldowns), Map.copyOf(limits));
+        return new ClassModifiers(health, damage, energy, Map.copyOf(costs), Map.copyOf(cooldowns), Map.copyOf(limits),
+                Map.copyOf(durations), Map.copyOf(effects));
     }
 
     @Override
@@ -299,14 +306,30 @@ public final class YamlClassService implements ClassService {
                 })));
     }
 
-    public int pointsFor(PlayerProfile profile) {
-        return TalentPointBudget.pointsFor(progression.cachedGlobalLevel(profile.playerId()), profile.prestige(), settings().levelsPerTalentPoint());
+    @Override
+    public int pointsFor(PlayerProfile profile, TalentPointCategory category) {
+        return TalentPointBudget.pointsFor(
+                progression.cachedGlobalLevel(profile.playerId()), profile.prestige(), settings().talentPoints(), category
+        );
+    }
+
+    @Override
+    public int availablePoints(PlayerProfile profile, PlayerClassProgress progress, TalentPointCategory category) {
+        return pointsFor(profile, category) - progress.spentPoints(settings().definitions(), category);
     }
 
     private ClassSettings parse(YamlConfiguration yaml) {
         long cooldownDays = yaml.getLong("sinif-degistirme-bekleme-gun", -1);
-        int levelsPerPoint = yaml.getInt("seviye-basina-yetenek-puani", 0);
-        if (cooldownDays < 0 || levelsPerPoint < 1) throw new IllegalArgumentException("Invalid class point or cooldown settings.");
+        if (cooldownDays < 0) throw new IllegalArgumentException("Invalid class change cooldown setting.");
+        ConfigurationSection points = requiredSection(yaml, "yetenek-puani");
+        TalentPointSettings talentPoints = new TalentPointSettings(
+                points.getInt("ozellik-seviye-basina", 0), points.getInt("kabiliyet-seviye-basina", 0),
+                points.getInt("prestij-basina-ozellik", -1), points.getInt("prestij-basina-kabiliyet", -1)
+        );
+        if (talentPoints.levelsPerFeaturePoint() < 1 || talentPoints.levelsPerAbilityPoint() < 1
+                || talentPoints.featurePointsPerPrestige() < 0 || talentPoints.abilityPointsPerPrestige() < 0) {
+            throw new IllegalArgumentException("Invalid talent point settings.");
+        }
         ConfigurationSection progressionSection = requiredSection(yaml, "sinif-ilerleme");
         int classMaximumLevel = progressionSection.getInt("maksimum-seviye", 0);
         double synergyBonus = progressionSection.getDouble("sinerji-xp-bonusu", 0);
@@ -325,9 +348,16 @@ public final class YamlClassService implements ClassService {
             ConfigurationSection section = requiredSection(classes, rawId);
             String displayName = section.getString("gorunen-ad");
             if (displayName == null || displayName.isBlank()) throw new IllegalArgumentException("Class display name required: " + id);
-            String synergySkillId = section.getString("sinerji-beceri", "").toLowerCase(Locale.ROOT);
-            if (synergySkillId.isBlank() || !skills.settings().definitions().containsKey(synergySkillId)) {
-                throw new IllegalArgumentException("Class synergy skill must reference a known skill id: " + id);
+            Set<String> synergySkillIds = new LinkedHashSet<>();
+            for (String rawSkillId : section.getStringList("sinerji-beceriler")) {
+                String skillId = rawSkillId.toLowerCase(Locale.ROOT);
+                if (!skills.settings().definitions().containsKey(skillId)) {
+                    throw new IllegalArgumentException("Class synergy skill must reference a known skill id: " + id + "/" + rawSkillId);
+                }
+                synergySkillIds.add(skillId);
+            }
+            if (synergySkillIds.isEmpty()) {
+                throw new IllegalArgumentException("Class must declare at least one sinerji-beceriler entry: " + id);
             }
             ClassBarColor barColor = ClassBarColor.valueOf(section.getString("bossbar-rengi", "").toUpperCase(Locale.ROOT));
             Material icon = Material.matchMaterial(section.getString("simge", ""));
@@ -346,7 +376,7 @@ public final class YamlClassService implements ClassService {
                 String abilityId = effect.getString("kabiliyet", "").toLowerCase(Locale.ROOT);
                 double value = effect.getDouble("deger-rank-basina", 0);
                 if (!talentId.matches("[a-z0-9_-]+") || nodes.containsKey(talentId) || nodeName == null || nodeName.isBlank() || maximumRank < 1 || maximumRank > 64 || value <= 0) throw new IllegalArgumentException("Invalid talent: " + rawTalentId);
-                boolean needsAbility = type == ClassEffectType.ABILITY_ENERGY_COST_REDUCTION || type == ClassEffectType.ABILITY_COOLDOWN_REDUCTION || type == ClassEffectType.ABILITY_LIMIT_BONUS;
+                boolean needsAbility = type.requiresAbility();
                 if (needsAbility != !abilityId.isBlank() || (needsAbility && !abilities.settings().definitions().containsKey(abilityId))) throw new IllegalArgumentException("Invalid talent ability: " + talentId);
                 if ((type == ClassEffectType.ABILITY_ENERGY_COST_REDUCTION || type == ClassEffectType.ABILITY_COOLDOWN_REDUCTION) && value * maximumRank >= 1.0D) throw new IllegalArgumentException("Reduction talent cannot reach 100%: " + talentId);
                 if ((type == ClassEffectType.MAX_ENERGY || type == ClassEffectType.ABILITY_LIMIT_BONUS) && value != Math.rint(value)) throw new IllegalArgumentException("Integer talent requires an integer value: " + talentId);
@@ -362,14 +392,20 @@ public final class YamlClassService implements ClassService {
             if (!prestigeTypeAllowed || prestigeEffectValue <= 0) {
                 throw new IllegalArgumentException("Class prestige effect must be a positive MAX_HEALTH/PVE_DAMAGE_MULTIPLIER/MAX_ENERGY value: " + id);
             }
-            definitions.put(id, new PlayerClassDefinition(id, displayName, synergySkillId, barColor, icon, Map.copyOf(nodes), prestigeEffectType, prestigeEffectValue));
+            definitions.put(id, new PlayerClassDefinition(id, displayName, Set.copyOf(synergySkillIds), barColor, icon, Map.copyOf(nodes), prestigeEffectType, prestigeEffectValue));
         }
         if (definitions.isEmpty()) throw new IllegalArgumentException("classes.yml must define classes.");
-        return new ClassSettings(Math.multiplyExact(cooldownDays, 86_400_000L), levelsPerPoint, classLevelCurve, synergyBonus, Map.copyOf(definitions));
+        return new ClassSettings(Math.multiplyExact(cooldownDays, 86_400_000L), talentPoints, classLevelCurve, synergyBonus, Map.copyOf(definitions));
     }
 
+    /**
+     * The public API keeps reporting one combined budget rather than gaining
+     * two more fields: an external consumer asking "how many points does this
+     * player have" is asking about their total investment capacity, and the
+     * per-pool split is an internal spending rule, not part of the contract.
+     */
     private PlayerClassSnapshot snapshot(PlayerProfile profile, PlayerClassProgress progress) {
-        int points = pointsFor(profile);
+        int points = pointsFor(profile, TalentPointCategory.OZELLIK) + pointsFor(profile, TalentPointCategory.KABILIYET);
         return new PlayerClassSnapshot(profile.playerId(), profile.selectedClass(), points, progress.spentPoints(), progress.talentRanks());
     }
     private static PlayerProfile withClass(PlayerProfile old, String classId) { return new PlayerProfile(old.playerId(), old.playerName(), old.globalLevel(), old.globalExperience(), old.prestige(), classId); }

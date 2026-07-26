@@ -65,7 +65,7 @@ public final class PrestigeMenu implements GuiView {
                 }, null));
     }
 
-    /** Same checklist {@code PrestigeCommand} builds - small acceptable duplication between the command/GUI pair. */
+    /** The full prestige checklist: every skill's floor, the class-level cap, and each synergy skill's cap. */
     private List<Component> requirementLines(UUID playerId, PlayerProfile profile) {
         List<Component> lines = new ArrayList<>();
         int minimumSkillLevel = services.prestige().settings().minimumSkillLevel();
@@ -88,13 +88,21 @@ public final class PrestigeMenu implements GuiView {
         lines.add(services.messages().render(classLevelMet ? MessageKey.PRESTIGE_REQUIREMENT_CLASS_LEVEL_MET : MessageKey.PRESTIGE_REQUIREMENT_CLASS_LEVEL_UNMET, Map.of(
                 "sinif", classDefinition.displayName(), "seviye", Integer.toString(classLevel), "gereken", Integer.toString(classLevelCap)
         )));
-        var synergySkill = services.skills().settings().definitions().get(classDefinition.synergySkillId());
-        int synergyLevel = services.skills().cached(playerId, classDefinition.synergySkillId()).map(progress -> progress.level()).orElse(1);
+        // One line per synergy skill rather than one combined line: a class may
+        // power four of them, and "your synergy skill is at 78" would not say
+        // which of the four is holding the player back.
         int synergyCap = services.skills().settings().curve().maximumLevel();
-        boolean synergyMet = synergyLevel >= synergyCap;
-        lines.add(services.messages().render(synergyMet ? MessageKey.PRESTIGE_REQUIREMENT_SYNERGY_MET : MessageKey.PRESTIGE_REQUIREMENT_SYNERGY_UNMET, Map.of(
-                "beceri", synergySkill.displayName(), "seviye", Integer.toString(synergyLevel), "gereken", Integer.toString(synergyCap)
-        )));
+        for (String synergySkillId : classDefinition.synergySkillIds()) {
+            var synergySkill = services.skills().settings().definitions().get(synergySkillId);
+            if (synergySkill == null) {
+                continue;
+            }
+            int synergyLevel = services.skills().cached(playerId, synergySkillId).map(progress -> progress.level()).orElse(1);
+            boolean synergyMet = synergyLevel >= synergyCap;
+            lines.add(services.messages().render(synergyMet ? MessageKey.PRESTIGE_REQUIREMENT_SYNERGY_MET : MessageKey.PRESTIGE_REQUIREMENT_SYNERGY_UNMET, Map.of(
+                    "beceri", synergySkill.displayName(), "seviye", Integer.toString(synergyLevel), "gereken", Integer.toString(synergyCap)
+            )));
+        }
         return lines;
     }
 
