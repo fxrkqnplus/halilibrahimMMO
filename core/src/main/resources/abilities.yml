@@ -1,8 +1,9 @@
 # =====================================================================
 #  HalilIbrahimMMO - Kabiliyet ve Enerji Ayarları
 # =====================================================================
-#  Kabiliyetler menüden seçilip uygun alete sağ tıklayarak etkinleştirilir,
-#  ya da doğrudan /kabiliyet <id> ile. Blok kabiliyetleri, etki-suresi-saniye
+#  Kabiliyetler /kabiliyet menüsünden seçilir ve uygun aleti tutarken havaya,
+#  bir bloğa ya da bir yaratığa sağ tıklayarak etkinleştirilir. Bunun dışında
+#  kabiliyet kullanmanın başka bir yolu yoktur. Blok kabiliyetleri, etki-suresi-saniye
 #  içinde yalnız sonraki uygun blok kırmada tüketilir. Her kabiliyet tam
 #  olarak bir sınıfa aittir (sinif alanı) - o sınıf seçili olmayan bir
 #  oyuncu bu kabiliyeti kullanamaz.
@@ -16,6 +17,9 @@
 #  biterse kabiliyet erken sona erer; etki-suresi-saniye yine de bir üst
 #  sınır (güvenlik freni) olarak kalır.
 #
+#  simge: kabiliyet menüsünde görünen eşya simgesi (herhangi bir Bukkit
+#  Material adı). Seçili kabiliyet ayrıca büyülü (parlayan) görünür.
+#
 #  gorsel: her kabiliyetin kendine ait rengi, etkinleştirme sesi ve
 #  partikülü. Bu bölüm isteğe bağlıdır; yazılmazsa kabiliyet feedback.yml
 #  içindeki ortak "kabiliyet-baslangic" sesini kullanır ve partikül çıkarmaz.
@@ -28,7 +32,8 @@
 
 enerji:
   maksimum: 100
-  yenilenme-saniye-basina: 3
+  # Enerjinin saniyede kac puan dolduğu. Yuksek deger = daha hizli dolan bar.
+  yenilenme-saniye-basina: 6
 
 # Menüden farklı bir kabiliyet secmeden once beklenmesi gereken sure (ayni
 # kabiliyeti yeniden secmek her zaman ucretsizdir).
@@ -39,6 +44,7 @@ kabiliyetler:
   hazine-sezgisi:
     gorunen-ad: "Hazine Sezgisi"
     aciklama: "Etkinken kırdığın bloklardan %50 ihtimalle ekstra bir düşme kazanırsın."
+    simge: GOLDEN_SHOVEL
     beceri: kazicilik
     sinif: savasci
     gerekli-seviye: 5
@@ -61,6 +67,7 @@ kabiliyetler:
   kazici-darbe:
     gorunen-ad: "Kazıcı Darbesi"
     aciklama: "Sonraki uygun blok kırmanda çevredeki 9 bloğu birden kazır."
+    simge: IRON_SHOVEL
     beceri: kazicilik
     sinif: savasci
     gerekli-seviye: 10
@@ -84,6 +91,7 @@ kabiliyetler:
   define-refleksi:
     gorunen-ad: "Define Refleksi"
     aciklama: "3 saniye boyunca neredeyse tüm hasara karşı dirençli olursun."
+    simge: SHIELD
     beceri: kazicilik
     sinif: savasci
     gerekli-seviye: 30
@@ -106,6 +114,7 @@ kabiliyetler:
   yesil-yol:
     gorunen-ad: "Yeşil Yol"
     aciklama: "10 saniye boyunca hareket hızın artar."
+    simge: SUGAR
     beceri: odunculuk
     sinif: oduncu
     gerekli-seviye: 5
@@ -127,6 +136,7 @@ kabiliyetler:
   agac-kirici:
     gorunen-ad: "Ağaç Kırıcı"
     aciklama: "Sonraki ağaç kırmanda bağlı tüm kütükleri (en fazla 32) birden keser."
+    simge: IRON_AXE
     beceri: odunculuk
     sinif: oduncu
     gerekli-seviye: 15
@@ -150,6 +160,7 @@ kabiliyetler:
   doga-sifasi:
     gorunen-ad: "Doğa Şifası"
     aciklama: "8 saniye boyunca can yenilenmen hızlanır."
+    simge: GLISTERING_MELON_SLICE
     beceri: odunculuk
     sinif: oduncu
     gerekli-seviye: 30
@@ -172,6 +183,7 @@ kabiliyetler:
   gece-gorusu:
     gorunen-ad: "Gece Görüşü"
     aciklama: "60 saniye boyunca karanlıkta net görürsün."
+    simge: GOLDEN_CARROT
     beceri: avcilik
     sinif: avci
     gerekli-seviye: 5
@@ -193,6 +205,7 @@ kabiliyetler:
   avci-odagi:
     gorunen-ad: "Avcı Odağı"
     aciklama: "Etkinken verdiğin PvE hasarı %50 artar (yalnızca yaratıklara karşı - PvP'de geçerli değildir). Her isabetli vuruşta enerji tüketir; enerjin biterse ya da en fazla 30 saniye sonra kendiliğinden sona erer."
+    simge: IRON_SWORD
     beceri: avcilik
     sinif: avci
     gerekli-seviye: 10
@@ -200,7 +213,7 @@ kabiliyetler:
     bekleme-suresi-saniye: 90
     etki-suresi-saniye: 30
     sure-modu: ENERJI
-    enerji-vurus-basi: 8
+    enerji-vurus-basi: 16
     # Menuden secilip sag tikla etkinlestirmek icin gereken alet: herhangi bir kilic.
     arac:
       tur: SWORD
@@ -219,6 +232,7 @@ kabiliyetler:
   yikici-darbe:
     gorunen-ad: "Yıkıcı Darbe"
     aciklama: "Ayağının altında bir patlama yaratır: 4 blok yarıçapındaki tüm yaratıkları çok uzağa savurur ve ağır hasar verir."
+    simge: TNT
     beceri: avcilik
     sinif: avci
     gerekli-seviye: 30
@@ -246,6 +260,7 @@ kabiliyetler:
   cevher-sezgisi:
     gorunen-ad: "Cevher Sezgisi"
     aciklama: "Etkinken kırdığın bloklardan %40 ihtimalle ekstra bir düşme kazanırsın."
+    simge: GOLDEN_PICKAXE
     beceri: madencilik
     sinif: madenci
     gerekli-seviye: 5
@@ -268,6 +283,7 @@ kabiliyetler:
   damar-kirici:
     gorunen-ad: "Damar Kırıcı"
     aciklama: "Sonraki uygun blok kırmanda bağlı aynı cevher damarını (en fazla 16 blok) birden kazır."
+    simge: IRON_PICKAXE
     beceri: madencilik
     sinif: madenci
     gerekli-seviye: 20
@@ -290,18 +306,19 @@ kabiliyetler:
 
   maden-feneri:
     gorunen-ad: "Maden Feneri"
-    aciklama: "Yalnızca geniş, üstü kapalı bir madende kullanılabilir: 12 blok yarıçapındaki tüm cevherler 30 saniye boyunca duvarların ardından bile parlar."
+    aciklama: "Yalnızca geniş, üstü kapalı bir madende kullanılabilir: 36 blok yarıçapındaki tüm cevherler 30 saniye boyunca duvarların ardından bile parlar. Süre dolmadan kırdığın cevherin parıltısı anında söner."
+    simge: GLOWSTONE
     beceri: madencilik
     sinif: madenci
     gerekli-seviye: 35
     enerji: 30
-    bekleme-suresi-saniye: 160
+    bekleme-suresi-saniye: 450
     etki-suresi-saniye: 30
     arac:
       tur: PICKAXE
     etki:
       tur: ORE_REVEAL
-      yaricap: 12
+      yaricap: 36
       # Cevrendeki kupun en az bu kadari bos hava olmali; dar bir tunelde
       # kabiliyet calismaz, genis bir magara/maden salonunda calisir.
       acik-alan-orani: 0.30

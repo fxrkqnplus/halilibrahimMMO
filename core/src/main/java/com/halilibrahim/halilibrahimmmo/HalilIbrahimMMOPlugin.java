@@ -59,6 +59,7 @@ import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticRepository;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
 import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
+import com.halilibrahim.halilibrahimmmo.exploit.PlacedBlockTracker;
 import com.halilibrahim.halilibrahimmmo.energy.PlayerEnergyService;
 import com.halilibrahim.halilibrahimmmo.feedback.BossBarFeedbackService;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
@@ -140,6 +141,9 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
         this.pluginLogger = new PluginLogger(getSLF4JLogger(), this::isDebugModeCurrentlyEnabled);
 
         try {
+            // Constructed before every service because AbilityService needs it; it owns no
+            // lifecycle of its own, only a NamespacedKey and a per-loaded-chunk read cache.
+            PlacedBlockTracker placedBlockTracker = new PlacedBlockTracker(this);
             ConfigService configService = startService(new YamlConfigService(this, pluginLogger), ConfigService.class);
             MessageService messageService = startService(new MiniMessageService(this, pluginLogger), MessageService.class);
 
@@ -189,7 +193,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     new YamlProgressionService(skillService, bankedPowerService), ProgressionService.class
             );
             AbilityService abilityService = startService(
-                    new YamlAbilityService(this, skillService, messageService, profileService, feedbackService, playerId -> {
+                    new YamlAbilityService(this, skillService, messageService, profileService, feedbackService, placedBlockTracker, playerId -> {
                         ClassService classService = classServiceReference.get();
                         return classService == null ? ClassModifiers.none() : classService.modifiers(playerId);
                     }, (playerId, classId) -> {
@@ -235,14 +239,15 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                             activationService, abilityService, questService, titleService, onboardingService), SidebarService.class
             );
             BlockBreakRateLimiter breakRateLimiter = new BlockBreakRateLimiter();
+            getServer().getPluginManager().registerEvents(placedBlockTracker, this);
             this.progressionListener = new ProgressionListener(profileService, feedbackService, breakRateLimiter, activationService, bankedPowerService);
             getServer().getPluginManager().registerEvents(progressionListener, this);
-            getServer().getPluginManager().registerEvents(new SkillListener(this, skillService, abilityService, energyService, feedbackService, activationService, breakRateLimiter, progressionService, messageService), this);
+            getServer().getPluginManager().registerEvents(new SkillListener(this, skillService, abilityService, energyService, feedbackService, activationService, breakRateLimiter, placedBlockTracker, progressionService, messageService), this);
             getServer().getPluginManager().registerEvents(new ClassListener(this, classService, abilityService, energyService, skillService), this);
             getServer().getPluginManager().registerEvents(new AbilityActivationListener(abilityService, energyService), this);
             getServer().getPluginManager().registerEvents(new SidebarListener(this, sidebarService, profileService, classService, activationService, onboardingService), this);
             getServer().getPluginManager().registerEvents(
-                    new QuestListener(this, questService, abilityService, profileService, classService, titleService, cosmeticService, feedbackService, messageService, journalService, breakRateLimiter, sidebarService, activationService), this
+                    new QuestListener(this, questService, abilityService, profileService, classService, titleService, cosmeticService, feedbackService, messageService, journalService, breakRateLimiter, placedBlockTracker, sidebarService, activationService), this
             );
             getServer().getPluginManager().registerEvents(
                     new CollectionListener(this, collectionService, profileService, classService, abilityService, titleService, cosmeticService, feedbackService, messageService, journalService, sidebarService, activationService), this
@@ -273,9 +278,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     pluginLogger, onboardingService
             );
 
-            registerCommands(messageService, profileService, progressionService, abilityService, classService,
-                    energyService, prestigeService, questService, collectionService, journalService, leaderboardService, skillService,
-                    titleService, cosmeticService, feedbackService, sidebarService, guiServices, activationService);
+            registerCommands(messageService, sidebarService, guiServices, activationService);
 
             pluginLogger.info("HalilIbrahimMMO " + getPluginMeta().getVersion() + " basariyla etkinlestirildi.");
         } catch (Exception exception) {
@@ -339,37 +342,29 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
         }
     }
 
+    /**
+     * Every gameplay command is now a bare GUI shortcut, so this only needs the
+     * three collaborators those shortcuts actually use: the shared
+     * {@link GuiServices} bundle, the sidebar toggle behind {@code /panel} and
+     * the activation gate behind {@code /mmo}.
+     */
     private void registerCommands(
             MessageService messageService,
-            ProfileService profileService,
-            ProgressionService progressionService,
-            AbilityService abilityService,
-            ClassService classService,
-            EnergyService energyService,
-            PrestigeService prestigeService,
-            QuestService questService,
-            CollectionService collectionService,
-            JournalService journalService,
-            LeaderboardService leaderboardService,
-            SkillService skillService,
-            TitleService titleService,
-            CosmeticService cosmeticService,
-            FeedbackService feedbackService,
             SidebarService sidebarService,
             GuiServices guiServices,
             ActivationService activationService
     ) {
         registerCommand("haliladmin", "HalilIbrahimMMO yonetici paneli", List.of(), new AdminCommand(guiServices));
-        registerCommand("profil", "MMO profilinizi gosterir", List.of(), new ProfileCommand(this, profileService, messageService, classService, progressionService));
-        registerCommand("kabiliyet", "Bir MMO kabiliyetini kullanir veya kabiliyet menusunu acar", List.of(), new AbilityCommand(abilityService, energyService, messageService, guiServices));
+        registerCommand("profil", "MMO profil ekranini acar", List.of(), new ProfileCommand(guiServices));
+        registerCommand("kabiliyet", "Kabiliyet menusunu acar", List.of(), new AbilityCommand(guiServices));
         registerCommand("sinif", "MMO sinif menusunu acar", List.of(), new ClassCommand(guiServices));
-        registerCommand("prestij", "Maksimum seviyede prestij yapar", List.of(), new PrestigeCommand(this, prestigeService, profileService, progressionService, titleService, cosmeticService, feedbackService, messageService, sidebarService, skillService, classService));
-        registerCommand("gorev", "Gorevlerinizi ve ilerlemenizi gosterir", List.of(), new QuestCommand(this, questService, messageService));
-        registerCommand("koleksiyon", "Koleksiyonlarinizi ve ilerlemenizi gosterir", List.of(), new CollectionCommand(this, collectionService, messageService));
-        registerCommand("gunluk", "Macera gunluginuzu gosterir", List.of(), new JournalCommand(this, journalService, messageService));
-        registerCommand("liderlik", "Liderlik tablolarini gosterir", List.of(), new LeaderboardCommand(this, leaderboardService, skillService, messageService));
-        registerCommand("unvan", "Unvanlarinizi gosterir ve kusanir", List.of(), new TitleCommand(this, titleService, messageService));
-        registerCommand("kozmetik", "Kozmetiklerinizi gosterir ve kusanir", List.of(), new CosmeticCommand(this, cosmeticService, messageService));
+        registerCommand("prestij", "Prestij ekranini acar", List.of(), new PrestigeCommand(guiServices));
+        registerCommand("gorev", "Gorev ekranini acar", List.of(), new QuestCommand(guiServices));
+        registerCommand("koleksiyon", "Koleksiyon ekranini acar", List.of(), new CollectionCommand(guiServices));
+        registerCommand("gunluk", "Macera gunlugu ekranini acar", List.of(), new JournalCommand(guiServices));
+        registerCommand("liderlik", "Liderlik tablolari ekranini acar", List.of(), new LeaderboardCommand(guiServices));
+        registerCommand("unvan", "Unvan ekranini acar", List.of(), new TitleCommand(guiServices));
+        registerCommand("kozmetik", "Kozmetik ekranini acar", List.of(), new CosmeticCommand(guiServices));
         registerCommand("menu", "Ana MMO menusunu acar", List.of(), new MenuCommand(guiServices));
         registerCommand("panel", "Sag taraftaki bilgi ekranini acar/kapatir", List.of(), new PanelCommand(sidebarService, messageService));
         registerCommand("mmo", "MMO sistemini aktiflestirir", List.of(), new MmoCommand(this, activationService, guiServices, messageService));

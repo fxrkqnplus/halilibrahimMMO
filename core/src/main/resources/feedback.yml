@@ -26,6 +26,15 @@ sesler:
     ses: BLOCK_ENCHANTMENT_TABLE_USE
     ses-seviyesi: 1.0
     ton: 1.0
+  # Sinif DEGISTIRME anina ozel, secim sesinden daha gorkemli bir cue.
+  sinif-degistirildi:
+    ses: BLOCK_BEACON_POWER_SELECT
+    ses-seviyesi: 1.0
+    ton: 1.1
+  kabiliyet-secildi:
+    ses: UI_BUTTON_CLICK
+    ses-seviyesi: 0.9
+    ton: 1.5
   kabiliyet-baslangic:
     ses: ITEM_TRIDENT_RIPTIDE_1
     ses-seviyesi: 0.8

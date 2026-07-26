@@ -22,6 +22,15 @@ public interface MessageService extends PluginService {
     Component render(MessageKey key);
 
     /**
+     * Renders a message and strips every style, yielding the bare text. Exists
+     * for the narrow case of composing an already-Turkish fragment that will
+     * itself be substituted into another template as an unparsed placeholder
+     * value (see {@link DurationFormatter}) - never for sending to a player,
+     * which always goes through {@link #send} so styling survives.
+     */
+    String plain(MessageKey key, Map<String, String> placeholders);
+
+    /**
      * Sends a rendered message to the given audience, automatically prefixed
      * with {@link MessageKey#PREFIX}.
      */

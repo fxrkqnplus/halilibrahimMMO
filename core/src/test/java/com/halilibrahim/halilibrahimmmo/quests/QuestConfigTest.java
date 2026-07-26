@@ -41,6 +41,9 @@ final class QuestConfigTest {
         assertNotNull(quests);
         assertTrue(quests.getKeys(false).size() >= 1);
         for (String id : quests.getKeys(false)) {
+            assertNotNull(quests.getString(id + ".gorunen-ad"), id + " is missing gorunen-ad");
+            assertNotNull(quests.getString(id + ".aciklama"), id + " is missing aciklama");
+            assertNotNull(Material.matchMaterial(quests.getString(id + ".simge", "")), id + " has an unknown simge material");
             assertTrue(SUPPORTED_TYPES.contains(quests.getString(id + ".tur")), id);
             String objective = quests.getString(id + ".hedef.tur");
             assertTrue(SUPPORTED_OBJECTIVES.contains(objective), id);

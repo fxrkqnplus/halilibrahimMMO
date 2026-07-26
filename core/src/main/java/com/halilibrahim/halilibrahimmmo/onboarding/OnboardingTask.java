@@ -6,10 +6,10 @@ package com.halilibrahim.halilibrahimmmo.onboarding;
  * gameplay-tunable catalogue.
  */
 public enum OnboardingTask {
-    ILK_MENU_ACMA("ilk-menu-acma", 50),
-    BECERILERI_INCELEME("becerileri-inceleme", 50),
-    KABILIYETLERI_INCELEME("kabiliyetleri-inceleme", 50),
-    BECERI_KOMUTU_KULLANMA("beceri-komutu-kullanma", 50);
+    ILK_MENU_ACMA("ilk-menu-acma", 150),
+    BECERILERI_INCELEME("becerileri-inceleme", 150),
+    KABILIYETLERI_INCELEME("kabiliyetleri-inceleme", 150),
+    BECERI_KOMUTU_KULLANMA("beceri-komutu-kullanma", 150);
 
     private final String id;
     private final long rewardExperience;

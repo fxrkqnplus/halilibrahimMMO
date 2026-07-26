@@ -2551,3 +2551,268 @@ comment). Its `gorsel` deliberately adds `BLOCK_ANVIL_LAND` + `LARGE_SMOKE`
   Darbe's new knockback distance and 9 damage being fun rather than
   overtuned; the redesigned `/menu` and the credits screen rendering as
   intended at 45 slots.
+
+## 28. Phase 14 — natural-block XP gate, death-proof boosts, duration
+    formatting, class-change flow, quest board, XP economy rebalance,
+    GUI-only command surface (Phase 14 complete)
+
+A user-requested follow-on phase covering 15 playtesting-driven items, built
+as one pass. Two load-bearing decisions were made before implementation
+started: (1) "only world-generated blocks award anything" needed a
+*persistent* record of player placements, which is stored per-chunk rather
+than in this plugin's own database; (2) every visible duration had to become
+"2 dakika 10 saniye" instead of "130 saniye" without ever writing a Turkish
+unit word in Java.
+
+**Phase 13 was merged into `main` at the start of this phase** - it had been
+sitting unmerged on `phase-13-icon-pack-ability-visuals` while `main` still
+pointed at Phase 12, and several Phase 14 items (Maden Feneri, per-ability
+icons) build directly on it. Confirmed with the user before merging.
+
+### 14.1 - Player-placed blocks award nothing and trigger nothing
+
+- New `exploit.PlacedBlockTracker` (a `Listener`, not a `PluginService` -
+  it owns no lifecycle, mirroring `BlockBreakRateLimiter`'s plain-class
+  shape). `BlockPlaceEvent` records a position, `BlockBreakEvent` forgets it,
+  both at `EventPriority.MONITOR` with `ignoreCancelled` so a cancelled
+  interaction is never recorded and a forget only happens after every
+  listener that queries it has already run (they are all at NORMAL).
+- **Storage is the chunk's own `PersistentDataContainer`, not a new table.**
+  Positions are packed into one `int` each
+  (`((y + 4096) << 8) | ((z & 0xF) << 4) | (x & 0xF)`) and written as an
+  `INTEGER_ARRAY`. This means the server persists them with the chunk, they
+  survive restarts, and they are discarded automatically if the chunk is ever
+  deleted or regenerated - none of which a `hmmo_*` table would give, and all
+  of which matter for data that is only meaningful next to the blocks it
+  describes. Writes go straight through (crash-safe); a
+  `ConcurrentHashMap<ChunkKey, Set<Integer>>` exists purely so the *read*
+  path (three listeners query every break) does not deserialize the same
+  array repeatedly, and is evicted on `ChunkUnloadEvent`.
+- Wired into `SkillListener#onBlockBreak`, `QuestListener#onBlockBreak`,
+  `YamlAbilityService#handleBlockBreak` (top of the method, so no ability
+  arms or fires off a placed block) and `breakSecondaryBlocks` (so an
+  excavate/vein-mine/tree-fell sweep skips placed blocks too).
+  `CollectionListener` is deliberately untouched, same reasoning §12.1 gave:
+  it triggers off `EntityPickupItemEvent`, not a break.
+- **Known, documented limitation:** blocks placed *before* this phase shipped
+  are not in any chunk's container, so pre-existing player builds still count
+  as natural. There is no way to reconstruct that history.
+
+### 14.2 - Skill milestone and class boosts survive death
+
+- Confirmed the report: death clears the HASTE/SPEED milestone potion effects
+  outright and the MAX_HEALTH attribute modifiers do not survive the respawn
+  either, so every 25/50/75/100 boost and every class health bonus was lost
+  until the player relogged (join is where `applyMilestoneEffects`/
+  `applyPlayerEffects` were called).
+- Fixed with a `PlayerRespawnEvent` handler in **both** `SkillListener` and
+  `ClassListener` (each keeping its own service, matching this codebase's
+  self-contained-listener convention), each reapplying **one tick after** the
+  event via `player.getScheduler().runDelayed(..., 1L)` - the server finishes
+  resetting the player's attributes and effects *after* the event returns, so
+  anything applied inside it is wiped again immediately. `ClassListener` also
+  reconciles energy in the same pass so a max-energy bonus is not left
+  clamped.
+
+### 14.3 - Maden Feneri: 36 block radius, 7.5 minute cooldown, live cleanup
+
+- `abilities.yml`: `yaricap` 12 to 36, `bekleme-suresi-saniye` 160 to 450.
+  `MAX_REVEALED_ORES` 120 to 200 so a genuinely large cave still lights up.
+- **`revealOres` was restructured column-major** (`x`/`z` outer, `y` inner)
+  with a `world.isChunkLoaded(x >> 4, z >> 4)` guard per column and a
+  min/max-height clamp. At radius 12 the old triple loop was harmless; at
+  radius 36 an unguarded `getBlockAt` would synchronously generate dozens of
+  chunks the player cannot even see.
+- **Broken ores now stop glowing immediately.** New
+  `ConcurrentHashMap<RevealedBlock, BlockDisplay> revealedOres` registry;
+  `clearRevealedOre(block)` is called from the **very top** of
+  `handleBlockBreak`, before the secondary-break and player-placed guards,
+  because a vein-mined block is broken for real too and must stop glowing the
+  same way. A re-activation that re-lights the same block drops the previous
+  display rather than orphaning it; `disable()` removes every remaining one
+  directly (no new task may be scheduled during shutdown, and this project
+  targets Paper, where disable runs on the owning thread).
+
+### 14.4 - Every visible duration is now hours/minutes/seconds
+
+- New `locale.DurationFormatter` (static utility): `ofMillis`/`ofSeconds`
+  produce e.g. "1 gün 2 saat 3 dakika 4 saniye", omitting zero units, largest
+  first, never returning less than "1 saniye" (every call site is a
+  "you must wait"/"this much is left" message where zero reads as a bug).
+- **The unit words are not written in Java.** Four new `MessageKey`s
+  (`sure.gun`/`saat`/`dakika`/`saniye`) plus a new
+  `MessageService#plain(MessageKey, Map)` that renders a template and strips
+  its style via `PlainTextComponentSerializer`. That keeps the class inside
+  the "no Turkish literal in Java" rule while still producing the plain
+  `String` the surrounding templates need (they substitute it as an unparsed
+  placeholder, not a nested component). `plain(...)` is documented as
+  existing *only* for this composition case - never for sending.
+- Call sites converted: ability cooldown, ability selection cooldown, all
+  five "ability is now active" messages, the action-bar countdown, the
+  sidebar's active-ability line, the class-change cooldown, and
+  `AbilitiesMenu`'s cooldown lore. The corresponding `messages.yml` templates
+  lost their hardcoded " saniye"/"sn" suffixes.
+- New `DurationFormatterTest` (6 cases) with a stub `MessageService` -
+  pure-logic, same convention as `PrestigeRulesTest`/`UnlockConditionsTest`.
+
+### 14.5 + 14.8 - Energy economy and readout
+
+`abilities.yml`: `avci-odagi`'s `enerji-vurus-basi` 8 to 16 (the only
+mob-kill energy cost in the game) and `enerji.yenilenme-saniye-basina` 3 to 6
+(halving the time to refill). `EnergyService` gained a public
+`maximumEnergy(Player)` (previously private on the implementation), because
+both action-bar countdown variants now render `Enerji <mevcut>/<maksimum>`
+alongside the remaining time - while an ability runs, the plain energy status
+line is suppressed for its whole duration, so this is the only place energy
+can be read.
+
+### 14.6 - Abilities activate on air and on mobs, not just on blocks
+
+- **Root cause found:** `AbilityActivationListener#onInteract` was
+  `@EventHandler(ignoreCancelled = true)`. A right click on empty air arrives
+  with `useInteractedBlock` already denied (there is no block), which makes
+  `PlayerInteractEvent#isCancelled()` report `true` - so the entire
+  air-click path was invisible and an attack ability could not be armed
+  without first finding a wall. `ignoreCancelled` removed.
+- Right-clicking a creature raises `PlayerInteractEntityEvent`, not
+  `PlayerInteractEvent`, so a second handler was added. Both funnel into one
+  `tryActivate(Player)` guarded by a 200 ms per-player debounce, since a
+  single click can raise both events and the duplicate would otherwise be
+  rejected with a cooldown message the player never triggered.
+
+### 14.7 - Talent tooltips
+
+`ClassMenu`'s talent items gained two lore lines above the existing rank
+line: what one rank buys (branched per `ClassEffectType`, six new
+`MessageKey`s, percentages converted from the stored 0-1 ratio) and the total
+already accumulated (two more keys, one plain and one percentage-shaped).
+Mirrors `SkillMilestoneInfoMenu`'s per-effect-type lore exactly.
+
+### 14.9 - Class change reuses the first-pick screen
+
+- **`ClassMenu` no longer selects a class at all.** Clicking any class icon
+  opens `ClassIntroMenu` - the same screen a brand-new player sees after
+  `/mmo`, with every class's blurb and ability list - which then routes
+  through `ClassConfirmMenu`. `ClassIntroMenu` gained a `fromMenu` flag (the
+  same single-boolean framing switch `CreditsMenu` already uses for its back
+  button) adding a back button, a `CLOCK` status item showing the current
+  class and whether the change cooldown has expired, and a "current class"
+  marker plus glint on the equipped one.
+- `ClassConfirmMenu` now loads class progress alongside the profile and
+  spells out both irreversible facts before the button is clickable: the next
+  change lockout, and that the class being left has its class level wiped.
+  A player still inside the cooldown sees a `BARRIER` with the remaining wait
+  instead of a confirm button (a `volatile boolean confirmable` guards the
+  click, defaulting to `false` so a click arriving before the async render
+  does nothing).
+- On a confirmed change the **previous** class's level is reset via the
+  existing `ClassService#resetClassLevel`, deliberately from the menu rather
+  than inside `ClassService#select`, so the reset only happens on the
+  explicitly-confirmed player path and never on an admin force-set.
+- New `FeedbackService#celebrateClassChanged(Player, String)` fires the
+  on-screen title, bossbar, personal chat line and a new
+  `sinif-degistirildi` sound cue together. It is the first `celebrate*`
+  method that owns its own chat message (the three surfaces are meant to
+  carry identical wording); the first-ever pick still uses the older
+  `celebrateClassSelected` + `CLASS_SELECTED` pair.
+
+### 14.10 - Quest board rebuilt
+
+- `QuestDefinition` gained `description` and `icon`, parsed from new required
+  `aciklama`/`simge` keys on every quest. `quests.yml` was rewritten with a
+  one-line description and a thematic icon per quest.
+- `QuestsMenu` went from a flat 27-slot list to a 54-slot board with four
+  labelled rows: Günlük / Haftalık / Kalıcı (each showing only that type's
+  **currently assigned, not yet finished** quests) and a dedicated
+  Tamamlanan row. A finished quest leaves its own section rather than being
+  listed twice, which keeps the active rows an honest to-do list. Every entry
+  shows its description, progress and XP reward on hover; completed ones use
+  a green name, a "Tamamlandı" line and a glint.
+
+### 14.11 - Sidebar quest lines
+
+The weekly summary count line was replaced by one line per assigned weekly
+quest, matching what daily already did (`SIDEBAR_LINE_QUESTS_WEEKLY` and
+`questCounts(...)` deleted as now-dead). A completed quest of either type
+switches to a new green `sidebar.tamamlanan-gorev-satiri` template carrying
+"Tamamlandı" and the XP it paid out, instead of sitting at a maxed-out
+fraction indistinguishable from an unclaimed one.
+
+### 14.12 - Per-ability icons and selection feedback
+
+`AbilityDefinition` gained `icon`, parsed from a new required `simge` key;
+`AbilitiesMenu` renders it instead of the shared `BLAZE_POWDER`. All 12
+abilities got a thematic material. The selected ability already glinted and
+already sent a chat line; a new `kabiliyet-secildi` sound cue
+(`FeedbackService#celebrateAbilitySelected`) completes the set.
+
+### 14.13 + 14.14 - XP economy rebalanced by value, then tripled
+
+- **The reported problem was real:** a passive cow and a zombie both paid the
+  same amount (the MOB skill's `varsayilan` was 10 and `ZOMBIE` was 10), and
+  redstone and gold ore were both 12.
+- `skills.yml` was fully re-tiered by in-game value *first*, then every value
+  (plus every quest, collection and onboarding reward) was multiplied by 3 as
+  a separate step. Final spreads: kazıcılık 6-18, odunculuk 9-21, madencilik
+  12 (coal) to 300 (ancient debris) with redstone deliberately far below gold
+  (21 vs 60), avcılık 15 (unlisted/passive) to 2400 (Ender Dragon), with ~40
+  explicitly tiered hostiles in between. The unlisted-mob default is the
+  floor precisely because unlisted mobs are almost always farmable animals.
+- The level curve was **not** touched, so levelling is genuinely ~3x faster.
+
+### 14.15 - The command surface is GUI-only
+
+- Nine commands were rewritten from chat-rendering implementations down to
+  the same four-line "open a menu" shape `ClassCommand`/`MenuCommand` already
+  had: `/profil`, `/gorev`, `/koleksiyon`, `/gunluk`, `/liderlik`, `/unvan`,
+  `/kozmetik`, `/prestij`, `/kabiliyet`. Every argument form is gone,
+  including `/kabiliyet <id>` direct activation (abilities are menu-select
+  plus right-click only now), `/prestij onayla`, `/unvan sec <id>`,
+  `/kozmetik sec <id>` and `/koleksiyon <id>`.
+- `registerCommands(...)` collapsed from 18 parameters to 4.
+- **20 now-dead `MessageKey`s were deleted from both `MessageKey.java` and
+  `messages.yml`** (the whole `liderlik:` chat section, the title/cosmetic/
+  quest/collection list templates, `profil.*`, `prestij.durum`, `gunluk.*`,
+  `mmo.kullanim`), matching the delete-fully convention §10.6/§11 set. Three
+  YAML sections became empty and were removed outright.
+- **`/mmo` is the one deliberate exception** and is called out in its own
+  Javadoc: it still accepts the historical `aktif` argument, but the bare
+  form now does the same thing, so there is no failure path. It is not a
+  feature screen (there is nothing to look at before activation) and it opens
+  the class GUI immediately on success.
+
+### Verification (this phase)
+
+- `./gradlew build` / `./gradlew test` are green with Java 26
+  (`JAVA_HOME=C:\Program Files\Java\jdk-26.0.1`) - 26 test classes, 45 test
+  cases, 0 failures; `:core:compileIntegrationTestJava` is green too. No
+  migration was added this phase (chunk PDC is not a
+  plugin table), so no migration-version test changed.
+  `AbilityConfigTest`/`QuestConfigTest` gained assertions for the new
+  required `simge` (and, for quests, `aciklama`) fields; new
+  `DurationFormatterTest` covers the unit splitting.
+- A repo-wide unused-import scan was run over `core/src` afterwards and found
+  two (one newly stale in `ScoreboardSidebarService`, one pre-existing in
+  `SkillRepository`); both removed. A programmatic `MessageKey`-vs-usage
+  sweep confirmed zero orphaned constants remain, and `MessageCatalogTest`
+  independently enforces the 1:1 match with `messages.yml`.
+- **A live `./gradlew runServer` boot was performed**, with
+  `core/run/plugins/HalilIbrahimMMO/`'s bundled YAML *and* its SQLite
+  database deleted first so every changed resource regenerated and all 11
+  migrations applied against a fresh database. The plugin enabled with zero
+  exceptions, the server reached `Done` in ~6.5s, and the log had zero
+  "eksik mesaj anahtari" warnings - confirming every new `MessageKey`
+  resolves, the new `simge` keys in `abilities.yml`/`quests.yml` parse as
+  real materials, and the new `sinif-degistirildi`/`kabiliyet-secildi` sound
+  cues resolve against real `Sound` constants.
+- **Not verified this session, requires a live client** (the same honest
+  caveat every feature-touching phase since §17 has carried): placing a block
+  and confirming it awards nothing when re-broken, including across a
+  server restart and a chunk unload/reload cycle; dying and confirming the
+  milestone/class boosts are back after respawn; Maden Feneri at radius 36
+  (both the frame cost of the scan and the 200-entity outline density) and an
+  outline vanishing the instant its ore is mined; right-click activation on
+  air and on a mob without a double-activation message; the class-change
+  confirm/reset flow end to end including the cooldown-locked state; the
+  rebuilt quest board and the green completed sidebar lines; whether the
+  tripled XP economy actually feels right in play.

@@ -26,6 +26,17 @@ genel:
   yetkisiz: "<red>Bu komutu kullanmak için yetkiniz yok.</red>"
   sadece-oyuncu: "<red>Bu komut yalnızca oyuncular tarafından kullanılabilir.</red>"
 
+# Ekranda gorunen HER sure bu dort parcadan birlestirilir: once gun, sonra
+# saat, dakika ve saniye - sifir olan birimler hic yazilmaz. Ornegin 130
+# saniye "2 dakika 10 saniye" olarak gosterilir. Buradaki metinler baska
+# mesajlarin icine duz metin olarak yerlestirildigi icin renk/etiket
+# kullanmayin, sadece sayi (<deger>) ve birim adi yazin.
+sure:
+  gun: "<deger> gün"
+  saat: "<deger> saat"
+  dakika: "<deger> dakika"
+  saniye: "<deger> saniye"
+
 # "/haliladmin" yonetici panelinin sohbete gonderdigi onay mesajlari.
 yonetici:
   yenile-basarili: "<green>Yapılandırma ve mesajlar başarıyla yeniden yüklendi.</green>"
@@ -39,13 +50,8 @@ yonetici:
 
 # "/mmo" komutuna ait mesajlar (aktivasyon akisi).
 mmo:
-  kullanim: "<yellow>Kullanım:</yellow> <white>/mmo aktif</white>"
   zaten-aktif: "<yellow>MMO sistemini zaten aktifleştirdin.</yellow>"
   aktiflestirildi: "<green>MMO sistemi aktifleştirildi! Şimdi bir sınıf seçeceksin.</green>"
-
-profil:
-  ozet: "<gold><simge:guc> Profilin</gold> <dark_gray>•</dark_gray> <gray>Güç:</gray> <white><seviye></white> <dark_gray>|</dark_gray> <gray>Prestij:</gray> <white><prestij></white> <dark_gray>|</dark_gray> <gray>Sınıf:</gray> <white><sinif></white>"
-  ozet-sinifsiz: "<gold><simge:guc> Profilin</gold> <dark_gray>•</dark_gray> <gray>Güç:</gray> <white><seviye></white> <dark_gray>|</dark_gray> <gray>Prestij:</gray> <white><prestij></white> <dark_gray>|</dark_gray> <gray>Sınıf:</gray> <white>Seçilmedi</white>"
 
 # Ekranın sağındaki kalıcı profil bilgi ekranı (scoreboard).
 sidebar:
@@ -59,11 +65,11 @@ sidebar:
   aktivasyon-onerisi: "<yellow><simge:ok> Başlamak için /mmo aktif yaz!</yellow>"
   sinif-onerisi: "<yellow><simge:ok> Sınıf seçmek için /sinif yaz!</yellow>"
   sinif-seviye: "<gray><simge:seviye> <sinif> Seviyesi:</gray> <aqua><seviye></aqua> <dark_gray>(<xp>/<gereken> XP)</dark_gray>"
-  aktif-kabiliyet: "<gray><simge:kabiliyet> Aktif Kabiliyet:</gray> <gold><kabiliyet></gold> <dark_gray>(<kalan>sn)</dark_gray>"
+  aktif-kabiliyet: "<gray><simge:kabiliyet> Aktif Kabiliyet:</gray> <gold><kabiliyet></gold> <dark_gray>(<kalan>)</dark_gray>"
   kabiliyet-secili: "<green><simge:tamam> <kabiliyet></green>"
   kabiliyet-acik: "<red><simge:eksik> <kabiliyet></red>"
   gunluk-gorev-satiri: "<gray><simge:gorev> <gorev>:</gray> <yellow><ilerleme></yellow> <dark_gray>(+<xp> XP)</dark_gray>"
-  haftalik-gorevler: "<gray><simge:gorev> Haftalık Görevler:</gray> <yellow><tamamlanan>/<toplam></yellow>"
+  tamamlanan-gorev-satiri: "<green><simge:tamam> <gorev>: Tamamlandı</green> <dark_gray>(+<xp> XP)</dark_gray>"
   alt-bilgi: "<dark_gray>/panel ile aç/kapat</dark_gray>"
   onboarding-baslik: "<yellow><simge:bilgi> Başlangıç Görevleri:</yellow>"
   onboarding-menu: "<gray>• /menu ile ana menüyü aç</gray>"
@@ -83,25 +89,25 @@ kabiliyet:
   bilinmeyen: "<red>Bilinmeyen kabiliyet:</red> <white><kabiliyet></white>"
   kilitli: "<red><kabiliyet> için <seviye>. sınıf seviyesine ulaşmalısın.</red>"
   yetersiz-enerji: "<red><kabiliyet> için yeterli enerjin yok.</red> <gray>Gereken: <gereken>, mevcut: <mevcut></gray>"
-  bekleme: "<yellow><kabiliyet> yeniden kullanılabilir olmadan önce <sure> saniye beklemelisin.</yellow>"
-  kuruldu: "<green><kabiliyet> kuruldu.</green> <gray><sure> saniye içinde uygun bir blok kır.</gray>"
-  etkin: "<green><kabiliyet> etkin.</green> <gray><sure> saniye boyunca PvE hasarın güçlendi.</gray>"
-  etkin-genel: "<green><kabiliyet> etkin.</green> <gray><sure> saniye sürecek.</gray>"
-  etkin-sans: "<green><kabiliyet> etkin.</green> <gray><sure> saniye boyunca kırdığın bloklardan ekstra düşme şansın var.</gray>"
-  etkin-cevher: "<green><simge:madencilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> cevher <sure> saniye boyunca parlıyor.</gray>"
+  bekleme: "<yellow><kabiliyet> yeniden kullanılabilir olmadan önce <sure> beklemelisin.</yellow>"
+  kuruldu: "<green><kabiliyet> kuruldu.</green> <gray><sure> içinde uygun bir blok kır.</gray>"
+  etkin: "<green><kabiliyet> etkin.</green> <gray><sure> boyunca PvE hasarın güçlendi.</gray>"
+  etkin-genel: "<green><kabiliyet> etkin.</green> <gray><sure> sürecek.</gray>"
+  etkin-sans: "<green><kabiliyet> etkin.</green> <gray><sure> boyunca kırdığın bloklardan ekstra düşme şansın var.</gray>"
+  etkin-cevher: "<green><simge:madencilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> cevher <sure> boyunca parlıyor.</gray>"
   maden-gerekli: "<red><simge:uyari> <kabiliyet> yalnızca geniş, üstü kapalı bir madende kullanılabilir.</red>"
   yanlis-sinif: "<red><kabiliyet> kabiliyetini kullanmak için doğru sınıfa sahip olmalısın.</red>"
   tetiklendi: "<green><kabiliyet> tetiklendi.</green>"
   secildi: "<green><kabiliyet> seçildi.</green> <gray>Uygun alete sağ tıklayarak etkinleştir.</gray>"
-  secim-bekleme: "<yellow>Farklı bir kabiliyet seçmeden önce <sure> saniye beklemelisin.</yellow>"
-  geri-sayim: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <white><kalan> sn</white>"
-  geri-sayim-enerji: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <white><enerji> enerji</white>"
+  secim-bekleme: "<yellow>Farklı bir kabiliyet seçmeden önce <sure> beklemelisin.</yellow>"
+  geri-sayim: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <white><kalan></white> <dark_gray>•</dark_gray> <aqua><simge:enerji> Enerji <white><mevcut></white><gray>/</gray><white><maksimum></white></aqua>"
+  geri-sayim-enerji: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <aqua><simge:enerji> Enerji <white><mevcut></white><gray>/</gray><white><maksimum></white></aqua>"
 
 sinif:
   secildi: "<green><sinif> sınıfını seçtin.</green>"
   zaten-secili: "<yellow><sinif> zaten seçili sınıfın.</yellow>"
   bilinmeyen: "<red>Bilinmeyen sınıf:</red> <white><sinif></white>"
-  bekleme: "<yellow>Sınıfını yeniden değiştirmek için <sure> saniye beklemelisin.</yellow>"
+  bekleme: "<yellow>Sınıfını yeniden değiştirmek için <sure> beklemelisin.</yellow>"
   secim-yok: "<red>Önce bir sınıf seçmelisin.</red>"
   yetenek-acildi: "<green><yetenek> rank <rank> açıldı.</green> <gray>Kalan puan: <kalan></gray>"
   bilinmeyen-yetenek: "<red>Seçili sınıfında böyle bir yetenek yok:</red> <white><yetenek></white>"
@@ -109,7 +115,6 @@ sinif:
   puan-yok: "<red>Harcamak için yetenek puanın yok.</red>"
 
 prestij:
-  durum: "<gold>Prestij</gold> <dark_gray>•</dark_gray> <gray>Prestij:</gray> <white><prestij>/<maksimum></white> <gray>• Şartlar için aşağıya bak, onaylamak için /prestij onayla</gray>"
   basarili: "<green>Prestij yaptın! Yeni prestij seviyen: <prestij>.</green> <gray>Sınıf seviyen ve 4 becerin sıfırlandı; karşılığında kalıcı +%25 XP bonusu ve sınıfa özel kalıcı bir bonus kazandın.</gray>"
   seviye-gerekli: "<red>Prestij için gerekli şartların tümünü sağlamalısın.</red>"
   maksimum: "<yellow>Maksimum prestij sayısına ulaştın: <maksimum>.</yellow>"
@@ -121,36 +126,17 @@ prestij:
   gereksinim-sinif-seviye-eksik: "<red><simge:eksik> Sınıf Seviyesi (<sinif>): <seviye>/<gereken></red>"
   gereksinim-sinerji-tamam: "<green><simge:tamam> Sinerji Becerisi (<beceri>): <seviye>/<gereken></green>"
   gereksinim-sinerji-eksik: "<red><simge:eksik> Sinerji Becerisi (<beceri>): <seviye>/<gereken></red>"
-  gereksinim-sinif-yok: "<red><simge:eksik> Önce bir sınıf seçmelisin (/sinif sec).</red>"
+  gereksinim-sinif-yok: "<red><simge:eksik> Önce bir sınıf seçmelisin (/sinif).</red>"
 
 gorev:
-  liste: "<yellow>Görevler:</yellow> <white><gorevler></white>"
   tamamlandi: "<green><simge:gorev> <gorev> görevini tamamladın!</green> <gray>(+<xp> XP)</gray>"
   tamamlandi-duyuru: "<aqua><simge:gorev> <oyuncu> <gorev> görevini tamamladı!</aqua>"
 
 koleksiyon:
-  liste: "<yellow>Koleksiyonlar:</yellow> <white><koleksiyonlar></white> <gray>| /koleksiyon <id></gray>"
-  detay: "<gold><koleksiyon></gold> <gray>(<ilerleme>)</gray> <dark_gray>•</dark_gray> <white><ogeler></white>"
-  bilinmeyen: "<red>Bilinmeyen koleksiyon:</red> <white><koleksiyon></white>"
   oge-kazanildi: "<green><koleksiyon></green> <gray>koleksiyonuna</gray> <white><oge></white> <gray>eklendi.</gray> <gray>(+<xp> XP)</gray>"
   tamamlandi: "<gold><simge:koleksiyon> <koleksiyon> koleksiyonunu tamamladın!</gold> <gray>(+<xp> bonus XP)</gray>"
 
-gunluk:
-  liste: "<gold>Macera Günlüğün</gold> <gray>(son girdiler)</gray>\n<white><girdiler></white>"
-  bos: "<gray>Günlüğünde henüz bir kayıt yok.</gray>"
-
-liderlik:
-  kullanim: "<yellow>Kullanım:</yellow> <white>/liderlik seviye</white> <gray>|</gray> <white>/liderlik prestij</white> <gray>|</gray> <white>/liderlik gorev</white> <gray>|</gray> <white>/liderlik koleksiyon</white> <gray>|</gray> <white>/liderlik <yetenek-id></white>"
-  bilinmeyen: "<red>Bilinmeyen liderlik tablosu. /liderlik yazarak kullanılabilir tabloları görebilirsin.</red>"
-  bos: "<gray>Bu liderlik tablosunda henüz kimse yok.</gray>"
-  seviye-liste: "<yellow>Güç Liderlik Tablosu:</yellow> <white><liste></white>"
-  prestij-liste: "<yellow>Prestij Liderlik Tablosu:</yellow> <white><liste></white>"
-  gorev-liste: "<yellow>Görev Tamamlama Liderlik Tablosu:</yellow> <white><liste></white>"
-  koleksiyon-liste: "<yellow>Koleksiyon Liderlik Tablosu:</yellow> <white><liste></white>"
-  yetenek-liste: "<yellow><yetenek> Liderlik Tablosu:</yellow> <white><liste></white>"
-
 unvan:
-  liste: "<yellow>Açık unvanlar:</yellow> <white><acik></white> <gray>|</gray> <yellow>Kilitli unvanlar:</yellow> <white><kilitli></white> <gray>| /unvan sec <id></gray>"
   kusanildi: "<green><unvan> unvanını kuşandın.</green>"
   zaten-kusanik: "<yellow><unvan> zaten kuşandığın unvan.</yellow>"
   acilmadi: "<red><unvan> unvanını henüz açmadın.</red>"
@@ -164,7 +150,6 @@ onboarding:
   komut-tamamlandi: "<green>Bir beceri komutunu ilk kez kullandın! (+<xp> XP)</green>"
 
 kozmetik:
-  liste: "<yellow>Açık kozmetikler:</yellow> <white><acik></white> <gray>|</gray> <yellow>Kilitli kozmetikler:</yellow> <white><kilitli></white> <gray>| /kozmetik sec <id></gray>"
   kusanildi: "<green><kozmetik> kozmetiğini kuşandın.</green>"
   zaten-kusanik: "<yellow><kozmetik> zaten kuşandığın kozmetik.</yellow>"
   acilmadi: "<red><kozmetik> kozmetiğini henüz açmadın.</red>"
@@ -188,6 +173,10 @@ geribildirim:
   kabiliyet-acildi-baslik: "<white>Yeni Kabiliyet!</white>"
   kabiliyet-acildi-altbaslik: "<gray><kabiliyet></gray>"
   sinif-seviye-atladi: "<green><simge:sinif> <sinif> seviyesi arttı! Yeni seviye: <white><seviye></white>.</green>"
+  sinif-degistirildi-bossbar: "<light_purple><simge:sinif> Sınıf Değiştirildi - <white><sinif></white></light_purple>"
+  sinif-degistirildi-baslik: "<light_purple>Sınıf Değiştirildi</light_purple>"
+  sinif-degistirildi-altbaslik: "<white><sinif></white>"
+  sinif-degistirildi-sohbet: "<light_purple><simge:sinif> Sınıf Değiştirildi - <white><sinif></white></light_purple> <gray>Önceki sınıfının seviyesi sıfırlandı.</gray>"
   beceri-seviye-atladi: "<green><simge:seviye> <beceri> seviyesi arttı! Yeni seviye: <white><seviye></white>.</green>"
   guc-bossbar: "<green>Güç arttı! Yeni Güç: <guc></green>"
   guc-baslik: "<green>Güç Arttı!</green>"
@@ -318,7 +307,7 @@ gui:
     # Not: acik bir kabiliyetin adi, her kabiliyetin abilities.yml'deki kendi
     # "gorsel.renk" degeriyle boyandigi icin buradan degil koddan uretilir.
     oge-aciklama-detay: "<gray><aciklama></gray>"
-    oge-aciklama: "<gray>Gerekli seviye <white><seviye></white> <dark_gray>|</dark_gray> Bekleme <white><bekleme></white>sn <dark_gray>•</dark_gray> Seçmek için tıkla</gray>"
+    oge-aciklama: "<gray>Gerekli seviye <white><seviye></white> <dark_gray>|</dark_gray> Bekleme <white><bekleme></white> <dark_gray>•</dark_gray> Seçmek için tıkla</gray>"
     oge-enerji-satiri: "<aqua>Enerji: <white><enerji></white></aqua>"
     secili-isaret: "<green><simge:tamam> Seçili - uygun alete sağ tıkla</green>"
     sinifsiz: "<gray>Önce bir sınıf seçmelisin.</gray>"
@@ -328,15 +317,32 @@ gui:
   sinif:
     baslik: "<dark_gray>Sınıfım</dark_gray>"
     oge: "<red><sinif></red>"
-    oge-aciklama-secili: "<gray>Seçili sınıfın <dark_gray>•</dark_gray> Yetenek ağacı aşağıda</gray>"
-    oge-aciklama-secilmemis: "<gray>Seçmek için tıkla</gray>"
+    oge-aciklama-secili: "<gray>Seçili sınıfın <dark_gray>•</dark_gray> Yetenek ağacı aşağıda <dark_gray>•</dark_gray> Değiştirmek için tıkla</gray>"
+    oge-aciklama-secilmemis: "<gray>Sınıf değiştirme ekranını açmak için tıkla</gray>"
     yetenek-oge: "<white><yetenek></white>"
     yetenek-aciklama: "<gray>Rank <white><rank>/<maksimum></white> <dark_gray>•</dark_gray> Açmak için tıkla</gray>"
+    # Yetenek agacindaki her arttirilabilir ozelligin uzerine gelindiginde
+    # gorunen aciklama satirlari - hangi satirin kullanildigini yetenegin
+    # classes.yml'deki "etki.tur" degeri belirler.
+    yetenek-etki-can: "<gray>Her rank <white><simge:can> +<deger> can</white> verir.</gray>"
+    yetenek-etki-hasar: "<gray>Her rank yaratıklara karşı <white>+%<yuzde> hasar</white> verir.</gray>"
+    yetenek-etki-enerji: "<gray>Her rank <white><simge:enerji> +<deger> maksimum enerji</white> verir.</gray>"
+    yetenek-etki-kabiliyet-enerji: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin enerji maliyetini <white>%<yuzde></white> azaltır.</gray>"
+    yetenek-etki-kabiliyet-bekleme: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin bekleme süresini <white>%<yuzde></white> azaltır.</gray>"
+    yetenek-etki-kabiliyet-limit: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin etki sınırını <white>+<deger></white> arttırır.</gray>"
+    yetenek-mevcut-etki: "<dark_gray>Şu anki toplam: <white><deger></white></dark_gray>"
+    yetenek-mevcut-etki-yuzde: "<dark_gray>Şu anki toplam: <white>%<deger></white></dark_gray>"
     bilgi-oge: "<gold>Yetenek Puanı</gold>"
     bilgi-aciklama: "<gray>Harcanan <white><harcanan></white>/<white><toplam></white></gray>"
 
   sinif-tanitim:
     baslik: "<dark_purple>Sınıfını Seç</dark_purple>"
+    degistirme-baslik: "<dark_purple>Sınıfını Değiştir</dark_purple>"
+    durum-oge: "<gold><simge:bilgi> Sınıf Durumun</gold>"
+    durum-mevcut-sinif: "<gray>Mevcut sınıfın: <white><sinif></white></gray>"
+    durum-hazir: "<green><simge:tamam> Şu anda sınıf değiştirebilirsin.</green>"
+    durum-bekleme: "<red><simge:eksik> Sınıf değiştirebilmen için <white><sure></white> geçmesi gerekiyor.</red>"
+    mevcut-sinif-isareti: "<green><simge:tamam> Şu anki sınıfın</green>"
     yetenek-satiri: "<gray>- <white><kabiliyet></white></gray>"
     aciklama-savasci: "<gray>Toprağın altındaki hazineleri koklayan bir kazıcı. Kazıcılıktan ekstra XP kazanır.</gray>"
     aciklama-avci: "<gray>Canavarların korkulu rüyası, amansız bir dövüşçü. Avcılıktan ekstra XP kazanır.</gray>"
@@ -345,8 +351,12 @@ gui:
 
   sinif-onay:
     baslik: "<dark_purple>Emin misin?</dark_purple>"
+    secilen-sinif: "<gray>Yeni sınıfın: <white><sinif></white></gray>"
     ilk-secim-notu: "<gray>Bu ilk sınıf seçimin - hiçbir bekleme süresi olmadan hemen uygulanır.</gray>"
-    bekleme-uyarisi: "<gray>Sınıfını tekrar değiştirmek istersen <white><gun></white> gün beklemen gerekecek.</gray>"
+    sifirlama-uyarisi: "<red><simge:uyari> <white><sinif></white> sınıf seviyen tamamiyle sıfırlanacak (1. seviye, 0 XP). Bu geri alınamaz.</red>"
+    bekleme-uyarisi: "<gray>Sınıfını tekrar değiştirmek istersen <white><sure></white> beklemen gerekecek.</gray>"
+    kilitli-oge: "<red>Şu anda değiştiremezsin</red>"
+    kilitli-aciklama: "<gray>Sınıf değiştirme bekleme sürenin bitmesine <white><sure></white> var.</gray>"
     onayla-oge: "<green>Onayla</green>"
     iptal-oge: "<red>İptal</red>"
 
@@ -359,9 +369,24 @@ gui:
     onayla-aciklama: "<gray>Sınıf seviyen ve 4 becerin sıfırlanır, karşılığında kalıcı bonus kazanılır <dark_gray>•</dark_gray> Onaylamak için tıkla</gray>"
 
   gorevler:
-    baslik: "<dark_gray>Görevlerim</dark_gray>"
+    baslik: "<dark_gray><simge:gorev> Görevlerim</dark_gray>"
     oge: "<aqua><gorev></aqua>"
+    oge-tamamlandi: "<green><gorev></green>"
+    oge-aciklama-detay: "<gray><aciklama></gray>"
     oge-aciklama: "<gray>İlerleme <white><ilerleme></white></gray>"
+    oge-odul: "<gold><simge:xp> Ödül: <white>+<xp> XP</white></gold>"
+    oge-tamamlandi-aciklama: "<green><simge:tamam> Tamamlandı</green>"
+    bilgi-oge: "<gold><simge:bilgi> Görev Durumun</gold>"
+    bilgi-aciklama: "<gray>Tamamlanan <white><tamamlanan></white>/<white><toplam></white> görev</gray>"
+    bolum-gunluk: "<yellow><simge:gorev> Günlük Görevler</yellow>"
+    bolum-gunluk-aciklama: "<gray>Her gün havuzdan rastgele yeniden atanır.</gray>"
+    bolum-haftalik: "<gold><simge:gorev> Haftalık Görevler</gold>"
+    bolum-haftalik-aciklama: "<gray>Her hafta havuzdan rastgele yeniden atanır.</gray>"
+    bolum-kalici: "<aqua><simge:gorev> Kalıcı Görevler</aqua>"
+    bolum-kalici-aciklama: "<gray>Tek seferlik, hiç sıfırlanmaz.</gray>"
+    bolum-tamamlanan: "<green><simge:tamam> Tamamlanan Görevler</green>"
+    bolum-tamamlanan-aciklama: "<gray>Bu dönemde bitirdiğin görevler.</gray>"
+    bolum-bos: "<dark_gray>Bu bölümde şu an görev yok.</dark_gray>"
 
   koleksiyonlar:
     baslik: "<dark_gray>Koleksiyonlarım</dark_gray>"

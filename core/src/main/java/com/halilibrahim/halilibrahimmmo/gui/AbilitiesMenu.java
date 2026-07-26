@@ -1,6 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.gui;
 
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityDefinition;
+import com.halilibrahim.halilibrahimmmo.locale.DurationFormatter;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingTask;
 import net.kyori.adventure.text.Component;
@@ -98,7 +99,7 @@ public final class AbilitiesMenu implements GuiView {
             lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_DESCRIPTION, Map.of("aciklama", definition.description())));
             lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE, Map.of(
                     "seviye", Integer.toString(definition.requiredLevel()),
-                    "bekleme", Long.toString(definition.cooldownMillis() / 1000L)
+                    "bekleme", DurationFormatter.ofMillis(services.messages(), definition.cooldownMillis())
             )));
             if (definition.energyCost() > 0) {
                 lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_ENERGY_LINE, Map.of("enerji", Integer.toString(definition.energyCost()))));
@@ -107,7 +108,7 @@ public final class AbilitiesMenu implements GuiView {
                 lore.add(services.messages().render(MessageKey.GUI_ABILITY_SELECTED_MARKER));
             }
             inventory.setItem(slot++, GuiItems.of(
-                    Material.BLAZE_POWDER,
+                    definition.icon(),
                     abilityName(definition),
                     lore,
                     selected

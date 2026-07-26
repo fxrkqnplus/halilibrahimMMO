@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/** Cosmetic unlock status and equip action, mirroring {@code /kozmetik}/{@code /kozmetik sec}. */
+/** Cosmetic unlock status and equip action - the only way to equip one, opened by {@code /kozmetik}. */
 public final class CosmeticsMenu implements GuiView {
 
     private static final int FIRST_SLOT = 10;

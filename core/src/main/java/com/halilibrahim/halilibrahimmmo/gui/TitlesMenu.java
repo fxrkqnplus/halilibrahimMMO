@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/** Title unlock status and equip action, mirroring {@code /unvan}/{@code /unvan sec}. */
+/** Title unlock status and equip action - the only way to equip one, opened by {@code /unvan}. */
 public final class TitlesMenu implements GuiView {
 
     private static final int FIRST_SLOT = 10;

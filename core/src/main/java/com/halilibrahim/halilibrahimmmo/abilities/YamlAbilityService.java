@@ -3,7 +3,9 @@ package com.halilibrahim.halilibrahimmmo.abilities;
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
 import com.halilibrahim.halilibrahimmmo.classes.ClassModifiers;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
+import com.halilibrahim.halilibrahimmmo.exploit.PlacedBlockTracker;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
+import com.halilibrahim.halilibrahimmmo.locale.DurationFormatter;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
@@ -60,8 +62,13 @@ import java.util.function.Function;
 public final class YamlAbilityService implements AbilityService {
 
     private static final String FILE_NAME = "abilities.yml";
-    /** Hard ceiling on ORE_REVEAL's display entities per activation, independent of the configured radius. */
-    private static final int MAX_REVEALED_ORES = 120;
+    /**
+     * Hard ceiling on ORE_REVEAL's display entities per activation, independent
+     * of the configured radius - raised alongside the 12 to 36 block radius so
+     * a genuinely large cave still lights up, while the client is never asked
+     * to render an unbounded number of glowing entities at once.
+     */
+    private static final int MAX_REVEALED_ORES = 200;
     /** Half-edge of the cube ORE_REVEAL's "wide mine" gate samples for open space. */
     private static final int OPEN_SPACE_PROBE_RADIUS = 4;
     /** How far an activation particle burst scatters around the caster, in blocks. */
@@ -72,6 +79,7 @@ public final class YamlAbilityService implements AbilityService {
     private final MessageService messages;
     private final ProfileService profiles;
     private final FeedbackService feedback;
+    private final PlacedBlockTracker placedBlocks;
     private final Function<UUID, ClassModifiers> classModifiers;
     private final BiFunction<UUID, String, Integer> classLevelLookup;
     private final AtomicReference<AbilitySettings> settings = new AtomicReference<>();
@@ -84,11 +92,12 @@ public final class YamlAbilityService implements AbilityService {
     private final ConcurrentHashMap<UUID, Long> lastSwitchMillis = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ScheduledTask> activationFeedbackTasks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Integer> glintedSlots = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<RevealedBlock, BlockDisplay> revealedOres = new ConcurrentHashMap<>();
     private final ThreadLocal<Set<Block>> secondaryBreaks = ThreadLocal.withInitial(HashSet::new);
 
     public YamlAbilityService(
             JavaPlugin plugin, SkillService skills, MessageService messages, ProfileService profiles,
-            FeedbackService feedback, Function<UUID, ClassModifiers> classModifiers,
+            FeedbackService feedback, PlacedBlockTracker placedBlocks, Function<UUID, ClassModifiers> classModifiers,
             BiFunction<UUID, String, Integer> classLevelLookup
     ) {
         this.plugin = plugin;
@@ -96,6 +105,7 @@ public final class YamlAbilityService implements AbilityService {
         this.messages = messages;
         this.profiles = profiles;
         this.feedback = feedback;
+        this.placedBlocks = placedBlocks;
         this.classModifiers = classModifiers;
         this.classLevelLookup = classLevelLookup;
     }
@@ -116,6 +126,11 @@ public final class YamlAbilityService implements AbilityService {
         activationFeedbackTasks.values().forEach(ScheduledTask::cancel);
         activationFeedbackTasks.clear();
         glintedSlots.clear();
+        // Removed directly rather than through each entity's own scheduler: no
+        // new task may be scheduled during plugin shutdown, and this project
+        // targets Paper, where disable runs on the thread owning these entities.
+        revealedOres.values().forEach(BlockDisplay::remove);
+        revealedOres.clear();
     }
 
     @Override
@@ -170,7 +185,10 @@ public final class YamlAbilityService implements AbilityService {
 
     @Override
     public void handleBlockBreak(BlockBreakEvent event) {
-        if (isSecondaryBreak(event)) {
+        // A block the player put down themselves is not terrain: no ability may
+        // fire off it, exactly as it earns no skill/class XP or quest progress.
+        clearRevealedOre(event.getBlock());
+        if (isSecondaryBreak(event) || placedBlocks.isPlayerPlaced(event.getBlock())) {
             return;
         }
         Player player = event.getPlayer();
@@ -265,7 +283,7 @@ public final class YamlAbilityService implements AbilityService {
             long readyAt = lastSwitchMillis.getOrDefault(playerId, 0L) + settings().selectionCooldownMillis();
             if (readyAt > now) {
                 messages.send(player, MessageKey.ABILITY_SELECTION_COOLDOWN, Map.of(
-                        "sure", Long.toString(Math.max(1L, (readyAt - now + 999L) / 1000L))
+                        "sure", DurationFormatter.ofMillis(messages, readyAt - now)
                 ));
                 return;
             }
@@ -273,6 +291,7 @@ public final class YamlAbilityService implements AbilityService {
         selectedAbility.put(playerId, definition.id());
         lastSwitchMillis.put(playerId, System.currentTimeMillis());
         messages.send(player, MessageKey.ABILITY_SELECTED, Map.of("kabiliyet", definition.displayName()));
+        feedback.celebrateAbilitySelected(player);
     }
 
     @Override
@@ -336,17 +355,22 @@ public final class YamlAbilityService implements AbilityService {
                 clearActivationFeedback(player);
                 return;
             }
+            // Energy is part of both variants: while an ability is running the
+            // action bar is the only place it can be read, and the plain energy
+            // status line is deliberately suppressed for the whole duration.
             if (definition.mode() == AbilityActivationMode.ENERJI) {
                 player.sendActionBar(messages.render(MessageKey.ABILITY_COUNTDOWN_ACTIONBAR_ENERGY, Map.of(
                         "kabiliyet", definition.displayName(),
-                        "enerji", Integer.toString(energy.currentEnergy(player))
+                        "mevcut", Integer.toString(energy.currentEnergy(player)),
+                        "maksimum", Integer.toString(energy.maximumEnergy(player))
                 )));
                 return;
             }
-            long remainingSeconds = Math.max(1L, (remainingMillis + 999L) / 1000L);
             player.sendActionBar(messages.render(MessageKey.ABILITY_COUNTDOWN_ACTIONBAR, Map.of(
                     "kabiliyet", definition.displayName(),
-                    "kalan", Long.toString(remainingSeconds)
+                    "kalan", DurationFormatter.ofMillis(messages, remainingMillis),
+                    "mevcut", Integer.toString(energy.currentEnergy(player)),
+                    "maksimum", Integer.toString(energy.maximumEnergy(player))
             )));
         }, null, 1L, 20L);
         activationFeedbackTasks.put(player.getUniqueId(), task);
@@ -444,7 +468,7 @@ public final class YamlAbilityService implements AbilityService {
         if (readyAt > now) {
             messages.send(player, MessageKey.ABILITY_COOLDOWN, Map.of(
                     "kabiliyet", definition.displayName(),
-                    "sure", Long.toString(Math.max(1L, (readyAt - now + 999L) / 1000L))
+                    "sure", DurationFormatter.ofMillis(messages, readyAt - now)
             ));
             return;
         }
@@ -466,21 +490,21 @@ public final class YamlAbilityService implements AbilityService {
                 armed.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ARMED, Map.of(
                         "kabiliyet", definition.displayName(),
-                        "sure", Long.toString(Math.max(1L, definition.activeMillis() / 1000L))
+                        "sure", DurationFormatter.ofMillis(messages, definition.activeMillis())
                 ));
             }
             case DAMAGE_BUFF -> {
                 damageBuffs.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ACTIVE, Map.of(
                         "kabiliyet", definition.displayName(),
-                        "sure", Long.toString(Math.max(1L, definition.activeMillis() / 1000L))
+                        "sure", DurationFormatter.ofMillis(messages, definition.activeMillis())
                 ));
             }
             case EXTRA_DROP_CHANCE -> {
                 dropBuffs.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ACTIVE_DROP, Map.of(
                         "kabiliyet", definition.displayName(),
-                        "sure", Long.toString(Math.max(1L, definition.activeMillis() / 1000L))
+                        "sure", DurationFormatter.ofMillis(messages, definition.activeMillis())
                 ));
             }
             case ORE_REVEAL -> {
@@ -489,7 +513,7 @@ public final class YamlAbilityService implements AbilityService {
                 messages.send(player, MessageKey.ABILITY_ACTIVE_ORE_REVEAL, Map.of(
                         "kabiliyet", definition.displayName(),
                         "sayi", Integer.toString(revealed),
-                        "sure", Long.toString(Math.max(1L, definition.activeMillis() / 1000L))
+                        "sure", DurationFormatter.ofMillis(messages, definition.activeMillis())
                 ));
             }
             default -> {
@@ -497,7 +521,7 @@ public final class YamlAbilityService implements AbilityService {
                 activeEffects.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ACTIVE_GENERIC, Map.of(
                         "kabiliyet", definition.displayName(),
-                        "sure", Long.toString(Math.max(1L, definition.activeMillis() / 1000L))
+                        "sure", DurationFormatter.ofMillis(messages, definition.activeMillis())
                 ));
             }
         }
@@ -631,11 +655,22 @@ public final class YamlAbilityService implements AbilityService {
         Location origin = player.getLocation();
         int radius = definition.limit();
         long expiryTicks = Math.max(1L, definition.activeMillis() / 50L);
+        int originX = origin.getBlockX();
+        int originY = origin.getBlockY();
+        int originZ = origin.getBlockZ();
+        int minY = Math.max(world.getMinHeight(), originY - radius);
+        int maxY = Math.min(world.getMaxHeight() - 1, originY + radius);
         int revealed = 0;
-        for (int x = -radius; x <= radius && revealed < MAX_REVEALED_ORES; x++) {
-            for (int y = -radius; y <= radius && revealed < MAX_REVEALED_ORES; y++) {
-                for (int z = -radius; z <= radius && revealed < MAX_REVEALED_ORES; z++) {
-                    Block block = world.getBlockAt(origin.getBlockX() + x, origin.getBlockY() + y, origin.getBlockZ() + z);
+        // Column-major so the loaded-chunk test runs once per (x, z) pair rather
+        // than per block: at this radius an unguarded getBlockAt would otherwise
+        // synchronously generate dozens of chunks the player cannot even see.
+        for (int x = originX - radius; x <= originX + radius && revealed < MAX_REVEALED_ORES; x++) {
+            for (int z = originZ - radius; z <= originZ + radius && revealed < MAX_REVEALED_ORES; z++) {
+                if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+                    continue;
+                }
+                for (int y = minY; y <= maxY && revealed < MAX_REVEALED_ORES; y++) {
+                    Block block = world.getBlockAt(x, y, z);
                     if (!eligible.contains(block.getType())) {
                         continue;
                     }
@@ -648,6 +683,7 @@ public final class YamlAbilityService implements AbilityService {
     }
 
     private void highlight(Block block, AbilityDefinition definition, long expiryTicks) {
+        RevealedBlock position = RevealedBlock.of(block);
         BlockDisplay display = block.getWorld().spawn(block.getLocation(), BlockDisplay.class, entity -> {
             entity.setBlock(block.getBlockData());
             entity.setGlowing(true);
@@ -659,7 +695,31 @@ public final class YamlAbilityService implements AbilityService {
                     new Vector3f(1.02F, 1.02F, 1.02F), new AxisAngle4f()
             ));
         });
-        display.getScheduler().runDelayed(plugin, task -> display.remove(), null, expiryTicks);
+        // A second activation can legitimately re-light a block whose previous
+        // outline is still up; the old display is dropped rather than orphaned.
+        BlockDisplay previous = revealedOres.put(position, display);
+        if (previous != null) {
+            previous.remove();
+        }
+        display.getScheduler().runDelayed(plugin, task -> {
+            revealedOres.remove(position, display);
+            display.remove();
+        }, null, expiryTicks);
+    }
+
+    /**
+     * Takes the outline down the moment its ore is actually mined, instead of
+     * leaving a glowing ghost of a block that is no longer there for the rest of
+     * the ability's duration. Called from the very top of
+     * {@link #handleBlockBreak}, before the secondary-break and player-placed
+     * guards, because a vein-mined or excavated block is broken for real too and
+     * must stop glowing exactly the same way.
+     */
+    private void clearRevealedOre(Block block) {
+        BlockDisplay display = revealedOres.remove(RevealedBlock.of(block));
+        if (display != null) {
+            display.remove();
+        }
     }
 
     private boolean isEligibleBlock(AbilityDefinition definition, Block block) {
@@ -704,7 +764,8 @@ public final class YamlAbilityService implements AbilityService {
     private void breakSecondaryBlocks(Player player, Block origin, List<Block> candidates, int limit) {
         int processed = 0;
         for (Block candidate : candidates) {
-            if (candidate.equals(origin) || processed++ >= limit || candidate.getType().isAir()) {
+            if (candidate.equals(origin) || processed++ >= limit || candidate.getType().isAir()
+                    || placedBlocks.isPlayerPlaced(candidate)) {
                 continue;
             }
             Set<Block> marked = secondaryBreaks.get();
@@ -742,6 +803,10 @@ public final class YamlAbilityService implements AbilityService {
             if (displayName == null || displayName.isBlank() || description == null || description.isBlank()
                     || !skills.settings().definitions().containsKey(skillId)) {
                 throw new IllegalArgumentException("Ability has a missing display name/description or unknown skill: " + id);
+            }
+            Material icon = Material.matchMaterial(section.getString("simge", ""));
+            if (icon == null) {
+                throw new IllegalArgumentException("Ability must declare a known simge material: " + id);
             }
             String classId = section.getString("sinif", "").toLowerCase(Locale.ROOT);
             if (classId.isBlank()) {
@@ -795,7 +860,7 @@ public final class YamlAbilityService implements AbilityService {
                     // No extra numeric fields required beyond duration/energy/cooldown.
                 }
             }
-            definitions.put(id, new AbilityDefinition(id, displayName, description, skillId, requiredLevel, energyCost,
+            definitions.put(id, new AbilityDefinition(id, displayName, description, icon, skillId, requiredLevel, energyCost,
                     cooldownMillis, activeMillis, effect, limit, multiplier, tool, classId, mode, energyPerHit, visual));
         }
         if (definitions.isEmpty()) {
@@ -848,6 +913,14 @@ public final class YamlAbilityService implements AbilityService {
     }
 
     private record ArmedAbility(String abilityId, long expiresAtMillis, int limit) {
+    }
+
+    /** Identity of one ORE_REVEAL outline, so the right display is torn down when that exact block breaks. */
+    private record RevealedBlock(UUID worldId, int x, int y, int z) {
+
+        static RevealedBlock of(Block block) {
+            return new RevealedBlock(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ());
+        }
     }
 
     private record CooldownKey(UUID playerId, String abilityId) {

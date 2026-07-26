@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Prestige status display plus a confirm button, mirroring {@code /prestij}/{@code /prestij onayla}. */
+/** Prestige requirement checklist plus a confirm button - the only way to prestige, opened by {@code /prestij}. */
 public final class PrestigeMenu implements GuiView {
 
     private static final int INFO_SLOT = 3;

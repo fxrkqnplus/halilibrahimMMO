@@ -275,8 +275,13 @@ public final class CachedQuestService implements QuestService {
             }
             ConfigurationSection section = requiredSection(quests, rawId);
             String displayName = section.getString("gorunen-ad");
-            if (displayName == null || displayName.isBlank()) {
-                throw new IllegalArgumentException("Quest display name required: " + id);
+            String description = section.getString("aciklama");
+            if (displayName == null || displayName.isBlank() || description == null || description.isBlank()) {
+                throw new IllegalArgumentException("Quest display name and description are required: " + id);
+            }
+            Material icon = Material.matchMaterial(section.getString("simge", ""));
+            if (icon == null) {
+                throw new IllegalArgumentException("Quest must declare a known simge material: " + id);
             }
             QuestType type = QuestType.valueOf(section.getString("tur", "").toUpperCase(Locale.ROOT));
             ConfigurationSection objective = requiredSection(section, "hedef");
@@ -295,7 +300,7 @@ public final class CachedQuestService implements QuestService {
             if (target < 1 || reward <= 0) {
                 throw new IllegalArgumentException("Quest target and XP reward must be positive: " + id);
             }
-            definitions.put(id, new QuestDefinition(id, displayName, type, objectiveType, materials, entityTypes, target, reward));
+            definitions.put(id, new QuestDefinition(id, displayName, description, icon, type, objectiveType, materials, entityTypes, target, reward));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("quests.yml must define at least one quest.");

@@ -10,20 +10,20 @@
 koleksiyonlar:
   degerli-madenler:
     gorunen-ad: "Değerli Madenler"
-    tamamlama-xp: 2000
+    tamamlama-xp: 6000
     ogeler:
-      elmas: { gorunen-ad: "Elmas", esya: DIAMOND, xp: 200 }
-      zumrut: { gorunen-ad: "Zümrüt", esya: EMERALD, xp: 200 }
-      altin: { gorunen-ad: "Altın Külçe", esya: GOLD_INGOT, xp: 100 }
-      demir: { gorunen-ad: "Demir Külçe", esya: IRON_INGOT, xp: 50 }
-      lapis: { gorunen-ad: "Lapis Lazuli", esya: LAPIS_LAZULI, xp: 50 }
-      antika-kalinti: { gorunen-ad: "Antika Kalıntı", esya: ANCIENT_DEBRIS, xp: 400 }
+      elmas: { gorunen-ad: "Elmas", esya: DIAMOND, xp: 600 }
+      zumrut: { gorunen-ad: "Zümrüt", esya: EMERALD, xp: 600 }
+      altin: { gorunen-ad: "Altın Külçe", esya: GOLD_INGOT, xp: 300 }
+      demir: { gorunen-ad: "Demir Külçe", esya: IRON_INGOT, xp: 150 }
+      lapis: { gorunen-ad: "Lapis Lazuli", esya: LAPIS_LAZULI, xp: 150 }
+      antika-kalinti: { gorunen-ad: "Antika Kalıntı", esya: ANCIENT_DEBRIS, xp: 1200 }
 
   deniz-hazineleri:
     gorunen-ad: "Deniz Hazineleri"
-    tamamlama-xp: 1000
+    tamamlama-xp: 3000
     ogeler:
-      nautilus: { gorunen-ad: "Nautilus Kabuğu", esya: NAUTILUS_SHELL, xp: 150 }
-      mercan: { gorunen-ad: "Mercan Bloğu", esya: BRAIN_CORAL_BLOCK, xp: 80 }
-      deniz-feneri: { gorunen-ad: "Deniz Feneri", esya: SEA_LANTERN, xp: 120 }
-      prizmarin: { gorunen-ad: "Prizmarin Kristali", esya: PRISMARINE_CRYSTALS, xp: 100 }
+      nautilus: { gorunen-ad: "Nautilus Kabuğu", esya: NAUTILUS_SHELL, xp: 450 }
+      mercan: { gorunen-ad: "Mercan Bloğu", esya: BRAIN_CORAL_BLOCK, xp: 240 }
+      deniz-feneri: { gorunen-ad: "Deniz Feneri", esya: SEA_LANTERN, xp: 360 }
+      prizmarin: { gorunen-ad: "Prizmarin Kristali", esya: PRISMARINE_CRYSTALS, xp: 300 }

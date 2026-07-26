@@ -13,6 +13,8 @@ import java.util.Set;
 public record QuestDefinition(
         String id,
         String displayName,
+        String description,
+        Material icon,
         QuestType type,
         QuestObjectiveType objectiveType,
         Set<Material> materials,

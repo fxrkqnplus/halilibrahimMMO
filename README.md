@@ -46,68 +46,205 @@ PostgreSQL, `config.yml` (`veritabani.tur`) üzerinden desteklenir. Tüm JDBC
 sürücüleri ve HikariCP, Paper'ın `PluginLoader` mekanizması üzerinden çalışma
 zamanında çözümlenir — eklenti jar'ına hiçbir şey gömülmez (shade edilmez).
 
+---
+
+## Her şey menüden: komut listesi
+
+Eklentinin **hiçbir oyuncu komutunun argümanı yoktur**. Her komut yalnızca
+ilgili GUI ekranını açan bir kısayoldur; sohbete liste basan, sohbetten
+değer değiştiren hiçbir komut kalmamıştır.
+
+| Komut | Ne açar |
+|---|---|
+| `/menu` | Ana menü (dört kategori + kişisel başlık + Eklenti Hakkında) |
+| `/mmo` | MMO sistemini ilk kez aktifleştirir, ardından sınıf tanıtım ekranını açar |
+| `/profil` | Profil ekranı (Güç, prestij, sınıf) |
+| `/sinif` | Sınıf ekranı: sınıf simgeleri + seçili sınıfın yetenek ağacı |
+| `/kabiliyet` | Kabiliyet menüsü (seçim yapılır, etkinleştirme oyun içindedir) |
+| `/gorev` | Görev panosu (günlük / haftalık / kalıcı / tamamlananlar) |
+| `/koleksiyon` | Koleksiyon ekranı |
+| `/gunluk` | Macera günlüğü |
+| `/prestij` | Prestij şart listesi ve onay düğmesi |
+| `/liderlik` | Liderlik tabloları |
+| `/unvan` | Unvan gardırobu |
+| `/kozmetik` | Kozmetik gardırobu |
+| `/madencilik`, `/odunculuk`, `/kazicilik`, `/avcilik` | O becerinin detay ekranı |
+| `/panel` | Sağdaki bilgi panelini gizler/gösterir |
+| `/haliladmin` | Yönetici paneli (`halilibrahimmmo.admin` izni gerekir) |
+
+**Ekranda görünen her süre** saat/dakika/saniye olarak yazılır: kabiliyet
+bekleme süresi, sınıf değiştirme bekleme süresi, geri sayımlar. "130 saniye"
+değil, "2 dakika 10 saniye" görürsünüz. Birim kelimeleri `messages.yml`
+içindeki `sure:` bölümünden değiştirilebilir.
+
+---
+
 ## İlerleme temeli
 
-Mevcut yapı, UUID tabanlı asenkron oyuncu profillerini ve istatistiklerini
-içerir. Oyun içinde "Güç" olarak adlandırılan genel seviye, bağımsız bir XP
+Oyun içinde **Güç** olarak adlandırılan genel seviye, bağımsız bir XP
 kaynağına sahip değildir — dört becerinin (kazıcılık, odunculuk, madencilik,
 avcılık) seviyelerinin toplamına, prestij yaptıkça kalıcı olarak biriken
-Güç'ün eklenmesiyle hesaplanır — prestij sıfırladığı seviyeler yüzünden Güç
-asla düşmez, yalnızca artmaya devam eder. Oyuncular güncel Gücünü `/profil`
-ile görüntüleyebilir. **Yaratıcı (Creative) veya izleyici (Spectator)
-moddayken hiçbir şekilde beceri, sınıf veya görev XP'si kazanılmaz.** Her
-Gradle komutu için Java 26 kullanın; çalışma alanında kurulu JDK
+Güç'ün eklenmesiyle hesaplanır. Prestij, sıfırladığı seviyelere rağmen Güç'ü
+asla düşürmez.
+
+İki kalıcı kural her XP kaynağı için geçerlidir:
+
+- **Yaratıcı (Creative) veya izleyici (Spectator) moddayken** hiçbir şekilde
+  beceri, sınıf veya görev XP'si kazanılmaz.
+- **Yalnızca dünyanın kendisinin oluşturduğu bloklar sayılır.** Bir oyuncunun
+  (kendisinin ya da başkasının) yerleştirdiği bir blok kırıldığında ne XP
+  verir, ne görev ilerletir, ne de üzerinde herhangi bir kabiliyet çalışır —
+  evin kolonundaki kütüğü ya da sonradan yere koyduğunuz bir cevheri
+  kırmak hiçbir şey kazandırmaz. Yerleştirilen bloklar, ait oldukları chunk'ın
+  kendi kalıcı verisinde saklanır; sunucu yeniden başlasa da unutulmazlar.
+  (Eklenti kurulmadan *önce* yerleştirilmiş eski yapılar bu kaydın dışındadır.)
+
+Her Gradle komutu için Java 26 kullanın; çalışma alanında kurulu JDK
 `C:\Program Files\Java\jdk-26.0.1` konumundadır.
 
-## Beceriler ve kabiliyetler
+---
 
-Dört bağımsız olarak seviyelenen beceri bulunur: `kazicilik`, `odunculuk`,
-`madencilik` ve `avcilik`. Paylaşılan açık seviye eğrileri `skills.yml`
-dosyasında yapılandırılır; her beceri artık kırılan bloğun veya öldürülen
-yaratığın **nadirliğine göre** farklı miktarda XP verir (ör. toprak çok az,
-elmas/kadim kalıntı çok daha fazla; zombi az, warden/ejderha çok daha fazla).
-Bir beceri 25/50/75/100. seviyelere ulaştığında kalıcı bir bonus kazandırır
-— her beceri kendine özgü, farklılaştırılmış bonuslar verir ve **kademeler
-zayıftan güçlüye sıralanmıştır**: 25. seviye basit bir giriş bonusu (genelde
-+can) verirken, becerinin asıl güçlü bonusu her zaman 75. ve 100. seviyelere
-saklanır. Avcılık cana, sonra artan yaratık hasarına; madencilik cana ve
-enerjiye, sonra Acele (Haste) I/II'ye; odunculuk cana ve enerjiye, sonra Hız
-I/II'ye; kazıcılık ise kademeli olarak artan maksimum enerjiye yönelir
-(bonuslar, prestij ile o beceri sıfırlanınca kaybedilir). Her becerinin kendi detay ekranı `/madencilik`, `/odunculuk`, `/kazicilik`
-ve `/avcilik` komutlarıyla açılır: mevcut seviye/XP, becerinin beslediği
-sınıf, kilometre taşı açıklamaları ve o becerinin liderlik tablosu buradan
-görüntülenir. `abilities.yml`, paylaşılan kalıcı olmayan enerji havuzunu ve
-sınıfa özel kabiliyetleri yapılandırır.
+## Beceriler
 
-Kabiliyetler, oyuncunun seçili **sınıfının seviyesine** göre açılır (beceri
-seviyesine göre değil) ve iki şekilde etkinleştirilebilir: doğrudan
-`/kabiliyet <id>` ile, ya da kabiliyet menüsünden birini seçip uygun alete
-(kazma/balta/kürek/kılıç, kabiliyete göre değişir) sağ tıklayarak — seçili
-alet, kabiliyetin süresi boyunca parlar ve eylem çubuğunda hangi kabiliyetin
-etkin olduğu ile ne kadar süre (ya da tek seferlik kabiliyetlerde bekleme
-penceresi) kaldığı gösterilir. **Alet yalnızca kabiliyeti başlatmak için
-gereklidir**: kabiliyet bir kez etkinleştikten sonra elindeki eşyayı
-değiştirmen, hatta düşürmen onu bozmaz — süresi dolana kadar çalışmaya devam
-eder. Her kabiliyetin `abilities.yml` içinde kendine ait bir rengi,
-etkinleştirme sesi ve partikül efekti vardır, böylece iki kabiliyet birbirine
-benzemez. Farklı bir kabiliyete geçmek kısa bir bekleme
-süresine tabidir (varsayılan 120 saniye); aynı kabiliyeti yeniden seçmek
-serbesttir. Bazı kabiliyetler tamamen süreye dayalıdır (ör. Gece Görüşü);
-Amansız Savaşçı'nın Avcı Odağı gibi savaşa dayalı bazı kabiliyetler ise her
-isabetli vuruşta enerji tüketir ve enerji biterse ya da en fazla 30 saniye
-sonra kendiliğinden sona erer — ve yalnızca yaratıklara (PvE) karşı
-geçerlidir, PvP'de hiçbir etkisi yoktur. Amansız Savaşçı'nın Yıkıcı Darbe'si
-ayağının altında gerçek bir şok dalgası yaratır: patlama sesi ve efektiyle
-çevredeki yaratıkları çok uzağa savurur ve ağır hasar verir. Mağara Adamı'nın
-Maden Feneri ise **yalnızca geniş, üstü kapalı bir madende** kullanılabilir
-(dar bir tünelde ya da açık arazide çalışmaz): çevrendeki 12 blok
-yarıçapındaki tüm cevherleri 30 saniye boyunca duvarların ardından bile
-görünecek şekilde parlatır. Henüz açılmamış kabiliyetler menüde kilitli olarak
-gösterilir, detayları açılana kadar gizli kalır.
+Dört bağımsız olarak seviyelenen beceri vardır. Hepsi `skills.yml` içindeki
+aynı açık 1–100 seviye eğrisini kullanır, ama her biri farklı bir eylemden
+beslenir ve her blok/yaratık **oyun içindeki gerçek değerine göre** XP verir.
 
-Geliştirici API'si, değişmez beceri tanımlarını ve asenkron salt okunur oyuncu
-beceri sorgularını sunar. Harici eklentilerin beceri XP'si vermesine veya
-kabiliyet tetiklemesine izin vermez.
+| Beceri | Nasıl kazanılır | En az → en çok XP |
+|---|---|---|
+| **Kazıcılık** (`/kazicilik`) | Toprak, kum, çakıl, kil gibi yumuşak blokları kazmak | 6 (toprak) → 18 (kil) |
+| **Odunculuk** (`/odunculuk`) | Kütük kesmek | 9 (meşe) → 21 (nether sapları) |
+| **Madencilik** (`/madencilik`) | Cevher kırmak | 12 (kömür) → 300 (kadim kalıntı) |
+| **Avcılık** (`/avcilik`) | Yaratık öldürmek | 15 (zararsız hayvanlar) → 2400 (Ejderha) |
+
+Aradaki farklar bilinçli olarak büyük tutulmuştur. Örneğin madencilikte
+redstone 21, altın 60, elmas 135, zümrüt 180 XP verir; avcılıkta bir inek ya
+da domuz 15, bir zombi 24, bir Wither İskeleti 90, bir Warden 1800 XP verir.
+Listelenmemiş her yaratık en düşük değeri alır, çünkü listelenmemiş yaratıklar
+neredeyse her zaman çiftlikte sınırsız üretilebilen hayvanlardır.
+
+### Kilometre taşları
+
+Bir beceri 25/50/75/100. seviyeye ulaştığında **kalıcı** bir bonus kazandırır.
+Kademeler zayıftan güçlüye sıralanmıştır: 25. seviye basit bir giriş bonusu,
+becerinin asıl güçlü bonusu her zaman 75. ve 100. seviyelerde.
+
+| Beceri | 25 | 50 | 75 | 100 |
+|---|---|---|---|---|
+| Kazıcılık | +2 can | +10 enerji | +20 enerji | +30 enerji |
+| Odunculuk | +2 can | +10 enerji | Hız I | Hız II |
+| Madencilik | +2 can | +10 enerji | Acele I | Acele II |
+| Avcılık | +2 can | +4 can | Yaratıklara +%10 hasar | Yaratıklara +%20 hasar |
+
+Bu bonuslar **ölünce kaybolmaz** — yeniden doğduğunuzda otomatik olarak geri
+yüklenir. Yalnızca prestij ile o beceri sıfırlandığında düşerler. Her becerinin
+detay ekranı (`/madencilik` vb.) mevcut seviye/XP'yi, becerinin beslediği
+sınıfı, kilometre taşı açıklamalarını ve o becerinin liderlik tablosunu
+gösterir.
+
+---
+
+## Sınıflar
+
+Dört sınıf vardır; her birinin bir **sinerji becerisi** ve o sınıfa özel üç
+kabiliyeti bulunur. Sinerji becerisinden kazanılan XP'nin bir kısmı otomatik
+olarak sınıfın kendi seviye izine de yansır, dolayısıyla sınıfınıza uygun
+oynamak hem beceriyi hem sınıfı birlikte büyütür.
+
+| Sınıf | Sinerji becerisi | Simge | Kalıcı prestij bonusu |
+|---|---|---|---|
+| **Define Avcısı** (`savasci`) | Kazıcılık | Altın kürek | Sınıfa özgü |
+| **Amansız Savaşçı** (`avci`) | Avcılık | Elmas kılıç | Sınıfa özgü |
+| **Mağara Adamı** (`madenci`) | Madencilik | Elmas kazma | Sınıfa özgü |
+| **Orman Bekçisi** (`oduncu`) | Odunculuk | Demir balta | Sınıfa özgü |
+
+### Yetenek ağacı
+
+Seçili sınıfın altında üç arttırılabilir özellik (yetenek) bulunur. Bunlar
+tüm sınıflar arasında **paylaşılan** tek bir yetenek puanı havuzundan
+harcanır, dolayısıyla sınıf değiştirmek harcanmış rankları silmez. Menüde bir
+yeteneğin üstüne geldiğinizde artık **ne işe yaradığı** yazar: her rankın ne
+kadar can / hasar / enerji verdiği, ya da hangi kabiliyetin enerji maliyetini
+veya bekleme süresini ne kadar azalttığı, ve şu ana kadar biriken toplam etki.
+
+### Sınıf değiştirme
+
+Sınıf değiştirme, ilk sınıf seçiminde kullanılan ekranın **aynısını** açar:
+dört sınıf, her birinin tanıtım yazısı ve kabiliyet listesiyle. Ekranın
+üstündeki durum ögesi mevcut sınıfınızı ve şu anda değiştirip
+değiştiremeyeceğinizi (değiştiremiyorsanız ne kadar kaldığını) söyler.
+
+Bir sınıf seçtiğinizde bir onay penceresi açılır ve iki şey açıkça yazılır:
+bir sonraki değişiklik için ne kadar bekleyeceğiniz (varsayılan 7 gün) ve
+**ayrıldığınız sınıfın seviyesinin tamamen sıfırlanacağı** (1. seviye, 0 XP;
+geri alınamaz). Bekleme süresi dolmamışsa onay düğmesi hiç görünmez, yerine
+kalan süreyi gösteren kilitli bir öge vardır.
+
+Değişiklik onaylandığında ekranın ortasında bir başlık, üstte bir boss cübuğu
+ve sohbette kişisel bir mesaj olarak **"Sınıf Değiştirildi — <Sınıf İsmi>"**
+görünür ve buna özel bir ses efekti çalar.
+
+---
+
+## Kabiliyetler
+
+Her kabiliyet tam olarak bir sınıfa aittir; o sınıf seçili değilken
+kullanılamaz. Açılma koşulu **sınıf seviyesidir** (beceri seviyesi değil).
+
+| Sınıf | Kabiliyet | Sv. | Enerji | Bekleme | Etki |
+|---|---|---|---|---|---|
+| Define Avcısı | Hazine Sezgisi | 5 | 20 | 1 dk 30 sn | Kırdığın bloklardan %50 ihtimalle ekstra düşme |
+| Define Avcısı | Kazıcı Darbesi | 10 | 20 | 1 dk | Sonraki kırışta çevredeki 9 bloğu birden kazar |
+| Define Avcısı | Define Refleksi | 30 | 30 | 2 dk 30 sn | 3 saniye neredeyse tüm hasara dirençlilik |
+| Orman Bekçisi | Yeşil Yol | 5 | 20 | 1 dk 15 sn | 10 saniye artan hareket hızı |
+| Orman Bekçisi | Ağaç Kırıcı | 15 | 25 | 1 dk 15 sn | Bağlı tüm kütükleri (en fazla 32) birden keser |
+| Orman Bekçisi | Doğa Şifası | 30 | 25 | 2 dk | 8 saniye hızlı can yenilenmesi |
+| Amansız Savaşçı | Gece Görüşü | 5 | 15 | 2 dk | 60 saniye karanlıkta net görüş |
+| Amansız Savaşçı | Avcı Odağı | 10 | 25 | 1 dk 30 sn | PvE hasarı %50 artar (enerji tüketir) |
+| Amansız Savaşçı | Yıkıcı Darbe | 30 | 30 | 30 sn | Ayağının altında şok dalgası, 4 blok yarıçapı |
+| Mağara Adamı | Cevher Sezgisi | 5 | 25 | 1 dk 30 sn | Kırdığın bloklardan %40 ihtimalle ekstra düşme |
+| Mağara Adamı | Damar Kırıcı | 20 | 30 | 1 dk 40 sn | Bağlı aynı cevher damarını (16 blok) birden kazar |
+| Mağara Adamı | Maden Feneri | 35 | 30 | 7 dk 30 sn | 36 blok yarıçapındaki cevherleri 30 sn parlatır |
+
+### Nasıl kullanılır
+
+1. `/kabiliyet` menüsünden bir kabiliyet seçin. Her kabiliyetin konusuna uygun
+   kendi simgesi vardır; **seçili olan büyülü (parlayan)** görünür, seçildiğinde
+   kısa bir ses efekti çalar ve sohbete onay mesajı gelir.
+2. Kabiliyetin istediği aleti (kazma / balta / kürek / kılıç, kabiliyete göre
+   değişir) elinize alın.
+3. **Sağ tıklayın.** Bir bloğa, boş havaya ya da bir yaratığa — üçü de
+   çalışır. Saldırı kabiliyetlerini kullanmak için önce bir duvar bulmanız
+   gerekmez.
+
+Alet **yalnızca kabiliyeti başlatmak** için gereklidir: kabiliyet bir kez
+etkinleştikten sonra elindeki eşyayı değiştirmen, hatta düşürmen onu bozmaz.
+Etkin bir kabiliyet varken eylem çubuğunda kabiliyetin adı, kalan süresi ve
+**mevcut/maksimum enerjiniz** (ör. `Enerji 70/100`) sürekli gösterilir.
+
+Her kabiliyetin `abilities.yml` içinde kendine ait bir rengi, etkinleştirme
+sesi ve partikül efekti vardır. Farklı bir kabiliyete geçmek kısa bir bekleme
+süresine tabidir (varsayılan 2 dakika); aynı kabiliyeti yeniden seçmek
+serbesttir. Henüz açılmamış kabiliyetler menüde kilitli gösterilir.
+
+**Maden Feneri** özel bir durumdur: yalnızca **geniş ve üstü kapalı bir
+madende** kullanılabilir (dar bir tünelde ya da açık arazide çalışmaz).
+Çalıştığında 36 blok yarıçapındaki tüm cevherler 30 saniye boyunca duvarların
+ardından bile parlar; işaretlenmiş bir cevheri kırdığınızda parıltısı anında
+söner.
+
+**Avcı Odağı** süreye değil enerjiye dayalıdır: her isabetli vuruşta enerji
+tüketir, enerjiniz biterse ya da en fazla 30 saniye sonra kendiliğinden sona
+erer — ve yalnızca yaratıklara (PvE) karşı geçerlidir, PvP'de hiçbir etkisi
+yoktur.
+
+### Enerji
+
+Enerji, tüm kabiliyetlerin paylaştığı, kaydedilmeyen bir havuzdur (varsayılan
+maksimum 100; sınıf ve kilometre taşı bonuslarıyla artar). Saniyede 6 puan
+dolar. Eylem çubuğunda her zaman `mevcut/maksimum` biçiminde görünür.
+
+---
 
 ## Profil paneli (sidebar)
 
@@ -116,98 +253,101 @@ Ekranın sağında kalıcı, renklendirilmiş bir bilgi paneli; oyuncu adını
 sırasıyla), Güç seviyesini (altın), prestiji (açık mor), seçili sınıfı ve o
 sınıfın kendi seviyesini (camgöbeği), açık kabiliyetlerin adlarını (seçili
 olan yeşil, diğerleri kırmızı), henüz tamamlanmamış ilk-adım görevlerini
-(tamamlanınca bu bölüm tamamen kaybolur), her günlük görevi ayrı ayrı
-ilerleme ve XP ödülüyle (sarı), ve haftalık görev özetini — mantıksal
-bölümler arasında ince ayırıcı çizgilerle — gösterir. Panel, sunucuda
-gerçekleşen her değişikliği (beceri/sınıf XP kazanımı, unvan değişikliği,
-yönetici müdahalesi dahil) yaklaşık 2 saniye içinde **kendiliğinden**
-günceller — `/panel` ile açıp kapatmaya gerek yoktur, bu komut yalnızca
-paneli mevcut oturum için tamamen gizler/gösterir. Tercih kaydedilmez, her
-katılışta veya sunucu yeniden başladığında panel varsayılan olarak görünür
-duruma döner.
+(tamamlanınca bu bölüm tamamen kaybolur) ve **atanmış her günlük ve haftalık
+görevi ayrı bir satırda** gösterir. Tamamlanmamış görevler ilerlemeleri ve XP
+ödülleriyle sarı; **tamamlanmış görevler yeşil renkte, yanında "Tamamlandı"
+yazısı ve kazandırdığı XP ile** listelenir. Bölümler arasında ince ayırıcı
+çizgiler vardır.
 
-## Sınıflar ve prestij
+Panel, sunucuda gerçekleşen her değişikliği (beceri/sınıf XP kazanımı, unvan
+değişikliği, yönetici müdahalesi dahil) yaklaşık 2 saniye içinde
+**kendiliğinden** günceller — `/panel` yalnızca paneli mevcut oturum için
+tamamen gizler/gösterir. Tercih kaydedilmez; her katılışta veya sunucu
+yeniden başladığında panel varsayılan olarak görünür duruma döner.
 
-`/sinif` kabiliyet menüsünü açar; oyuncular Define Avcısı, Amansız Savaşçı,
-Mağara Adamı veya Orman Bekçisi sınıflarından birini seçebilir, yetenek
-ağaçlarını inceleyebilir ve paylaşılan yetenek puanlarını harcayabilir —
-tamamı menü üzerinden, artık sohbet komutu argümanı yoktur. Her sınıfın kendi
-"sinerji becerisi" vardır (ör. Amansız Savaşçı ↔ avcılık) ve o beceriden
-kazanılan XP'nin bir kısmı otomatik olarak sınıfın kendi seviye izine de
-yansır. Sınıf değişikliğinin yapılandırılabilir, veritabanı destekli yedi
-günlük bir bekleme süresi vardır.
+---
+
+## Prestij
 
 Prestij yapabilmek için üç şart birden sağlanmalıdır: dört becerinin de en
 az 25. seviyede olması, seçili sınıfın kendi sınıf seviyesinin maksimuma
 (varsayılan 50) ulaşmış olması, ve o sınıfın sinerji becerisinin de kendi
-maksimum seviyesine (100) ulaşmış olması. `/prestij` bu üç şartı ayrı ayrı
-✔/✘ olarak listeler. Şartlar sağlandığında `/prestij onayla` seçili sınıfın
-sınıf seviyesini ve dört becerinin tümünü sıfırlar — **ancak Güç düşmez**:
-sıfırlanmadan önceki Güç kalıcı olarak "biriktirilir" ve becerileriniz
-tekrar seviye atladıkça Güç kaldığı yerden artmaya devam eder. Karşılığında
-kalıcı olarak her prestij rankında +%25 XP kazanımı (hem beceri hem sınıf
-XP'sinde) ve seçili sınıfa özgü kalıcı bir bonus (sınıfa göre can/hasar/
-enerji) kazanılır. Prestijli oyuncular liderlik tablosunda ham seviyeden
-bağımsız olarak her zaman önde gösterilir. Prestij yapmak sunucu genelinde
-bir duyuru, bir havai fişek ve ses efektiyle kutlanır; varsayılan maksimum
-prestij sayısı 10'dur.
+maksimum seviyesine (100) ulaşmış olması. `/prestij` bu şartları ayrı ayrı
+✔/✘ olarak listeler ve onay düğmesini aynı ekranda sunar.
 
-## Görevler, koleksiyonlar ve macera günlüğü
+Prestij, seçili sınıfın sınıf seviyesini ve dört becerinin tümünü sıfırlar —
+**ancak Güç düşmez**: sıfırlanmadan önceki Güç kalıcı olarak "biriktirilir" ve
+becerileriniz tekrar seviye atladıkça Güç kaldığı yerden artmaya devam eder.
+Karşılığında kalıcı olarak her prestij rankında +%25 XP kazanımı (hem beceri
+hem sınıf XP'sinde) ve seçili sınıfa özgü kalıcı bir bonus (can/hasar/enerji)
+kazanılır. Prestijli oyuncular liderlik tablosunda ham seviyeden bağımsız
+olarak her zaman önde gösterilir. Prestij yapmak sunucu genelinde bir duyuru,
+bir havai fişek ve ses efektiyle kutlanır; varsayılan maksimum prestij
+sayısı 10'dur.
 
-`/gorev` oyuncuya o an **atanmış** kalıcı, günlük ve haftalık görevleri
-ilerlemenizle birlikte listeler; günlük/haftalık görevler geniş bir havuzdan
-her periyot başına rastgele seçilip atanır (varsayılan: 3 günlük, 2
-haftalık), kalıcı görevler ise herkese her zaman atanmıştır. Görevler doğru
-blokları kırdıkça veya doğru yaratıkları öldürdükçe otomatik ilerler
-(Yaratıcı/İzleyici moddayken ilerleme kaydedilmez), periyodu bitince yeni
-bir rastgele atamayla sıfırlanır. `/koleksiyon`
-koleksiyonlarınızı listeler, `/koleksiyon <id>` ise henüz en az bir kez
-toplamadığınız ögeleri gösterir. `/gunluk` son on görev tamamlama ve
-koleksiyon kilometre taşınızı gösterir. Bir görevi tamamlamak, bir koleksiyon
-ögesi edinmek ve bir koleksiyonun tamamını tamamlamak, seçili sınıfınızın
-XP'sini kazandırır (sınıf seçili değilse ödül verilmez). Bir günlük/haftalık
-görevi tamamlamak ayrıca sunucu genelinde (XP miktarı gösterilmeden)
+---
+
+## Görevler
+
+`/gorev` dört bölümlü bir görev panosu açar:
+
+- **Günlük Görevler** — geniş bir havuzdan her gün rastgele atanan 3 görev.
+- **Haftalık Görevler** — havuzdan her hafta rastgele atanan 2 görev.
+- **Kalıcı Görevler** — tek seferlik, hiç sıfırlanmayan, herkeste ortak görevler.
+- **Tamamlanan Görevler** — bu dönemde bitirdikleriniz, ayrı bir bölümde.
+
+Bir görevin üstüne geldiğinizde **ne yapmanız gerektiğini anlatan açıklaması**,
+mevcut ilerlemeniz ve **kazandıracağı XP miktarı** yazar. Tamamlanan bir görev
+kendi bölümünden çıkıp yeşil ve parlayarak "Tamamlanan Görevler" bölümüne
+geçer, böylece üst bölümler her zaman dürüst bir yapılacaklar listesi kalır.
+
+Görevler doğru blokları kırdıkça veya doğru yaratıkları öldürdükçe otomatik
+ilerler (Yaratıcı/İzleyici modda ve oyuncunun yerleştirdiği bloklarda ilerleme
+kaydedilmez), periyodu bitince yeni bir rastgele atamayla sıfırlanır. Bir
+günlük/haftalık görevi tamamlamak sunucu genelinde (XP miktarı gösterilmeden)
 duyurulur.
+
+## Koleksiyonlar ve macera günlüğü
+
+`/koleksiyon` koleksiyonlarınızı ve her koleksiyonun içinde hangi ögeleri
+topladığınızı ✔/✘ olarak gösterir. `/gunluk` son on görev tamamlama ve
+koleksiyon kilometre taşınızı listeler. Bir görevi tamamlamak, bir koleksiyon
+ögesi edinmek ve bir koleksiyonun tamamını tamamlamak, **seçili sınıfınızın**
+XP'sini kazandırır (sınıf seçili değilse ödül verilmez).
 
 ## Liderlik tabloları
 
-`/liderlik seviye`, `/liderlik prestij`, `/liderlik gorev`, `/liderlik
-koleksiyon` ve `/liderlik <yetenek-id>`; Güç (önce prestij, sonra toplam
-beceri seviyesi sırasına göre), tamamlanan görev sayısı, edinilen koleksiyon
-ögesi sayısı ve her yapılandırılmış beceri için en üst sıradaki oyuncuları
-gösterir. Aynı tablolara `/menu`'nün Topluluk
-kategorisinden de göz atılabilir. Sonuçlar her açılışta veritabanını sorgulamak
-yerine kısa, yapılandırılabilir bir süre için önbelleğe alınır
-(`leaderboards.yml`).
+`/liderlik`; Güç (önce prestij, sonra toplam beceri seviyesi sırasına göre),
+prestij, tamamlanan görev sayısı, edinilen koleksiyon ögesi sayısı ve her
+yapılandırılmış beceri için en üst sıradaki oyuncuları gösteren tablolara
+açılır. Aynı tablolara `/menu`'nün Topluluk kategorisinden de göz atılabilir.
+Sonuçlar her açılışta veritabanını sorgulamak yerine kısa, yapılandırılabilir
+bir süre için önbelleğe alınır (`leaderboards.yml`).
 
 ## Unvanlar ve kozmetikler
 
 `titles.yml` ve `cosmetics.yml`, her biri tek bir kazanma koşuluna sahip
 (seviye/prestije ulaşma, belirli bir görevi/koleksiyonu tamamlama veya bir
 beceri seviyesine ulaşma) açılabilir öge katalogları tanımlar. `/unvan` ve
-`/kozmetik` neyi açtığınızı listeler ve birini kuşanmanızı sağlar
-(`/unvan sec <id>`, `/kozmetik sec <id>`); aynı kataloglara `/menu`'den de
-göz atılabilir. Kuşanılan bir unvan, sohbette adınızın önünde **kendi
-yapılandırılmış rengi ve kalınlığıyla** görünür (her unvanın kendine özgü bir
-sohbet stili vardır). Kuşanılan bir kozmetik, katıldığınızda ve her seviye
-atladığınızda kısa bir parçacık efekti oynatır.
+`/kozmetik` neyi açtığınızı gösterir ve tıklayarak kuşanmanızı sağlar; aynı
+kataloglara `/menu`'den de göz atılabilir. Kuşanılan bir unvan, sohbette
+adınızın önünde **kendi yapılandırılmış rengi ve kalınlığıyla** görünür.
+Kuşanılan bir kozmetik, katıldığınızda ve her seviye atladığınızda kısa bir
+parçacık efekti oynatır.
 
 ## Görsel geri bildirim
 
 Bir beceriden XP kazanıldığında, o becerinin **güncel seviyesini** ve hangi
-cevherin/yaratığın XP verdiğini gösteren bir beceri cübuğu (boss bar)
-görünür. Seçili
-sınıfınızın sinerji becerisinden XP kazandığınızda, beceri cübuğuyla
+cevherin/yaratığın XP verdiğini gösteren bir beceri cübuğu (boss bar) görünür.
+Seçili sınıfınızın sinerji becerisinden XP kazandığınızda, beceri cübuğuyla
 **aynı anda**, her sınıfa özgü kendi renginde ve o sınıfın güncel seviyesini
 gösteren ayrı bir sınıf XP cübuğu de görünür (görev/koleksiyon ödülleri de bu
-sınıf XP cübuğu üzerinden gösterilir). Seviye atlamanın kendisi kişisel bir sohbet mesajıdır. Güç
-(dört becerinin toplamı) yalnızca 10'un katlarına ulaşıldığında kişisel bir
+sınıf XP cübuğu üzerinden gösterilir). Seviye atlamanın kendisi kişisel bir
+sohbet mesajıdır. Güç yalnızca 10'un katlarına ulaşıldığında kişisel bir
 cübukla belirtilir; 25/50/75/100. Güç seviyelerine ulaşmak sunucu genelinde
-duyurulur. Görev tamamlama, koleksiyon tamamlama ve prestij hâlâ her
-oyuncuya kısa bir cübuk ve ekran başlığı gösterir, kuşanılan kozmetikten
-bağımsız olarak — günlük/haftalık görev tamamlama ve prestij ayrıca sunucu
-genelinde duyurulur, prestij bir havai fişek ve ses efektiyle de kutlanır
-(`feedback.yml` her şeyin ne kadar süre görünür kalacağını denetler).
+duyurulur. Görev tamamlama, koleksiyon tamamlama, sınıf değiştirme ve prestij
+kısa bir cübuk ve ekran başlığı gösterir (`feedback.yml` her şeyin ne kadar
+süre görünür kalacağını ve hangi ses efektinin çalacağını denetler).
 
 ## Envanter menüsü
 
@@ -217,17 +357,7 @@ Gücünü/prestijini/sınıfını özetleyen kişisel bir başlık, altında dö
 **Kabiliyetlerim**, **Görevler** (görevler, koleksiyonlar, macera günlüğü) ve
 **Topluluk** (liderlik tabloları, unvanlar, kozmetikler) — her biri ne
 içerdiğini anlatan bir açıklama satırıyla, ve en altta **Eklenti Hakkında**
-düğmesi. Her menü, ilgili metin komutlarının kullandığı aynı
-sistemler üzerinden çalışır — GUI'de bir sınıf seçmek veya yetenek puanı
-harcamak, tam olarak sınıf/kabiliyet menülerinin arka planda çağırdığı
-servislerle aynı sonucu verir. Kabiliyetler menüsü bir kabiliyeti seçer
-(simgesini parlatarak) ama doğrudan etkinleştirmez; etkinleştirme hâlâ
-oyun içinde uygun alete sağ tıklayarak ya da `/kabiliyet <id>` ile olur.
-Henüz açılmamış kabiliyetler menüde kilitli gösterilir. Sınıf seçim
-ekranlarında her sınıf artık kendi temasına uygun bir simgeyle (Define Avcısı
-altın kürek, Amansız Savaşçı elmas kılıç, Mağara Adamı elmas kazma, Orman
-Bekçisi demir balta) gösterilir; kilometre taşı ekranındaki her kademe de
-verdiği bonusa uygun bir simge kullanır.
+düğmesi.
 
 **Eklenti Hakkında** ekranı (hem `/menu`'den hem `/haliladmin`'den açılır)
 sürüm bilgisini ve emeği geçenleri listeler: **Furkan Okan (fxrkqnplus)** ve
@@ -236,19 +366,17 @@ sürüm bilgisini ve emeği geçenleri listeler: **Furkan Okan (fxrkqnplus)** ve
 ## Yönetici paneli
 
 `/haliladmin` (`halilibrahimmmo.admin` izni gerektirir, varsayılan op) tamamen
-GUI üzerinden çalışan bir yönetici paneli açar — artık sohbet argümanlı bir
-yönetici komutu yoktur. Sunduğu işlemler: `config.yml`/`messages.yml`/tüm
-oyun verisi dosyalarını yeniden yükleme, mevcut oturum için ayrıntılı hata
-ayıklama kaydını açıp kapatma, çalışan eklenti/Paper sürümünü görüntüleme,
-çevrimiçi oyuncuları gezip herhangi birinin salt okunur profil/sınıf/beceri
-özetini görüntüleme, ve **kayıtlı her oyuncuyu** (çevrimdışı olanlar dahil)
-listeleyip beceri/sınıf seviyesini ve XP'sini tıklamalarla ayarlama ya da
-oyuncunun sınıfını zorla değiştirme. Bir seviye atlamaya yol açan her
-müdahale, hedef oyuncu çevrimiçiyse organik bir seviye atlamayla birebir
-aynı geri bildirimi (cübuk, ses, "yeni kabiliyet açıldı" ekran yazısı,
-panel güncellemesi) tetikler. Panelde ayrıca sürüm ve emeği geçenleri
-gösteren **Eklenti Hakkında** ekranına bir kısayol vardır. Her yönetici
-müdahalesi Türkçe bir sunucu günlüğü kaydı bırakır.
+GUI üzerinden çalışan bir yönetici paneli açar — sohbet argümanlı bir yönetici
+komutu yoktur. Sunduğu işlemler: `config.yml`/`messages.yml`/tüm oyun verisi
+dosyalarını yeniden yükleme, mevcut oturum için ayrıntılı hata ayıklama
+kaydını açıp kapatma, çalışan eklenti/Paper sürümünü görüntüleme, çevrimiçi
+oyuncuları gezip herhangi birinin salt okunur profil/sınıf/beceri özetini
+görüntüleme, ve **kayıtlı her oyuncuyu** (çevrimdışı olanlar dahil) listeleyip
+beceri/sınıf seviyesini ve XP'sini tıklamalarla ayarlama ya da oyuncunun
+sınıfını zorla değiştirme. Bir seviye atlamaya yol açan her müdahale, hedef
+oyuncu çevrimiçiyse organik bir seviye atlamayla birebir aynı geri bildirimi
+(cübuk, ses, "yeni kabiliyet açıldı" ekran yazısı, panel güncellemesi)
+tetikler. Her yönetici müdahalesi Türkçe bir sunucu günlüğü kaydı bırakır.
 
 ## PlaceholderAPI ve LuckPerms (isteğe bağlı)
 
@@ -266,6 +394,10 @@ güncel Gücü göstermeye devam eder.
 besleyen salt okunur bir bağlam hesaplayıcı (context calculator) kaydeder;
 böylece sunucu yöneticileri ilerlemeye bağlı kendi izin kurallarını
 yazabilir — bu eklenti LuckPerms'e asla kendisi yazmaz.
+
+Geliştirici API'si, değişmez beceri/sınıf/görev tanımlarını ve asenkron salt
+okunur oyuncu sorgularını sunar. Harici eklentilerin XP vermesine veya
+kabiliyet tetiklemesine izin vermez.
 
 ## Test
 
