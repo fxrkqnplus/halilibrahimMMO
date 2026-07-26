@@ -55,11 +55,34 @@ final class AbilityConfigTest {
             AbilityEffectType effect = assertDoesNotThrow(
                     () -> AbilityEffectType.valueOf(ability.getString("etki.tur", "")), id + " has an unknown etki.tur");
             if (effect == AbilityEffectType.ORE_REVEAL) {
-                assertTrue(ability.getInt("etki.yaricap", 0) > 0, id + " must declare a positive etki.yaricap");
                 double ratio = ability.getDouble("etki.acik-alan-orani", -1);
                 assertTrue(ratio > 0 && ratio < 1, id + " must declare etki.acik-alan-orani in (0, 1)");
             }
+            if (effect == AbilityEffectType.ORE_REVEAL || effect == AbilityEffectType.KNOCKBACK_SLAM
+                    || effect == AbilityEffectType.GROWTH_SURGE || effect == AbilityEffectType.LOVE_CALL) {
+                assertTrue(ability.getInt("etki.yaricap", 0) > 0, id + " must declare a positive etki.yaricap");
+            }
             assertVisual(ability.getConfigurationSection("gorsel"), id);
+        }
+    }
+
+    /**
+     * Abilities unlock by class level, but their {@code beceri} still gates
+     * which blocks they fire on - an ability whose skill is not one its own
+     * class powers would be unlockable by a player who never touches that
+     * skill, which is the invariant Phase 10.3 confirmed and nothing since has
+     * been enforcing.
+     */
+    @Test
+    void everyAbilitysSkillIsOneItsOwnClassPowers() {
+        YamlConfiguration abilities = load("abilities.yml");
+        YamlConfiguration classes = load("classes.yml");
+        ConfigurationSection definitions = abilities.getConfigurationSection("kabiliyetler");
+        for (String id : definitions.getKeys(false)) {
+            String classId = definitions.getString(id + ".sinif", "");
+            String skillId = definitions.getString(id + ".beceri", "");
+            assertTrue(classes.getStringList("siniflar." + classId + ".sinerji-beceriler").contains(skillId),
+                    id + " uses skill '" + skillId + "', which class '" + classId + "' does not power");
         }
     }
 

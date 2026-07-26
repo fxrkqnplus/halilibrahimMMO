@@ -5,12 +5,9 @@ import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
 import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
 import com.halilibrahim.halilibrahimmmo.exploit.PlacedBlockTracker;
-import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
-import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
-import com.halilibrahim.halilibrahimmmo.locale.MessageService;
-import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
-import net.kyori.adventure.bossbar.BossBar;
-import org.bukkit.GameMode;
+import org.bukkit.Tag;
+import org.bukkit.block.Block;
+import org.bukkit.block.data.Ageable;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -21,9 +18,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Map;
-import java.util.Optional;
-
 /** Bridges valid player actions into persistent skills and ephemeral energy state. */
 public final class SkillListener implements Listener {
 
@@ -31,28 +25,24 @@ public final class SkillListener implements Listener {
     private final SkillService skills;
     private final AbilityService abilities;
     private final EnergyService energy;
-    private final FeedbackService feedback;
     private final ActivationService activation;
     private final BlockBreakRateLimiter breakRateLimiter;
     private final PlacedBlockTracker placedBlocks;
-    private final ProgressionService progression;
-    private final MessageService messages;
+    private final SkillAwardHandler awards;
 
     public SkillListener(
             JavaPlugin plugin, SkillService skills, AbilityService abilities, EnergyService energy,
-            FeedbackService feedback, ActivationService activation, BlockBreakRateLimiter breakRateLimiter,
-            PlacedBlockTracker placedBlocks, ProgressionService progression, MessageService messages
+            ActivationService activation, BlockBreakRateLimiter breakRateLimiter,
+            PlacedBlockTracker placedBlocks, SkillAwardHandler awards
     ) {
         this.plugin = plugin;
         this.skills = skills;
         this.abilities = abilities;
         this.energy = energy;
-        this.feedback = feedback;
         this.activation = activation;
         this.breakRateLimiter = breakRateLimiter;
         this.placedBlocks = placedBlocks;
-        this.progression = progression;
-        this.messages = messages;
+        this.awards = awards;
     }
 
     @EventHandler
@@ -90,10 +80,11 @@ public final class SkillListener implements Listener {
         abilities.handleBlockBreak(event);
         Player player = event.getPlayer();
         if (activation.cached(player.getUniqueId()) && !abilities.isSecondaryBreak(event)
-                && isGameplayGameMode(player) && !placedBlocks.isPlayerPlaced(event.getBlock())
+                && SkillAwardHandler.isGameplayGameMode(player) && isEligibleTerrain(event.getBlock())
                 && breakRateLimiter.allow(player.getUniqueId())) {
+            fellTreeIfUnlocked(player, event);
             skills.awardBlock(player.getUniqueId(), player.getName(), event.getBlock().getType())
-                    .thenAccept(result -> handleAward(player, result));
+                    .thenAccept(result -> awards.handle(player, result));
         }
     }
 
@@ -101,73 +92,44 @@ public final class SkillListener implements Listener {
     public void onEntityDeath(EntityDeathEvent event) {
         Player killer = event.getEntity().getKiller();
         if (killer != null && !(event.getEntity() instanceof Player) && activation.cached(killer.getUniqueId())
-                && isGameplayGameMode(killer)) {
+                && SkillAwardHandler.isGameplayGameMode(killer)) {
             skills.awardMob(killer.getUniqueId(), killer.getName(), event.getEntity().getType())
-                    .thenAccept(result -> handleAward(killer, result));
+                    .thenAccept(result -> awards.handle(killer, result));
         }
-    }
-
-    /** Creative/Spectator players never earn skill, class or Güç experience - no risk, no reward. */
-    private boolean isGameplayGameMode(Player player) {
-        return player.getGameMode() != GameMode.CREATIVE && player.getGameMode() != GameMode.SPECTATOR;
-    }
-
-    private void handleAward(Player player, Optional<SkillAwardResult> result) {
-        if (result.isEmpty()) {
-            return;
-        }
-        SkillAwardResult award = result.get();
-        SkillProgress progress = award.progress();
-        SkillDefinition definition = skills.settings().definitions().get(progress.skillId());
-        if (definition == null) {
-            return;
-        }
-        long requiredForLevel = progress.level() >= skills.settings().curve().maximumLevel()
-                ? 0L
-                : skills.settings().curve().requiredForCurrentLevel(progress.level());
-        player.getScheduler().run(plugin, task -> {
-            feedback.showExperienceProgress(
-                    player, MessageKey.FEEDBACK_XP_SKILL_BOSSBAR,
-                    Map.of(
-                            "beceri", definition.displayName(),
-                            "seviye", Integer.toString(progress.level()),
-                            "kazanilan", Long.toString(award.grantedAmount()),
-                            "kaynak", award.sourceDisplayName()
-                    ),
-                    progress.experience(), requiredForLevel, "skill", BossBar.Color.GREEN
-            );
-            if (award.leveledUp()) {
-                feedback.celebrateSkillLevelUp(player, definition.displayName(), progress.level());
-                announceGucMilestones(player, progress.level() - award.previousLevel());
-                skills.applyMilestoneEffects(player);
-            }
-        }, null);
     }
 
     /**
-     * Güç only ever changes as a byproduct of a skill level-up (it has no
-     * independent XP source, see {@code ProgressionService}) - {@code delta}
-     * is exactly how much the leveled skill's level just increased, so
-     * {@code previousGuc} can be derived from the already-updated
-     * {@code newGuc} without a second read.
+     * Player-placed blocks are not terrain and never award anything - with one
+     * deliberate exception. Farming <em>is</em> planting and harvesting your
+     * own crops, so an {@link Ageable} block is exempt from that gate; what
+     * stops break-and-replant farming instead is that a crop only counts once
+     * it is fully grown. Hay bales are not {@link Ageable}, so they stay
+     * gated and only the world's own village bales count.
      */
-    private void announceGucMilestones(Player player, int delta) {
-        if (delta <= 0) {
-            return;
+    private boolean isEligibleTerrain(Block block) {
+        if (block.getBlockData() instanceof Ageable crop) {
+            return crop.getAge() >= crop.getMaximumAge();
         }
-        int newGuc = progression.cachedGlobalLevel(player.getUniqueId());
-        int previousGuc = newGuc - delta;
-        if (crossedMultipleOf(previousGuc, newGuc, 10)) {
-            feedback.celebrateGucMilestone(player, newGuc);
-        }
-        for (int milestone : new int[] {25, 50, 75, 100}) {
-            if (previousGuc < milestone && newGuc >= milestone) {
-                messages.broadcast(MessageKey.GUC_BROADCAST, Map.of("oyuncu", player.getName(), "guc", Integer.toString(newGuc)));
-            }
-        }
+        return !placedBlocks.isPlayerPlaced(block);
     }
 
-    private boolean crossedMultipleOf(int previousValue, int newValue, int step) {
-        return newValue / step > previousValue / step;
+    /**
+     * The odunculuk level-25 milestone ({@code TREE_FELLING}): breaking the log
+     * a tree actually stands on brings the whole trunk down. Deliberately gated
+     * on the <em>root</em> log - a log with another log directly beneath it is
+     * mid-trunk, and felling from there would make every single log break
+     * cascade. Reuses the ability layer's secondary-break machinery, so the
+     * extra logs are marked exactly like {@code agac-kirici}'s are and never
+     * generate a second round of XP or quest progress.
+     */
+    private void fellTreeIfUnlocked(Player player, BlockBreakEvent event) {
+        int limit = skills.milestoneModifiers(player.getUniqueId()).treeFellingLimit();
+        if (limit <= 0 || !Tag.LOGS.isTagged(event.getBlock().getType())) {
+            return;
+        }
+        if (Tag.LOGS.isTagged(event.getBlock().getRelative(0, -1, 0).getType())) {
+            return;
+        }
+        abilities.fellTree(event, limit);
     }
 }

@@ -25,5 +25,16 @@ public enum AbilityEffectType {
      * Usable only inside a wide, roofed mine - see {@code damageMultiplier}
      * on {@link AbilityDefinition} for the open-air ratio that gate reads.
      */
-    ORE_REVEAL
+    ORE_REVEAL,
+    /**
+     * Instant: brings every immature crop within {@code limit} blocks straight
+     * to harvest, like a wave of bone meal that costs nothing but energy.
+     */
+    GROWTH_SURGE,
+    /**
+     * Instant: puts every breedable adult animal within {@code limit} blocks
+     * into love mode for the ability's duration, pairing up a whole herd at
+     * once without spending a single breeding item.
+     */
+    LOVE_CALL
 }

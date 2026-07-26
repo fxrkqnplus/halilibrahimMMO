@@ -32,7 +32,7 @@ import java.util.Map;
  */
 public final class ClassIntroMenu implements GuiView {
 
-    private static final int[] CLASS_SLOTS = {10, 12, 14, 16};
+    private static final int[] CLASS_SLOTS = {11, 13, 15};
     private static final int STATUS_SLOT = 4;
     private static final int BACK_SLOT = 26;
 
@@ -126,10 +126,9 @@ public final class ClassIntroMenu implements GuiView {
 
     private MessageKey introLoreKey(String classId) {
         return switch (classId) {
-            case "savasci" -> MessageKey.GUI_CLASS_INTRO_LORE_SAVASCI;
             case "avci" -> MessageKey.GUI_CLASS_INTRO_LORE_AVCI;
             case "madenci" -> MessageKey.GUI_CLASS_INTRO_LORE_MADENCI;
-            case "oduncu" -> MessageKey.GUI_CLASS_INTRO_LORE_ODUNCU;
+            case "tabiat-varisi" -> MessageKey.GUI_CLASS_INTRO_LORE_TABIAT_VARISI;
             default -> null;
         };
     }

@@ -12,7 +12,7 @@
 #  onu alır. Kullanılabilir adlar:
 #    guc prestij sinif seviye xp kabiliyet enerji can gorev koleksiyon
 #    gunluk liderlik unvan kozmetik madencilik odunculuk kazicilik avcilik
-#    tamam eksik ok uyari bilgi kutlama
+#    tarimcilik hayvancilik tamam eksik ok uyari bilgi kutlama
 #  Örnek: "<gold><simge:guc> Güç:</gold> <white><seviye></white>"
 #
 #  Bu dosyayı değiştirdikten sonra /haliladmin panelindeki "Yeniden Yükle"
@@ -63,7 +63,7 @@ sidebar:
   seviye: "<gray><simge:guc> Güç:</gray> <gold><seviye></gold>"
   prestij: "<gray><simge:prestij> Prestij:</gray> <light_purple><prestij></light_purple>"
   aktivasyon-onerisi: "<yellow><simge:ok> Başlamak için /mmo aktif yaz!</yellow>"
-  sinif-onerisi: "<yellow><simge:ok> Sınıf seçmek için /sinif yaz!</yellow>"
+  sinif-onerisi: "<yellow><simge:ok> Sınıf seçmek için /sınıf yaz!</yellow>"
   sinif-seviye: "<gray><simge:seviye> <sinif> Seviyesi:</gray> <aqua><seviye></aqua> <dark_gray>(<xp>/<gereken> XP)</dark_gray>"
   aktif-kabiliyet: "<gray><simge:kabiliyet> Aktif Kabiliyet:</gray> <gold><kabiliyet></gold> <dark_gray>(<kalan>)</dark_gray>"
   kabiliyet-secili: "<green><simge:tamam> <kabiliyet></green>"
@@ -72,10 +72,10 @@ sidebar:
   tamamlanan-gorev-satiri: "<green><simge:tamam> <gorev>: Tamamlandı</green> <dark_gray>(+<xp> XP)</dark_gray>"
   alt-bilgi: "<dark_gray>/panel ile aç/kapat</dark_gray>"
   onboarding-baslik: "<yellow><simge:bilgi> Başlangıç Görevleri:</yellow>"
-  onboarding-menu: "<gray>• /menu ile ana menüyü aç</gray>"
+  onboarding-menu: "<gray>• /menü ile ana menüyü aç</gray>"
   onboarding-beceri: "<gray>• Becerilerini incele</gray>"
   onboarding-kabiliyet: "<gray>• Kabiliyetlerini incele</gray>"
-  onboarding-beceri-komutu: "<gray>• /madencilik, /odunculuk, /kazicilik veya /avcilik komutunu dene</gray>"
+  onboarding-beceri-komutu: "<gray>• /madencilik, /odunculuk, /kazıcılık, /avcılık, /tarımcılık veya /hayvancılık komutunu dene</gray>"
 
 # "/panel" komutuna ait mesajlar.
 panel:
@@ -95,6 +95,8 @@ kabiliyet:
   etkin-genel: "<green><kabiliyet> etkin.</green> <gray><sure> sürecek.</gray>"
   etkin-sans: "<green><kabiliyet> etkin.</green> <gray><sure> boyunca kırdığın bloklardan ekstra düşme şansın var.</gray>"
   etkin-cevher: "<green><simge:madencilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> cevher <sure> boyunca parlıyor.</gray>"
+  etkin-filiz: "<green><simge:tarimcilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> ekin bir anda olgunlaştı.</gray>"
+  etkin-suru: "<green><simge:hayvancilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> hayvan çağrına karşılık verdi.</gray>"
   maden-gerekli: "<red><simge:uyari> <kabiliyet> yalnızca geniş, üstü kapalı bir madende kullanılabilir.</red>"
   yanlis-sinif: "<red><kabiliyet> kabiliyetini kullanmak için doğru sınıfa sahip olmalısın.</red>"
   tetiklendi: "<green><kabiliyet> tetiklendi.</green>"
@@ -112,7 +114,11 @@ sinif:
   yetenek-acildi: "<green><yetenek> rank <rank> açıldı.</green> <gray>Kalan puan: <kalan></gray>"
   bilinmeyen-yetenek: "<red>Seçili sınıfında böyle bir yetenek yok:</red> <white><yetenek></white>"
   maksimum-rank: "<yellow><yetenek> zaten maksimum rankta.</yellow>"
-  puan-yok: "<red>Harcamak için yetenek puanın yok.</red>"
+  puan-yok: "<red>Bu yeteneğin puan havuzunda harcayacak puanın kalmadı.</red>"
+
+# Hayvancilik becerisinin 25. seviyesinde acilan yem iadesi.
+hayvancilik:
+  ciftlestirme-iadesi: "<green><simge:hayvancilik> Şansın yaver gitti!</green> <gray>Çiftleştirme yeminin <white><miktar></white> tanesi sana geri döndü.</gray>"
 
 prestij:
   basarili: "<green>Prestij yaptın! Yeni prestij seviyen: <prestij>.</green> <gray>Sınıf seviyen ve 4 becerin sıfırlandı; karşılığında kalıcı +%25 XP bonusu ve sınıfa özel kalıcı bir bonus kazandın.</gray>"
@@ -126,7 +132,7 @@ prestij:
   gereksinim-sinif-seviye-eksik: "<red><simge:eksik> Sınıf Seviyesi (<sinif>): <seviye>/<gereken></red>"
   gereksinim-sinerji-tamam: "<green><simge:tamam> Sinerji Becerisi (<beceri>): <seviye>/<gereken></green>"
   gereksinim-sinerji-eksik: "<red><simge:eksik> Sinerji Becerisi (<beceri>): <seviye>/<gereken></red>"
-  gereksinim-sinif-yok: "<red><simge:eksik> Önce bir sınıf seçmelisin (/sinif).</red>"
+  gereksinim-sinif-yok: "<red><simge:eksik> Önce bir sınıf seçmelisin (/sınıf).</red>"
 
 gorev:
   tamamlandi: "<green><simge:gorev> <gorev> görevini tamamladın!</green> <gray>(+<xp> XP)</gray>"
@@ -301,6 +307,8 @@ gui:
     kademe-aciklama-enerji: "<gray><simge:enerji> Kalıcı +<enerji> maksimum enerji</gray>"
     kademe-aciklama-acele: "<gray><simge:madencilik> Kalıcı Acele kademesi <kademe></gray>"
     kademe-aciklama-hiz: "<gray>Kalıcı Hız kademesi <kademe></gray>"
+    kademe-aciklama-agac-devirme: "<gray><simge:odunculuk> Ağaç devirme: kökündeki kütüğü kestiğinde ağacın tamamı düşer (en fazla <deger> kütük)</gray>"
+    kademe-aciklama-yem-iadesi: "<gray><simge:hayvancilik> Çiftleştirme yeminin %<yuzde> ihtimalle geri dönmesi</gray>"
 
   kabiliyetler:
     baslik: "<dark_gray><simge:kabiliyet> Kabiliyetlerim</dark_gray>"
@@ -330,10 +338,17 @@ gui:
     yetenek-etki-kabiliyet-enerji: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin enerji maliyetini <white>%<yuzde></white> azaltır.</gray>"
     yetenek-etki-kabiliyet-bekleme: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin bekleme süresini <white>%<yuzde></white> azaltır.</gray>"
     yetenek-etki-kabiliyet-limit: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin etki sınırını <white>+<deger></white> arttırır.</gray>"
+    yetenek-etki-kabiliyet-sure: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin etki süresini <white>%<yuzde></white> uzatır.</gray>"
+    yetenek-etki-kabiliyet-guc: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin etkisini <white>%<yuzde></white> güçlendirir.</gray>"
     yetenek-mevcut-etki: "<dark_gray>Şu anki toplam: <white><deger></white></dark_gray>"
     yetenek-mevcut-etki-yuzde: "<dark_gray>Şu anki toplam: <white>%<deger></white></dark_gray>"
-    bilgi-oge: "<gold>Yetenek Puanı</gold>"
-    bilgi-aciklama: "<gray>Harcanan <white><harcanan></white>/<white><toplam></white></gray>"
+    # Her yetenegin hangi puan havuzundan odendigini gosteren ilk satir.
+    yetenek-kategori-ozellik: "<gold><simge:guc> Özellik puanı ile açılır</gold>"
+    yetenek-kategori-kabiliyet: "<light_purple><simge:kabiliyet> Kabiliyet puanı ile açılır</light_purple>"
+    ozellik-puani-oge: "<gold><simge:guc> Özellik Puanı</gold>"
+    ozellik-puani-aciklama: "<gray>Kalan <white><kalan></white>/<white><toplam></white> <dark_gray>•</dark_gray> Can, hasar ve enerji yeteneklerinde harcanır</gray>"
+    kabiliyet-puani-oge: "<light_purple><simge:kabiliyet> Kabiliyet Puanı</light_purple>"
+    kabiliyet-puani-aciklama: "<gray>Kalan <white><kalan></white>/<white><toplam></white> <dark_gray>•</dark_gray> Yalnızca kabiliyet yeteneklerinde harcanır</gray>"
 
   sinif-tanitim:
     baslik: "<dark_purple>Sınıfını Seç</dark_purple>"
@@ -344,10 +359,9 @@ gui:
     durum-bekleme: "<red><simge:eksik> Sınıf değiştirebilmen için <white><sure></white> geçmesi gerekiyor.</red>"
     mevcut-sinif-isareti: "<green><simge:tamam> Şu anki sınıfın</green>"
     yetenek-satiri: "<gray>- <white><kabiliyet></white></gray>"
-    aciklama-savasci: "<gray>Toprağın altındaki hazineleri koklayan bir kazıcı. Kazıcılıktan ekstra XP kazanır.</gray>"
     aciklama-avci: "<gray>Canavarların korkulu rüyası, amansız bir dövüşçü. Avcılıktan ekstra XP kazanır.</gray>"
     aciklama-madenci: "<gray>Mağaraların derinliklerinde yaşayan bir cevher ustası. Madencilikten ekstra XP kazanır.</gray>"
-    aciklama-oduncu: "<gray>Ormanın sessiz koruyucusu, baltasıyla bir ile bin arasında fark yaratır. Odunculuktan ekstra XP kazanır.</gray>"
+    aciklama-tabiat-varisi: "<gray>Toprağın, ormanın, tarlanın ve sürünün tek vârisi. Odunculuk, kazıcılık, tarımcılık ve hayvancılığın DÖRDÜNDEN birden ekstra XP kazanır - ve karşılığında en geniş kabiliyet listesine sahiptir.</gray>"
 
   sinif-onay:
     baslik: "<dark_purple>Emin misin?</dark_purple>"

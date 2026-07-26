@@ -15,6 +15,11 @@ import java.util.Set;
  * non-player kill counts, falling back to the default entry for an
  * {@link EntityType} not explicitly listed).
  *
+ * <p>{@code actionRewards} is orthogonal to {@code source}: any skill may also
+ * declare per-{@link SkillAction} rewards for discrete gameplay moments that
+ * are neither a block break nor a mob kill (breeding, shearing, trading,
+ * tilling, ...). A {@link SkillSource#ACTION} skill has <em>only</em> those.</p>
+ *
  * <p>{@code milestones} is this skill's differentiated 25/50/75/100 passive
  * boost catalogue (Phase 12), keyed by the exact tier level - each skill is
  * free to grant a different {@link SkillMilestoneEffectType} at each tier,
@@ -28,6 +33,7 @@ public record SkillDefinition(
         Map<Material, SkillRewardEntry> materialRewards,
         Map<EntityType, SkillRewardEntry> entityRewards,
         SkillRewardEntry defaultEntityReward,
+        Map<SkillAction, SkillActionReward> actionRewards,
         Map<Integer, SkillMilestoneEffect> milestones
 ) {
     /** Convenience view over {@link #materialRewards}'s keys - the set of eligible block materials. */

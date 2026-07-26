@@ -93,6 +93,9 @@ import com.halilibrahim.halilibrahimmmo.scoreboard.ScoreboardSidebarService;
 import com.halilibrahim.halilibrahimmmo.scoreboard.SidebarListener;
 import com.halilibrahim.halilibrahimmmo.scoreboard.SidebarService;
 import com.halilibrahim.halilibrahimmmo.skills.CachedSkillService;
+import com.halilibrahim.halilibrahimmmo.skills.FarmingListener;
+import com.halilibrahim.halilibrahimmmo.skills.HusbandryListener;
+import com.halilibrahim.halilibrahimmmo.skills.SkillAwardHandler;
 import com.halilibrahim.halilibrahimmmo.skills.SkillListener;
 import com.halilibrahim.halilibrahimmmo.skills.SkillRepository;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
@@ -133,6 +136,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
     private PluginLogger pluginLogger;
     private HalilIbrahimMMOAPI api;
     private ProgressionListener progressionListener;
+    private HusbandryListener husbandryListener;
     private Runnable placeholderTeardown;
     private Runnable luckPermsTeardown;
 
@@ -181,7 +185,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                                 }
                                 ClassSettings classSettings = cs.settings();
                                 var definition = classSettings.definitions().get(classId);
-                                double synergyMultiplier = definition != null && definition.synergySkillId().equals(skillId)
+                                double synergyMultiplier = definition != null && definition.hasSynergyWith(skillId)
                                         ? 1.0 + classSettings.synergyExperienceBonus()
                                         : 1.0;
                                 return synergyMultiplier * prestigeMultiplier;
@@ -242,7 +246,12 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(placedBlockTracker, this);
             this.progressionListener = new ProgressionListener(profileService, feedbackService, breakRateLimiter, activationService, bankedPowerService);
             getServer().getPluginManager().registerEvents(progressionListener, this);
-            getServer().getPluginManager().registerEvents(new SkillListener(this, skillService, abilityService, energyService, feedbackService, activationService, breakRateLimiter, placedBlockTracker, progressionService, messageService), this);
+            SkillAwardHandler skillAwardHandler = new SkillAwardHandler(this, skillService, feedbackService, progressionService, messageService);
+            getServer().getPluginManager().registerEvents(new SkillListener(this, skillService, abilityService, energyService, activationService, breakRateLimiter, placedBlockTracker, skillAwardHandler), this);
+            this.husbandryListener = new HusbandryListener(this, skillService, activationService, messageService, skillAwardHandler);
+            getServer().getPluginManager().registerEvents(husbandryListener, this);
+            husbandryListener.start();
+            getServer().getPluginManager().registerEvents(new FarmingListener(this, skillService, activationService, skillAwardHandler), this);
             getServer().getPluginManager().registerEvents(new ClassListener(this, classService, abilityService, energyService, skillService), this);
             getServer().getPluginManager().registerEvents(new AbilityActivationListener(abilityService, energyService), this);
             getServer().getPluginManager().registerEvents(new SidebarListener(this, sidebarService, profileService, classService, activationService, onboardingService), this);
@@ -307,6 +316,10 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             progressionListener.close();
             progressionListener = null;
         }
+        if (husbandryListener != null) {
+            husbandryListener.close();
+            husbandryListener = null;
+        }
 
         for (int i = enabledServices.size() - 1; i >= 0; i--) {
             PluginService service = enabledServices.get(i);
@@ -347,6 +360,17 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
      * three collaborators those shortcuts actually use: the shared
      * {@link GuiServices} bundle, the sidebar toggle behind {@code /panel} and
      * the activation gate behind {@code /mmo}.
+     *
+     * <p><strong>Player-facing commands are spelled with real Turkish
+     * diacritics</strong> ({@code /menü}, {@code /görev}, {@code /sınıf}, ...),
+     * deliberately reversing the earlier "command literals stay plain ASCII"
+     * rule for this half of the surface: these are typed by players on Turkish
+     * keyboards, where the diacritic is the natural spelling and its absence is
+     * the thing that needs explaining. Every one of them keeps its old ASCII
+     * spelling as an alias, so nothing a player already learned stops working
+     * and a non-Turkish keyboard can still reach every screen. The admin
+     * command ({@code /haliladmin}) stays ASCII-only - it is typed by staff
+     * from a console as often as from a client.</p>
      */
     private void registerCommands(
             MessageService messageService,
@@ -357,21 +381,23 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
         registerCommand("haliladmin", "HalilIbrahimMMO yonetici paneli", List.of(), new AdminCommand(guiServices));
         registerCommand("profil", "MMO profil ekranini acar", List.of(), new ProfileCommand(guiServices));
         registerCommand("kabiliyet", "Kabiliyet menusunu acar", List.of(), new AbilityCommand(guiServices));
-        registerCommand("sinif", "MMO sinif menusunu acar", List.of(), new ClassCommand(guiServices));
+        registerCommand("sınıf", "MMO sinif menusunu acar", List.of("sinif"), new ClassCommand(guiServices));
         registerCommand("prestij", "Prestij ekranini acar", List.of(), new PrestigeCommand(guiServices));
-        registerCommand("gorev", "Gorev ekranini acar", List.of(), new QuestCommand(guiServices));
+        registerCommand("görev", "Gorev ekranini acar", List.of("gorev"), new QuestCommand(guiServices));
         registerCommand("koleksiyon", "Koleksiyon ekranini acar", List.of(), new CollectionCommand(guiServices));
-        registerCommand("gunluk", "Macera gunlugu ekranini acar", List.of(), new JournalCommand(guiServices));
+        registerCommand("günlük", "Macera gunlugu ekranini acar", List.of("gunluk"), new JournalCommand(guiServices));
         registerCommand("liderlik", "Liderlik tablolari ekranini acar", List.of(), new LeaderboardCommand(guiServices));
-        registerCommand("unvan", "Unvan ekranini acar", List.of(), new TitleCommand(guiServices));
+        registerCommand("ünvan", "Unvan ekranini acar", List.of("unvan"), new TitleCommand(guiServices));
         registerCommand("kozmetik", "Kozmetik ekranini acar", List.of(), new CosmeticCommand(guiServices));
-        registerCommand("menu", "Ana MMO menusunu acar", List.of(), new MenuCommand(guiServices));
+        registerCommand("menü", "Ana MMO menusunu acar", List.of("menu"), new MenuCommand(guiServices));
         registerCommand("panel", "Sag taraftaki bilgi ekranini acar/kapatir", List.of(), new PanelCommand(sidebarService, messageService));
         registerCommand("mmo", "MMO sistemini aktiflestirir", List.of(), new MmoCommand(this, activationService, guiServices, messageService));
         registerCommand("madencilik", "Madencilik beceri detayini acar", List.of(), new SkillDetailCommand(guiServices, "madencilik"));
         registerCommand("odunculuk", "Odunculuk beceri detayini acar", List.of(), new SkillDetailCommand(guiServices, "odunculuk"));
-        registerCommand("kazicilik", "Kazicilik beceri detayini acar", List.of(), new SkillDetailCommand(guiServices, "kazicilik"));
-        registerCommand("avcilik", "Avcilik beceri detayini acar", List.of(), new SkillDetailCommand(guiServices, "avcilik"));
+        registerCommand("kazıcılık", "Kazicilik beceri detayini acar", List.of("kazicilik"), new SkillDetailCommand(guiServices, "kazicilik"));
+        registerCommand("avcılık", "Avcilik beceri detayini acar", List.of("avcilik"), new SkillDetailCommand(guiServices, "avcilik"));
+        registerCommand("tarımcılık", "Tarimcilik beceri detayini acar", List.of("tarimcilik"), new SkillDetailCommand(guiServices, "tarimcilik"));
+        registerCommand("hayvancılık", "Hayvancilik beceri detayini acar", List.of("hayvancilik"), new SkillDetailCommand(guiServices, "hayvancilik"));
     }
 
     private boolean isDebugModeCurrentlyEnabled() {

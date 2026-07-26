@@ -5,6 +5,7 @@ import com.halilibrahim.halilibrahimmmo.classes.ClassEffectType;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassProgress;
 import com.halilibrahim.halilibrahimmmo.classes.TalentNodeDefinition;
+import com.halilibrahim.halilibrahimmmo.classes.TalentPointCategory;
 import com.halilibrahim.halilibrahimmmo.classes.TalentSpendResult;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
@@ -29,7 +30,8 @@ import java.util.Map;
 public final class ClassMenu implements GuiView {
 
     private static final int FIRST_CLASS_SLOT = 10;
-    private static final int INFO_SLOT = 16;
+    private static final int FEATURE_POINTS_SLOT = 15;
+    private static final int ABILITY_POINTS_SLOT = 16;
     private static final int FIRST_TALENT_SLOT = 28;
     private static final int BACK_SLOT = 53;
 
@@ -76,15 +78,13 @@ public final class ClassMenu implements GuiView {
             ));
         }
 
-        int levelsPerPoint = services.classes().settings().levelsPerTalentPoint();
-        int guc = services.progression().cachedGlobalLevel(profile.playerId());
-        int budget = levelsPerPoint == 0 ? 0 : profile.prestige() * 4 + guc / levelsPerPoint;
-        inventory.setItem(INFO_SLOT, GuiItems.of(Material.GOLD_NUGGET,
-                services.messages().render(MessageKey.GUI_CLASS_INFO_ITEM),
-                List.of(services.messages().render(MessageKey.GUI_CLASS_INFO_ITEM_LORE, Map.of(
-                        "harcanan", Integer.toString(progress.spentPoints()),
-                        "toplam", Integer.toString(budget)
-                )))
+        inventory.setItem(FEATURE_POINTS_SLOT, pointsItem(
+                profile, progress, TalentPointCategory.OZELLIK, Material.GOLD_NUGGET,
+                MessageKey.GUI_CLASS_FEATURE_POINTS_ITEM, MessageKey.GUI_CLASS_FEATURE_POINTS_LORE
+        ));
+        inventory.setItem(ABILITY_POINTS_SLOT, pointsItem(
+                profile, progress, TalentPointCategory.KABILIYET, Material.AMETHYST_SHARD,
+                MessageKey.GUI_CLASS_ABILITY_POINTS_ITEM, MessageKey.GUI_CLASS_ABILITY_POINTS_LORE
         ));
 
         PlayerClassDefinition selectedDefinition = services.classes().settings().definitions().get(profile.selectedClass());
@@ -92,11 +92,21 @@ public final class ClassMenu implements GuiView {
             return;
         }
         Map<String, Integer> ranks = progress.talentRanks().getOrDefault(selectedDefinition.id(), Map.of());
+        // Feature talents first, then ability talents: the tree reads as the two
+        // pools it is actually paid for out of, rather than as one flat list the
+        // player has to check the tooltip of to tell apart.
+        List<TalentNodeDefinition> talents = selectedDefinition.talents().values().stream()
+                .sorted((left, right) -> Integer.compare(
+                        left.effectType().category().ordinal(), right.effectType().category().ordinal()))
+                .toList();
         int talentSlot = FIRST_TALENT_SLOT;
-        for (TalentNodeDefinition talent : selectedDefinition.talents().values()) {
+        for (TalentNodeDefinition talent : talents) {
+            boolean feature = talent.effectType().category() == TalentPointCategory.OZELLIK;
             slotToTalentId.put(talentSlot, talent.id());
             int rank = ranks.getOrDefault(talent.id(), 0);
             List<Component> lore = new ArrayList<>();
+            lore.add(services.messages().render(feature
+                    ? MessageKey.GUI_TALENT_CATEGORY_FEATURE : MessageKey.GUI_TALENT_CATEGORY_ABILITY));
             lore.add(effectLore(talent));
             lore.add(currentEffectLore(talent, rank));
             lore.add(services.messages().render(MessageKey.GUI_TALENT_ITEM_LORE, Map.of(
@@ -104,12 +114,25 @@ public final class ClassMenu implements GuiView {
                     "maksimum", Integer.toString(talent.maximumRank())
             )));
             inventory.setItem(talentSlot++, GuiItems.of(
-                    Material.BOOK,
+                    feature ? Material.BOOK : Material.ENCHANTED_BOOK,
                     services.messages().render(MessageKey.GUI_TALENT_ITEM, Map.of("yetenek", talent.displayName())),
                     lore,
                     rank >= talent.maximumRank()
             ));
         }
+    }
+
+    private ItemStack pointsItem(
+            PlayerProfile profile, PlayerClassProgress progress, TalentPointCategory category,
+            Material icon, MessageKey name, MessageKey lore
+    ) {
+        int total = services.classes().pointsFor(profile, category);
+        int available = services.classes().availablePoints(profile, progress, category);
+        return GuiItems.of(icon, services.messages().render(name),
+                List.of(services.messages().render(lore, Map.of(
+                        "kalan", Integer.toString(available),
+                        "toplam", Integer.toString(total)
+                ))));
     }
 
     /**
@@ -133,6 +156,10 @@ public final class ClassMenu implements GuiView {
                     Map.of("kabiliyet", abilityName(talent.abilityId()), "yuzde", formatAmount(talent.valuePerRank() * 100)));
             case ABILITY_LIMIT_BONUS -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_LIMIT,
                     Map.of("kabiliyet", abilityName(talent.abilityId()), "deger", formatAmount(talent.valuePerRank())));
+            case ABILITY_DURATION_BONUS -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_DURATION,
+                    Map.of("kabiliyet", abilityName(talent.abilityId()), "yuzde", formatAmount(talent.valuePerRank() * 100)));
+            case ABILITY_EFFECT_BONUS -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_EFFECT,
+                    Map.of("kabiliyet", abilityName(talent.abilityId()), "yuzde", formatAmount(talent.valuePerRank() * 100)));
         };
     }
 

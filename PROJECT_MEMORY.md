@@ -2816,3 +2816,252 @@ already sent a chat line; a new `kabiliyet-secildi` sound cue
   confirm/reset flow end to end including the cooldown-locked state; the
   rebuilt quest board and the green completed sidebar lines; whether the
   tripled XP economy actually feels right in play.
+
+## 29. Phase 15 — hayvancılık/tarımcılık skills, Tabiat Vârisi, two-pool
+    talent trees, Turkish commands (Phase 15 complete)
+
+A user-requested follow-on phase covering eight items. Four load-bearing
+design decisions were made before implementation started, each turning a
+one-off request into a reusable mechanism rather than a special case:
+
+1. **Two new skills needed a third kind of XP source.** Breeding, taming,
+   shearing, trading and tilling are none of them a block break or a mob
+   kill. Rather than bolting bespoke hooks onto `CachedSkillService`, the
+   skill model gained a bounded `SkillAction` enum and a per-skill
+   `eylemler` YAML section, orthogonal to the existing `kaynak.tur`.
+2. **The two level-25 unlocks (items 5 and 6) became milestone effect
+   types**, not per-skill bespoke config blocks - so "what does level 25
+   give me" stays one uniform question across all six skills.
+3. **A class may now power several skills.** `sinerji-beceri` (one id)
+   became `sinerji-beceriler` (a list), because Tabiat Vârisi replaces two
+   classes and covers four skills.
+4. **Talent point categories are derived from `ClassEffectType`, not
+   declared.** An ability-scoped effect already requires an ability id and a
+   stat effect already forbids one, so the two are structurally distinct
+   already; a separate `kategori` key could only ever disagree with reality.
+
+### 15.1 - Hayvancılık and tarımcılık
+
+- New `skills.SkillAction` (12 bounded constants, `id()`-keyed like
+  `IconPack`), `skills.SkillActionReward` (xp + display name + an optional
+  `Set<Material>` gate) and `SkillSource.ACTION`. `SkillDefinition` gained
+  `actionRewards`, **orthogonal to `source`**: a `BLOCK` or `MOB` skill may
+  also declare actions (tarımcılık does both), while an `ACTION` skill has
+  only actions and therefore can never collide with the block/mob
+  resolution path (hayvancılık). `CachedSkillService#parseActions` threads
+  an `actionOwners` map through the whole file so a second skill claiming
+  an action already taken fails at load time instead of silently losing its
+  rewards to whichever skill iterated first.
+- `SkillService#awardAction(playerId, playerName, action, context)` mirrors
+  `awardBlock`'s shape; `context` is the causing material for gated actions
+  and `null` otherwise. Both it and the pre-existing block/mob paths now
+  funnel into one new private `award(...)` in `CachedSkillService` - the
+  multiplier, serial chain, persistence and synergy-bridge notification
+  existed only inside `awardMatching` before this phase.
+- **`skills.SkillAwardHandler` is extracted, not copied a third time.** The
+  post-award feedback block (XP bossbar, skill level-up celebration,
+  milestone reapplication, Güç bossbar/broadcast) was a private method on
+  `SkillListener` while that was the only awarding listener; three copies is
+  past where this codebase's usual duplication tolerance pays off.
+  `isGameplayGameMode` moved onto it as a static.
+- New `skills.HusbandryListener`: `EntityBreedEvent`, `EntityTameEvent`,
+  `PlayerShearEntityEvent` (SHEEP only), `PlayerInteractEntityEvent` with a
+  bucket on COW/MOOSHROOM/GOAT (milking raises no bucket-fill event of its
+  own), `CraftItemEvent` (cake), `FurnaceExtractEvent` (cooked meat), plus
+  the lead-carrying tick. **The lead tick is why this listener owns a
+  `ScheduledTask`** - there is no event for "is still leading livestock" -
+  started/stopped explicitly by `HalilIbrahimMMOPlugin`, mirroring
+  `ProgressionListener#close()`'s existing discipline rather than turning a
+  listener into a `PluginService` for one timer. It awards **once per tick
+  regardless of herd size**: leading ten cows is the same job as leading
+  one, and paying per animal would only reward stacking.
+- New `skills.FarmingListener`: `PlayerTradeEvent` (Paper's own),
+  `BlockFertilizeEvent` gated on `Ageable` (bone meal also works on grass
+  and saplings, which are not farming), `CraftItemEvent` (bread),
+  `FurnaceExtractEvent` (baked potato / dried kelp), and hoe tilling.
+  **There is no "soil was tilled" event**, so the till handler re-checks one
+  tick later that the block actually became `FARMLAND` - a right click that
+  merely looked like tilling (protected block, hoe against a wall) pays out
+  nothing.
+- Both furnace/craft handlers coexist by material gate alone: a
+  `COOKED_BEEF` extraction is rejected by tarımcılık's `urun-pisirme`
+  material set and accepted by hayvancılık's `et-pisirme`, and vice versa.
+- **The one exception to §14.1's player-placed rule.** `SkillListener`'s
+  gate became `isEligibleTerrain(block)`: an `Ageable` block is exempt from
+  the placed-block check (farming *is* planting and harvesting your own
+  crops) but only counts **fully grown**, which is what stops
+  break-and-replant farming. Hay bales are not `Ageable`, so they stay
+  gated and only the world's own village bales count - exactly as
+  requested. `QuestListener`/`YamlAbilityService` were deliberately left on
+  the plain placed-block check; no shipped quest or ability targets a crop.
+
+### 15.2 - The two level-25 unlocks as milestone effect types
+
+- `SkillMilestoneEffectType` gained `TREE_FELLING` (value = maximum logs)
+  and `BREED_REFUND` (value = 0-1 chance); `SkillMilestoneModifiers` gained
+  `treeFellingLimit`/`breedRefundChance`. Unlike the five stat boosts these
+  are **never applied to the player** - nothing in `applyMilestoneEffects`
+  touches them, the odunculuk block-break path and the hayvancılık breeding
+  path read them at the moment they fire. Highest reached tier wins for
+  both (two tiers of one capability, not two stacking bonuses).
+- **`AbilityService#fellTree(event, limit)` is new and deliberately lives in
+  `abilities`**, not `skills`: the secondary-break bookkeeping it needs
+  (re-firing a `BlockBreakEvent` per extra block for protection-plugin
+  compatibility, marking each so it earns no second round of XP or quest
+  progress) is that service's machinery, already used by `agac-kirici`.
+  `skills` owns the decision of *when* a tree should fall.
+- **Gated on the root log** (`Tag.LOGS` matched on the broken block, and no
+  log directly beneath it): felling from mid-trunk would make every single
+  log break cascade. Combined with the existing placed-block gate, a
+  player-built log tower is inert. Shipped limit is 48 logs.
+- Breed refund: rolled *after* the baby is already born, refunding
+  `amount = 2` of `EntityBreedEvent#getBredWith()` - both parents' food
+  together, matching how it was spent and the user's own worked example.
+  **Platform note:** the accessor is `getBredWith()`, not `getBreedItem()`.
+
+### 15.3 - Tabiat Vârisi replaces Define Avcısı and Orman Bekçisi
+
+- `savasci`/`oduncu` are gone; `tabiat-varisi` ("Tabiat Vârisi") is new and
+  powers **odunculuk + kazıcılık + tarımcılık + hayvancılık**. The other two
+  are unchanged (`avci`/Amansız Savaşçı → avcılık, `madenci`/Mağara Adamı →
+  madencilik).
+- `PlayerClassDefinition.synergySkillId` → `Set<String> synergySkillIds`
+  plus a `hasSynergyWith(skillId)` helper. Six call sites: the bootstrap
+  synergy multiplier, `ClassSynergyBridge`, `YamlPrestigeService`,
+  `PrestigeMenu`, `SkillDetailMenu`, and the parser.
+- **Prestige eligibility takes the *minimum* level across a class's synergy
+  skills**, so `PrestigeEligibilityInput`/`PrestigeRules` needed no change
+  at all and "synergy skill at the cap" keeps meaning *all* of them are.
+  `PrestigeMenu` renders **one checklist line per synergy skill** rather
+  than one combined line - "your synergy skill is at 78" would not say
+  which of four is holding the player back.
+- **The 6 abilities of the two removed classes moved to Tabiat Vârisi and 2
+  new ones were added, giving it 8 against the other classes' 3.** This is
+  deliberate and is the class's whole identity: it covers four skills, so
+  each of its abilities is individually more utility-shaped than decisive,
+  and they unlock across the full class-level range (5/10/15/20/25/30/35/40)
+  where avci/madenci unlock at 5/10/30 and 5/20/35. Two were renamed to fit
+  (`hazine-sezgisi` → `toprak-sezgisi` "Toprak Sezgisi",
+  `define-refleksi` → `doga-kalkani` "Doğa Kalkanı"); ids were renamed
+  together with their `classes.yml` talent references.
+- Two new `AbilityEffectType`s, both instant and both area-shaped (`limit`
+  doubles as radius, the same dual-purposing convention §13.6 extended):
+  **`GROWTH_SURGE`** (`filiz-patlamasi`, "Filiz Patlaması" - brings every
+  immature `Ageable` within 6 blocks to maximum age, capped at
+  `MAX_SURGED_CROPS = 256`, chunk-load-guarded column-major like
+  `revealOres`) and **`LOVE_CALL`** (`suru-cagrisi`, "Sürü Çağrısı" -
+  `Animals#setLoveModeTicks` on every adult non-in-love animal within 8
+  blocks). Both report a count in their own new activation message.
+- `ClassIntroMenu`'s hardcoded per-class-id lore switch and its
+  `CLASS_SLOTS` array were updated for three classes;
+  `GUI_CLASS_INTRO_LORE_SAVASCI`/`_ODUNCU` were deleted and
+  `_TABIAT_VARISI` added, matching the delete-fully convention.
+
+### 15.4 - Two talent point pools
+
+- New `classes.TalentPointCategory` (`OZELLIK`/`KABILIYET`), **derived from
+  `ClassEffectType`** via a new `category()`/`requiresAbility()` pair rather
+  than declared in YAML (see decision 4 above). `requiresAbility()` also
+  replaced the hand-written three-way `needsAbility` check in the parser,
+  so adding an ability-scoped effect type can no longer forget it.
+- Two new ability-scoped effects: **`ABILITY_DURATION_BONUS`** (extends
+  `activeMillis` - `activateOnPlayerRegion` now computes one `activeMillis`
+  local and every message/expiry/potion-duration/ore-expiry reads it) and
+  **`ABILITY_EFFECT_BONUS`** (scales the ability's own scalar:
+  `DAMAGE_BUFF`'s multiplier, `EXTRA_DROP_CHANCE`'s chance,
+  `KNOCKBACK_SLAM`'s raw damage). `adjustedEffectValue` is deliberately
+  **not clamped** - the one case where exceeding 1 would be meaningless, a
+  drop chance, simply always succeeds, which is what a fully-ranked chance
+  talent should do. `applyDropBuff`/`handleEntityDamage` had been reading
+  `definition.damageMultiplier()` raw and now go through `classModifiers`.
+- `classes.yml`'s `seviye-basina-yetenek-puani: 25` became a
+  `yetenek-puani` section (`ozellik-seviye-basina: 25`,
+  `kabiliyet-seviye-basina: 40`, `prestij-basina-ozellik: 4`,
+  `prestij-basina-kabiliyet: 2`) backing the new `TalentPointSettings`
+  record; `TalentPointBudget.pointsFor` gained a `pointsPerPrestige`
+  parameter (the hardcoded `* 4` is gone) plus a category-dispatching
+  overload. **Ability points are deliberately the scarcer pool.**
+- `PlayerClassProgress.spentPoints(definitions, category)` is new and needs
+  the catalogue, since only it knows a talent's category. A rank whose
+  talent or class no longer exists in configuration **counts against
+  nothing**, so removing an entry from `classes.yml` refunds it rather than
+  leaving the player permanently short. `ClassService` gained
+  `pointsFor(profile, category)`/`availablePoints(profile, progress, category)`.
+- **`PlayerClassSnapshot` (the public API) was deliberately left reporting
+  one combined budget** rather than gaining two more fields: an external
+  consumer asking "how many points does this player have" is asking about
+  total capacity, and the per-pool split is an internal spending rule.
+- Every class's tree now offers both pools (avci 3+4, madenci 2+5,
+  tabiat-varisi 3+7); `ClassMenu` shows two separate budget items, sorts
+  features before abilities, and marks each talent's pool on its first lore
+  line with a distinct icon material.
+
+### 15.5 - Turkish command labels
+
+- **This deliberately reverses §5.6's "command literals stay plain ASCII"
+  rule for the player-facing half of the surface**, per an explicit user
+  request. `/menü`, `/görev`, `/günlük`, `/ünvan`, `/sınıf`, `/kazıcılık`,
+  `/avcılık` are now the primary labels, each keeping its old ASCII
+  spelling as an **alias** so nothing a player already learned breaks and a
+  non-Turkish keyboard can still reach every screen. New `/tarımcılık` and
+  `/hayvancılık` follow the same pattern. `/haliladmin` stays ASCII-only -
+  staff type it from a console as often as from a client. Commands with no
+  diacritic to add (`/profil`, `/prestij`, `/kabiliyet`, `/koleksiyon`,
+  `/liderlik`, `/kozmetik`, `/madencilik`, `/odunculuk`, `/panel`, `/mmo`)
+  are untouched.
+- **Empirically verified, not assumed** (see Verification): Brigadier
+  matches a literal node by plain substring equality, so a non-ASCII label
+  parses fine, and Paper's `registerCommand` accepted every one of them.
+
+### Verification (this phase)
+
+- `./gradlew build` / `./gradlew test` / `:core:compileIntegrationTestJava`
+  are all green with Java 26 (`JAVA_HOME=C:\Program Files\Java\jdk-26.0.1`)
+  - **27 test classes, 58 test cases, 0 failures**, including a forced
+  `--rerun-tasks` pass. No migration was added this phase (both new skills
+  reuse `hmmo_player_skills`, and the new talent categories reuse
+  `hmmo_player_class_talents`), so no migration-version test changed.
+- Test changes: `ClassModifiersTest` and `TalentPointBudgetTest` rewritten
+  for the widened records/signatures (both gained real coverage of the new
+  duration/effect bonuses and the two independent pools);
+  `SkillMaterialConfigTest` split into four cases and now validates the
+  `eylemler` section, that **every `SkillAction` is claimed by exactly one
+  skill**, and the full six-skill catalogue; `ClassConfigTest` now asserts
+  the three-class set, that **every class offers both point categories**,
+  and that **every skill is powered by exactly one class**;
+  `AbilityConfigTest` gained radius validation for the two new area effects
+  and a new case asserting **every ability's skill is one its own class
+  powers** (the Phase 10.3 invariant nothing had been enforcing). New
+  `PlayerClassProgressTest` covers per-pool spend counting including the
+  removed-talent refund path.
+- A repo-wide unused-import scan over every changed/new Java file found
+  none. `MessageCatalogTest` independently enforces the `MessageKey` ↔
+  `messages.yml` 1:1 match and that every `<simge:...>` names a real
+  `IconPack` entry, which now includes the two new skill icons.
+- **A live `./gradlew runServer` boot was performed**, with
+  `core/run/plugins/HalilIbrahimMMO/`'s bundled YAML *and* its SQLite
+  database deleted first so every changed resource regenerated and all 11
+  migrations applied against a fresh database. The plugin enabled with zero
+  exceptions, the server reached `Done` in ~8.4s, and the log had zero
+  "eksik mesaj anahtari" warnings - confirming the six-skill `skills.yml`
+  (including both `eylemler` sections and the two new milestone effect
+  types), the three-class `classes.yml` with its `yetenek-puani` section
+  and `sinerji-beceriler` lists, the 14-ability `abilities.yml` with the two
+  new effect types, and every new `MessageKey` all parse on a real server.
+- **A second `runServer` boot drove the console with the new Turkish
+  commands**, which is what turns item 8 from "should work" into a fact:
+  `menü`, `menu`, `görev`, `ünvan`, `sınıf`, `kazıcılık`, `tarımcılık` and
+  `hayvancılık` each resolved to a real command node and reached execution,
+  while a deliberately-bogus control (`bukomutyok`) produced "Unknown or
+  incomplete command". (Every command dispatched from run-paper's console,
+  **including vanilla `/stop`**, then hits a `CommandSourceStack.getLevel()`
+  NPE - a console-source quirk of that environment, not a plugin fault, and
+  equally present before this phase.)
+- **Not verified this session, requires a live client** (the same honest
+  caveat every feature-touching phase since §17 has carried): whether the
+  Turkish labels render and tab-complete correctly in a real client's chat
+  box; earning XP from each of the 12 new actions in real play; the
+  lead-carrying tick firing every 20s; the breed refund landing in the
+  inventory; a tree actually falling from its root log at odunculuk 25; the
+  two new abilities' area effects; the redesigned two-pool talent screen;
+  and whether the new skills' XP values feel right against the existing four.

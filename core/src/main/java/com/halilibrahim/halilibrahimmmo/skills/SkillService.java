@@ -27,6 +27,21 @@ public interface SkillService extends PluginService {
 
     CompletableFuture<Optional<SkillAwardResult>> awardMob(UUID playerId, String playerName, EntityType entityType);
 
+    /**
+     * Awards whichever skill declared {@code action} in {@code skills.yml}.
+     * {@code context} is the item/block that caused the action for
+     * material-gated actions (the cooked food, the crafted item) and
+     * {@code null} for actions whose own event is the whole gate; a
+     * non-matching context resolves to an empty result without awarding
+     * anything. Empty is also returned when no configured skill claims the
+     * action at all, so a server that removed a skill degrades quietly
+     * instead of throwing on every event.
+     */
+    CompletableFuture<Optional<SkillAwardResult>> awardAction(UUID playerId, String playerName, SkillAction action, Material context);
+
+    /** The configured reward for {@code action}, for listeners that need its material gate before doing any work. */
+    Optional<SkillActionReward> actionReward(SkillAction action);
+
     /** Synchronous, in-memory only - for callers that cannot await a future (e.g. PlaceholderAPI). */
     Optional<SkillProgress> cached(UUID playerId, String skillId);
 

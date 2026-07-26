@@ -17,6 +17,7 @@ import org.bukkit.potion.PotionEffectType;
 import java.io.File;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -129,6 +130,29 @@ public final class CachedSkillService implements SkillService {
     }
 
     @Override
+    public CompletableFuture<Optional<SkillAwardResult>> awardAction(UUID playerId, String playerName, SkillAction action, Material context) {
+        for (SkillDefinition skill : settings().definitions().values()) {
+            SkillActionReward reward = skill.actionRewards().get(action);
+            if (reward == null) {
+                continue;
+            }
+            if (!reward.accepts(context)) {
+                return CompletableFuture.completedFuture(Optional.empty());
+            }
+            return award(playerId, playerName, skill, reward.xp(), reward.displayName());
+        }
+        return CompletableFuture.completedFuture(Optional.empty());
+    }
+
+    @Override
+    public Optional<SkillActionReward> actionReward(SkillAction action) {
+        return settings().definitions().values().stream()
+                .map(skill -> skill.actionRewards().get(action))
+                .filter(reward -> reward != null)
+                .findFirst();
+    }
+
+    @Override
     public Optional<SkillProgress> cached(UUID playerId, String skillId) {
         return Optional.ofNullable(cache.get(new SkillKey(playerId, skillId)));
     }
@@ -181,6 +205,8 @@ public final class CachedSkillService implements SkillService {
         int maxEnergyBonus = 0;
         int hasteAmplifier = -1;
         int speedAmplifier = -1;
+        int treeFellingLimit = 0;
+        double breedRefundChance = 0;
         for (SkillDefinition definition : settings().definitions().values()) {
             int level = cached(playerId, definition.id()).map(progress -> progress.level()).orElse(1);
             for (Map.Entry<Integer, SkillMilestoneEffect> entry : definition.milestones().entrySet()) {
@@ -194,10 +220,15 @@ public final class CachedSkillService implements SkillService {
                     case MAX_ENERGY -> maxEnergyBonus += (int) effect.value();
                     case HASTE -> hasteAmplifier = Math.max(hasteAmplifier, (int) effect.value());
                     case SPEED -> speedAmplifier = Math.max(speedAmplifier, (int) effect.value());
+                    case TREE_FELLING -> treeFellingLimit = Math.max(treeFellingLimit, (int) effect.value());
+                    case BREED_REFUND -> breedRefundChance = Math.max(breedRefundChance, effect.value());
                 }
             }
         }
-        return new SkillMilestoneModifiers(maxHealthBonus, pveDamageBonus, maxEnergyBonus, hasteAmplifier, speedAmplifier);
+        return new SkillMilestoneModifiers(
+                maxHealthBonus, pveDamageBonus, maxEnergyBonus, hasteAmplifier, speedAmplifier,
+                treeFellingLimit, breedRefundChance
+        );
     }
 
     @Override
@@ -266,16 +297,28 @@ public final class CachedSkillService implements SkillService {
         SkillRewardEntry rewardEntry = source == SkillSource.BLOCK
                 ? skill.materialRewards().get(material)
                 : skill.entityRewards().getOrDefault(entityType, skill.defaultEntityReward());
+        return award(playerId, playerName, skill, rewardEntry.xp(), rewardEntry.displayName());
+    }
+
+    /**
+     * The single write path every XP source funnels into: applies the caller's
+     * class-synergy/prestige multiplier, chains the award behind this
+     * (player, skill) pair's own serial update chain, persists it and notifies
+     * the class-synergy bridge.
+     */
+    private CompletableFuture<Optional<SkillAwardResult>> award(
+            UUID playerId, String playerName, SkillDefinition skill, long baseAmount, String sourceDisplayName
+    ) {
         SkillKey key = new SkillKey(playerId, skill.id());
         double multiplier = classSynergyMultiplier.apply(playerId, skill.id());
-        long grantedAmount = Math.round(rewardEntry.xp() * multiplier);
+        long grantedAmount = Math.round(baseAmount * multiplier);
         synchronized (updateChains) {
             CompletableFuture<SkillProgress> previous = updateChains.get(key);
             CompletableFuture<SkillProgress> base = previous == null ? load(playerId, skill.id()) : previous;
             CompletableFuture<SkillAwardResult> next = base.thenApply(progress -> {
                         int previousLevel = progress.level();
                         SkillProgress awarded = settings().curve().award(progress, grantedAmount);
-                        return new SkillAwardResult(awarded, previousLevel, grantedAmount, awarded.level() != previousLevel, rewardEntry.displayName());
+                        return new SkillAwardResult(awarded, previousLevel, grantedAmount, awarded.level() != previousLevel, sourceDisplayName);
                     })
                     .thenCompose(result -> repository.save(result.progress()).thenApply(ignored -> result))
                     .thenApply(result -> {
@@ -302,6 +345,7 @@ public final class CachedSkillService implements SkillService {
         SkillExperienceCurve curve = new SkillExperienceCurve(maximumLevel, requirements);
         ConfigurationSection skills = requireSection(yaml, "beceriler");
         Map<String, SkillDefinition> definitions = new LinkedHashMap<>();
+        Map<SkillAction, String> actionOwners = new LinkedHashMap<>();
         for (String rawId : skills.getKeys(false)) {
             String id = rawId.toLowerCase(Locale.ROOT);
             if (!id.matches("[a-z0-9_-]+") || definitions.containsKey(id)) {
@@ -313,11 +357,19 @@ public final class CachedSkillService implements SkillService {
                 throw new IllegalArgumentException("Skill display name is required: " + id);
             }
             Map<Integer, SkillMilestoneEffect> milestones = parseMilestones(section, id);
+            Map<SkillAction, SkillActionReward> actionRewards = parseActions(section, id, actionOwners);
             SkillSource source = SkillSource.valueOf(section.getString("kaynak.tur", "").toUpperCase(Locale.ROOT));
             Map<Material, SkillRewardEntry> materialRewards;
             Map<EntityType, SkillRewardEntry> entityRewards;
             SkillRewardEntry defaultEntityReward;
-            if (source == SkillSource.BLOCK) {
+            if (source == SkillSource.ACTION) {
+                if (actionRewards.isEmpty()) {
+                    throw new IllegalArgumentException("An ACTION skill must define at least one action reward: " + id);
+                }
+                materialRewards = Map.of();
+                entityRewards = Map.of();
+                defaultEntityReward = null;
+            } else if (source == SkillSource.BLOCK) {
                 ConfigurationSection materialsSection = requireSection(section, "kaynak.malzemeler");
                 Map<Material, SkillRewardEntry> parsed = new LinkedHashMap<>();
                 for (String materialName : materialsSection.getKeys(false)) {
@@ -341,7 +393,7 @@ public final class CachedSkillService implements SkillService {
                 entityRewards = Map.copyOf(parsed);
                 materialRewards = Map.of();
             }
-            definitions.put(id, new SkillDefinition(id, displayName, source, materialRewards, entityRewards, defaultEntityReward, milestones));
+            definitions.put(id, new SkillDefinition(id, displayName, source, materialRewards, entityRewards, defaultEntityReward, actionRewards, milestones));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("skills.yml must define at least one skill.");
@@ -374,6 +426,46 @@ public final class CachedSkillService implements SkillService {
         }
         if (parsed.size() != MILESTONE_TIERS.size()) {
             throw new IllegalArgumentException("Skill must define all 4 milestone tiers (25/50/75/100): " + skillId);
+        }
+        return Map.copyOf(parsed);
+    }
+
+    /**
+     * Parses the optional per-skill {@code eylemler} section. {@code actionOwners}
+     * is threaded through the whole file so a second skill claiming an action a
+     * previous one already declared fails at load time rather than silently
+     * losing its rewards to whichever skill happens to be iterated first.
+     */
+    private Map<SkillAction, SkillActionReward> parseActions(
+            ConfigurationSection section, String skillId, Map<SkillAction, String> actionOwners
+    ) {
+        ConfigurationSection actions = section.getConfigurationSection("eylemler");
+        if (actions == null) {
+            return Map.of();
+        }
+        Map<SkillAction, SkillActionReward> parsed = new LinkedHashMap<>();
+        for (String rawAction : actions.getKeys(false)) {
+            SkillAction action = SkillAction.byId(rawAction)
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown skill action '" + rawAction + "' in skill: " + skillId));
+            String owner = actionOwners.putIfAbsent(action, skillId);
+            if (owner != null) {
+                throw new IllegalArgumentException("Skill action '" + rawAction + "' is already claimed by skill: " + owner);
+            }
+            ConfigurationSection entry = requireSection(actions, rawAction);
+            long xp = entry.getLong("xp", 0);
+            String displayName = entry.getString("gorunen-ad");
+            if (xp <= 0 || displayName == null || displayName.isBlank()) {
+                throw new IllegalArgumentException("Invalid action reward '" + rawAction + "' in skill: " + skillId);
+            }
+            Set<Material> materials = new LinkedHashSet<>();
+            for (String rawMaterial : entry.getStringList("malzemeler")) {
+                Material material = Material.matchMaterial(rawMaterial);
+                if (material == null) {
+                    throw new IllegalArgumentException("Invalid action material '" + rawMaterial + "' in skill: " + skillId);
+                }
+                materials.add(material);
+            }
+            parsed.put(action, new SkillActionReward(xp, displayName, Set.copyOf(materials)));
         }
         return Map.copyOf(parsed);
     }

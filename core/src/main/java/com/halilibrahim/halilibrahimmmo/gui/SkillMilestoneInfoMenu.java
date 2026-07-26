@@ -66,6 +66,8 @@ public final class SkillMilestoneInfoMenu implements GuiView {
             case MAX_ENERGY -> Material.GLOWSTONE_DUST;
             case HASTE -> Material.GOLDEN_PICKAXE;
             case SPEED -> Material.SUGAR;
+            case TREE_FELLING -> Material.IRON_AXE;
+            case BREED_REFUND -> Material.WHEAT;
         };
     }
 
@@ -76,6 +78,8 @@ public final class SkillMilestoneInfoMenu implements GuiView {
             case MAX_ENERGY -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_ENERGY, Map.of("enerji", formatNumber(effect.value())));
             case HASTE -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_HASTE, Map.of("kademe", Integer.toString((int) effect.value() + 1)));
             case SPEED -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_SPEED, Map.of("kademe", Integer.toString((int) effect.value() + 1)));
+            case TREE_FELLING -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_TREE_FELLING, Map.of("deger", formatNumber(effect.value())));
+            case BREED_REFUND -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_BREED_REFUND, Map.of("yuzde", formatNumber(effect.value() * 100)));
         };
     }
 

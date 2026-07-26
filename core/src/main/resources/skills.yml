@@ -12,12 +12,38 @@
 #    - Odunculuk   : 9 XP (meşe) .. 21 XP (nether sapı)
 #    - Madencilik  : 12 XP (kömür) .. 300 XP (kadim kalıntı)
 #    - Avcılık     : 15 XP (inek/domuz gibi zararsız yaratıklar) .. 2400 XP (Ejderha)
+#    - Tarımcılık  : 6 XP (saman) .. 30 XP (köylü ticareti)
+#    - Hayvancılık : 3 XP (süt sağma) .. 45 XP (evcilleştirme)
 #  Avcılıkta listelenmemiş her yaratık "varsayilan" değerini alır; bu değer
 #  bilerek çok düşüktür, çünkü listelenmemiş yaratıklar neredeyse her zaman
 #  çiftlikte üretilebilen zararsız hayvanlardır.
 #
+#  KAYNAK TÜRLERİ (kaynak.tur):
+#    BLOCK  : blok kırınca XP verir ("malzemeler" listesi zorunludur)
+#    MOB    : yaratık öldürünce XP verir ("varsayilan" zorunludur)
+#    ACTION : hiçbir blok/yaratık kaynağı yoktur, sadece "eylemler" ile kazanılır
+#
+#  EYLEMLER (eylemler): blok kırma ve yaratık öldürme dışındaki tek seferlik
+#  oyun anları. Her eylem en fazla BİR beceri tarafından sahiplenilebilir.
+#  Bazı eylemler ayrıca bir "malzemeler" listesiyle sınırlandırılır (örneğin
+#  hangi pişmiş yemeğin "et" sayıldığı); liste boşsa eylemin kendisi tek şarttır.
+#  Kullanılabilir eylem adları:
+#    hayvan-ciftlestirme  hayvan-evcillestirme  hayvan-tasima  pasta-uretimi
+#    koyun-kirpma  sut-sagma  et-pisirme
+#    koylu-ticareti  kemik-tozu  ekmek-uretimi  capa-kullanimi  urun-pisirme
+#
+#  KİLOMETRE TAŞLARI (kilometre-taslari): 25/50/75/100. seviyelerde kazanılan
+#  kalıcı bonuslar. Kullanılabilir türler:
+#    MAX_HEALTH  PVE_DAMAGE_MULTIPLIER  MAX_ENERGY  HASTE  SPEED
+#    TREE_FELLING (ağaç devirme - deger = en fazla kaç kütük düşeceği)
+#    BREED_REFUND (çiftleştirme yemi iadesi - deger = 0-1 arası ihtimal)
+#  Son iki tür bir "istatistik" değil, açılan bir ÖZELLİKTİR: oyuncuya hiçbir
+#  şey uygulanmaz, ilgili oyun anı geldiğinde okunur.
+#
 #  ÖNEMLİ: Oyuncunun kendi yerleştirdiği bloklar hiç XP vermez ve üzerlerinde
-#  hiçbir kabiliyet çalışmaz - yalnızca dünyanın kendi oluşturduğu bloklar sayılır.
+#  hiçbir kabiliyet çalışmaz - yalnızca dünyanın kendi oluşturduğu bloklar
+#  sayılır. Tek istisna EKİNLERDİR: tarım zaten "ek ve biç" demek olduğu için
+#  ekinler bu kuraldan muaftır, ama yalnızca TAM OLGUNLAŞMIŞ hâlde XP verirler.
 # =====================================================================
 
 maksimum-seviye: 100
@@ -154,8 +180,11 @@ beceriler:
 
   odunculuk:
     gorunen-ad: "Odunculuk"
+    # 25. seviyede acilan TREE_FELLING ozelligi: bir agacin toprakla temas
+    # eden KOK kutugunu kestiginde agacin tamami devrilir (bagli tum kutukler
+    # birden duser). Govdenin ortasindan kesmek bunu tetiklemez.
     kilometre-taslari:
-      25: { tur: MAX_HEALTH, deger: 2 }
+      25: { tur: TREE_FELLING, deger: 48 }
       50: { tur: MAX_ENERGY, deger: 10 }
       75: { tur: SPEED, deger: 0 }
       100: { tur: SPEED, deger: 1 }
@@ -260,3 +289,75 @@ beceriler:
         WITHER: { xp: 1200, gorunen-ad: "Wither" }
         WARDEN: { xp: 1800, gorunen-ad: "Warden" }
         ENDER_DRAGON: { xp: 2400, gorunen-ad: "Ejderha" }
+
+  tarimcilik:
+    gorunen-ad: "Tarımcılık"
+    # Tarim hem blok hem eylem kaynagi olan tek beceridir: hasat bloklarindan
+    # ve tarlanin etrafindaki islerden ayni anda XP kazanir.
+    kilometre-taslari:
+      25: { tur: MAX_HEALTH, deger: 2 }
+      50: { tur: MAX_ENERGY, deger: 12 }
+      75: { tur: MAX_HEALTH, deger: 6 }
+      100: { tur: MAX_ENERGY, deger: 30 }
+    kaynak:
+      tur: BLOCK
+      # Ekinler yalnizca TAM OLGUNLASMIS halde XP verir; olmamis bir ekini
+      # kirip yeniden ekmek hicbir sey kazandirmaz. Saman balyalari ise
+      # "oyuncunun yerlestirdigi blok sayilmaz" kuralina tabidir, yani sadece
+      # koylerdeki dogal balyalar sayilir.
+      malzemeler:
+        HAY_BLOCK: { xp: 6, gorunen-ad: "Saman Balyası" }
+        WHEAT: { xp: 9, gorunen-ad: "Buğday" }
+        CARROTS: { xp: 9, gorunen-ad: "Havuç" }
+        POTATOES: { xp: 9, gorunen-ad: "Patates" }
+        BEETROOTS: { xp: 9, gorunen-ad: "Pancar" }
+        SWEET_BERRY_BUSH: { xp: 9, gorunen-ad: "Tatlı Böğürtlen" }
+        MELON: { xp: 12, gorunen-ad: "Karpuz" }
+        PUMPKIN: { xp: 12, gorunen-ad: "Balkabağı" }
+        COCOA: { xp: 12, gorunen-ad: "Kakao" }
+        NETHER_WART: { xp: 15, gorunen-ad: "Nether Mantarı" }
+        TORCHFLOWER_CROP: { xp: 18, gorunen-ad: "Meşale Çiçeği" }
+        PITCHER_CROP: { xp: 18, gorunen-ad: "Testi Bitkisi" }
+    eylemler:
+      capa-kullanimi: { xp: 3, gorunen-ad: "Çapalama" }
+      kemik-tozu: { xp: 6, gorunen-ad: "Kemik Tozu" }
+      urun-pisirme:
+        xp: 9
+        gorunen-ad: "Ürün Pişirme"
+        malzemeler: [BAKED_POTATO, DRIED_KELP]
+      ekmek-uretimi:
+        xp: 12
+        gorunen-ad: "Ekmek Üretimi"
+        malzemeler: [BREAD]
+      koylu-ticareti: { xp: 30, gorunen-ad: "Köylü Ticareti" }
+
+  hayvancilik:
+    gorunen-ad: "Hayvancılık"
+    # 25. seviyede acilan BREED_REFUND ozelligi: bir yavru dogduktan sonra
+    # %15 ihtimalle ciftlestirme yemi oyuncuya geri doner (iki ebeveyn icin
+    # harcanan iki adet birden).
+    kilometre-taslari:
+      25: { tur: BREED_REFUND, deger: 0.15 }
+      50: { tur: MAX_HEALTH, deger: 4 }
+      75: { tur: MAX_HEALTH, deger: 6 }
+      100: { tur: MAX_ENERGY, deger: 25 }
+    kaynak:
+      # Hayvanciligin hicbir blok/yaratik kaynagi yoktur; tamamen asagidaki
+      # eylemlerle kazanilir. Hayvan OLDURMEK avciliga yazilir, hayvanciliga
+      # degil - bu beceri hayvani yasatmakla ilgilidir.
+      tur: ACTION
+    eylemler:
+      sut-sagma: { xp: 3, gorunen-ad: "Süt Sağma" }
+      # 20 saniyede bir, kayisla en az bir inek/domuz/koyun tasiyorsan.
+      hayvan-tasima: { xp: 6, gorunen-ad: "Hayvan Taşıma" }
+      koyun-kirpma: { xp: 9, gorunen-ad: "Koyun Kırpma" }
+      et-pisirme:
+        xp: 12
+        gorunen-ad: "Et Pişirme"
+        malzemeler: [COOKED_BEEF, COOKED_PORKCHOP, COOKED_MUTTON, COOKED_RABBIT, COOKED_CHICKEN]
+      hayvan-ciftlestirme: { xp: 24, gorunen-ad: "Çiftleştirme" }
+      pasta-uretimi:
+        xp: 30
+        gorunen-ad: "Pasta Üretimi"
+        malzemeler: [CAKE]
+      hayvan-evcillestirme: { xp: 45, gorunen-ad: "Evcilleştirme" }
