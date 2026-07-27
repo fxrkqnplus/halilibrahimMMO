@@ -4,6 +4,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 
@@ -26,10 +27,29 @@ public final class GuiListener implements Listener {
             return;
         }
         Inventory clicked = event.getClickedInventory();
-        if (clicked == null || !clicked.equals(event.getView().getTopInventory())) {
+        if (clicked == null) {
             return;
         }
-        holder.view().handleClick(player, event.getSlot(), event.getCurrentItem(), event.getClick());
+        if (clicked.equals(event.getView().getTopInventory())) {
+            holder.view().handleClick(player, event.getSlot(), event.getCurrentItem(), event.getClick());
+            return;
+        }
+        // The player's own inventory. Still cancelled above, and ignored by
+        // every view except the trade screen, which uses it to let a player
+        // offer an item by clicking it where it already sits.
+        holder.view().handleOwnInventoryClick(player, event.getSlot(), event.getCurrentItem(), event.getClick());
+    }
+
+    /**
+     * A closing screen is the only signal some views get that they are done -
+     * the trade screen in particular has to give back everything on the table
+     * when its window disappears, however it disappeared.
+     */
+    @EventHandler
+    public void onClose(InventoryCloseEvent event) {
+        if (event.getInventory().getHolder() instanceof GuiHolder holder && event.getPlayer() instanceof Player player) {
+            holder.view().handleClose(player);
+        }
     }
 
     /**

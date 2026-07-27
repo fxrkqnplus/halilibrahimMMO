@@ -19,6 +19,17 @@ public interface AbilityService extends PluginService {
 
     void activate(Player player, String abilityId, EnergyService energy);
 
+    /**
+     * Ends whatever this player currently has running, clearing both the
+     * internal armed/buffed state and any vanilla potion effect an instant
+     * ability applied.
+     *
+     * <p>Only reached from Creative mode, where an ability has no cooldown, no
+     * energy cost and an effectively unlimited duration - which means it has no
+     * natural way to end and needs an explicit off switch.</p>
+     */
+    void deactivate(Player player);
+
     void handleBlockBreak(BlockBreakEvent event);
 
     /**

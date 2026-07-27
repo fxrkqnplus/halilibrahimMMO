@@ -1,6 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.gui;
 
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityDefinition;
+import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.locale.DurationFormatter;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingTask;
@@ -52,31 +53,21 @@ public final class AbilitiesMenu implements GuiView {
 
     @Override
     public void populate(Player player, Inventory inventory) {
-        inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
-        completeOnboarding(player);
+        services.onboardingRewards().complete(player, OnboardingTask.KABILIYETLERI_INCELEME, MessageKey.ONBOARDING_ABILITIES_COMPLETED);
         services.profiles().load(player.getUniqueId(), player.getName())
                 .thenAccept(profile -> player.getScheduler().run(services.plugin(), task ->
                         render(inventory, player, profile.selectedClass()), null));
     }
 
-    private void completeOnboarding(Player player) {
-        services.onboarding().complete(player.getUniqueId(), player.getName(), OnboardingTask.KABILIYETLERI_INCELEME).thenAccept(newlyCompleted -> {
-            if (!newlyCompleted) {
-                return;
-            }
-            String classId = services.profiles().cached(player.getUniqueId()).map(profile -> profile.selectedClass()).orElse("");
-            if (!classId.isEmpty()) {
-                services.classes().awardClassExperience(player.getUniqueId(), player.getName(), classId, OnboardingTask.KABILIYETLERI_INCELEME.rewardExperience());
-            }
-            player.getScheduler().run(services.plugin(), task -> {
-                services.messages().send(player, MessageKey.ONBOARDING_ABILITIES_COMPLETED, Map.of("xp", Long.toString(OnboardingTask.KABILIYETLERI_INCELEME.rewardExperience())));
-                services.sidebar().refresh(player);
-            }, null);
-        });
-    }
-
     private void render(Inventory inventory, Player player, String selectedClassId) {
-        if (selectedClassId.isEmpty()) {
+        PlayerClassDefinition classDefinition = services.classes().settings().definitions().get(selectedClassId);
+        // Framed in the player's own class colour: this is the one screen that
+        // is entirely about their class, and it should look like it.
+        GuiItems.frame(inventory,
+                classDefinition == null ? GuiItems.border() : GuiItems.pane(classDefinition.frame()),
+                GuiItems.filler());
+        inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
+        if (selectedClassId.isEmpty() || classDefinition == null) {
             inventory.setItem(NO_CLASS_SLOT, GuiItems.of(Material.BARRIER, services.messages().render(MessageKey.GUI_ABILITIES_NO_CLASS)));
             return;
         }

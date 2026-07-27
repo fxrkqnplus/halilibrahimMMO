@@ -6,6 +6,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -67,6 +68,28 @@ public final class GuiItems {
         meta.displayName(Component.empty());
         item.setItemMeta(meta);
         return item;
+    }
+
+    /**
+     * A nameless pane of any material, for screens that frame themselves in a
+     * colour of their own - a class's own screens use the class's
+     * {@code cerceve}, so the player's class is legible before a single label
+     * is read.
+     */
+    public static ItemStack pane(Material material) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(Component.empty());
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    /** Lays {@code frame} around the outer edge of an inventory and {@code fill} through the middle. */
+    public static void frame(Inventory inventory, ItemStack frame, ItemStack fill) {
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            boolean edge = slot < 9 || slot >= inventory.getSize() - 9 || slot % 9 == 0 || slot % 9 == 8;
+            inventory.setItem(slot, edge ? frame : fill);
+        }
     }
 
     private static Component undecorate(Component component) {

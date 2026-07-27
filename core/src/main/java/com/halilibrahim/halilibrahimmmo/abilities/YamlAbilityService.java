@@ -11,7 +11,9 @@ import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
+import com.halilibrahim.halilibrahimmmo.skills.TreeShape;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -77,6 +79,13 @@ public final class YamlAbilityService implements AbilityService {
     private static final int MAX_SURGED_CROPS = 256;
     /** How far an activation particle burst scatters around the caster, in blocks. */
     private static final double BURST_SPREAD = 0.6D;
+    /**
+     * How long an ability stays up in Creative mode. Long enough to be
+     * effectively "until switched off" for any realistic session, but still a
+     * real expiry, so nothing can be left armed forever by a player who logs
+     * out mid-test.
+     */
+    private static final long CREATIVE_DURATION_MILLIS = 6L * 60L * 60L * 1_000L;
 
     private final JavaPlugin plugin;
     private final SkillService skills;
@@ -206,6 +215,15 @@ public final class YamlAbilityService implements AbilityService {
         if (definition == null || !isEligibleBlock(definition, event.getBlock())) {
             return;
         }
+        // Ağaç Kırıcı stays armed until it finds an actual tree: a village
+        // house's timber is a world-generated log with nothing under it just
+        // like a trunk is, and chopping a building down is never what the
+        // player asked for. Every other effect fires on the block it was
+        // pointed at.
+        if (definition.effectType() == AbilityEffectType.TREE_FELL && !TreeShape.isNaturalTreeRoot(event.getBlock())) {
+            messages.send(player, MessageKey.ABILITY_REQUIRES_TREE, Map.of("kabiliyet", definition.displayName()));
+            return;
+        }
         armed.remove(player.getUniqueId(), current);
         clearActivationFeedback(player);
         switch (definition.effectType()) {
@@ -262,7 +280,7 @@ public final class YamlAbilityService implements AbilityService {
         }
         event.setDamage(event.getDamage() * classModifiers.apply(player.getUniqueId())
                 .adjustedEffectValue(definition.id(), definition.damageMultiplier()));
-        if (definition.mode() != AbilityActivationMode.ENERJI) {
+        if (definition.mode() != AbilityActivationMode.ENERJI || isCreative(player)) {
             return;
         }
         if (!energy.tryConsume(player, definition.energyPerHit())) {
@@ -297,7 +315,9 @@ public final class YamlAbilityService implements AbilityService {
         }
         UUID playerId = player.getUniqueId();
         String currentlySelected = selectedAbility.get(playerId);
-        if (currentlySelected != null && !currentlySelected.equals(definition.id())) {
+        // Creative is for trying things out: making a builder or an admin wait
+        // two minutes to look at a different ability serves nobody.
+        if (currentlySelected != null && !currentlySelected.equals(definition.id()) && !isCreative(player)) {
             long now = System.currentTimeMillis();
             long readyAt = lastSwitchMillis.getOrDefault(playerId, 0L) + settings().selectionCooldownMillis();
             if (readyAt > now) {
@@ -345,6 +365,48 @@ public final class YamlAbilityService implements AbilityService {
         return Optional.empty();
     }
 
+    /**
+     * Tears down every kind of active state this player could be holding, plus
+     * whatever vanilla effect an instant ability applied. Only reachable from
+     * Creative mode, where an ability that never expires on its own has to have
+     * some way back off - see {@code AbilityActivationListener}.
+     */
+    @Override
+    public void deactivate(Player player) {
+        UUID playerId = player.getUniqueId();
+        ArmedAbility instant = activeEffects.get(playerId);
+        armed.remove(playerId);
+        damageBuffs.remove(playerId);
+        dropBuffs.remove(playerId);
+        activeEffects.remove(playerId);
+        if (instant != null) {
+            AbilityDefinition definition = settings().definitions().get(instant.abilityId());
+            if (definition != null) {
+                clearInstantEffect(player, definition);
+            }
+        }
+        clearActivationFeedback(player);
+        messages.send(player, MessageKey.ABILITY_DEACTIVATED);
+    }
+
+    /** The mirror of {@link #applyInstantEffect}: only the potion-backed effects leave anything to remove. */
+    private void clearInstantEffect(Player player, AbilityDefinition definition) {
+        switch (definition.effectType()) {
+            case BRIEF_INVULNERABILITY -> player.removePotionEffect(PotionEffectType.RESISTANCE);
+            case AREA_HEAL -> player.removePotionEffect(PotionEffectType.REGENERATION);
+            case SPEED_BURST -> player.removePotionEffect(PotionEffectType.SPEED);
+            case NIGHT_VISION -> player.removePotionEffect(PotionEffectType.NIGHT_VISION);
+            default -> {
+                // Every other effect either already resolved (a one-shot area
+                // sweep) or has its own expiry (the ore outlines).
+            }
+        }
+    }
+
+    private static boolean isCreative(Player player) {
+        return player.getGameMode() == GameMode.CREATIVE;
+    }
+
     @Override
     public void clearActivationFeedback(Player player) {
         boolean wasActive = activationFeedbackTasks.containsKey(player.getUniqueId());
@@ -372,6 +434,14 @@ public final class YamlAbilityService implements AbilityService {
             long remainingMillis = expiresAtMillis - System.currentTimeMillis();
             if (remainingMillis <= 0 || !isStillActive(player.getUniqueId(), definition.id())) {
                 clearActivationFeedback(player);
+                return;
+            }
+            // In Creative there is no remaining time and no energy worth
+            // reading - what the player needs to know is how to turn it off.
+            if (isCreative(player)) {
+                player.sendActionBar(messages.render(MessageKey.ABILITY_COUNTDOWN_ACTIONBAR_CREATIVE, Map.of(
+                        "kabiliyet", definition.displayName()
+                )));
                 return;
             }
             // Energy is part of both variants: while an ability is running the
@@ -477,33 +547,42 @@ public final class YamlAbilityService implements AbilityService {
             messages.send(player, MessageKey.ABILITY_REQUIRES_MINE, Map.of("kabiliyet", definition.displayName()));
             return;
         }
+        // Creative mode lifts every budget an ability normally answers to: no
+        // cooldown, no energy, and a duration that outlasts any session, so it
+        // stays on until it is explicitly switched off again. The point of
+        // Creative is testing what an ability does, not rationing it.
+        boolean creative = isCreative(player);
         ClassModifiers modifiers = classModifiers.apply(player.getUniqueId());
-        int energyCost = modifiers.adjustedEnergyCost(definition.id(), definition.energyCost());
-        long cooldownMillis = modifiers.adjustedCooldownMillis(definition.id(), definition.cooldownMillis());
+        int energyCost = creative ? 0 : modifiers.adjustedEnergyCost(definition.id(), definition.energyCost());
+        long cooldownMillis = creative ? 0L : modifiers.adjustedCooldownMillis(definition.id(), definition.cooldownMillis());
         int limit = modifiers.adjustedLimit(definition.id(), definition.limit());
-        long activeMillis = modifiers.adjustedDurationMillis(definition.id(), definition.activeMillis());
+        long activeMillis = creative
+                ? CREATIVE_DURATION_MILLIS
+                : modifiers.adjustedDurationMillis(definition.id(), definition.activeMillis());
         CooldownKey cooldownKey = new CooldownKey(player.getUniqueId(), definition.id());
         long now = System.currentTimeMillis();
         long readyAt = cooldowns.getOrDefault(cooldownKey, 0L);
-        if (readyAt > now) {
+        if (!creative && readyAt > now) {
             messages.send(player, MessageKey.ABILITY_COOLDOWN, Map.of(
                     "kabiliyet", definition.displayName(),
                     "sure", DurationFormatter.ofMillis(messages, readyAt - now)
             ));
             return;
         }
-        if (energy.currentEnergy(player) < energyCost) {
-            messages.send(player, MessageKey.ABILITY_ENERGY, Map.of(
-                    "kabiliyet", definition.displayName(),
-                    "gereken", Integer.toString(energyCost),
-                    "mevcut", Integer.toString(energy.currentEnergy(player))
-            ));
-            return;
+        if (!creative) {
+            if (energy.currentEnergy(player) < energyCost) {
+                messages.send(player, MessageKey.ABILITY_ENERGY, Map.of(
+                        "kabiliyet", definition.displayName(),
+                        "gereken", Integer.toString(energyCost),
+                        "mevcut", Integer.toString(energy.currentEnergy(player))
+                ));
+                return;
+            }
+            if (!energy.tryConsume(player, energyCost)) {
+                return;
+            }
+            cooldowns.put(cooldownKey, now + cooldownMillis);
         }
-        if (!energy.tryConsume(player, energyCost)) {
-            return;
-        }
-        cooldowns.put(cooldownKey, now + cooldownMillis);
         ArmedAbility active = new ArmedAbility(definition.id(), now + activeMillis, limit);
         String duration = DurationFormatter.ofMillis(messages, activeMillis);
         switch (definition.effectType()) {

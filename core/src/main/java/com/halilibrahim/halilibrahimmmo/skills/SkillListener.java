@@ -5,9 +5,6 @@ import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
 import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
 import com.halilibrahim.halilibrahimmmo.exploit.PlacedBlockTracker;
-import org.bukkit.Tag;
-import org.bukkit.block.Block;
-import org.bukkit.block.data.Ageable;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -80,7 +77,7 @@ public final class SkillListener implements Listener {
         abilities.handleBlockBreak(event);
         Player player = event.getPlayer();
         if (activation.cached(player.getUniqueId()) && !abilities.isSecondaryBreak(event)
-                && SkillAwardHandler.isGameplayGameMode(player) && isEligibleTerrain(event.getBlock())
+                && SkillAwardHandler.isGameplayGameMode(player) && placedBlocks.isEligibleTerrain(event.getBlock())
                 && breakRateLimiter.allow(player.getUniqueId())) {
             fellTreeIfUnlocked(player, event);
             skills.awardBlock(player.getUniqueId(), player.getName(), event.getBlock().getType())
@@ -99,35 +96,21 @@ public final class SkillListener implements Listener {
     }
 
     /**
-     * Player-placed blocks are not terrain and never award anything - with one
-     * deliberate exception. Farming <em>is</em> planting and harvesting your
-     * own crops, so an {@link Ageable} block is exempt from that gate; what
-     * stops break-and-replant farming instead is that a crop only counts once
-     * it is fully grown. Hay bales are not {@link Ageable}, so they stay
-     * gated and only the world's own village bales count.
-     */
-    private boolean isEligibleTerrain(Block block) {
-        if (block.getBlockData() instanceof Ageable crop) {
-            return crop.getAge() >= crop.getMaximumAge();
-        }
-        return !placedBlocks.isPlayerPlaced(block);
-    }
-
-    /**
      * The odunculuk level-25 milestone ({@code TREE_FELLING}): breaking the log
-     * a tree actually stands on brings the whole trunk down. Deliberately gated
-     * on the <em>root</em> log - a log with another log directly beneath it is
-     * mid-trunk, and felling from there would make every single log break
-     * cascade. Reuses the ability layer's secondary-break machinery, so the
-     * extra logs are marked exactly like {@code agac-kirici}'s are and never
-     * generate a second round of XP or quest progress.
+     * a tree actually stands on brings the whole trunk down.
+     *
+     * <p>Whether this <em>is</em> a tree is {@link TreeShape}'s decision, not a
+     * bare "log with nothing under it" test. That test alone also described a
+     * village house's corner pillar, which the world generates rather than a
+     * player, so nothing else in the pipeline was rejecting it - felling one
+     * took the timber out from under a generated building. Reuses the ability
+     * layer's secondary-break machinery, so the extra logs are marked exactly
+     * like {@code agac-kirici}'s are and never generate a second round of XP or
+     * quest progress.</p>
      */
     private void fellTreeIfUnlocked(Player player, BlockBreakEvent event) {
         int limit = skills.milestoneModifiers(player.getUniqueId()).treeFellingLimit();
-        if (limit <= 0 || !Tag.LOGS.isTagged(event.getBlock().getType())) {
-            return;
-        }
-        if (Tag.LOGS.isTagged(event.getBlock().getRelative(0, -1, 0).getType())) {
+        if (limit <= 0 || !TreeShape.isNaturalTreeRoot(event.getBlock())) {
             return;
         }
         abilities.fellTree(event, limit);

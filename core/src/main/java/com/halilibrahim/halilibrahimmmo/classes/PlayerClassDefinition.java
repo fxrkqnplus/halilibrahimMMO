@@ -27,11 +27,15 @@ import java.util.Set;
  * <p>{@code icon} is the {@link Material} every class-picking screen renders
  * this class as ({@code simge} in {@code classes.yml}), so a class is
  * recognisable by its own tool/theme instead of every option sharing one
- * generic sword.</p>
+ * generic sword. {@code frame} is the stained-glass pane
+ * ({@code cerceve} in {@code classes.yml}) that borders the screens belonging
+ * to the player's own class - their ability list and their talent tree - so
+ * those screens are visibly *theirs* the moment they open, in the same colour
+ * as the class's XP bar.</p>
  */
 public record PlayerClassDefinition(
         String id, String displayName, Set<String> synergySkillIds, ClassBarColor barColor, Material icon,
-        Map<String, TalentNodeDefinition> talents,
+        Material frame, Map<String, TalentNodeDefinition> talents,
         ClassEffectType prestigeEffectType, double prestigeEffectValuePerRank
 ) {
     public boolean hasSynergyWith(String skillId) {

@@ -1,7 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.collections;
 
 import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
-import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
+import com.halilibrahim.halilibrahimmmo.classes.ClassAwardHandler;
 import com.halilibrahim.halilibrahimmmo.classes.ClassExperienceAwardResult;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticDefinition;
@@ -32,7 +32,6 @@ public final class CollectionListener implements Listener {
     private final CollectionService collections;
     private final ProfileService profiles;
     private final ClassService classes;
-    private final AbilityService abilities;
     private final TitleService titles;
     private final CosmeticService cosmetics;
     private final FeedbackService feedback;
@@ -40,26 +39,26 @@ public final class CollectionListener implements Listener {
     private final JournalService journal;
     private final SidebarService sidebar;
     private final ActivationService activation;
+    private final ClassAwardHandler classAwards;
 
     public CollectionListener(
             JavaPlugin plugin,
             CollectionService collections,
             ProfileService profiles,
             ClassService classes,
-            AbilityService abilities,
             TitleService titles,
             CosmeticService cosmetics,
             FeedbackService feedback,
             MessageService messages,
             JournalService journal,
             SidebarService sidebar,
-            ActivationService activation
+            ActivationService activation,
+            ClassAwardHandler classAwards
     ) {
         this.plugin = plugin;
         this.collections = collections;
         this.profiles = profiles;
         this.classes = classes;
-        this.abilities = abilities;
         this.titles = titles;
         this.cosmetics = cosmetics;
         this.feedback = feedback;
@@ -67,6 +66,7 @@ public final class CollectionListener implements Listener {
         this.journal = journal;
         this.sidebar = sidebar;
         this.activation = activation;
+        this.classAwards = classAwards;
     }
 
     @EventHandler
@@ -107,13 +107,13 @@ public final class CollectionListener implements Listener {
             }, null);
             if (!classId.isEmpty()) {
                 classes.awardClassExperience(player.getUniqueId(), player.getName(), classId, award.entryExperience())
-                        .thenAccept(result -> showExperienceProgress(player, classId, award.entryExperience(), result));
+                        .thenAccept(result -> awardFeedback(player, classId, award.entryExperience(), result));
             }
             journal.recordCollectionEntryObtained(player.getUniqueId(), award.entryId(), award.entryDisplayName(), award.collectionDisplayName(), award.entryExperience());
             if (award.collectionCompleted()) {
                 if (!classId.isEmpty()) {
                     classes.awardClassExperience(player.getUniqueId(), player.getName(), classId, award.completionExperience())
-                            .thenAccept(result -> showExperienceProgress(player, classId, award.completionExperience(), result));
+                            .thenAccept(result -> awardFeedback(player, classId, award.completionExperience(), result));
                 }
                 journal.recordCollectionCompleted(player.getUniqueId(), award.collectionId(), award.collectionDisplayName(), award.completionExperience());
                 titles.evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyTitles(player, unlocked));
@@ -122,39 +122,15 @@ public final class CollectionListener implements Listener {
         });
     }
 
-    private void showExperienceProgress(Player player, String classId, long amount, ClassExperienceAwardResult result) {
-        if (amount <= 0) {
-            return;
-        }
-        var classDefinition = classes.settings().definitions().get(classId);
-        if (classDefinition == null) {
-            return;
-        }
-        var classProgress = classes.classProgress(player.getUniqueId(), classId);
-        long requiredForLevel = classProgress.level() >= classes.settings().classLevelCurve().maximumLevel()
-                ? 0L
-                : classes.settings().classLevelCurve().requiredForCurrentLevel(classProgress.level());
-        player.getScheduler().run(plugin, task -> {
-            feedback.showExperienceProgress(player, MessageKey.FEEDBACK_XP_CLASS_BOSSBAR, Map.of(
-                    "sinif", classDefinition.displayName(), "kazanilan", Long.toString(amount)
-            ), classProgress.experience(), requiredForLevel, "class", classDefinition.barColor().color());
-            if (result.leveledUp()) {
-                feedback.celebrateClassLevelUp(player, classDefinition.displayName(), result.newLevel());
-                notifyUnlockedAbilities(player, classId, result.previousLevel(), result.newLevel());
-            }
-            sidebar.refresh(player);
-        }, null);
-    }
-
-    private void notifyUnlockedAbilities(Player player, String classId, int previousLevel, int newLevel) {
-        for (var ability : abilities.definitions()) {
-            if (!ability.classId().equals(classId)) {
-                continue;
-            }
-            if (ability.requiredLevel() > previousLevel && ability.requiredLevel() <= newLevel) {
-                feedback.celebrateAbilityUnlocked(player, ability.displayName());
-            }
-        }
+    /**
+     * Delegates every piece of class XP feedback to the one handler every
+     * other XP source uses, and only adds the sidebar refresh - which is
+     * collection-specific, since finishing a collection also changes what the
+     * quest/task section of the panel shows.
+     */
+    private void awardFeedback(Player player, String classId, long amount, ClassExperienceAwardResult result) {
+        classAwards.handle(player, classId, amount, result);
+        player.getScheduler().run(plugin, task -> sidebar.refresh(player), null);
     }
 
     private void notifyTitles(Player player, List<TitleDefinition> unlocked) {

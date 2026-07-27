@@ -12,8 +12,11 @@ import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.journal.JournalService;
 import com.halilibrahim.halilibrahimmmo.leaderboards.LeaderboardService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
+import com.halilibrahim.halilibrahimmmo.home.HomeService;
 import com.halilibrahim.halilibrahimmmo.logging.PluginLogger;
+import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingRewarder;
 import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingService;
+import com.halilibrahim.halilibrahimmmo.trade.TradeService;
 import com.halilibrahim.halilibrahimmmo.prestige.PrestigeService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
@@ -50,6 +53,9 @@ public record GuiServices(
         HalilIbrahimMMOAPI api,
         ActivationService activation,
         PluginLogger logger,
-        OnboardingService onboarding
+        OnboardingService onboarding,
+        OnboardingRewarder onboardingRewards,
+        HomeService homes,
+        TradeService trades
 ) {
 }

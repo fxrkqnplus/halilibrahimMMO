@@ -364,6 +364,10 @@ public final class YamlClassService implements ClassService {
             if (icon == null) {
                 throw new IllegalArgumentException("Class must declare a known simge material: " + id);
             }
+            Material frame = Material.matchMaterial(section.getString("cerceve", ""));
+            if (frame == null) {
+                throw new IllegalArgumentException("Class must declare a known cerceve material: " + id);
+            }
             ConfigurationSection talents = requiredSection(section, "yetenekler");
             Map<String, TalentNodeDefinition> nodes = new LinkedHashMap<>();
             for (String rawTalentId : talents.getKeys(false)) {
@@ -392,7 +396,7 @@ public final class YamlClassService implements ClassService {
             if (!prestigeTypeAllowed || prestigeEffectValue <= 0) {
                 throw new IllegalArgumentException("Class prestige effect must be a positive MAX_HEALTH/PVE_DAMAGE_MULTIPLIER/MAX_ENERGY value: " + id);
             }
-            definitions.put(id, new PlayerClassDefinition(id, displayName, Set.copyOf(synergySkillIds), barColor, icon, Map.copyOf(nodes), prestigeEffectType, prestigeEffectValue));
+            definitions.put(id, new PlayerClassDefinition(id, displayName, Set.copyOf(synergySkillIds), barColor, icon, frame, Map.copyOf(nodes), prestigeEffectType, prestigeEffectValue));
         }
         if (definitions.isEmpty()) throw new IllegalArgumentException("classes.yml must define classes.");
         return new ClassSettings(Math.multiplyExact(cooldownDays, 86_400_000L), talentPoints, classLevelCurve, synergyBonus, Map.copyOf(definitions));

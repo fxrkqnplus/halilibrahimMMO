@@ -42,6 +42,25 @@ public interface SkillService extends PluginService {
     /** The configured reward for {@code action}, for listeners that need its material gate before doing any work. */
     Optional<SkillActionReward> actionReward(SkillAction action);
 
+    /**
+     * Awards an explicit amount to one named skill through the ordinary XP
+     * path - same class-synergy and prestige multipliers, same serial update
+     * chain, same notification to the class-synergy bridge - for rewards whose
+     * size is authored outside {@code skills.yml}.
+     *
+     * <p>This is what a completed quest pays out with: the reward lands in the
+     * skill the quest trains, and mirrors into the class track exactly when
+     * that skill is one the player's selected class draws synergy from,
+     * instead of being a bespoke class-XP grant that has to reimplement every
+     * multiplier and every piece of feedback for itself.</p>
+     *
+     * @param sourceDisplayName already-Turkish label for the XP bossbar (e.g. the quest's own name)
+     * @return empty when {@code skillId} names no configured skill
+     */
+    CompletableFuture<Optional<SkillAwardResult>> awardExternal(
+            UUID playerId, String playerName, String skillId, long amount, String sourceDisplayName
+    );
+
     /** Synchronous, in-memory only - for callers that cannot await a future (e.g. PlaceholderAPI). */
     Optional<SkillProgress> cached(UUID playerId, String skillId);
 

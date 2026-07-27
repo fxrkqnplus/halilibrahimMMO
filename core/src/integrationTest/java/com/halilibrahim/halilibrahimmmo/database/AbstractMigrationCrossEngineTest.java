@@ -51,7 +51,7 @@ abstract class AbstractMigrationCrossEngineTest {
                 return versions;
             }).get();
 
-            assertEquals(Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), appliedVersions);
+            assertEquals(Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), appliedVersions);
         } finally {
             database.disable();
         }
