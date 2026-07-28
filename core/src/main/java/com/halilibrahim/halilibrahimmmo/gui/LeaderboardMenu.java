@@ -20,7 +20,8 @@ public final class LeaderboardMenu implements GuiView {
     private static final int PRESTIGE_SLOT = 11;
     private static final int QUEST_SLOT = 12;
     private static final int COLLECTION_SLOT = 13;
-    private static final int FIRST_SKILL_SLOT = 14;
+    private static final int WEALTH_SLOT = 14;
+    private static final int FIRST_SKILL_SLOT = 15;
     private static final int BACK_SLOT = 26;
 
     private final GuiServices services;
@@ -49,11 +50,15 @@ public final class LeaderboardMenu implements GuiView {
         slotToCategory.put(PRESTIGE_SLOT, LeaderboardCategory.PRESTIGE);
         slotToCategory.put(QUEST_SLOT, LeaderboardCategory.QUEST_COMPLETIONS);
         slotToCategory.put(COLLECTION_SLOT, LeaderboardCategory.COLLECTION_ENTRIES);
+        slotToCategory.put(WEALTH_SLOT, LeaderboardCategory.WEALTH);
 
         inventory.setItem(LEVEL_SLOT, GuiItems.of(Material.EXPERIENCE_BOTTLE, services.messages().render(MessageKey.GUI_LEADERBOARD_CATEGORY_LEVEL)));
         inventory.setItem(PRESTIGE_SLOT, GuiItems.of(Material.NETHER_STAR, services.messages().render(MessageKey.GUI_LEADERBOARD_CATEGORY_PRESTIGE)));
         inventory.setItem(QUEST_SLOT, GuiItems.of(Material.WRITTEN_BOOK, services.messages().render(MessageKey.GUI_LEADERBOARD_CATEGORY_QUESTS)));
         inventory.setItem(COLLECTION_SLOT, GuiItems.of(Material.CHEST, services.messages().render(MessageKey.GUI_LEADERBOARD_CATEGORY_COLLECTIONS)));
+        // Zenginlik gets an unmistakable icon of its own - it is the one board
+        // that measures what a player has pulled out of the world.
+        inventory.setItem(WEALTH_SLOT, GuiItems.of(Material.DIAMOND, services.messages().render(MessageKey.GUI_LEADERBOARD_CATEGORY_WEALTH)));
 
         int slot = FIRST_SKILL_SLOT;
         for (SkillDefinition definition : services.skills().definitions()) {

@@ -5,5 +5,7 @@ public enum LeaderboardCategory {
     GLOBAL_LEVEL,
     PRESTIGE,
     QUEST_COMPLETIONS,
-    COLLECTION_ENTRIES
+    COLLECTION_ENTRIES,
+    /** Zenginlik Puanı - lifetime-cumulative and never spent, so this board only ever climbs. */
+    WEALTH
 }

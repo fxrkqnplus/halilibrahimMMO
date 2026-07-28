@@ -75,7 +75,11 @@ public enum IconPack {
     /** Informational/administrative screens. */
     BILGI("bilgi", "⚙"),
     /** Celebration/fanfare accent. */
-    KUTLAMA("kutlama", "✹");
+    KUTLAMA("kutlama", "✹"),
+    /** Zenginlik Puanı. */
+    ZENGINLIK("zenginlik", "❈"),
+    /** A world boss. */
+    BOSS("boss", "☬");
 
     private static final Map<String, IconPack> BY_ID = Stream.of(values())
             .collect(Collectors.toUnmodifiableMap(IconPack::id, Function.identity()));

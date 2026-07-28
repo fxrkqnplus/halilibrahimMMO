@@ -17,5 +17,11 @@ public enum HomeActionResult {
     /** The home's world is no longer loaded on this server. */
     WORLD_MISSING,
     /** The requested home name is empty or longer than {@link HomeService#MAXIMUM_NAME_LENGTH}. */
-    INVALID_NAME
+    INVALID_NAME,
+    /**
+     * The player went home recently. Only ever returned by
+     * {@link HomeService#teleportHome} - setting or deleting a home costs
+     * nothing and is never rate limited.
+     */
+    COOLDOWN
 }

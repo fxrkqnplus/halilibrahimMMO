@@ -16,11 +16,24 @@ import java.util.concurrent.CompletableFuture;
  * cannot be set in either, and cannot be travelled to from either. Letting
  * {@code /ev} short-circuit a nether portal - or a fall into the End - would
  * quietly delete the part of the game those dimensions are.</p>
+ *
+ * <p>The trip itself is paced by {@link #TELEPORT_COOLDOWN_MILLIS}; setting or
+ * deleting a home is not.</p>
  */
 public interface HomeService extends PluginService {
 
     /** Longest home name a player may choose; long enough to be descriptive, short enough to fit a sidebar line. */
     int MAXIMUM_NAME_LENGTH = 32;
+
+    /**
+     * How long a player waits between trips home. Going home is a free ride
+     * out of anywhere - without a pace, it turns every dangerous situation
+     * into a keystroke and every walk back into a formality.
+     */
+    long TELEPORT_COOLDOWN_MILLIS = 5L * 60L * 1_000L;
+
+    /** How long until this player may go home again; {@code 0} when they may go now. */
+    long teleportCooldownRemaining(UUID playerId);
 
     /**
      * Synchronous, in-memory only - empty until {@link #load} has warmed this

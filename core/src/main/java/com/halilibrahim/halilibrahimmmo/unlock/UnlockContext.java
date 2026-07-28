@@ -9,6 +9,7 @@ public record UnlockContext(
         int prestige,
         Set<String> completedQuestIds,
         Set<String> completedCollectionIds,
-        Map<String, Integer> skillLevels
+        Map<String, Integer> skillLevels,
+        long wealth
 ) {
 }

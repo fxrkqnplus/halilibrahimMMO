@@ -47,3 +47,23 @@ sesler:
     ses: UI_TOAST_CHALLENGE_COMPLETE
     ses-seviyesi: 1.0
     ton: 1.0
+  # "/rtp" ile haritada rastgele bir noktaya inildigi an.
+  rastgele-isinlanma:
+    ses: ENTITY_ENDERMAN_TELEPORT
+    ses-seviyesi: 1.0
+    ton: 1.0
+  # Haritada yeni bir dunya bossu belirdiginde herkese calan uyari.
+  boss-belirdi:
+    ses: ENTITY_ENDER_DRAGON_GROWL
+    ses-seviyesi: 0.7
+    ton: 0.8
+  # Bir dunya bossu oldurulduğunde herkese calan zafer sesi.
+  boss-olduruldu:
+    ses: UI_TOAST_CHALLENGE_COMPLETE
+    ses-seviyesi: 1.0
+    ton: 0.9
+  # Zenginlik Puani bir kilometre tasini asti.
+  zenginlik-kilometre-tasi:
+    ses: BLOCK_AMETHYST_BLOCK_CHIME
+    ses-seviyesi: 1.0
+    ton: 1.2

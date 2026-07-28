@@ -1,0 +1,199 @@
+package com.halilibrahim.halilibrahimmmo.wealth;
+
+import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.EntityType;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+
+/**
+ * YAML-backed catalogue plus a write-through, join-warmed per-player cache -
+ * the same shape every other persistent service in this codebase uses, with the
+ * per-player serial update chain that keeps two awards in the same tick from
+ * overwriting each other.
+ */
+public final class CachedWealthService implements WealthService {
+
+    private static final String FILE_NAME = "zenginlik.yml";
+
+    private final JavaPlugin plugin;
+    private final WealthRepository repository;
+    private final AtomicReference<WealthSettings> settings = new AtomicReference<>();
+    private final ConcurrentHashMap<UUID, Long> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, CompletableFuture<Optional<WealthAward>>> updateChains = new ConcurrentHashMap<>();
+
+    public CachedWealthService(JavaPlugin plugin, WealthRepository repository) {
+        this.plugin = plugin;
+        this.repository = repository;
+    }
+
+    @Override
+    public void enable() {
+        reload();
+    }
+
+    @Override
+    public void disable() {
+        cache.clear();
+        updateChains.clear();
+    }
+
+    @Override
+    public void reload() {
+        File file = new File(plugin.getDataFolder(), FILE_NAME);
+        if (!file.exists()) {
+            plugin.saveResource(FILE_NAME, false);
+        }
+        try {
+            settings.set(parse(YamlConfiguration.loadConfiguration(file)));
+        } catch (RuntimeException exception) {
+            throw new LifecycleException("zenginlik.yml could not be loaded.", exception);
+        }
+    }
+
+    @Override
+    public WealthSettings settings() {
+        WealthSettings value = settings.get();
+        if (value == null) {
+            throw new IllegalStateException("WealthService.enable() has not run yet.");
+        }
+        return value;
+    }
+
+    @Override
+    public long cached(UUID playerId) {
+        return cache.getOrDefault(playerId, 0L);
+    }
+
+    @Override
+    public CompletableFuture<Long> load(UUID playerId) {
+        Long cached = cache.get(playerId);
+        if (cached != null) {
+            return CompletableFuture.completedFuture(cached);
+        }
+        return repository.find(playerId).thenApply(total -> {
+            cache.put(playerId, total);
+            return total;
+        });
+    }
+
+    @Override
+    public CompletableFuture<Optional<WealthAward>> award(UUID playerId, long amount) {
+        if (amount <= 0) {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
+        synchronized (updateChains) {
+            CompletableFuture<Optional<WealthAward>> previous =
+                    updateChains.getOrDefault(playerId, CompletableFuture.completedFuture(Optional.empty()));
+            CompletableFuture<Optional<WealthAward>> next = previous
+                    .handle((ignoredValue, ignoredThrowable) -> null)
+                    .thenCompose(ignored -> awardNow(playerId, amount));
+            updateChains.put(playerId, next);
+            next.whenComplete((ignored, throwable) -> updateChains.remove(playerId, next));
+            return next;
+        }
+    }
+
+    private CompletableFuture<Optional<WealthAward>> awardNow(UUID playerId, long amount) {
+        return load(playerId).thenCompose(previousTotal -> {
+            long newTotal = previousTotal + amount;
+            return repository.save(playerId, newTotal).thenApply(ignored -> {
+                cache.put(playerId, newTotal);
+                return Optional.of(new WealthAward(
+                        amount, newTotal, settings().crossedMilestone(previousTotal, newTotal)));
+            });
+        });
+    }
+
+    @Override
+    public CompletableFuture<Optional<WealthAward>> awardBlock(UUID playerId, Material material) {
+        return award(playerId, settings().blockValue(material));
+    }
+
+    @Override
+    public CompletableFuture<Optional<WealthAward>> awardEntity(UUID playerId, EntityType entityType) {
+        return award(playerId, settings().entityValue(entityType));
+    }
+
+    @Override
+    public CompletableFuture<Optional<WealthAward>> awardQuest(UUID playerId, String questId) {
+        return award(playerId, settings().questValue(questId));
+    }
+
+    @Override
+    public void evict(UUID playerId) {
+        cache.remove(playerId);
+    }
+
+    private WealthSettings parse(YamlConfiguration yaml) {
+        Map<Material, Long> blockValues = new LinkedHashMap<>();
+        ConfigurationSection blocks = yaml.getConfigurationSection("bloklar");
+        if (blocks != null) {
+            for (String rawName : blocks.getKeys(false)) {
+                Material material = Material.matchMaterial(rawName);
+                if (material == null) {
+                    throw new IllegalArgumentException("Invalid block material in zenginlik.yml: " + rawName);
+                }
+                blockValues.put(material, requirePositive(blocks.getLong(rawName), rawName));
+            }
+        }
+        Map<EntityType, Long> entityValues = new LinkedHashMap<>();
+        ConfigurationSection entities = yaml.getConfigurationSection("varliklar");
+        if (entities != null) {
+            for (String rawName : entities.getKeys(false)) {
+                entityValues.put(parseEntityType(rawName), requirePositive(entities.getLong(rawName), rawName));
+            }
+        }
+        Map<String, Long> questValues = new LinkedHashMap<>();
+        ConfigurationSection quests = yaml.getConfigurationSection("gorevler");
+        if (quests != null) {
+            for (String questId : quests.getKeys(false)) {
+                questValues.put(questId.toLowerCase(Locale.ROOT), requirePositive(quests.getLong(questId), questId));
+            }
+        }
+        long defaultEntityValue = yaml.getLong("varsayilan-varlik", 0);
+        long defaultQuestValue = yaml.getLong("varsayilan-gorev", 0);
+        if (defaultEntityValue < 0 || defaultQuestValue < 0) {
+            throw new IllegalArgumentException("Default wealth values cannot be negative.");
+        }
+        List<Long> milestones = new ArrayList<>(yaml.getLongList("kilometre-taslari"));
+        if (milestones.isEmpty()) {
+            throw new IllegalArgumentException("zenginlik.yml must define at least one kilometre-taslari entry.");
+        }
+        for (long milestone : milestones) {
+            requirePositive(milestone, "kilometre-taslari");
+        }
+        Collections.sort(milestones);
+        return new WealthSettings(Map.copyOf(blockValues), Map.copyOf(entityValues), defaultEntityValue,
+                Map.copyOf(questValues), defaultQuestValue, List.copyOf(milestones));
+    }
+
+    private long requirePositive(long value, String context) {
+        if (value <= 0) {
+            throw new IllegalArgumentException("Wealth value must be positive: " + context);
+        }
+        return value;
+    }
+
+    private EntityType parseEntityType(String raw) {
+        try {
+            return EntityType.valueOf(raw.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Invalid entity type in zenginlik.yml: " + raw, exception);
+        }
+    }
+}

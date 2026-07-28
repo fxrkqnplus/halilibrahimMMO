@@ -64,6 +64,26 @@ public interface FeedbackService extends PluginService {
     /** Bossbar+title/subtitle fade for the invoking player only, fired when derived Güç crosses a multiple of 10. */
     void celebrateGucMilestone(Player player, int newGuc);
 
+    /**
+     * The arrival announcement for {@code /rtp}: an on-screen title carrying the
+     * coordinates the player landed on, so the first thing they see somewhere
+     * unfamiliar is where they actually are.
+     */
+    void celebrateRandomTeleport(Player player, String x, String y, String z);
+
+    /** Plays the "a world boss has appeared" cue - the chat announcement carrying its name and coordinates is a broadcast. */
+    void celebrateBossSpawned(Player player);
+
+    /** Plays the "a world boss has fallen" cue for everyone online. */
+    void celebrateBossDefeated(Player player);
+
+    /**
+     * The Zenginlik Puanı milestone cue for the player who crossed it. Only the
+     * sound and personal chat line live here - the server-wide announcement is
+     * a broadcast the caller sends, because it is addressed to everyone else.
+     */
+    void celebrateWealthMilestone(Player player, long newTotal);
+
     /** Plays the class-selection sound cue only - the confirmation chat message is sent separately by the caller. */
     void celebrateClassSelected(Player player);
 

@@ -36,6 +36,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * budgeted, so the prompt and the toggle read as one interaction: click twice
  * to start it, click twice to stop it.</p>
  *
+ * <p><strong>Two things never reach the confirm step at all.</strong> A right
+ * click on a block that already does something of its own is ignored (see
+ * {@link InteractableBlocks}), and outside Creative a click aimed at an ability
+ * that is already running is ignored silently - both were producing a prompt,
+ * and the second went on to produce a cooldown refusal, for clicks the player
+ * never meant as an activation.</p>
+ *
  * <p>Switching or dropping the held item deliberately does nothing here. A tool
  * is only required to <em>start</em> an ability; once running it stays running
  * for its full duration regardless of what the player holds. The only remaining
@@ -76,6 +83,16 @@ public final class AbilityActivationListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) {
             return;
         }
+        // A door, a lever, a furnace - anything that already answers a right
+        // click with something of its own - must not also start an ability.
+        // Sneaking suppresses the block's own behaviour in vanilla, so it is
+        // also how a player deliberately activates an ability while standing
+        // at one.
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK && !event.getPlayer().isSneaking()
+                && event.getClickedBlock() != null
+                && InteractableBlocks.isInteractable(event.getClickedBlock().getType())) {
+            return;
+        }
         tryActivate(event.getPlayer());
     }
 
@@ -114,10 +131,19 @@ public final class AbilityActivationListener implements Listener {
         if (!toolOk) {
             return;
         }
-        boolean deactivating = player.getGameMode() == GameMode.CREATIVE
-                && abilities.activeStatus(player.getUniqueId())
-                        .filter(status -> status.abilityId().equals(definition.id()))
-                        .isPresent();
+        boolean alreadyRunning = abilities.activeStatus(player.getUniqueId())
+                .filter(status -> status.abilityId().equals(definition.id()))
+                .isPresent();
+        boolean creative = player.getGameMode() == GameMode.CREATIVE;
+        // Outside Creative there is nothing a second activation could do while
+        // the first is still running: it would only ever be answered with a
+        // cooldown refusal. Saying nothing at all is the honest response - the
+        // action-bar countdown is already telling the player it is running, and
+        // every stray right click was otherwise prompting and then refusing.
+        if (alreadyRunning && !creative) {
+            return;
+        }
+        boolean deactivating = creative && alreadyRunning;
         if (!claimConfirmation(player, definition, deactivating)) {
             return;
         }

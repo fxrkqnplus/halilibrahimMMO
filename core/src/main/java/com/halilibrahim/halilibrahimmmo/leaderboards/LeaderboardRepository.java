@@ -52,6 +52,13 @@ public final class LeaderboardRepository {
                     ORDER BY 2 DESC
                     LIMIT ?
                     """;
+            case WEALTH -> """
+                    SELECT p.player_name, w.wealth_points, 0
+                    FROM hmmo_player_wealth w
+                    JOIN hmmo_player_profiles p ON p.player_id = w.player_id
+                    ORDER BY w.wealth_points DESC
+                    LIMIT ?
+                    """;
         };
         return database.execute(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {

@@ -36,5 +36,23 @@ public enum AbilityEffectType {
      * into love mode for the ability's duration, pairing up a whole herd at
      * once without spending a single breeding item.
      */
-    LOVE_CALL
+    LOVE_CALL;
+
+    /**
+     * Whether the whole effect has already happened by the time activation
+     * returns, so nothing is left for the duration to hold open.
+     *
+     * <p>This is what stops Creative mode from parking a one-shot ability for
+     * six hours. Creative deliberately stretches an ability's duration so a
+     * sustained buff stays up until it is switched off - but a shockwave has
+     * already thrown everything nearby, and a growth surge has already grown
+     * every crop, before the timer even starts. Holding those open only made
+     * them unusable again until the player remembered to toggle them off, when
+     * what they wanted was to press it again. Their configured duration is used
+     * unchanged instead, which for Yıkıcı Darbe is the two seconds it takes to
+     * watch the dust settle.</p>
+     */
+    public boolean resolvesImmediately() {
+        return this == KNOCKBACK_SLAM || this == GROWTH_SURGE || this == LOVE_CALL;
+    }
 }

@@ -9,8 +9,12 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStreamReader;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -19,11 +23,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class CosmeticConfigTest {
 
-    // Particle#valueOf() needs a live registry unavailable outside a running
-    // Paper server, so - like SkillMaterialConfigTest/QuestConfigTest - the
-    // particle name is asserted against a known allow list rather than
-    // calling it from this test.
-    private static final Set<String> SUPPORTED_PARTICLES = Set.of("END_ROD", "FLAME", "BUBBLE_POP", "CRIT");
+    /**
+     * {@code Particle#valueOf()} needs a live registry that does not exist
+     * outside a running Paper server - on this version merely initialising the
+     * class throws. The constant <em>names</em> can still be read reflectively
+     * without initialising it, which gives the exact, always-current valid set
+     * and replaces the hand-maintained allow list this test used to carry (and
+     * which had to be edited every time a cosmetic gained a new effect).
+     */
+    private static final Set<String> SUPPORTED_PARTICLES = particleNames();
+
+    private static Set<String> particleNames() {
+        try {
+            Class<?> type = Class.forName("org.bukkit.Particle", false, CosmeticConfigTest.class.getClassLoader());
+            return Arrays.stream(type.getDeclaredFields())
+                    .filter(field -> Modifier.isStatic(field.getModifiers()) && field.getType() == type)
+                    .map(Field::getName)
+                    .collect(Collectors.toUnmodifiableSet());
+        } catch (ClassNotFoundException exception) {
+            throw new IllegalStateException("Missing Bukkit class on the test classpath: org.bukkit.Particle", exception);
+        }
+    }
 
     @Test
     void bundledCosmeticsDeclareValidIconsEffectsAndConditions() {

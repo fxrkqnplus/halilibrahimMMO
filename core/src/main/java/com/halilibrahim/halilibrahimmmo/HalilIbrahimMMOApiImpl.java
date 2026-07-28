@@ -20,7 +20,9 @@ import com.halilibrahim.halilibrahimmmo.api.titles.TitleSnapshot;
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.collections.CollectionDefinition;
 import com.halilibrahim.halilibrahimmmo.collections.CollectionService;
+import com.halilibrahim.halilibrahimmmo.boss.BossService;
 import com.halilibrahim.halilibrahimmmo.config.ConfigService;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticDefinition;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticService;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
@@ -71,6 +73,8 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
     private final TitleService titles;
     private final CosmeticService cosmetics;
     private final FeedbackService feedback;
+    private final WealthService wealth;
+    private final BossService bosses;
 
     public HalilIbrahimMMOApiImpl(
             HalilIbrahimMMOPlugin plugin,
@@ -88,7 +92,9 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
             LeaderboardService leaderboards,
             TitleService titles,
             CosmeticService cosmetics,
-            FeedbackService feedback
+            FeedbackService feedback,
+            WealthService wealth,
+            BossService bosses
     ) {
         this.plugin = plugin;
         this.configService = configService;
@@ -106,6 +112,8 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
         this.titles = titles;
         this.cosmetics = cosmetics;
         this.feedback = feedback;
+        this.wealth = wealth;
+        this.bosses = bosses;
     }
 
     @Override
@@ -138,6 +146,8 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
             titles.reload();
             cosmetics.reload();
             feedback.reload();
+            wealth.reload();
+            bosses.reload();
             logger.info("Yapilandirma ve mesajlar basariyla yeniden yuklendi.");
             return true;
         } catch (Exception exception) {

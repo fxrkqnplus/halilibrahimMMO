@@ -14,6 +14,7 @@ public final class UnlockConditions {
             case QUEST_COMPLETED -> context.completedQuestIds().contains(condition.referenceId());
             case COLLECTION_COMPLETED -> context.completedCollectionIds().contains(condition.referenceId());
             case SKILL_LEVEL -> context.skillLevels().getOrDefault(condition.referenceId(), 0) >= condition.level();
+            case WEALTH -> context.wealth() >= condition.amount();
         };
     }
 }

@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.command;
 
 import com.halilibrahim.halilibrahimmmo.home.HomeActionResult;
 import com.halilibrahim.halilibrahimmmo.home.HomeService;
+import com.halilibrahim.halilibrahimmmo.locale.DurationFormatter;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.progression.FeatureUnlockRules;
@@ -91,6 +92,9 @@ public final class HomeCommand implements BasicCommand {
             case FORBIDDEN_WORLD -> messages.send(player, MessageKey.HOME_FORBIDDEN_WORLD);
             case WORLD_MISSING -> messages.send(player, MessageKey.HOME_WORLD_MISSING);
             case INVALID_NAME -> messages.send(player, MessageKey.HOME_INVALID_NAME);
+            case COOLDOWN -> messages.send(player, MessageKey.HOME_COOLDOWN, Map.of(
+                    "sure", DurationFormatter.ofMillis(messages, homes.teleportCooldownRemaining(player.getUniqueId()))
+            ));
         }
     }
 
@@ -100,7 +104,9 @@ public final class HomeCommand implements BasicCommand {
             case LOCKED -> sendLocked(player);
             case FORBIDDEN_WORLD -> messages.send(player, MessageKey.HOME_FORBIDDEN_WORLD);
             case INVALID_NAME -> messages.send(player, MessageKey.HOME_INVALID_NAME);
-            case NOT_SET, WORLD_MISSING -> messages.send(player, MessageKey.HOME_USAGE);
+            // Setting a home is never rate limited, so COOLDOWN cannot reach
+            // here; it shares the catch-all with the other unreachable results.
+            case NOT_SET, WORLD_MISSING, COOLDOWN -> messages.send(player, MessageKey.HOME_USAGE);
         }
     }
 

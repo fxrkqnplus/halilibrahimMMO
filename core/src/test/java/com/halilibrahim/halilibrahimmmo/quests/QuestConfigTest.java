@@ -23,8 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class QuestConfigTest {
 
     private static final Set<String> SUPPORTED_TYPES = Set.of("PERMANENT", "DAILY", "WEEKLY");
+    /** Roughly what fits on a scoreboard line alongside its progress fraction and XP tag. */
+    private static final int MAXIMUM_SHORT_NAME_LENGTH = 20;
     private static final Set<String> SUPPORTED_OBJECTIVES =
-            Set.of("BLOCK_BREAK", "MOB_KILL", "STRUCTURE_DISCOVER", "ITEM_OBTAIN");
+            Set.of("BLOCK_BREAK", "MOB_KILL", "STRUCTURE_DISCOVER", "ITEM_OBTAIN", "DEED");
+    private static final Set<String> SUPPORTED_DIMENSIONS = Set.of("NORMAL", "NETHER", "THE_END");
 
     // Material#isBlock() needs a live RegistryAccess unavailable outside a running
     // Paper server, so - like SkillMaterialConfigTest - block-ness is asserted
@@ -35,7 +38,7 @@ final class QuestConfigTest {
             "COAL_ORE", "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE",
             "GOLD_ORE", "DEEPSLATE_GOLD_ORE", "LAPIS_ORE", "DEEPSLATE_LAPIS_ORE", "REDSTONE_ORE", "DEEPSLATE_REDSTONE_ORE",
             "DIRT", "COARSE_DIRT", "GRASS_BLOCK", "GRAVEL", "SAND", "RED_SAND", "CLAY", "PODZOL", "MYCELIUM", "ROOTED_DIRT",
-            "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "CRIMSON_STEM",
+            "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "CRIMSON_STEM", "GOLD_BLOCK",
             "WHEAT", "CARROTS", "POTATOES", "BEETROOTS", "NETHER_WART"
     );
 
@@ -74,6 +77,13 @@ final class QuestConfigTest {
         for (String id : quests.getKeys(false)) {
             assertNotNull(quests.getString(id + ".gorunen-ad"), id + " is missing gorunen-ad");
             assertNotNull(quests.getString(id + ".aciklama"), id + " is missing aciklama");
+            // The sidebar truncates rather than wraps, so a long name there is
+            // silently cut off mid-word - this is the only place that catches it.
+            String shortName = quests.getString(id + ".kisa-ad");
+            assertNotNull(shortName, id + " is missing kisa-ad");
+            assertFalse(shortName.isBlank(), id + " has a blank kisa-ad");
+            assertTrue(shortName.length() <= MAXIMUM_SHORT_NAME_LENGTH,
+                    id + "'s kisa-ad is too long for a sidebar line: " + shortName);
             assertNotNull(Material.matchMaterial(quests.getString(id + ".simge", "")), id + " has an unknown simge material");
             assertTrue(SUPPORTED_TYPES.contains(quests.getString(id + ".tur")), id);
             assertTrue(skillIds.contains(quests.getString(id + ".beceri", "")), id + " must name a configured beceri");
@@ -102,6 +112,10 @@ final class QuestConfigTest {
                                 id + " -> unknown structure " + structureName);
                     }
                 }
+                case "DEED" -> {
+                    String deed = quests.getString(id + ".hedef.eylem", "");
+                    assertTrue(QuestDeed.byId(deed).isPresent(), id + " -> unknown deed " + deed);
+                }
                 default -> {
                     assertFalse(quests.getStringList(id + ".hedef.esyalar").isEmpty(), id + " has no esyalar");
                     for (String itemName : quests.getStringList(id + ".hedef.esyalar")) {
@@ -109,6 +123,25 @@ final class QuestConfigTest {
                     }
                 }
             }
+            String dimension = quests.getString(id + ".hedef.boyut", "");
+            assertTrue(dimension.isEmpty() || SUPPORTED_DIMENSIONS.contains(dimension),
+                    id + " -> unknown hedef.boyut " + dimension);
+        }
+    }
+
+    /**
+     * Every deed must be asked for by something. A {@link QuestDeed} nothing
+     * uses is a listener firing for nobody, which is exactly the kind of dead
+     * weight that only ever gets noticed once it breaks.
+     */
+    @Test
+    void everyDeedIsUsedByAtLeastOneQuest() {
+        ConfigurationSection quests = quests();
+        Set<String> used = quests.getKeys(false).stream()
+                .map(id -> quests.getString(id + ".hedef.eylem", ""))
+                .collect(Collectors.toUnmodifiableSet());
+        for (QuestDeed deed : QuestDeed.values()) {
+            assertTrue(used.contains(deed.id()), "no quest asks for the " + deed.id() + " deed");
         }
     }
 

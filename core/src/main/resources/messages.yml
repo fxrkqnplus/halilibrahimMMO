@@ -12,7 +12,7 @@
 #  onu alır. Kullanılabilir adlar:
 #    guc prestij sinif seviye xp kabiliyet enerji can gorev koleksiyon
 #    gunluk liderlik unvan kozmetik madencilik odunculuk kazicilik avcilik
-#    tarimcilik hayvancilik tamam eksik ok uyari bilgi kutlama
+#    tarimcilik hayvancilik tamam eksik ok uyari bilgi kutlama zenginlik boss
 #  Örnek: "<gold><simge:guc> Güç:</gold> <white><seviye></white>"
 #
 #  Bu dosyayı değiştirdikten sonra /haliladmin panelindeki "Yeniden Yükle"
@@ -44,6 +44,8 @@ yonetici:
   versiyon: "<yellow>HalilIbrahimMMO</yellow> <gray>sürüm</gray> <white><surum></white> <dark_gray>|</dark_gray> <gray>Paper <white><paper_surumu></white> için geliştirildi.</gray>"
   debug-acildi: "<green>Hata ayıklama modu <white>açıldı</white>.</green>"
   debug-kapatildi: "<yellow>Hata ayıklama modu <white>kapatıldı</white>.</yellow>"
+  boss-cagirildi: "<gold><simge:boss> Dünya bossu çağırıldı:</gold> <white><isim></white> <gray>(koordinatlar sohbete duyuruldu)</gray>"
+  boss-oyuncu-yok: "<red>Boss çağırmak için normal dünyada en az bir oyuncu çevrimiçi olmalı.</red>"
   oyuncu:
     bilgi: "<gold><oyuncu></gold> <dark_gray>•</dark_gray> <gray>Güç:</gray> <white><seviye></white> <dark_gray>|</dark_gray> <gray>Prestij:</gray> <white><prestij></white> <dark_gray>|</dark_gray> <gray>Sınıf:</gray> <white><sinif></white> <dark_gray>|</dark_gray> <gray>Beceriler:</gray> <white><beceriler></white>"
     bilgi-sinifsiz: "<gold><oyuncu></gold> <dark_gray>•</dark_gray> <gray>Güç:</gray> <white><seviye></white> <dark_gray>|</dark_gray> <gray>Prestij:</gray> <white><prestij></white> <dark_gray>|</dark_gray> <gray>Sınıf:</gray> <white>Seçilmedi</white> <dark_gray>|</dark_gray> <gray>Beceriler:</gray> <white><beceriler></white>"
@@ -64,6 +66,7 @@ sidebar:
   oyuncu-etiket: "<gray>Oyuncu:</gray> "
   sinif-yok: "<gray><simge:sinif> Sınıf:</gray> <white>Seçilmedi</white>"
   guc: "<gray><simge:guc> Güç:</gray> <gold><seviye></gold> <dark_gray>|</dark_gray> <gray><simge:prestij></gray> <light_purple><prestij></light_purple>"
+  zenginlik: "<gray><simge:zenginlik> Zenginlik:</gray> <blue><zenginlik></blue>"
   aktivasyon-onerisi: "<yellow><simge:ok> Başlamak için /mmo aktif yaz!</yellow>"
   sinif-onerisi: "<yellow><simge:ok> Sınıf seçmek için /sınıf yaz!</yellow>"
   sinif-seviye: "<aqua><simge:sinif> <sinif></aqua> <gray>Sv.</gray><aqua><seviye></aqua> <dark_gray>(<xp>/<gereken>)</dark_gray>"
@@ -77,6 +80,9 @@ sidebar:
   takas-acik: "<yellow><simge:koleksiyon> Takas açık:</yellow> <white><oyuncu></white>"
   gunluk-gorev-baslik: "<yellow><simge:gorev> Günlük Görevler:</yellow>"
   haftalik-gorev-baslik: "<gold><simge:gorev> Haftalık Görevler:</gold>"
+  # Kalici gorevler panelde yalnizca oyuncunun /görev ekranindan sabitledigi
+  # gorevlerden olusur - onlarcasi var, hepsini listelemek mumkun degil.
+  kalici-gorev-baslik: "<aqua><simge:gorev> Kalıcı Görevler:</aqua>"
   gunluk-gorev-satiri: "<gray>• <gorev>:</gray> <yellow><ilerleme></yellow> <dark_gray>(+<xp>)</dark_gray>"
   tamamlanan-gorev-satiri: "<green><simge:tamam> <gorev></green> <dark_gray>(+<xp>)</dark_gray>"
   alt-bilgi: "<dark_gray>/panel ile aç/kapat</dark_gray>"
@@ -153,6 +159,10 @@ prestij:
 gorev:
   tamamlandi: "<green><simge:gorev> <gorev> görevini tamamladın!</green> <gray>(+<xp> XP)</gray>"
   tamamlandi-duyuru: "<aqua><simge:gorev> <oyuncu> <gorev> görevini tamamladı!</aqua>"
+  # Gorev panosundan bir goreve tiklayinca o gorev sagdaki panele sabitlenir.
+  sabitlendi: "<green><simge:tamam> <gorev> panele sabitlendi.</green>"
+  sabit-kaldirildi: "<yellow><simge:eksik> <gorev> panelden kaldırıldı.</yellow>"
+  sabit-dolu: "<red>Bu bölüme en fazla <white><sayi></white> görev sabitleyebilirsin.</red> <gray>Önce birini kaldır.</gray>"
 
 # "/ev" ("/home") komutu - sinif seviyesi 15'te ya da ilk prestijde acilir.
 ev:
@@ -165,6 +175,50 @@ ev:
   yasak-dunya: "<red><simge:uyari> Ev sistemi Nether ve End'de çalışmaz.</red>"
   dunya-yok: "<red>Evinin bulunduğu dünya artık yüklü değil.</red>"
   gecersiz-isim: "<red>Ev ismi boş olamaz ve en fazla 32 karakter olabilir.</red>"
+  # Ev'e isinlanma 5 dakikada bir kullanilabilir; ev ayarlamak/silmek serbesttir.
+  bekleme: "<yellow>Tekrar evine ışınlanabilmen için <white><sure></white> beklemelisin.</yellow>"
+
+# "/rtp" - haritanin rastgele bir noktasina isinlanma (30 dakikada bir).
+rtp:
+  araniyor: "<gray><simge:ok> Haritada güvenli bir nokta aranıyor...</gray>"
+  varildi: "<green><simge:ok> Işınlandın!</green> <gray>Koordinatlar:</gray> <white><x>, <y>, <z></white>"
+  bekleme: "<yellow>Tekrar rastgele ışınlanabilmen için <white><sure></white> beklemelisin.</yellow>"
+  yasak-dunya: "<red><simge:uyari> Rastgele ışınlanma yalnızca normal dünyada çalışır.</red>"
+  bulunamadi: "<red>Güvenli bir nokta bulunamadı. Lütfen tekrar dene.</red>"
+
+# Zenginlik Puani - harcanmaz, yalnizca artar. Kilometre taslari hem oyuncuya
+# ozel olarak hem de tum sunucuya duyurulur.
+# Dunya bosslari. Her nadirligin kendi rengi ve kendi metni vardir - bir
+# nadirligin rengini degistirmek icin yalnizca bu satirlari duzenlemek yeter.
+#   isim-*  : bossun basinin ustunde yazan ad
+#   dogus-* : boss haritada belirdiginde tum sunucuya giden duyuru
+#   olum-*  : boss oldurulduğunde tum sunucuya giden duyuru
+#   kafa-*  : bossun geride biraktigi kafanin uzerindeki ad
+boss:
+  isim-siradan: "<gray>[Sıradan]</gray> <white><isim></white>"
+  isim-nadir: "<green>[Nadir]</green> <white><isim></white>"
+  isim-epik: "<light_purple>[Epik]</light_purple> <white><isim></white>"
+  isim-efsanevi: "<gold><bold>[Efsanevi]</bold></gold> <yellow><isim></yellow>"
+  isim-mistik: "<gradient:#FF00E4:#00FFFF><bold>[Mistik]</bold></gradient> <aqua><isim></aqua>"
+  dogus-siradan: "<gray><simge:boss> Sıradan bir boss belirdi:</gray> <white><isim></white> <dark_gray>(<x>, <z>)</dark_gray>"
+  dogus-nadir: "<green><simge:boss> Nadir bir boss belirdi:</green> <white><isim></white> <dark_gray>(<x>, <z>)</dark_gray>"
+  dogus-epik: "<light_purple><simge:boss> Epik bir boss belirdi:</light_purple> <white><isim></white> <dark_gray>(<x>, <z>)</dark_gray>"
+  dogus-efsanevi: "<gold><bold><simge:boss> EFSANEVİ BİR BOSS BELİRDİ:</bold></gold> <yellow><isim></yellow> <dark_gray>(<x>, <z>)</dark_gray>"
+  dogus-mistik: "<gradient:#FF00E4:#00FFFF><bold><simge:boss> MİSTİK BİR BOSS BELİRDİ:</bold></gradient> <aqua><isim></aqua> <dark_gray>(<x>, <z>)</dark_gray>"
+  olum-siradan: "<gray><simge:tamam> <oyuncu>, <isim> adlı bossu öldürdü.</gray>"
+  olum-nadir: "<green><simge:tamam> <oyuncu>, <isim> adlı nadir bossu öldürdü!</green>"
+  olum-epik: "<light_purple><simge:tamam> <oyuncu>, <isim> adlı epik bossu öldürdü!</light_purple>"
+  olum-efsanevi: "<gold><bold><simge:kutlama> <oyuncu>, EFSANEVİ <isim> bossunu öldürdü!</bold></gold>"
+  olum-mistik: "<gradient:#FF00E4:#00FFFF><bold><simge:kutlama> <oyuncu>, MİSTİK <isim> bossunu öldürdü!</bold></gradient>"
+  kafa-siradan: "<gray><isim>'nin Kafası</gray>"
+  kafa-nadir: "<green><isim>'nin Kafası</green>"
+  kafa-epik: "<light_purple><isim>'nin Kafası</light_purple>"
+  kafa-efsanevi: "<gold><isim>'nin Kafası</gold>"
+  kafa-mistik: "<gradient:#FF00E4:#00FFFF><isim>'nin Kafası</gradient>"
+
+zenginlik:
+  kilometre-tasi: "<blue><simge:zenginlik> Zenginlik kilometre taşı!</blue> <gray>Toplam puanın:</gray> <white><zenginlik></white>"
+  kilometre-tasi-duyuru: "<blue><bold><simge:zenginlik> <oyuncu> <esik> zenginlik puanına ulaştı!</bold></blue>"
 
 # "/takas" ("/trade") komutu - sinif seviyesi 20'de ya da ilk prestijde acilir.
 takas:
@@ -236,6 +290,10 @@ geribildirim:
   guc-baslik: "<green>Güç Arttı!</green>"
   guc-altbaslik: "<white>Yeni Güç: <guc></white>"
   guc-duyuru: "<gold><bold><simge:guc> <oyuncu> Güç <guc> seviyesine ulaştı!</bold></gold>"
+  # "/rtp" ile inilen noktanin ekranda gosterilen karsilamasi.
+  rtp-bossbar: "<green><simge:ok> Bilinmeyen topraklara indin</green>"
+  rtp-baslik: "<green><bold>Yeni Diyarlar</bold></green>"
+  rtp-altbaslik: "<white><x>, <y>, <z></white>"
 
 # =====================================================================
 #  Envanter Menüleri (/menu)
@@ -245,6 +303,10 @@ gui:
 
   yonetici:
     baslik: "<dark_red>HalilIbrahimMMO</dark_red> <dark_gray>-</dark_gray> <gray>Yönetici Paneli</gray>"
+    baslik-oge: "<dark_red><bold><simge:bilgi> Yönetim Paneli</bold></dark_red>"
+    baslik-aciklama: "<gray>Sürüm <white><surum></white> <dark_gray>|</dark_gray> Çevrimiçi <white><oyuncu></white> oyuncu</gray>"
+    boss-oge: "<gold><simge:boss> Dünya Bossu Çağır</gold>"
+    boss-aciklama: "<gray>Sıradaki bossu beklemeden şimdi çağırır. Türünü, nadirliğini ve yerini yine sistem seçer.</gray>"
     yenile-oge: "<green>Yeniden Yükle</green>"
     yenile-aciklama: "<gray>config.yml, messages.yml ve tüm oyun verisi dosyalarını diskten yeniden okur.</gray>"
     debug-oge: "<yellow>Hata Ayıklama Modu</yellow>"
@@ -378,6 +440,12 @@ gui:
 
   sinif:
     baslik: "<dark_gray>Sınıfım</dark_gray>"
+    # Ekranin en ustundeki ozet: oynanan sinif ve o sinifin kendi seviyesi.
+    baslik-oge: "<gold><simge:sinif> <sinif></gold>"
+    baslik-aciklama: "<gray>Sınıf seviyesi <white><seviye></white> <dark_gray>•</dark_gray> <simge:xp> <white><xp></white><gray>/</gray><white><gereken></white></gray>"
+    baslik-oge-sinifsiz: "<gray><simge:sinif> Henüz bir sınıfın yok</gray>"
+    sinif-yok-oge: "<red><simge:uyari> Önce bir sınıf seç</red>"
+    sinif-yok-aciklama: "<gray>Yetenek ağacı seçtiğin sınıfa aittir. Yukarıdaki sınıflardan birine tıkla.</gray>"
     oge: "<red><sinif></red>"
     oge-aciklama-secili: "<gray>Seçili sınıfın <dark_gray>•</dark_gray> Yetenek ağacı aşağıda <dark_gray>•</dark_gray> Değiştirmek için tıkla</gray>"
     oge-aciklama-secilmemis: "<gray>Sınıf değiştirme ekranını açmak için tıkla</gray>"
@@ -396,9 +464,11 @@ gui:
     yetenek-etki-kabiliyet-guc: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin etkisini <white>%<yuzde></white> güçlendirir.</gray>"
     yetenek-mevcut-etki: "<dark_gray>Şu anki toplam: <white><deger></white></dark_gray>"
     yetenek-mevcut-etki-yuzde: "<dark_gray>Şu anki toplam: <white>%<deger></white></dark_gray>"
-    # Her yetenegin hangi puan havuzundan odendigini gosteren ilk satir.
-    yetenek-kategori-ozellik: "<gold><simge:guc> Özellik puanı ile açılır</gold>"
-    yetenek-kategori-kabiliyet: "<light_purple><simge:kabiliyet> Kabiliyet puanı ile açılır</light_purple>"
+    # Yetenek agaci iki bloga ayrilir; bunlar o bloklarin baslik ogeleridir.
+    yetenek-kategori-ozellik: "<gold><simge:guc> Özellik Yetenekleri</gold>"
+    yetenek-kategori-ozellik-aciklama: "<gray>Sağdaki yetenekler <white>özellik puanı</white> ile açılır: can, hasar ve enerji.</gray>"
+    yetenek-kategori-kabiliyet: "<light_purple><simge:kabiliyet> Kabiliyet Yetenekleri</light_purple>"
+    yetenek-kategori-kabiliyet-aciklama: "<gray>Sağdaki yetenekler <white>kabiliyet puanı</white> ile açılır ve tek bir kabiliyeti güçlendirir.</gray>"
     ozellik-puani-oge: "<gold><simge:guc> Özellik Puanı</gold>"
     ozellik-puani-aciklama: "<gray>Kalan <white><kalan></white>/<white><toplam></white> <dark_gray>•</dark_gray> Can, hasar ve enerji yeteneklerinde harcanır</gray>"
     kabiliyet-puani-oge: "<light_purple><simge:kabiliyet> Kabiliyet Puanı</light_purple>"
@@ -415,7 +485,7 @@ gui:
     yetenek-satiri: "<gray>- <white><kabiliyet></white></gray>"
     aciklama-avci: "<gray>Canavarların korkulu rüyası, amansız bir dövüşçü. Avcılıktan ekstra XP kazanır.</gray>"
     aciklama-madenci: "<gray>Mağaraların derinliklerinde yaşayan bir cevher ustası. Madencilikten ekstra XP kazanır.</gray>"
-    aciklama-tabiat-varisi: "<gray>Toprağın, ormanın, tarlanın ve sürünün tek vârisi. Odunculuk, kazıcılık, tarımcılık ve hayvancılığın DÖRDÜNDEN birden ekstra XP kazanır - ve karşılığında en geniş kabiliyet listesine sahiptir.</gray>"
+    aciklama-tabiat-varisi: "<gray>Toprağın, ormanın, tarlanın ve sürünün tek vârisi. Odunculuk, kazıcılık, tarımcılık ve hayvancılığın DÖRDÜNDEN birden ekstra XP kazanır; kabiliyetleri de bu dört becerinin her birine bir tane düşer.</gray>"
 
   sinif-onay:
     baslik: "<dark_purple>Emin misin?</dark_purple>"
@@ -448,6 +518,9 @@ gui:
     sekme-kapali: "<dark_gray>Görmek için tıkla</dark_gray>"
     bilgi-oge: "<gold><simge:bilgi> Görev Durumun</gold>"
     bilgi-aciklama: "<gray>Tamamlanan <white><tamamlanan></white>/<white><toplam></white> görev</gray>"
+    bilgi-sabitleme: "<gray>Bir göreve tıklayarak sağdaki panele sabitleyebilirsin <dark_gray>(bölüm başına en fazla <sayi>)</dark_gray></gray>"
+    oge-sabitli: "<aqua><simge:tamam> Panele sabitlendi <dark_gray>• kaldırmak için tıkla</dark_gray></aqua>"
+    oge-sabitsiz: "<dark_gray>Panele sabitlemek için tıkla</dark_gray>"
     bolum-gunluk: "<yellow><simge:gorev> Günlük Görevler</yellow>"
     bolum-gunluk-aciklama: "<gray>Her gün havuzdan rastgele yeniden atanır.</gray>"
     bolum-haftalik: "<gold><simge:gorev> Haftalık Görevler</gold>"
@@ -492,11 +565,13 @@ gui:
     prestij: "<light_purple>Prestij</light_purple>"
     gorev: "<aqua>Görev Tamamlama</aqua>"
     koleksiyon: "<blue>Koleksiyon</blue>"
+    zenginlik: "<blue><simge:zenginlik> Zenginlik</blue>"
     yetenek-oge: "<green><yetenek></green>"
     detay-baslik-seviye: "<dark_gray>Güç Liderlik Tablosu</dark_gray>"
     detay-baslik-prestij: "<dark_gray>Prestij Liderlik Tablosu</dark_gray>"
     detay-baslik-gorev: "<dark_gray>Görev Tamamlama Liderlik Tablosu</dark_gray>"
     detay-baslik-koleksiyon: "<dark_gray>Koleksiyon Liderlik Tablosu</dark_gray>"
+    detay-baslik-zenginlik: "<dark_gray><simge:zenginlik> Zenginlik Liderlik Tablosu</dark_gray>"
     detay-baslik-yetenek: "<dark_gray><yetenek> Liderlik Tablosu</dark_gray>"
     detay-oge: "<gold>#<sira></gold> <white><oyuncu></white>"
     oge-seviye: "<gray>Seviye <white><seviye></white> <dark_gray>|</dark_gray> XP <white><xp></white></gray>"
@@ -504,6 +579,7 @@ gui:
     oge-prestij: "<gray>Prestij <white><prestij></white></gray>"
     oge-gorev: "<gray><sayi> görev tamamlandı</gray>"
     oge-koleksiyon: "<gray><sayi> öge toplandı</gray>"
+    oge-zenginlik: "<blue><simge:zenginlik> <zenginlik></blue> <gray>zenginlik puanı</gray>"
     bos-oge: "<gray>Bu liderlik tablosunda henüz kimse yok.</gray>"
 
   unvan:

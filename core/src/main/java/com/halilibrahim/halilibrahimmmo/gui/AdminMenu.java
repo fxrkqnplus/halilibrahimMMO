@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.gui;
 
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
@@ -13,19 +14,25 @@ import java.util.Map;
 
 /**
  * {@code /haliladmin}'s hub screen - the only entry point into the plugin's
- * administrative surface now that {@code /rpg}'s chat-argument dispatch is
- * gone (see {@code AdminCommand}). Every action here calls the exact same
- * service methods the old {@code SubCommand}s did, just triggered by a click
- * instead of parsed chat arguments.
+ * administrative surface.
+ *
+ * <p>Built in the same visual language as {@code /menü}: a framed 45-slot
+ * board, a personal header reading the live server state, and every action
+ * carrying a line explaining what it does before it is clicked. Staff screens
+ * used to be the plain 27-slot grid this project started with, which made the
+ * one screen where a misclick actually costs something the least legible screen
+ * in the plugin.</p>
  */
 public final class AdminMenu implements GuiView {
 
-    private static final int RELOAD_SLOT = 11;
-    private static final int DEBUG_SLOT = 13;
-    private static final int VERSION_SLOT = 15;
-    private static final int ONLINE_PLAYERS_SLOT = 20;
-    private static final int ALL_PLAYERS_SLOT = 24;
-    private static final int CREDITS_SLOT = 22;
+    private static final int HEADER_SLOT = 4;
+    private static final int RELOAD_SLOT = 19;
+    private static final int DEBUG_SLOT = 21;
+    private static final int ONLINE_PLAYERS_SLOT = 23;
+    private static final int ALL_PLAYERS_SLOT = 25;
+    private static final int BOSS_SLOT = 30;
+    private static final int VERSION_SLOT = 32;
+    private static final int CREDITS_SLOT = 40;
 
     private final GuiServices services;
 
@@ -40,15 +47,21 @@ public final class AdminMenu implements GuiView {
 
     @Override
     public int size() {
-        return 27;
+        return 45;
     }
 
     @Override
     public void populate(Player player, Inventory inventory) {
-        ItemStack filler = GuiItems.filler();
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, filler);
-        }
+        GuiItems.frame(inventory, GuiItems.border(), GuiItems.filler());
+        inventory.setItem(HEADER_SLOT, GuiItems.playerHead(
+                player,
+                services.messages().render(MessageKey.GUI_ADMIN_HEADER_ITEM),
+                List.of(services.messages().render(MessageKey.GUI_ADMIN_HEADER_LORE, Map.of(
+                        "surum", services.api().getPluginVersion(),
+                        "oyuncu", Integer.toString(Bukkit.getOnlinePlayers().size())
+                )))
+        ));
+
         inventory.setItem(RELOAD_SLOT, GuiItems.of(
                 Material.EMERALD,
                 services.messages().render(MessageKey.GUI_ADMIN_RELOAD_ITEM),
@@ -61,14 +74,6 @@ public final class AdminMenu implements GuiView {
                 List.of(services.messages().render(debugEnabled ? MessageKey.GUI_ADMIN_DEBUG_LORE_ON : MessageKey.GUI_ADMIN_DEBUG_LORE_OFF)),
                 debugEnabled
         ));
-        inventory.setItem(VERSION_SLOT, GuiItems.of(
-                Material.BOOK,
-                services.messages().render(MessageKey.GUI_ADMIN_VERSION_ITEM),
-                List.of(services.messages().render(MessageKey.VERSION_INFO, Map.of(
-                        "surum", services.api().getPluginVersion(),
-                        "paper_surumu", services.api().getSupportedMinecraftVersion()
-                )))
-        ));
         inventory.setItem(ONLINE_PLAYERS_SLOT, GuiItems.of(
                 Material.PLAYER_HEAD,
                 services.messages().render(MessageKey.GUI_ADMIN_ONLINE_PLAYERS_ITEM),
@@ -78,6 +83,19 @@ public final class AdminMenu implements GuiView {
                 Material.BOOKSHELF,
                 services.messages().render(MessageKey.GUI_ADMIN_ALL_PLAYERS_ITEM),
                 List.of(services.messages().render(MessageKey.GUI_ADMIN_ALL_PLAYERS_LORE))
+        ));
+        inventory.setItem(BOSS_SLOT, GuiItems.of(
+                Material.WITHER_SKELETON_SKULL,
+                services.messages().render(MessageKey.GUI_ADMIN_BOSS_ITEM),
+                List.of(services.messages().render(MessageKey.GUI_ADMIN_BOSS_LORE))
+        ));
+        inventory.setItem(VERSION_SLOT, GuiItems.of(
+                Material.BOOK,
+                services.messages().render(MessageKey.GUI_ADMIN_VERSION_ITEM),
+                List.of(services.messages().render(MessageKey.VERSION_INFO, Map.of(
+                        "surum", services.api().getPluginVersion(),
+                        "paper_surumu", services.api().getSupportedMinecraftVersion()
+                )))
         ));
         inventory.setItem(CREDITS_SLOT, GuiItems.of(
                 Material.NETHER_STAR,
@@ -102,9 +120,27 @@ public final class AdminMenu implements GuiView {
             }
             case ONLINE_PLAYERS_SLOT -> GuiManager.open(player, new AdminOnlinePlayersMenu(services));
             case ALL_PLAYERS_SLOT -> GuiManager.open(player, new AdminAllPlayersMenu(services));
+            case BOSS_SLOT -> spawnBoss(player);
             case CREDITS_SLOT -> GuiManager.open(player, new CreditsMenu(services, true));
             default -> {
             }
         }
+    }
+
+    /**
+     * Spawns the next world boss immediately instead of waiting out the
+     * interval. The boss still picks its own archetype, rarity and location, so
+     * this is a "start it now" button rather than a way to hand-place a mystic
+     * boss on request.
+     */
+    private void spawnBoss(Player player) {
+        services.bosses().spawnNow().ifPresentOrElse(
+                name -> {
+                    services.messages().send(player, MessageKey.ADMIN_BOSS_SPAWNED, Map.of("isim", name));
+                    services.logger().info("Yonetici " + player.getName() + " elle bir dunya bossu cagirdi: " + name + ".");
+                },
+                () -> services.messages().send(player, MessageKey.ADMIN_BOSS_NO_ANCHOR)
+        );
+        player.closeInventory();
     }
 }

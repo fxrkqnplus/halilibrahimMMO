@@ -43,6 +43,7 @@ public final class QuestListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         quests.loadAll(event.getPlayer().getUniqueId());
+        quests.loadPins(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
@@ -62,7 +63,7 @@ public final class QuestListener implements Listener {
         if (!placedBlocks.isEligibleTerrain(event.getBlock()) || !breakRateLimiter.allow(player.getUniqueId())) {
             return;
         }
-        quests.awardBlock(player.getUniqueId(), event.getBlock().getType())
+        quests.awardBlock(player.getUniqueId(), event.getBlock().getType(), player.getWorld().getEnvironment())
                 .thenAccept(completed -> completions.notifyCompleted(player, completed));
     }
 
@@ -73,7 +74,7 @@ public final class QuestListener implements Listener {
                 || !isGameplayGameMode(killer)) {
             return;
         }
-        quests.awardMob(killer.getUniqueId(), event.getEntity().getType())
+        quests.awardMob(killer.getUniqueId(), event.getEntity().getType(), event.getEntity().getWorld().getEnvironment())
                 .thenAccept(completed -> completions.notifyCompleted(killer, completed));
     }
 

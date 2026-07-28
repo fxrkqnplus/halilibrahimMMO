@@ -50,6 +50,7 @@ public final class LeaderboardDetailMenu implements GuiView {
             case PRESTIGE -> MessageKey.GUI_LEADERBOARD_DETAIL_TITLE_PRESTIGE;
             case QUEST_COMPLETIONS -> MessageKey.GUI_LEADERBOARD_DETAIL_TITLE_QUESTS;
             case COLLECTION_ENTRIES -> MessageKey.GUI_LEADERBOARD_DETAIL_TITLE_COLLECTIONS;
+            case WEALTH -> MessageKey.GUI_LEADERBOARD_DETAIL_TITLE_WEALTH;
         };
         return services.messages().render(key);
     }
@@ -101,6 +102,9 @@ public final class LeaderboardDetailMenu implements GuiView {
             ));
             case COLLECTION_ENTRIES -> services.messages().render(MessageKey.GUI_LEADERBOARD_ENTRY_COLLECTION_LORE, Map.of(
                     "sayi", Long.toString(entry.primaryValue())
+            ));
+            case WEALTH -> services.messages().render(MessageKey.GUI_LEADERBOARD_ENTRY_WEALTH_LORE, Map.of(
+                    "zenginlik", Long.toString(entry.primaryValue())
             ));
         };
     }

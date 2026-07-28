@@ -7,6 +7,7 @@ import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestProgress;
 import com.halilibrahim.halilibrahimmmo.quests.QuestService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,25 +28,32 @@ public final class UnlockContextLoader {
     private final SkillService skills;
     private final QuestService quests;
     private final CollectionService collections;
+    private final WealthService wealth;
 
-    public UnlockContextLoader(ProfileService profiles, SkillService skills, QuestService quests, CollectionService collections) {
+    public UnlockContextLoader(
+            ProfileService profiles, SkillService skills, QuestService quests,
+            CollectionService collections, WealthService wealth
+    ) {
         this.profiles = profiles;
         this.skills = skills;
         this.quests = quests;
         this.collections = collections;
+        this.wealth = wealth;
     }
 
     public CompletableFuture<UnlockContext> load(UUID playerId, String playerName) {
         return profiles.load(playerId, playerName).thenCompose(profile ->
                 quests.loadAll(playerId).thenCompose(questProgress ->
                         collections.loadAll(playerId).thenCompose(collectionProgress ->
-                                loadSkillLevels(playerId).thenApply(skillLevels -> new UnlockContext(
-                                        skillLevels.values().stream().mapToInt(Integer::intValue).sum(),
-                                        profile.prestige(),
-                                        completedQuestIds(questProgress),
-                                        completedCollectionIds(collectionProgress),
-                                        skillLevels
-                                )))));
+                                loadSkillLevels(playerId).thenCompose(skillLevels ->
+                                        wealth.load(playerId).thenApply(wealthPoints -> new UnlockContext(
+                                                skillLevels.values().stream().mapToInt(Integer::intValue).sum(),
+                                                profile.prestige(),
+                                                completedQuestIds(questProgress),
+                                                completedCollectionIds(collectionProgress),
+                                                skillLevels,
+                                                wealthPoints
+                                        ))))));
     }
 
     private Set<String> completedQuestIds(Map<String, QuestProgress> progressById) {

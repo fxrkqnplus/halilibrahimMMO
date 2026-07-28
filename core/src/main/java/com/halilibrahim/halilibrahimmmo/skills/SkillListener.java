@@ -5,6 +5,8 @@ import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
 import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
 import com.halilibrahim.halilibrahimmmo.exploit.PlacedBlockTracker;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthAwardHandler;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -15,7 +17,18 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/** Bridges valid player actions into persistent skills and ephemeral energy state. */
+/**
+ * Bridges valid player actions into persistent skills and ephemeral energy
+ * state.
+ *
+ * <p>Zenginlik Puanı is awarded from here too rather than from a listener of
+ * its own, deliberately: wealth answers to exactly the same four gates skill XP
+ * does - the MMO must be activated, the gamemode must be a real one, the block
+ * must be world-generated rather than player-placed, and the break rate must be
+ * plausible - and a second listener would have had to reproduce all four and
+ * then keep them in step forever. What differs between the two is only how much
+ * each block or creature is worth, which is a lookup in a different YAML file.</p>
+ */
 public final class SkillListener implements Listener {
 
     private final JavaPlugin plugin;
@@ -26,11 +39,14 @@ public final class SkillListener implements Listener {
     private final BlockBreakRateLimiter breakRateLimiter;
     private final PlacedBlockTracker placedBlocks;
     private final SkillAwardHandler awards;
+    private final WealthService wealth;
+    private final WealthAwardHandler wealthAwards;
 
     public SkillListener(
             JavaPlugin plugin, SkillService skills, AbilityService abilities, EnergyService energy,
             ActivationService activation, BlockBreakRateLimiter breakRateLimiter,
-            PlacedBlockTracker placedBlocks, SkillAwardHandler awards
+            PlacedBlockTracker placedBlocks, SkillAwardHandler awards,
+            WealthService wealth, WealthAwardHandler wealthAwards
     ) {
         this.plugin = plugin;
         this.skills = skills;
@@ -40,6 +56,8 @@ public final class SkillListener implements Listener {
         this.breakRateLimiter = breakRateLimiter;
         this.placedBlocks = placedBlocks;
         this.awards = awards;
+        this.wealth = wealth;
+        this.wealthAwards = wealthAwards;
     }
 
     @EventHandler
@@ -82,6 +100,8 @@ public final class SkillListener implements Listener {
             fellTreeIfUnlocked(player, event);
             skills.awardBlock(player.getUniqueId(), player.getName(), event.getBlock().getType())
                     .thenAccept(result -> awards.handle(player, result));
+            wealth.awardBlock(player.getUniqueId(), event.getBlock().getType())
+                    .thenAccept(award -> wealthAwards.handle(player, award));
         }
     }
 
@@ -92,6 +112,8 @@ public final class SkillListener implements Listener {
                 && SkillAwardHandler.isGameplayGameMode(killer)) {
             skills.awardMob(killer.getUniqueId(), killer.getName(), event.getEntity().getType())
                     .thenAccept(result -> awards.handle(killer, result));
+            wealth.awardEntity(killer.getUniqueId(), event.getEntity().getType())
+                    .thenAccept(award -> wealthAwards.handle(killer, award));
         }
     }
 

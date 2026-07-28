@@ -1,10 +1,16 @@
 # HalilIbrahimMMO - Unvan kataloğu
 # Her unvanın tek bir kazanma koşulu vardır. "tur" alanı şunlardan biri
-# olmalıdır: LEVEL (seviye), PRESTIGE (prestij), QUEST_COMPLETED (gorev-id),
-# COLLECTION_COMPLETED (koleksiyon-id), SKILL_LEVEL (beceri-id + seviye).
+# olmalıdır:
+#   LEVEL                (seviye)
+#   PRESTIGE             (prestij)
+#   QUEST_COMPLETED      (gorev-id)
+#   COLLECTION_COMPLETED (koleksiyon-id)
+#   SKILL_LEVEL          (beceri-id + seviye)
+#   WEALTH               (zenginlik) - Zenginlik Puanı eşiği
 # "sohbet-stili" sohbette ve sağ taraftaki panelde unvanın rengini/kalınlığını
 # belirler: ALTIN, MOR_KALIN, KIRMIZI_KALIN, YESIL_KALIN, MAVI, BEYAZ_KALIN.
 unvanlar:
+  # ----- İlerlemeye dayalı -----
   gezgin:
     gorunen-ad: "Gezgin"
     esya: COMPASS
@@ -13,6 +19,23 @@ unvanlar:
       tur: LEVEL
       seviye: 10
 
+  efsane:
+    gorunen-ad: "Efsane"
+    esya: NETHER_STAR
+    sohbet-stili: MOR_KALIN
+    kosul:
+      tur: PRESTIGE
+      prestij: 1
+
+  kurulus-babasi:
+    gorunen-ad: "Kuruluş Babası"
+    esya: BEACON
+    sohbet-stili: MOR_KALIN
+    kosul:
+      tur: PRESTIGE
+      prestij: 5
+
+  # ----- Beceri ustalıkları -----
   usta-madenci:
     gorunen-ad: "Usta Madenci"
     esya: DIAMOND_PICKAXE
@@ -22,14 +45,52 @@ unvanlar:
       beceri-id: madencilik
       seviye: 50
 
-  hazine-avcisi:
-    gorunen-ad: "Hazine Avcısı"
-    esya: CHEST
-    sohbet-stili: ALTIN
+  orman-bekcisi:
+    gorunen-ad: "Orman Bekçisi"
+    esya: IRON_AXE
+    sohbet-stili: YESIL_KALIN
     kosul:
-      tur: COLLECTION_COMPLETED
-      koleksiyon-id: degerli-madenler
+      tur: SKILL_LEVEL
+      beceri-id: odunculuk
+      seviye: 50
 
+  bereketli-eller:
+    gorunen-ad: "Bereketli Eller"
+    esya: WHEAT
+    sohbet-stili: YESIL_KALIN
+    kosul:
+      tur: SKILL_LEVEL
+      beceri-id: tarimcilik
+      seviye: 50
+
+  suru-sahibi:
+    gorunen-ad: "Sürü Sahibi"
+    esya: LEAD
+    sohbet-stili: BEYAZ_KALIN
+    kosul:
+      tur: SKILL_LEVEL
+      beceri-id: hayvancilik
+      seviye: 50
+
+  toprak-ustasi:
+    gorunen-ad: "Toprak Ustası"
+    esya: DIAMOND_SHOVEL
+    sohbet-stili: BEYAZ_KALIN
+    kosul:
+      tur: SKILL_LEVEL
+      beceri-id: kazicilik
+      seviye: 50
+
+  amansiz:
+    gorunen-ad: "Amansız"
+    esya: NETHERITE_SWORD
+    sohbet-stili: KIRMIZI_KALIN
+    kosul:
+      tur: SKILL_LEVEL
+      beceri-id: avcilik
+      seviye: 75
+
+  # ----- Görev ve koleksiyon -----
   gorev-eri:
     gorunen-ad: "Görev Eri"
     esya: WRITTEN_BOOK
@@ -38,10 +99,76 @@ unvanlar:
       tur: QUEST_COMPLETED
       gorev-id: odun-ustasi
 
-  efsane:
-    gorunen-ad: "Efsane"
-    esya: NETHER_STAR
+  kasif:
+    gorunen-ad: "Kâşif"
+    esya: FILLED_MAP
+    sohbet-stili: MAVI
+    kosul:
+      tur: QUEST_COMPLETED
+      gorev-id: kesif-koy
+
+  derin-karanlik:
+    gorunen-ad: "Derin Karanlık"
+    esya: SCULK_SHRIEKER
     sohbet-stili: MOR_KALIN
     kosul:
-      tur: PRESTIGE
-      prestij: 1
+      tur: QUEST_COMPLETED
+      gorev-id: kesif-kadim-sehir
+
+  ejderha-katili:
+    gorunen-ad: "Ejderha Katili"
+    esya: DRAGON_EGG
+    sohbet-stili: KIRMIZI_KALIN
+    kosul:
+      tur: QUEST_COMPLETED
+      gorev-id: esya-ejderha-yumurtasi
+
+  hazine-avcisi:
+    gorunen-ad: "Hazine Avcısı"
+    esya: CHEST
+    sohbet-stili: ALTIN
+    kosul:
+      tur: COLLECTION_COMPLETED
+      koleksiyon-id: degerli-madenler
+
+  # ----- Zenginlik Puanı -----
+  # Zenginlik harcanmaz; bu unvanlar yalnızca dünyadan ne çıkardığını gösterir.
+  varlikli:
+    gorunen-ad: "Varlıklı"
+    esya: COPPER_INGOT
+    sohbet-stili: MAVI
+    kosul:
+      tur: WEALTH
+      zenginlik: 50000
+
+  zengin:
+    gorunen-ad: "Zengin"
+    esya: GOLD_INGOT
+    sohbet-stili: ALTIN
+    kosul:
+      tur: WEALTH
+      zenginlik: 250000
+
+  servet-sahibi:
+    gorunen-ad: "Servet Sahibi"
+    esya: DIAMOND
+    sohbet-stili: ALTIN
+    kosul:
+      tur: WEALTH
+      zenginlik: 1000000
+
+  hazine-krali:
+    gorunen-ad: "Hazine Kralı"
+    esya: DIAMOND_BLOCK
+    sohbet-stili: MOR_KALIN
+    kosul:
+      tur: WEALTH
+      zenginlik: 5000000
+
+  efsanevi-zengin:
+    gorunen-ad: "Efsanevi Zengin"
+    esya: NETHERITE_BLOCK
+    sohbet-stili: KIRMIZI_KALIN
+    kosul:
+      tur: WEALTH
+      zenginlik: 25000000
