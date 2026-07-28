@@ -1,54 +1,37 @@
 package com.halilibrahim.halilibrahimmmo.classes;
 
-import com.halilibrahim.halilibrahimmmo.abilities.AbilityDefinition;
-import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
-import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
-import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillExperienceListener;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Bridges skill XP gains into the class-level track: whenever a player gains
  * XP in any of their currently selected class's synergy skills, this awards
- * the same amount as class-track XP and, on a class level-up, celebrates it on
- * the player's own region scheduler (a no-op if they have since gone offline).
+ * the same amount as class-track XP and hands the result to
+ * {@link ClassAwardHandler}, which owns every piece of player-facing feedback
+ * a class XP award produces regardless of where it came from.
  *
- * <p>Also owns the "new ability unlocked" toast: since ability unlock is
- * gated by class level (not skill level), the class level-up detected here -
- * not the skill level-up that caused it - is the correct place to check
- * whether any of the selected class's abilities just came into reach.</p>
- *
- * <p>Takes forward-reference {@link AtomicReference}s rather than concrete
- * {@link ClassService}/{@link AbilityService} instances because
- * {@code SkillService} (which invokes this) is constructed before both in
- * the plugin bootstrap - the same pattern already used to bridge
- * {@code AbilityService} to {@code ClassService}.</p>
+ * <p>Takes a forward-reference {@link AtomicReference} rather than a concrete
+ * {@link ClassService} because {@code SkillService} (which invokes this) is
+ * constructed before it in the plugin bootstrap - the same pattern already
+ * used to bridge {@code AbilityService} to {@code ClassService}.</p>
  */
 public final class ClassSynergyBridge implements SkillExperienceListener {
 
-    private final JavaPlugin plugin;
     private final ProfileService profiles;
     private final AtomicReference<ClassService> classServiceReference;
-    private final AtomicReference<AbilityService> abilityServiceReference;
-    private final FeedbackService feedback;
+    private final ClassAwardHandler awards;
 
     public ClassSynergyBridge(
-            JavaPlugin plugin, ProfileService profiles,
-            AtomicReference<ClassService> classServiceReference, AtomicReference<AbilityService> abilityServiceReference,
-            FeedbackService feedback
+            ProfileService profiles, AtomicReference<ClassService> classServiceReference, ClassAwardHandler awards
     ) {
-        this.plugin = plugin;
         this.profiles = profiles;
         this.classServiceReference = classServiceReference;
-        this.abilityServiceReference = abilityServiceReference;
-        this.feedback = feedback;
+        this.awards = awards;
     }
 
     @Override
@@ -68,44 +51,10 @@ public final class ClassSynergyBridge implements SkillExperienceListener {
             }
             classes.awardClassExperienceExact(playerId, playerName, classId, grantedAmount).thenAccept(result -> {
                 Player player = Bukkit.getPlayer(playerId);
-                if (player == null) {
-                    return;
+                if (player != null) {
+                    awards.handle(player, classId, grantedAmount, result);
                 }
-                ClassLevelProgress progress = classes.classProgress(playerId, classId);
-                long requiredForLevel = progress.level() >= classes.settings().classLevelCurve().maximumLevel()
-                        ? 0L
-                        : classes.settings().classLevelCurve().requiredForCurrentLevel(progress.level());
-                player.getScheduler().run(plugin, task -> {
-                    feedback.showExperienceProgress(
-                            player, MessageKey.FEEDBACK_XP_CLASS_BOSSBAR,
-                            Map.of(
-                                    "sinif", definition.displayName(),
-                                    "seviye", Integer.toString(progress.level()),
-                                    "kazanilan", Long.toString(grantedAmount)
-                            ),
-                            progress.experience(), requiredForLevel, "class", definition.barColor().color()
-                    );
-                    if (result.leveledUp()) {
-                        feedback.celebrateClassLevelUp(player, definition.displayName(), result.newLevel());
-                        notifyUnlockedAbilities(player, classId, result.previousLevel(), result.newLevel());
-                    }
-                }, null);
             });
         });
-    }
-
-    private void notifyUnlockedAbilities(Player player, String classId, int previousLevel, int newLevel) {
-        AbilityService abilities = abilityServiceReference.get();
-        if (abilities == null) {
-            return;
-        }
-        for (AbilityDefinition ability : abilities.definitions()) {
-            if (!ability.classId().equals(classId)) {
-                continue;
-            }
-            if (ability.requiredLevel() > previousLevel && ability.requiredLevel() <= newLevel) {
-                feedback.celebrateAbilityUnlocked(player, ability.displayName());
-            }
-        }
     }
 }

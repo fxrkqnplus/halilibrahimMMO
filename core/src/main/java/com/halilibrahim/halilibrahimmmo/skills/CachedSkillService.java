@@ -145,6 +145,17 @@ public final class CachedSkillService implements SkillService {
     }
 
     @Override
+    public CompletableFuture<Optional<SkillAwardResult>> awardExternal(
+            UUID playerId, String playerName, String skillId, long amount, String sourceDisplayName
+    ) {
+        SkillDefinition skill = settings().definitions().get(skillId);
+        if (skill == null || amount <= 0) {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
+        return award(playerId, playerName, skill, amount, sourceDisplayName);
+    }
+
+    @Override
     public Optional<SkillActionReward> actionReward(SkillAction action) {
         return settings().definitions().values().stream()
                 .map(skill -> skill.actionRewards().get(action))
@@ -356,6 +367,10 @@ public final class CachedSkillService implements SkillService {
             if (displayName == null || displayName.isBlank()) {
                 throw new IllegalArgumentException("Skill display name is required: " + id);
             }
+            Material icon = Material.matchMaterial(section.getString("simge", ""));
+            if (icon == null) {
+                throw new IllegalArgumentException("Skill must declare a known simge material: " + id);
+            }
             Map<Integer, SkillMilestoneEffect> milestones = parseMilestones(section, id);
             Map<SkillAction, SkillActionReward> actionRewards = parseActions(section, id, actionOwners);
             SkillSource source = SkillSource.valueOf(section.getString("kaynak.tur", "").toUpperCase(Locale.ROOT));
@@ -393,7 +408,7 @@ public final class CachedSkillService implements SkillService {
                 entityRewards = Map.copyOf(parsed);
                 materialRewards = Map.of();
             }
-            definitions.put(id, new SkillDefinition(id, displayName, source, materialRewards, entityRewards, defaultEntityReward, actionRewards, milestones));
+            definitions.put(id, new SkillDefinition(id, displayName, icon, source, materialRewards, entityRewards, defaultEntityReward, actionRewards, milestones));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("skills.yml must define at least one skill.");

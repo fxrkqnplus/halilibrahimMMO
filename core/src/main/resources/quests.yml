@@ -2,9 +2,31 @@
 #  HalilIbrahimMMO - Görev Ayarları
 # =====================================================================
 #  tur: PERMANENT (kalıcı, tek seferlik) | DAILY (günlük) | WEEKLY (haftalık)
-#  hedef.tur: BLOCK_BREAK (blok kırma) | MOB_KILL (yaratık öldürme)
-#  hedef.malzemeler sadece BLOCK_BREAK, hedef.varliklar sadece MOB_KILL için
-#  kullanılır. varliklar boş bırakılırsa herhangi bir yaratık sayılır.
+#
+#  hedef.tur değerleri:
+#    BLOCK_BREAK        : blok kırma      -> hedef.malzemeler listesi zorunlu
+#    MOB_KILL           : yaratık öldürme -> hedef.varliklar (boş = her yaratık)
+#    STRUCTURE_DISCOVER : yapı bulma      -> hedef.yapilar listesi zorunlu
+#    ITEM_OBTAIN        : eşya edinme     -> hedef.esyalar listesi zorunlu
+#
+#  hedef.yapilar için geçerli adlar (Minecraft yapı adları, küçük harf):
+#    village_plains village_desert village_savanna village_snowy village_taiga
+#    buried_treasure shipwreck shipwreck_beached mineshaft mineshaft_mesa
+#    stronghold monument mansion ancient_city trial_chambers trail_ruins
+#    fortress bastion_remnant nether_fossil end_city pillager_outpost
+#    desert_pyramid jungle_pyramid igloo swamp_hut ocean_ruin_cold
+#    ocean_ruin_warm ruined_portal (ve ruined_portal_* çeşitleri)
+#  Yapı görevleri, oyuncu o yapının içinde durduğu anda ilerler.
+#
+#  ITEM_OBTAIN görevleri hem yerden eşya alındığında hem de bir sandıktan
+#  eşya çıkarıldığında ilerler.
+#
+#  beceri : Görev tamamlandığında XP'nin yazılacağı beceri. Bu XP normal
+#           beceri XP'siyle aynı yoldan verilir; dolayısıyla oyuncunun sınıfı
+#           o beceriden sinerji alıyorsa sınıf seviyesine de yansır. Örneğin
+#           bir zombi görevi herkese avcılık XP'si verir, Amansız Savaşçı
+#           oynayan birine ayrıca Amansız Savaşçı XP'si de kazandırır.
+#           Sınıfı o beceriden beslenmeyen oyuncular sınıf XP'sini yine alır.
 #
 #  aciklama: görev menüsünde görevin üstüne gelindiğinde okunan açıklama.
 #  simge   : görev menüsündeki eşya simgesi (herhangi bir Bukkit Material adı).
@@ -28,6 +50,7 @@ gorevler:
     aciklama: "Ormanlarda 500 kütük kes. Hangi ağaç türü olduğu fark etmez."
     simge: OAK_LOG
     tur: PERMANENT
+    beceri: odunculuk
     hedef:
       tur: BLOCK_BREAK
       malzemeler: [OAK_LOG, SPRUCE_LOG, BIRCH_LOG, JUNGLE_LOG, ACACIA_LOG, DARK_OAK_LOG]
@@ -39,11 +62,235 @@ gorevler:
     aciklama: "Dünyanın en derin katmanlarından 50 nadir cevher çıkar: elmas, zümrüt ya da antik döküntü."
     simge: DIAMOND_PICKAXE
     tur: PERMANENT
+    beceri: madencilik
     hedef:
       tur: BLOCK_BREAK
       malzemeler: [DEEPSLATE_DIAMOND_ORE, DEEPSLATE_EMERALD_ORE, ANCIENT_DEBRIS]
     sayi: 50
     xp: 6000
+
+  # ----- Kalici kesif gorevleri -----
+  # XP'ler zorluga gore: bir koy bulmak ile Kadim Sehir bulmak arasinda
+  # kasitli olarak buyuk bir fark vardir.
+  kesif-koy:
+    gorunen-ad: "İlk Komşular"
+    aciklama: "Dünyayı gez ve herhangi bir köy bul. İçine girmen yeterli."
+    simge: EMERALD
+    tur: PERMANENT
+    beceri: tarimcilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [village_plains, village_desert, village_savanna, village_snowy, village_taiga]
+    sayi: 1
+    xp: 1800
+
+  kesif-batik-hazine:
+    gorunen-ad: "Batık Hazine"
+    aciklama: "Bir haritanın peşine düş ve gömülü hazineyi bul. Kazman gerekecek."
+    simge: HEART_OF_THE_SEA
+    tur: PERMANENT
+    beceri: kazicilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [buried_treasure]
+    sayi: 1
+    xp: 4500
+
+  kesif-terkedilmis-maden:
+    gorunen-ad: "Terk Edilmiş Maden"
+    aciklama: "Yer altındaki eski maden ocaklarından birini bul."
+    simge: RAIL
+    tur: PERMANENT
+    beceri: madencilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [mineshaft, mineshaft_mesa]
+    sayi: 1
+    xp: 3000
+
+  kesif-batik-gemi:
+    gorunen-ad: "Karaya Vuran Gemi"
+    aciklama: "Okyanusun dibinde ya da kıyıda bir batık gemi bul."
+    simge: OAK_BOAT
+    tur: PERMANENT
+    beceri: kazicilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [shipwreck, shipwreck_beached]
+    sayi: 1
+    xp: 3600
+
+  kesif-yagmaci-karakolu:
+    gorunen-ad: "Yağmacı Karakolu"
+    aciklama: "Bir yağmacı karakolu bul - ama hazırlıklı git."
+    simge: CROSSBOW
+    tur: PERMANENT
+    beceri: avcilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [pillager_outpost]
+    sayi: 1
+    xp: 5400
+
+  kesif-orman-konagi:
+    gorunen-ad: "Ormandaki Konak"
+    aciklama: "Kara meşe ormanlarının derinliğindeki devasa konağı bul. Kolay olmayacak."
+    simge: DARK_OAK_DOOR
+    tur: PERMANENT
+    beceri: avcilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [mansion]
+    sayi: 1
+    xp: 15000
+
+  kesif-nether-kalesi:
+    gorunen-ad: "Nether Kalesi"
+    aciklama: "Nether'a in ve bir nether kalesi bul."
+    simge: NETHER_BRICK
+    tur: PERMANENT
+    beceri: madencilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [fortress]
+    sayi: 1
+    xp: 7200
+
+  kesif-bastion:
+    gorunen-ad: "Bastion Kalıntısı"
+    aciklama: "Nether'daki piglin bastion kalıntılarından birini bul."
+    simge: GOLD_BLOCK
+    tur: PERMANENT
+    beceri: madencilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [bastion_remnant]
+    sayi: 1
+    xp: 9000
+
+  kesif-okyanus-aniti:
+    gorunen-ad: "Okyanus Anıtı"
+    aciklama: "Denizin dibindeki devasa anıtı bul. Nefesine dikkat et."
+    simge: PRISMARINE
+    tur: PERMANENT
+    beceri: avcilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [monument]
+    sayi: 1
+    xp: 10800
+
+  kesif-kadim-kalintilar:
+    gorunen-ad: "Kadim Kalıntılar"
+    aciklama: "Toprağın altına gömülmüş antik kalıntıları bul ve fırçanı hazırla."
+    simge: BRUSH
+    tur: PERMANENT
+    beceri: kazicilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [trail_ruins]
+    sayi: 1
+    xp: 4200
+
+  kesif-kadim-sehir:
+    gorunen-ad: "Kadim Şehir"
+    aciklama: "Derin karanlıkta uyuyan Kadim Şehir'i bul. Sessiz ol."
+    simge: SCULK_CATALYST
+    tur: PERMANENT
+    beceri: madencilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [ancient_city]
+    sayi: 1
+    xp: 18000
+
+  kesif-deneme-odalari:
+    gorunen-ad: "Deneme Odaları"
+    aciklama: "Yer altındaki deneme odalarını bul."
+    simge: TRIAL_KEY
+    tur: PERMANENT
+    beceri: avcilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [trial_chambers]
+    sayi: 1
+    xp: 9600
+
+  kesif-kale:
+    gorunen-ad: "Son Kapı"
+    aciklama: "End portalını barındıran kaleyi bul."
+    simge: ENDER_EYE
+    tur: PERMANENT
+    beceri: madencilik
+    hedef:
+      tur: STRUCTURE_DISCOVER
+      yapilar: [stronghold]
+    sayi: 1
+    xp: 13200
+
+  # ----- Kalici esya gorevleri -----
+  esya-muzik-diski:
+    gorunen-ad: "İlk Plak"
+    aciklama: "Herhangi bir müzik diski edin. Creeper'ın vurduğu bir iskelet ya da bir zindan sandığı işini görür."
+    simge: MUSIC_DISC_CAT
+    tur: PERMANENT
+    beceri: avcilik
+    hedef:
+      tur: ITEM_OBTAIN
+      esyalar: [MUSIC_DISC_13, MUSIC_DISC_CAT, MUSIC_DISC_BLOCKS, MUSIC_DISC_CHIRP, MUSIC_DISC_FAR,
+                MUSIC_DISC_MALL, MUSIC_DISC_MELLOHI, MUSIC_DISC_STAL, MUSIC_DISC_STRAD, MUSIC_DISC_WARD,
+                MUSIC_DISC_11, MUSIC_DISC_WAIT, MUSIC_DISC_OTHERSIDE, MUSIC_DISC_5, MUSIC_DISC_PIGSTEP,
+                MUSIC_DISC_RELIC, MUSIC_DISC_CREATOR, MUSIC_DISC_CREATOR_MUSIC_BOX, MUSIC_DISC_PRECIPICE]
+    sayi: 1
+    xp: 5400
+
+  esya-isim-etiketi:
+    gorunen-ad: "Bir İsim Ver"
+    aciklama: "Bir isim etiketi edin. Balık tutarak ya da sandıklardan çıkabilir."
+    simge: NAME_TAG
+    tur: PERMANENT
+    beceri: hayvancilik
+    hedef:
+      tur: ITEM_OBTAIN
+      esyalar: [NAME_TAG]
+    sayi: 1
+    xp: 4800
+
+  esya-ejderha-yumurtasi:
+    gorunen-ad: "Ejderhanın Mirası"
+    aciklama: "Ejderha yumurtasını ele geçir. Bu sunucudaki en zor görevlerden biri."
+    simge: DRAGON_EGG
+    tur: PERMANENT
+    beceri: avcilik
+    hedef:
+      tur: ITEM_OBTAIN
+      esyalar: [DRAGON_EGG]
+    sayi: 1
+    xp: 36000
+
+  esya-elytra:
+    gorunen-ad: "Kanatlar"
+    aciklama: "End şehirlerindeki gemilerden bir elytra al."
+    simge: ELYTRA
+    tur: PERMANENT
+    beceri: avcilik
+    hedef:
+      tur: ITEM_OBTAIN
+      esyalar: [ELYTRA]
+    sayi: 1
+    xp: 21000
+
+  esya-totem:
+    gorunen-ad: "Ölümsüzlük Totemi"
+    aciklama: "Bir evoker öldür ve düşürdüğü totemi al."
+    simge: TOTEM_OF_UNDYING
+    tur: PERMANENT
+    beceri: avcilik
+    hedef:
+      tur: ITEM_OBTAIN
+      esyalar: [TOTEM_OF_UNDYING]
+    sayi: 1
+    xp: 12000
 
   # ----- Gunluk havuz -----
   gunluk-maden-turu:
@@ -51,6 +298,7 @@ gorevler:
     aciklama: "Sıradan bir maden turu: 50 kömür, demir ya da bakır cevheri kır."
     simge: IRON_ORE
     tur: DAILY
+    beceri: madencilik
     hedef:
       tur: BLOCK_BREAK
       malzemeler: [COAL_ORE, DEEPSLATE_COAL_ORE, IRON_ORE, DEEPSLATE_IRON_ORE, COPPER_ORE, DEEPSLATE_COPPER_ORE]
@@ -62,6 +310,7 @@ gorevler:
     aciklama: "Herhangi 20 yaratığı avla - düşman ya da barışçıl, hepsi sayılır."
     simge: IRON_SWORD
     tur: DAILY
+    beceri: avcilik
     hedef:
       tur: MOB_KILL
       varliklar: []
@@ -73,6 +322,7 @@ gorevler:
     aciklama: "Baltanı kap ve 40 kütük kes."
     simge: IRON_AXE
     tur: DAILY
+    beceri: odunculuk
     hedef:
       tur: BLOCK_BREAK
       malzemeler: [OAK_LOG, SPRUCE_LOG, BIRCH_LOG, JUNGLE_LOG, ACACIA_LOG, DARK_OAK_LOG, MANGROVE_LOG, CHERRY_LOG, PALE_OAK_LOG]
@@ -84,6 +334,7 @@ gorevler:
     aciklama: "30 altın, lapis ya da redstone cevheri çıkar."
     simge: GOLD_INGOT
     tur: DAILY
+    beceri: madencilik
     hedef:
       tur: BLOCK_BREAK
       malzemeler: [GOLD_ORE, DEEPSLATE_GOLD_ORE, LAPIS_ORE, DEEPSLATE_LAPIS_ORE, REDSTONE_ORE, DEEPSLATE_REDSTONE_ORE]
@@ -95,6 +346,7 @@ gorevler:
     aciklama: "15 zombi, çöl zombisi ya da boğulmuş öldür."
     simge: ROTTEN_FLESH
     tur: DAILY
+    beceri: avcilik
     hedef:
       tur: MOB_KILL
       varliklar: [ZOMBIE, HUSK, DROWNED]
@@ -106,6 +358,7 @@ gorevler:
     aciklama: "15 iskelet, buz iskeleti ya da wither iskeleti öldür."
     simge: BONE
     tur: DAILY
+    beceri: avcilik
     hedef:
       tur: MOB_KILL
       varliklar: [SKELETON, STRAY, WITHER_SKELETON]
@@ -117,6 +370,7 @@ gorevler:
     aciklama: "Küreğinle 80 toprak, çakıl ya da kum bloğu kaz."
     simge: IRON_SHOVEL
     tur: DAILY
+    beceri: kazicilik
     hedef:
       tur: BLOCK_BREAK
       malzemeler: [DIRT, COARSE_DIRT, GRASS_BLOCK, GRAVEL, SAND, RED_SAND]
@@ -128,6 +382,7 @@ gorevler:
     aciklama: "15 örümcek ya da mağara örümceği öldür."
     simge: STRING
     tur: DAILY
+    beceri: avcilik
     hedef:
       tur: MOB_KILL
       varliklar: [SPIDER, CAVE_SPIDER]
@@ -139,6 +394,7 @@ gorevler:
     aciklama: "Nether'a in ve 30 nether cevheri ya da kızıl gövde kır."
     simge: NETHER_QUARTZ_ORE
     tur: DAILY
+    beceri: madencilik
     hedef:
       tur: BLOCK_BREAK
       malzemeler: [NETHER_GOLD_ORE, NETHER_QUARTZ_ORE, CRIMSON_STEM]
@@ -150,6 +406,7 @@ gorevler:
     aciklama: "10 creeper öldür - patlamadan önce yetiş."
     simge: GUNPOWDER
     tur: DAILY
+    beceri: avcilik
     hedef:
       tur: MOB_KILL
       varliklar: [CREEPER]
@@ -161,11 +418,24 @@ gorevler:
     aciklama: "10 elmas ya da zümrüt cevheri bul ve çıkar."
     simge: DIAMOND
     tur: DAILY
+    beceri: madencilik
     hedef:
       tur: BLOCK_BREAK
       malzemeler: [DEEPSLATE_DIAMOND_ORE, DEEPSLATE_EMERALD_ORE, EMERALD_ORE, DIAMOND_ORE]
     sayi: 10
     xp: 1080
+
+  gunluk-hasat:
+    gorunen-ad: "Günlük Hasat"
+    aciklama: "Tarlanda 60 olgunlaşmış ekin biç."
+    simge: WHEAT
+    tur: DAILY
+    beceri: tarimcilik
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [WHEAT, CARROTS, POTATOES, BEETROOTS]
+    sayi: 60
+    xp: 720
 
   # ----- Haftalik havuz -----
   haftalik-zombi-avi:
@@ -173,6 +443,7 @@ gorevler:
     aciklama: "Bir hafta boyunca 100 zombi, çöl zombisi ya da boğulmuş öldür."
     simge: ZOMBIE_HEAD
     tur: WEEKLY
+    beceri: avcilik
     hedef:
       tur: MOB_KILL
       varliklar: [ZOMBIE, HUSK, DROWNED]
@@ -184,6 +455,7 @@ gorevler:
     aciklama: "Derinlerden 80 değerli cevher çıkar: elmas, zümrüt, altın ya da antik döküntü."
     simge: NETHERITE_SCRAP
     tur: WEEKLY
+    beceri: madencilik
     hedef:
       tur: BLOCK_BREAK
       malzemeler: [DEEPSLATE_DIAMOND_ORE, DEEPSLATE_EMERALD_ORE, DEEPSLATE_GOLD_ORE, ANCIENT_DEBRIS]
@@ -195,6 +467,7 @@ gorevler:
     aciklama: "Bir hafta boyunca 300 kütük kes."
     simge: DARK_OAK_LOG
     tur: WEEKLY
+    beceri: odunculuk
     hedef:
       tur: BLOCK_BREAK
       malzemeler: [OAK_LOG, SPRUCE_LOG, BIRCH_LOG, JUNGLE_LOG, ACACIA_LOG, DARK_OAK_LOG, MANGROVE_LOG, CHERRY_LOG]
@@ -206,6 +479,7 @@ gorevler:
     aciklama: "Nether'ın 60 sakinini avla: blaze, ghast, piglin ya da hoglin."
     simge: BLAZE_ROD
     tur: WEEKLY
+    beceri: avcilik
     hedef:
       tur: MOB_KILL
       varliklar: [BLAZE, GHAST, PIGLIN, PIGLIN_BRUTE, HOGLIN]
@@ -217,6 +491,7 @@ gorevler:
     aciklama: "Mağaraları tara ve 250 sıradan cevher kır."
     simge: TORCH
     tur: WEEKLY
+    beceri: madencilik
     hedef:
       tur: BLOCK_BREAK
       malzemeler: [COAL_ORE, DEEPSLATE_COAL_ORE, IRON_ORE, DEEPSLATE_IRON_ORE, COPPER_ORE, DEEPSLATE_COPPER_ORE, GOLD_ORE, DEEPSLATE_GOLD_ORE]
@@ -228,6 +503,7 @@ gorevler:
     aciklama: "30 yağmacı, ravager, evoker ya da vindicator öldür."
     simge: OMINOUS_BOTTLE
     tur: WEEKLY
+    beceri: avcilik
     hedef:
       tur: MOB_KILL
       varliklar: [RAVAGER, EVOKER, PILLAGER, VINDICATOR]
@@ -239,6 +515,7 @@ gorevler:
     aciklama: "50 mağma küpü ya da balçık öldür."
     simge: MAGMA_CREAM
     tur: WEEKLY
+    beceri: avcilik
     hedef:
       tur: MOB_KILL
       varliklar: [MAGMA_CUBE, SLIME]
@@ -250,8 +527,21 @@ gorevler:
     aciklama: "Küreğinle 400 yumuşak blok kaz: toprak, çakıl, kum ya da kil."
     simge: CLAY_BALL
     tur: WEEKLY
+    beceri: kazicilik
     hedef:
       tur: BLOCK_BREAK
       malzemeler: [DIRT, COARSE_DIRT, GRAVEL, SAND, RED_SAND, CLAY, PODZOL, MYCELIUM, ROOTED_DIRT]
     sayi: 400
     xp: 3900
+
+  haftalik-bereketli-tarla:
+    gorunen-ad: "Bereketli Tarla"
+    aciklama: "Bir hafta boyunca 300 olgunlaşmış ekin biç."
+    simge: HAY_BLOCK
+    tur: WEEKLY
+    beceri: tarimcilik
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [WHEAT, CARROTS, POTATOES, BEETROOTS, NETHER_WART]
+    sayi: 300
+    xp: 4200

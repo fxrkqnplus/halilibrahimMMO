@@ -29,4 +29,25 @@ public interface GuiView {
 
     /** Called for every click inside this view's inventory; clicks are always pre-cancelled. */
     void handleClick(Player player, int slot, ItemStack clicked, ClickType click);
+
+    /**
+     * Called for a click in the player's <em>own</em> inventory while this view
+     * is open. Still pre-cancelled, like every other click in one of our
+     * screens - a view that reacts to this is expected to move the item itself
+     * rather than let Bukkit do it.
+     *
+     * <p>Only the trade screen overrides this, and only so a player can put
+     * something on the table by clicking it where it already is. Every other
+     * menu ignores its own inventory entirely.</p>
+     */
+    default void handleOwnInventoryClick(Player player, int slot, ItemStack clicked, ClickType click) {
+    }
+
+    /**
+     * Called when this view's inventory closes for any reason - the player
+     * pressing escape, another menu being opened over it, or the server closing
+     * it. A view that holds state outside the inventory has to release it here.
+     */
+    default void handleClose(Player player) {
+    }
 }

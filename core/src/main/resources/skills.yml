@@ -153,6 +153,7 @@ seviyeler:
 beceriler:
   kazicilik:
     gorunen-ad: "Kazıcılık"
+    simge: IRON_SHOVEL
     # 25/50/75/100. seviyelerde kazanilan kalici, farklilastirilmis kilometre
     # tasi bonuslari. Her beceride kademeler zayiftan gucluye siralanir: 25.
     # seviye basit bir giris bonusu verir, becerinin asil guclu bonusu her
@@ -180,6 +181,7 @@ beceriler:
 
   odunculuk:
     gorunen-ad: "Odunculuk"
+    simge: IRON_AXE
     # 25. seviyede acilan TREE_FELLING ozelligi: bir agacin toprakla temas
     # eden KOK kutugunu kestiginde agacin tamami devrilir (bagli tum kutukler
     # birden duser). Govdenin ortasindan kesmek bunu tetiklemez.
@@ -205,6 +207,7 @@ beceriler:
 
   madencilik:
     gorunen-ad: "Madencilik"
+    simge: IRON_PICKAXE
     kilometre-taslari:
       25: { tur: MAX_HEALTH, deger: 2 }
       50: { tur: MAX_ENERGY, deger: 10 }
@@ -237,6 +240,7 @@ beceriler:
 
   avcilik:
     gorunen-ad: "Avcılık"
+    simge: IRON_SWORD
     kilometre-taslari:
       25: { tur: MAX_HEALTH, deger: 2 }
       50: { tur: MAX_HEALTH, deger: 4 }
@@ -292,6 +296,7 @@ beceriler:
 
   tarimcilik:
     gorunen-ad: "Tarımcılık"
+    simge: WHEAT
     # Tarim hem blok hem eylem kaynagi olan tek beceridir: hasat bloklarindan
     # ve tarlanin etrafindaki islerden ayni anda XP kazanir.
     kilometre-taslari:
@@ -333,6 +338,7 @@ beceriler:
 
   hayvancilik:
     gorunen-ad: "Hayvancılık"
+    simge: LEAD
     # 25. seviyede acilan BREED_REFUND ozelligi: bir yavru dogduktan sonra
     # %15 ihtimalle ciftlestirme yemi oyuncuya geri doner (iki ebeveyn icin
     # harcanan iki adet birden).

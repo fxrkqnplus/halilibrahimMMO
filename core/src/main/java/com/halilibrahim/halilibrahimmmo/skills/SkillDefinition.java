@@ -20,6 +20,11 @@ import java.util.Set;
  * are neither a block break nor a mob kill (breeding, shearing, trading,
  * tilling, ...). A {@link SkillSource#ACTION} skill has <em>only</em> those.</p>
  *
+ * <p>{@code icon} is the item every screen represents this skill with - the
+ * skills list, the per-skill detail screen its own command opens, and its
+ * leaderboard - so a skill reads as itself at a glance instead of as one more
+ * identical experience bottle.</p>
+ *
  * <p>{@code milestones} is this skill's differentiated 25/50/75/100 passive
  * boost catalogue (Phase 12), keyed by the exact tier level - each skill is
  * free to grant a different {@link SkillMilestoneEffectType} at each tier,
@@ -29,6 +34,7 @@ import java.util.Set;
 public record SkillDefinition(
         String id,
         String displayName,
+        Material icon,
         SkillSource source,
         Map<Material, SkillRewardEntry> materialRewards,
         Map<EntityType, SkillRewardEntry> entityRewards,

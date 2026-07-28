@@ -1,10 +1,14 @@
 package com.halilibrahim.halilibrahimmmo.quests;
 
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
+import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
+import org.bukkit.generator.structure.Structure;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -33,14 +37,16 @@ public final class CachedQuestService implements QuestService {
 
     private final JavaPlugin plugin;
     private final QuestRepository repository;
+    private final SkillService skills;
     private final AtomicReference<QuestSettings> settings = new AtomicReference<>();
     private final ConcurrentHashMap<QuestKey, QuestProgress> cache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<QuestKey, CompletableFuture<Optional<QuestProgress>>> updateChains = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<AssignmentKey, QuestAssignment> assignmentCache = new ConcurrentHashMap<>();
 
-    public CachedQuestService(JavaPlugin plugin, QuestRepository repository) {
+    public CachedQuestService(JavaPlugin plugin, QuestRepository repository, SkillService skills) {
         this.plugin = plugin;
         this.repository = repository;
+        this.skills = skills;
     }
 
     @Override
@@ -169,6 +175,24 @@ public final class CachedQuestService implements QuestService {
     }
 
     @Override
+    public CompletableFuture<List<QuestProgress>> awardStructure(UUID playerId, Structure structure) {
+        return awardMatching(playerId, QuestObjectiveType.STRUCTURE_DISCOVER,
+                definition -> definition.structures().contains(structure));
+    }
+
+    @Override
+    public CompletableFuture<List<QuestProgress>> awardItem(UUID playerId, Material material) {
+        return awardMatching(playerId, QuestObjectiveType.ITEM_OBTAIN, definition -> definition.items().contains(material));
+    }
+
+    @Override
+    public boolean tracksItem(Material material) {
+        return settings().definitions().values().stream()
+                .anyMatch(definition -> definition.objectiveType() == QuestObjectiveType.ITEM_OBTAIN
+                        && definition.items().contains(material));
+    }
+
+    @Override
     public Map<String, QuestProgress> cachedAll(UUID playerId) {
         Map<String, QuestProgress> result = new LinkedHashMap<>();
         cache.forEach((key, progress) -> {
@@ -284,6 +308,10 @@ public final class CachedQuestService implements QuestService {
                 throw new IllegalArgumentException("Quest must declare a known simge material: " + id);
             }
             QuestType type = QuestType.valueOf(section.getString("tur", "").toUpperCase(Locale.ROOT));
+            String skillId = section.getString("beceri", "").toLowerCase(Locale.ROOT);
+            if (!skills.settings().definitions().containsKey(skillId)) {
+                throw new IllegalArgumentException("Quest must declare a known beceri id: " + id);
+            }
             ConfigurationSection objective = requiredSection(section, "hedef");
             QuestObjectiveType objectiveType = QuestObjectiveType.valueOf(objective.getString("tur", "").toUpperCase(Locale.ROOT));
             Set<Material> materials = objectiveType == QuestObjectiveType.BLOCK_BREAK
@@ -295,12 +323,25 @@ public final class CachedQuestService implements QuestService {
             Set<EntityType> entityTypes = objectiveType == QuestObjectiveType.MOB_KILL
                     ? objective.getStringList("varliklar").stream().map(this::parseEntityType).collect(Collectors.toUnmodifiableSet())
                     : Set.of();
+            Set<Structure> structures = objectiveType == QuestObjectiveType.STRUCTURE_DISCOVER
+                    ? objective.getStringList("yapilar").stream().map(this::parseStructure).collect(Collectors.toUnmodifiableSet())
+                    : Set.of();
+            if (objectiveType == QuestObjectiveType.STRUCTURE_DISCOVER && structures.isEmpty()) {
+                throw new IllegalArgumentException("Structure quest must define yapilar: " + id);
+            }
+            Set<Material> items = objectiveType == QuestObjectiveType.ITEM_OBTAIN
+                    ? objective.getStringList("esyalar").stream().map(this::parseItemMaterial).collect(Collectors.toUnmodifiableSet())
+                    : Set.of();
+            if (objectiveType == QuestObjectiveType.ITEM_OBTAIN && items.isEmpty()) {
+                throw new IllegalArgumentException("Item quest must define esyalar: " + id);
+            }
             int target = section.getInt("sayi", 0);
             long reward = section.getLong("xp", 0);
             if (target < 1 || reward <= 0) {
                 throw new IllegalArgumentException("Quest target and XP reward must be positive: " + id);
             }
-            definitions.put(id, new QuestDefinition(id, displayName, description, icon, type, objectiveType, materials, entityTypes, target, reward));
+            definitions.put(id, new QuestDefinition(id, displayName, description, icon, type, skillId, objectiveType,
+                    materials, entityTypes, structures, items, target, reward));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("quests.yml must define at least one quest.");
@@ -327,6 +368,29 @@ public final class CachedQuestService implements QuestService {
             throw new IllegalArgumentException("Invalid block material: " + raw);
         }
         return material;
+    }
+
+    private Material parseItemMaterial(String raw) {
+        Material material = Material.matchMaterial(raw);
+        if (material == null) {
+            throw new IllegalArgumentException("Invalid item material: " + raw);
+        }
+        return material;
+    }
+
+    /**
+     * Structures are registry-backed rather than an enum, so a configured name
+     * is resolved through {@link Registry#STRUCTURE} instead of
+     * {@code valueOf}. Names are written unqualified and lower-cased in
+     * {@code quests.yml} ({@code village_plains}), matching every other
+     * bounded-value key in this project.
+     */
+    private Structure parseStructure(String raw) {
+        Structure structure = Registry.STRUCTURE.get(NamespacedKey.minecraft(raw.toLowerCase(Locale.ROOT)));
+        if (structure == null) {
+            throw new IllegalArgumentException("Invalid structure: " + raw);
+        }
+        return structure;
     }
 
     private EntityType parseEntityType(String raw) {

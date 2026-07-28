@@ -5,6 +5,7 @@ import com.halilibrahim.halilibrahimmmo.abilities.ActiveAbilityStatus;
 import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.classes.ClassLevelProgress;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
+import com.halilibrahim.halilibrahimmmo.home.HomeService;
 import com.halilibrahim.halilibrahimmmo.locale.DurationFormatter;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
@@ -13,11 +14,14 @@ import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingTask;
 import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
+import com.halilibrahim.halilibrahimmmo.quests.QuestDefinition;
 import com.halilibrahim.halilibrahimmmo.quests.QuestProgress;
 import com.halilibrahim.halilibrahimmmo.quests.QuestService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestType;
 import com.halilibrahim.halilibrahimmmo.titles.TitleChatStyle;
 import com.halilibrahim.halilibrahimmmo.titles.TitleService;
+import com.halilibrahim.halilibrahimmmo.trade.TradeService;
+import com.halilibrahim.halilibrahimmmo.trade.TradeSession;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -66,6 +70,8 @@ public final class ScoreboardSidebarService implements SidebarService {
     private static final String OBJECTIVE_NAME = "hmmo_sidebar";
     private static final String TEAM_PREFIX = "hmmo_line_";
     private static final String HEX = "0123456789abcdef";
+    /** How many entries a vanilla sidebar objective actually displays; anything past this is dropped by the client. */
+    private static final int MAXIMUM_LINES = 15;
 
     private final JavaPlugin plugin;
     private final MessageService messages;
@@ -77,6 +83,8 @@ public final class ScoreboardSidebarService implements SidebarService {
     private final QuestService quests;
     private final TitleService titles;
     private final OnboardingService onboarding;
+    private final HomeService homes;
+    private final TradeService trades;
     private final ConcurrentHashMap<UUID, Boolean> visible = new ConcurrentHashMap<>();
     private ScheduledTask refreshTask;
 
@@ -90,7 +98,9 @@ public final class ScoreboardSidebarService implements SidebarService {
             AbilityService abilities,
             QuestService quests,
             TitleService titles,
-            OnboardingService onboarding
+            OnboardingService onboarding,
+            HomeService homes,
+            TradeService trades
     ) {
         this.plugin = plugin;
         this.messages = messages;
@@ -102,6 +112,8 @@ public final class ScoreboardSidebarService implements SidebarService {
         this.quests = quests;
         this.titles = titles;
         this.onboarding = onboarding;
+        this.homes = homes;
+        this.trades = trades;
     }
 
     @Override
@@ -195,8 +207,8 @@ public final class ScoreboardSidebarService implements SidebarService {
             return;
         }
 
-        List<Component> lines = activation.cached(playerId) ? activatedLines(playerId, profile)
-                : List.of(messages.render(MessageKey.SIDEBAR_LINE_ACTIVATION_PROMPT), footer());
+        List<Component> lines = trimToFit(activation.cached(playerId) ? activatedLines(playerId, profile)
+                : List.of(messages.render(MessageKey.SIDEBAR_LINE_ACTIVATION_PROMPT), footer()));
 
         for (int i = 0; i < lines.size(); i++) {
             String entry = lineEntry(i);
@@ -248,27 +260,28 @@ public final class ScoreboardSidebarService implements SidebarService {
     private List<Component> activatedLines(UUID playerId, PlayerProfile profile) {
         List<Component> lines = new ArrayList<>();
         lines.add(nameLine(playerId, profile));
-
-        lines.add(messages.render(MessageKey.SIDEBAR_LINE_LEVEL, Map.of(
-                "seviye", Integer.toString(progression.cachedGlobalLevel(playerId))
+        // Güç and prestij share a line, as do class and class level. The panel
+        // has fifteen lines to work with in total (see MAXIMUM_LINES) and these
+        // four numbers are read together anyway, so pairing them buys back four
+        // lines for the quest sections without hiding anything.
+        lines.add(messages.render(MessageKey.SIDEBAR_LINE_POWER, Map.of(
+                "seviye", Integer.toString(progression.cachedGlobalLevel(playerId)),
+                "prestij", Integer.toString(profile.prestige())
         )));
-
-        lines.add(divider());
-        lines.add(messages.render(MessageKey.SIDEBAR_LINE_PRESTIGE, Map.of("prestij", Integer.toString(profile.prestige()))));
 
         String classId = profile.selectedClass();
         if (classId.isEmpty()) {
             lines.add(divider());
             lines.add(messages.render(MessageKey.SIDEBAR_LINE_CLASS_NONE));
             lines.add(messages.render(MessageKey.SIDEBAR_LINE_NO_CLASS_NUDGE));
+            addOnboardingLines(lines, playerId);
+            lines.add(divider());
             lines.add(footer());
             return lines;
         }
 
         lines.add(divider());
         String className = classes.displayName(classId);
-        lines.add(messages.render(MessageKey.SIDEBAR_LINE_CLASS, Map.of("sinif", className)));
-
         ClassLevelProgress classProgress = classes.classProgress(playerId, classId);
         long requiredForClassLevel = classProgress.level() >= classes.settings().classLevelCurve().maximumLevel()
                 ? 0L
@@ -279,41 +292,98 @@ public final class ScoreboardSidebarService implements SidebarService {
                 "xp", Long.toString(classProgress.experience()),
                 "gereken", Long.toString(requiredForClassLevel)
         )));
+        lines.add(abilityLine(playerId));
 
-        lines.add(divider());
-        Optional<ActiveAbilityStatus> active = abilities.activeStatus(playerId);
-        active.ifPresent(status -> abilities.definitions().stream()
-                .filter(definition -> definition.id().equals(status.abilityId()))
-                .findFirst()
-                .ifPresent(definition -> lines.add(messages.render(MessageKey.SIDEBAR_LINE_ACTIVE_ABILITY, Map.of(
-                        "kabiliyet", definition.displayName(),
-                        "kalan", DurationFormatter.ofMillis(messages, status.expiresAtMillis() - System.currentTimeMillis())
-                )))));
-
-        String selectedAbilityId = abilities.selected(playerId).orElse(null);
-        int currentClassLevel = classProgress.level();
-        abilities.definitions().stream()
-                .filter(definition -> definition.classId().equals(classId))
-                .filter(definition -> currentClassLevel >= definition.requiredLevel())
-                .sorted((left, right) -> Integer.compare(left.requiredLevel(), right.requiredLevel()))
-                .forEach(definition -> {
-                    boolean selected = definition.id().equals(selectedAbilityId);
-                    lines.add(messages.render(
-                            selected ? MessageKey.SIDEBAR_LINE_ABILITY_SELECTED : MessageKey.SIDEBAR_LINE_ABILITY_UNSELECTED,
-                            Map.of("kabiliyet", definition.displayName())
-                    ));
-                });
-
+        addFeatureLines(lines, playerId);
         addOnboardingLines(lines, playerId);
-
-        lines.add(divider());
-        Map<String, QuestProgress> questProgress = quests.cachedAll(playerId);
-        addQuestLines(lines, questProgress, QuestType.DAILY);
-        addQuestLines(lines, questProgress, QuestType.WEEKLY);
+        addQuestSections(lines, playerId);
 
         lines.add(divider());
         lines.add(footer());
         return lines;
+    }
+
+    /**
+     * One line for whatever the player's abilities are currently doing: the
+     * running one and its remaining time if there is one, otherwise which one
+     * is armed and ready, otherwise a nudge to pick one.
+     *
+     * <p>This replaced a line per unlocked ability. Tabiat Vârisi owns eight of
+     * them, which on its own overran the sidebar's fifteen-line ceiling before
+     * a single quest was listed - so the list was already being silently
+     * truncated by the client, and the ability screen shows the full set
+     * anyway.</p>
+     */
+    private Component abilityLine(UUID playerId) {
+        Optional<ActiveAbilityStatus> active = abilities.activeStatus(playerId);
+        if (active.isPresent()) {
+            Optional<String> name = abilities.definitions().stream()
+                    .filter(definition -> definition.id().equals(active.get().abilityId()))
+                    .map(definition -> definition.displayName())
+                    .findFirst();
+            if (name.isPresent()) {
+                return messages.render(MessageKey.SIDEBAR_LINE_ACTIVE_ABILITY, Map.of(
+                        "kabiliyet", name.get(),
+                        "kalan", DurationFormatter.ofMillis(messages, active.get().expiresAtMillis() - System.currentTimeMillis())
+                ));
+            }
+        }
+        Optional<String> selectedName = abilities.selected(playerId)
+                .flatMap(selectedId -> abilities.definitions().stream()
+                        .filter(definition -> definition.id().equals(selectedId))
+                        .map(definition -> definition.displayName())
+                        .findFirst());
+        return selectedName
+                .map(name -> messages.render(MessageKey.SIDEBAR_LINE_ABILITY_SELECTED, Map.of("kabiliyet", name)))
+                .orElseGet(() -> messages.render(MessageKey.SIDEBAR_LINE_ABILITY_NONE));
+    }
+
+    /**
+     * The {@code /ev} and {@code /takas} state, and a live line while a trade is
+     * open.
+     *
+     * <p>Shown only once at least one of the two is unlocked. A brand-new player
+     * has neither, and telling them about two features they cannot use yet would
+     * cost two of the panel's fifteen lines at exactly the moment the onboarding
+     * section needs them most - by the time either unlocks (class level 15 or
+     * 20), onboarding is long finished.</p>
+     */
+    private void addFeatureLines(List<Component> lines, UUID playerId) {
+        boolean homeUnlocked = homes.isUnlocked(playerId);
+        boolean tradeUnlocked = trades.isUnlocked(playerId);
+        Optional<TradeSession> session = trades.activeSession(playerId);
+        if (!homeUnlocked && !tradeUnlocked && session.isEmpty()) {
+            return;
+        }
+        lines.add(divider());
+        lines.add(messages.render(MessageKey.SIDEBAR_LINE_FEATURES, Map.of(
+                "ev", homeStatus(playerId, homeUnlocked),
+                "takas", messages.plain(tradeUnlocked
+                        ? MessageKey.SIDEBAR_FEATURE_OPEN : MessageKey.SIDEBAR_FEATURE_LOCKED, Map.of())
+        )));
+        session.ifPresent(active -> {
+            String partnerName = Bukkit.getOfflinePlayer(active.partnerOf(playerId)).getName();
+            lines.add(messages.render(MessageKey.SIDEBAR_LINE_TRADE_ACTIVE, Map.of(
+                    "oyuncu", partnerName == null ? "?" : partnerName
+            )));
+        });
+    }
+
+    /** An unlocked home reads as its own name once one is set, which is more useful than a tick. */
+    private String homeStatus(UUID playerId, boolean unlocked) {
+        if (!unlocked) {
+            return messages.plain(MessageKey.SIDEBAR_FEATURE_LOCKED, Map.of());
+        }
+        return homes.cached(playerId)
+                .map(home -> home.name())
+                .orElseGet(() -> messages.plain(MessageKey.SIDEBAR_FEATURE_UNSET, Map.of()));
+    }
+
+    /** Daily and weekly each get their own labelled block, so the two never read as one undifferentiated list. */
+    private void addQuestSections(List<Component> lines, UUID playerId) {
+        Map<String, QuestProgress> questProgress = quests.cachedAll(playerId);
+        addQuestSection(lines, questProgress, QuestType.DAILY, MessageKey.SIDEBAR_LINE_QUESTS_DAILY_HEADER);
+        addQuestSection(lines, questProgress, QuestType.WEEKLY, MessageKey.SIDEBAR_LINE_QUESTS_WEEKLY_HEADER);
     }
 
     /** Purely cosmetic separator between sidebar sections - no service-layer meaning. */
@@ -321,7 +391,6 @@ public final class ScoreboardSidebarService implements SidebarService {
         return Component.text("――――――――――", NamedTextColor.DARK_GRAY).decoration(TextDecoration.STRIKETHROUGH, true);
     }
 
-    /** {@code toplam} is the player's currently-assigned count for this pooled type, not the whole catalogue pool size. */
     /** Omitted entirely once every onboarding task is complete, per the "omitted not blank" convention. */
     private void addOnboardingLines(List<Component> lines, UUID playerId) {
         Set<String> completed = onboarding.cachedCompleted(playerId);
@@ -347,29 +416,53 @@ public final class ScoreboardSidebarService implements SidebarService {
     }
 
     /**
-     * One line per currently-assigned quest of {@code type}. A finished quest
-     * switches to its own green "Tamamlandı" template carrying the XP it paid
-     * out, instead of sitting at a maxed-out progress fraction that looks
-     * identical to an unclaimed one.
+     * A labelled block of one line per currently-assigned quest of
+     * {@code type}, omitted entirely when the player has none of that type. A
+     * finished quest switches to its own green "Tamamlandı" template carrying
+     * the XP it paid out, instead of sitting at a maxed-out progress fraction
+     * that looks identical to an unclaimed one.
      */
-    private void addQuestLines(List<Component> lines, Map<String, QuestProgress> progress, QuestType type) {
-        quests.definitions().stream()
+    private void addQuestSection(List<Component> lines, Map<String, QuestProgress> progress, QuestType type, MessageKey header) {
+        List<QuestDefinition> assigned = quests.definitions().stream()
                 .filter(definition -> definition.type() == type)
                 .filter(definition -> progress.containsKey(definition.id()))
-                .forEach(definition -> {
-                    QuestProgress current = progress.get(definition.id());
-                    if (current.completed()) {
-                        lines.add(messages.render(MessageKey.SIDEBAR_LINE_QUEST_COMPLETED_ENTRY, Map.of(
-                                "gorev", definition.displayName(),
-                                "xp", Long.toString(definition.rewardExperience())
-                        )));
-                        return;
-                    }
-                    lines.add(messages.render(MessageKey.SIDEBAR_LINE_QUEST_DAILY_ENTRY, Map.of(
-                            "gorev", definition.displayName(),
-                            "ilerleme", current.progress() + "/" + definition.target(),
-                            "xp", Long.toString(definition.rewardExperience())
-                    )));
-                });
+                .toList();
+        if (assigned.isEmpty()) {
+            return;
+        }
+        lines.add(divider());
+        lines.add(messages.render(header));
+        assigned.forEach(definition -> {
+            QuestProgress current = progress.get(definition.id());
+            if (current.completed()) {
+                lines.add(messages.render(MessageKey.SIDEBAR_LINE_QUEST_COMPLETED_ENTRY, Map.of(
+                        "gorev", definition.displayName(),
+                        "xp", Long.toString(definition.rewardExperience())
+                )));
+                return;
+            }
+            lines.add(messages.render(MessageKey.SIDEBAR_LINE_QUEST_DAILY_ENTRY, Map.of(
+                    "gorev", definition.displayName(),
+                    "ilerleme", current.progress() + "/" + definition.target(),
+                    "xp", Long.toString(definition.rewardExperience())
+            )));
+        });
+    }
+
+    /**
+     * Minecraft's sidebar renders at most {@link #MAXIMUM_LINES} entries and
+     * silently drops the rest, so trimming is done here rather than being left
+     * to the client. Lines are already ordered most-important-first, and the
+     * footer is kept because it is the only thing telling a player how to turn
+     * the panel off - so the overflow is taken from just above it, which sheds
+     * weekly quests before daily ones and quests before anything else.
+     */
+    private List<Component> trimToFit(List<Component> lines) {
+        if (lines.size() <= MAXIMUM_LINES) {
+            return lines;
+        }
+        List<Component> trimmed = new ArrayList<>(lines.subList(0, MAXIMUM_LINES - 1));
+        trimmed.add(lines.get(lines.size() - 1));
+        return trimmed;
     }
 }

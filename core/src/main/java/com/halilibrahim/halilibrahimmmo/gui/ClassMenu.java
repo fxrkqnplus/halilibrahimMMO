@@ -55,7 +55,6 @@ public final class ClassMenu implements GuiView {
 
     @Override
     public void populate(Player player, Inventory inventory) {
-        inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
         services.profiles().load(player.getUniqueId(), player.getName())
                 .thenCompose(profile -> services.classes().load(player.getUniqueId(), player.getName())
                         .thenApply(progress -> new Object[]{profile, progress}))
@@ -64,6 +63,14 @@ public final class ClassMenu implements GuiView {
     }
 
     private void render(Inventory inventory, PlayerProfile profile, PlayerClassProgress progress) {
+        PlayerClassDefinition selectedDefinition = services.classes().settings().definitions().get(profile.selectedClass());
+        // The talent tree is the player's own class's screen, so it wears that
+        // class's colour - the same pane the abilities screen is framed in.
+        GuiItems.frame(inventory,
+                selectedDefinition == null ? GuiItems.border() : GuiItems.pane(selectedDefinition.frame()),
+                GuiItems.filler());
+        inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
+
         List<PlayerClassDefinition> definitions = services.classes().definitions().stream()
                 .sorted((left, right) -> left.displayName().compareToIgnoreCase(right.displayName())).toList();
         int slot = FIRST_CLASS_SLOT;
@@ -87,7 +94,6 @@ public final class ClassMenu implements GuiView {
                 MessageKey.GUI_CLASS_ABILITY_POINTS_ITEM, MessageKey.GUI_CLASS_ABILITY_POINTS_LORE
         ));
 
-        PlayerClassDefinition selectedDefinition = services.classes().settings().definitions().get(profile.selectedClass());
         if (selectedDefinition == null) {
             return;
         }

@@ -3,6 +3,7 @@ package com.halilibrahim.halilibrahimmmo.quests;
 import com.halilibrahim.halilibrahimmmo.core.PluginService;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
+import org.bukkit.generator.structure.Structure;
 
 import java.util.Collection;
 import java.util.List;
@@ -36,6 +37,19 @@ public interface QuestService extends PluginService {
 
     /** Same as {@link #awardBlock(UUID, Material)} for {@link QuestObjectiveType#MOB_KILL} quests. */
     CompletableFuture<List<QuestProgress>> awardMob(UUID playerId, EntityType entityType);
+
+    /** Same as {@link #awardBlock(UUID, Material)} for {@link QuestObjectiveType#STRUCTURE_DISCOVER} quests. */
+    CompletableFuture<List<QuestProgress>> awardStructure(UUID playerId, Structure structure);
+
+    /** Same as {@link #awardBlock(UUID, Material)} for {@link QuestObjectiveType#ITEM_OBTAIN} quests. */
+    CompletableFuture<List<QuestProgress>> awardItem(UUID playerId, Material material);
+
+    /**
+     * Whether any configured quest is waiting on {@code material} at all.
+     * Synchronous and catalogue-only, so the item listener can reject the
+     * overwhelming majority of pickups without touching a future.
+     */
+    boolean tracksItem(Material material);
 
     void evict(UUID playerId);
 }

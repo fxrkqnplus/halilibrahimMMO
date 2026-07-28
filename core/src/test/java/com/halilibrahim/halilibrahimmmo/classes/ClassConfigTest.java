@@ -26,6 +26,9 @@ final class ClassConfigTest {
         for (String classId : definitions.getKeys(false)) {
             String icon = definitions.getString(classId + ".simge", "");
             assertNotNull(Material.matchMaterial(icon), classId + " has an unknown simge material: " + icon);
+            String frame = definitions.getString(classId + ".cerceve", "");
+            assertNotNull(Material.matchMaterial(frame), classId + " has an unknown cerceve material: " + frame);
+            assertTrue(frame.endsWith("_STAINED_GLASS_PANE"), classId + " cerceve should be a stained glass pane: " + frame);
             ConfigurationSection prestigeEffect = definitions.getConfigurationSection(classId + ".prestij-etkisi");
             assertNotNull(prestigeEffect, classId + " is missing prestij-etkisi");
             ClassEffectType prestigeType = ClassEffectType.valueOf(prestigeEffect.getString("tur"));

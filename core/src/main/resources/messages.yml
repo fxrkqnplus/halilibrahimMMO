@@ -54,28 +54,37 @@ mmo:
   aktiflestirildi: "<green>MMO sistemi aktifleştirildi! Şimdi bir sınıf seçeceksin.</green>"
 
 # Ekranın sağındaki kalıcı profil bilgi ekranı (scoreboard).
+#
+# NOT: Minecraft'ın kendisi bu panelde en fazla 15 satır gösterir. Eklenti
+# fazlasını kırpar (en alttaki "/panel ile aç/kapat" satırı her zaman kalır),
+# bu yüzden satırları kısa tutmak ve gereksiz satır eklememek önemlidir.
 sidebar:
   baslik: "<gradient:#7C3AED:#3B82F6><bold><simge:kutlama> HalilIbrahimMMO</bold></gradient>"
   oyuncu: "<gray>Oyuncu:</gray> <white><oyuncu></white>"
   oyuncu-etiket: "<gray>Oyuncu:</gray> "
-  sinif: "<gray><simge:sinif> Sınıf:</gray> <aqua><sinif></aqua>"
   sinif-yok: "<gray><simge:sinif> Sınıf:</gray> <white>Seçilmedi</white>"
-  seviye: "<gray><simge:guc> Güç:</gray> <gold><seviye></gold>"
-  prestij: "<gray><simge:prestij> Prestij:</gray> <light_purple><prestij></light_purple>"
+  guc: "<gray><simge:guc> Güç:</gray> <gold><seviye></gold> <dark_gray>|</dark_gray> <gray><simge:prestij></gray> <light_purple><prestij></light_purple>"
   aktivasyon-onerisi: "<yellow><simge:ok> Başlamak için /mmo aktif yaz!</yellow>"
   sinif-onerisi: "<yellow><simge:ok> Sınıf seçmek için /sınıf yaz!</yellow>"
-  sinif-seviye: "<gray><simge:seviye> <sinif> Seviyesi:</gray> <aqua><seviye></aqua> <dark_gray>(<xp>/<gereken> XP)</dark_gray>"
-  aktif-kabiliyet: "<gray><simge:kabiliyet> Aktif Kabiliyet:</gray> <gold><kabiliyet></gold> <dark_gray>(<kalan>)</dark_gray>"
-  kabiliyet-secili: "<green><simge:tamam> <kabiliyet></green>"
-  kabiliyet-acik: "<red><simge:eksik> <kabiliyet></red>"
-  gunluk-gorev-satiri: "<gray><simge:gorev> <gorev>:</gray> <yellow><ilerleme></yellow> <dark_gray>(+<xp> XP)</dark_gray>"
-  tamamlanan-gorev-satiri: "<green><simge:tamam> <gorev>: Tamamlandı</green> <dark_gray>(+<xp> XP)</dark_gray>"
+  sinif-seviye: "<aqua><simge:sinif> <sinif></aqua> <gray>Sv.</gray><aqua><seviye></aqua> <dark_gray>(<xp>/<gereken>)</dark_gray>"
+  aktif-kabiliyet: "<gold><simge:kabiliyet> <kabiliyet></gold> <dark_gray>(<kalan>)</dark_gray>"
+  kabiliyet-secili: "<green><simge:kabiliyet> <kabiliyet></green> <dark_gray>hazır</dark_gray>"
+  kabiliyet-yok: "<dark_gray><simge:kabiliyet> Kabiliyet seçilmedi</dark_gray>"
+  ozellikler: "<gray><simge:bilgi> Ev:</gray> <white><ev></white> <dark_gray>|</dark_gray> <gray>Takas:</gray> <white><takas></white>"
+  ozellik-acik: "Açık"
+  ozellik-kilitli: "Kilitli"
+  ozellik-ayarsiz: "Ayarlanmadı"
+  takas-acik: "<yellow><simge:koleksiyon> Takas açık:</yellow> <white><oyuncu></white>"
+  gunluk-gorev-baslik: "<yellow><simge:gorev> Günlük Görevler:</yellow>"
+  haftalik-gorev-baslik: "<gold><simge:gorev> Haftalık Görevler:</gold>"
+  gunluk-gorev-satiri: "<gray>• <gorev>:</gray> <yellow><ilerleme></yellow> <dark_gray>(+<xp>)</dark_gray>"
+  tamamlanan-gorev-satiri: "<green><simge:tamam> <gorev></green> <dark_gray>(+<xp>)</dark_gray>"
   alt-bilgi: "<dark_gray>/panel ile aç/kapat</dark_gray>"
   onboarding-baslik: "<yellow><simge:bilgi> Başlangıç Görevleri:</yellow>"
   onboarding-menu: "<gray>• /menü ile ana menüyü aç</gray>"
   onboarding-beceri: "<gray>• Becerilerini incele</gray>"
   onboarding-kabiliyet: "<gray>• Kabiliyetlerini incele</gray>"
-  onboarding-beceri-komutu: "<gray>• /madencilik, /odunculuk, /kazıcılık, /avcılık, /tarımcılık veya /hayvancılık komutunu dene</gray>"
+  onboarding-beceri-komutu: "<gray>• Beceri komutlarını incele (/madencilik, /avcılık vb.)</gray>"
 
 # "/panel" komutuna ait mesajlar.
 panel:
@@ -98,12 +107,19 @@ kabiliyet:
   etkin-filiz: "<green><simge:tarimcilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> ekin bir anda olgunlaştı.</gray>"
   etkin-suru: "<green><simge:hayvancilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> hayvan çağrına karşılık verdi.</gray>"
   maden-gerekli: "<red><simge:uyari> <kabiliyet> yalnızca geniş, üstü kapalı bir madende kullanılabilir.</red>"
+  agac-gerekli: "<red><simge:uyari> <kabiliyet> yalnızca gerçek bir ağacın kök kütüğünde çalışır - binalarda değil.</red>"
   yanlis-sinif: "<red><kabiliyet> kabiliyetini kullanmak için doğru sınıfa sahip olmalısın.</red>"
   tetiklendi: "<green><kabiliyet> tetiklendi.</green>"
-  secildi: "<green><kabiliyet> seçildi.</green> <gray>Uygun alete sağ tıklayarak etkinleştir.</gray>"
+  secildi: "<green><kabiliyet> seçildi.</green> <gray>Uygun aleti eline al ve çift sağ tıkla.</gray>"
   secim-bekleme: "<yellow>Farklı bir kabiliyet seçmeden önce <sure> beklemelisin.</yellow>"
+  # Cift sag tik onayi: ilk tiklamada eylem cubugunda bu yazi cikar, ikinci
+  # tiklama kabiliyeti gercekten calistirir (ya da yaratici modda kapatir).
+  onay-aktif: "<yellow><simge:kabiliyet> <kabiliyet> kabiliyetini aktif etmek için tekrar sağ tıkla</yellow>"
+  onay-kapat: "<yellow><simge:kabiliyet> <kabiliyet> kabiliyetini kapatmak için tekrar sağ tıkla</yellow>"
+  kapatildi: "<yellow><simge:kabiliyet> Kabiliyet kapatıldı.</yellow>"
   geri-sayim: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <white><kalan></white> <dark_gray>•</dark_gray> <aqua><simge:enerji> Enerji <white><mevcut></white><gray>/</gray><white><maksimum></white></aqua>"
   geri-sayim-enerji: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <aqua><simge:enerji> Enerji <white><mevcut></white><gray>/</gray><white><maksimum></white></aqua>"
+  geri-sayim-yaratici: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <light_purple>Yaratıcı mod</light_purple> <dark_gray>•</dark_gray> <gray>Kapatmak için çift sağ tıkla</gray>"
 
 sinif:
   secildi: "<green><sinif> sınıfını seçtin.</green>"
@@ -137,6 +153,38 @@ prestij:
 gorev:
   tamamlandi: "<green><simge:gorev> <gorev> görevini tamamladın!</green> <gray>(+<xp> XP)</gray>"
   tamamlandi-duyuru: "<aqua><simge:gorev> <oyuncu> <gorev> görevini tamamladı!</aqua>"
+
+# "/ev" ("/home") komutu - sinif seviyesi 15'te ya da ilk prestijde acilir.
+ev:
+  kullanim: "<gray>Kullanım: <white>/ev</white> (evine ışınlan) <dark_gray>|</dark_gray> <white>/ev ayarla <isim></white> <dark_gray>|</dark_gray> <white>/ev sil</white></gray>"
+  ayarlandi: "<green><simge:tamam> Evin ayarlandı:</green> <white><ev></white>"
+  isinlanildi: "<green><simge:ok> Evine ışınlandın:</green> <white><ev></white>"
+  silindi: "<yellow>Evin silindi.</yellow>"
+  ayarlanmadi: "<red>Henüz bir ev ayarlamadın.</red> <gray>/ev ayarla <isim> ile ayarlayabilirsin.</gray>"
+  kilitli: "<red><simge:eksik> Ev özelliği <white><seviye></white>. sınıf seviyesinde açılır.</red> <gray>(Bir kez prestij yaptıysan da açılır.)</gray>"
+  yasak-dunya: "<red><simge:uyari> Ev sistemi Nether ve End'de çalışmaz.</red>"
+  dunya-yok: "<red>Evinin bulunduğu dünya artık yüklü değil.</red>"
+  gecersiz-isim: "<red>Ev ismi boş olamaz ve en fazla 32 karakter olabilir.</red>"
+
+# "/takas" ("/trade") komutu - sinif seviyesi 20'de ya da ilk prestijde acilir.
+takas:
+  kullanim: "<gray>Kullanım: <white>/takas <oyuncu></white> <dark_gray>|</dark_gray> <white>/takas kabul</white> <dark_gray>|</dark_gray> <white>/takas ret</white> <dark_gray>|</dark_gray> <white>/takas iptal</white></gray>"
+  istek-gonderildi: "<green>Takas isteği gönderildi:</green> <white><oyuncu></white> <gray>(1 dakika içinde yanıtlaması gerekiyor)</gray>"
+  istek-alindi: "<gold><simge:koleksiyon> <oyuncu> seninle takas yapmak istiyor.</gold> <gray>Kabul etmek için <white>/takas kabul</white>, reddetmek için <white>/takas ret</white>.</gray>"
+  baslatildi: "<green><simge:koleksiyon> <oyuncu> ile takas başladı.</green>"
+  tamamlandi: "<green><simge:tamam> Takas tamamlandı.</green>"
+  iptal-edildi: "<yellow><simge:uyari> Takas iptal edildi, eşyalar sahiplerine geri verildi.</yellow>"
+  reddedildi: "<yellow>Takas isteğini reddettin.</yellow>"
+  reddedildi-karsi: "<yellow><oyuncu> takas isteğini reddetti.</yellow>"
+  istek-yok: "<red>Bekleyen bir takas isteğin yok.</red>"
+  kendine: "<red>Kendinle takas yapamazsın.</red>"
+  mesgul: "<red>Taraflardan biri zaten bir takasın içinde.</red>"
+  kilitli: "<red><simge:eksik> Takas özelliği <white><seviye></white>. sınıf seviyesinde açılır.</red> <gray>(Bir kez prestij yaptıysan da açılır.)</gray>"
+  karsi-kilitli: "<red><oyuncu> henüz takas yapabilecek seviyede değil.</red> <gray>(En az <white><seviye></white>. sınıf seviyesi ya da bir prestij gerekiyor.)</gray>"
+  karsi-cevrimdisi: "<red>Böyle bir oyuncu çevrimiçi değil:</red> <white><oyuncu></white>"
+  karsi-aktif-degil: "<red><oyuncu> MMO sistemini henüz aktifleştirmemiş.</red>"
+  karsi-onayladi: "<yellow><oyuncu> takası onayladı. Sıra sende.</yellow>"
+  tezgah-dolu: "<red>Tezgaha daha fazla eşya koyamazsın.</red>"
 
 koleksiyon:
   oge-kazanildi: "<green><koleksiyon></green> <gray>koleksiyonuna</gray> <white><oge></white> <gray>eklendi.</gray> <gray>(+<xp> XP)</gray>"
@@ -247,7 +295,7 @@ gui:
     krediler: "<white><simge:kutlama> Eklenti Hakkında</white>"
     krediler-aciklama: "<gray>Sürüm bilgisi ve emeği geçenler <dark_gray>•</dark_gray> Açmak için tıkla</gray>"
     profil: "<gold><simge:guc> Profilim</gold>"
-    yetenekler: "<green><simge:xp> Yeteneklerim</green>"
+    beceriler: "<green><simge:xp> Becerilerim</green>"
     kabiliyetler: "<yellow><simge:kabiliyet> Kabiliyetlerim</yellow>"
     kabiliyetler-aciklama: "<gray>Sınıfına özel kabiliyetleri seç ve kullan <dark_gray>•</dark_gray> Açmak için tıkla</gray>"
     sinif: "<red><simge:sinif> Sınıfım</red>"
@@ -287,16 +335,22 @@ gui:
     oge-aciklama: "<gray>Güç <white><seviye></white> <dark_gray>|</dark_gray> Prestij <white><prestij></white> <dark_gray>|</dark_gray> Sınıf <white><sinif></white></gray>"
     oge-aciklama-sinifsiz: "<gray>Güç <white><seviye></white> <dark_gray>|</dark_gray> Prestij <white><prestij></white> <dark_gray>|</dark_gray> Sınıf <white>Seçilmedi</white></gray>"
 
-  yetenekler:
-    baslik: "<dark_gray>Yeteneklerim</dark_gray>"
+  beceriler:
+    baslik: "<dark_gray><simge:xp> Becerilerim</dark_gray>"
     oge: "<green><yetenek></green>"
     oge-aciklama: "<gray>Seviye <white><seviye></white> <dark_gray>|</dark_gray> XP <white><xp></white></gray>"
+    oge-sinerji: "<gold><simge:sinif> Sınıfın (<sinif>) bu beceriden beslenir</gold>"
+    oge-ipucu: "<dark_gray>Detay için tıkla</dark_gray>"
 
   beceri-detay:
     baslik: "<dark_gray><beceri></dark_gray>"
     oge: "<green><beceri></green>"
     aciklama: "<gray>Seviye <white><seviye></white> <dark_gray>|</dark_gray> XP <white><xp></white> <dark_gray>|</dark_gray> Sınıf <white><sinif></white></gray>"
+    ilerleme-oge: "<aqua><simge:xp> İlerleme</aqua>"
+    ilerleme-aciklama: "<gray>Bu seviyede <white><xp></white>/<white><gereken></white> XP</gray>"
     kilometre-tasi-oge: "<gold><simge:seviye> Kilometre Taşları</gold>"
+    kilometre-tasi-sonraki: "<gray>Sıradaki: <white><seviye></white>. seviye <dark_gray>(<kalan> seviye kaldı)</dark_gray></gray>"
+    kilometre-tasi-ipucu: "<dark_gray>Tümünü görmek için tıkla</dark_gray>"
     liderlik-oge: "<yellow><simge:liderlik> Liderlik Tablosu</yellow>"
 
   kilometre-tasi:
@@ -388,8 +442,10 @@ gui:
     oge-tamamlandi: "<green><gorev></green>"
     oge-aciklama-detay: "<gray><aciklama></gray>"
     oge-aciklama: "<gray>İlerleme <white><ilerleme></white></gray>"
-    oge-odul: "<gold><simge:xp> Ödül: <white>+<xp> XP</white></gold>"
+    oge-odul: "<gold><simge:xp> Ödül: <white>+<xp> XP</white> <dark_gray>(<beceri>)</dark_gray></gold>"
     oge-tamamlandi-aciklama: "<green><simge:tamam> Tamamlandı</green>"
+    sekme-acik: "<green><simge:tamam> Açık bölüm</green>"
+    sekme-kapali: "<dark_gray>Görmek için tıkla</dark_gray>"
     bilgi-oge: "<gold><simge:bilgi> Görev Durumun</gold>"
     bilgi-aciklama: "<gray>Tamamlanan <white><tamamlanan></white>/<white><toplam></white> görev</gray>"
     bolum-gunluk: "<yellow><simge:gorev> Günlük Görevler</yellow>"
@@ -401,6 +457,19 @@ gui:
     bolum-tamamlanan: "<green><simge:tamam> Tamamlanan Görevler</green>"
     bolum-tamamlanan-aciklama: "<gray>Bu dönemde bitirdiğin görevler.</gray>"
     bolum-bos: "<dark_gray>Bu bölümde şu an görev yok.</dark_gray>"
+
+  # Takas tezgahi: sol yari senin teklifin, sag yari karsi tarafin.
+  takas:
+    baslik: "<dark_gray><simge:koleksiyon> Takas</dark_gray>"
+    ipucu-oge: "<gold><simge:bilgi> Nasıl Çalışır</gold>"
+    ipucu-aciklama: "<gray>Envanterindeki bir eşyaya tıkla, tezgaha koyulsun. Tezgahtaki kendi eşyana tıklarsan geri alırsın.</gray>"
+    kendi-durum: "<white>Senin durumun</white>"
+    karsi-durum: "<white>Karşı tarafın durumu</white>"
+    durum-hazir: "<green><simge:tamam> Onayladı</green>"
+    durum-bekliyor: "<red><simge:eksik> Henüz onaylamadı</red>"
+    onayla-oge: "<green><simge:tamam> Onayla</green>"
+    onayla-aciklama: "<gray>İki taraf da onaylayınca eşyalar el değiştirir. Tezgah her değiştiğinde onaylar sıfırlanır.</gray>"
+    iptal-oge: "<red><simge:uyari> İptal Et</red>"
 
   koleksiyonlar:
     baslik: "<dark_gray>Koleksiyonlarım</dark_gray>"

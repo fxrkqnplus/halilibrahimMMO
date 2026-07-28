@@ -50,9 +50,10 @@ zamanında çözümlenir — eklenti jar'ına hiçbir şey gömülmez (shade edi
 
 ## Her şey menüden: komut listesi
 
-Eklentinin **hiçbir oyuncu komutunun argümanı yoktur**. Her komut yalnızca
-ilgili GUI ekranını açan bir kısayoldur; sohbete liste basan, sohbetten
-değer değiştiren hiçbir komut kalmamıştır.
+Neredeyse her komut yalnızca ilgili GUI ekranını açan bir kısayoldur; sohbete
+liste basan, sohbetten değer değiştiren hiçbir komut yoktur. Tek istisna
+**`/ev` ve `/takas`**: biri eve verilecek ismi, diğeri takas yapılacak
+oyuncunun adını ister — ikisi de bir menünün soramayacağı serbest metindir.
 
 Komutlar **gerçek Türkçe harflerle** yazılır. Türkçe karakter içeren her
 komutun eski ASCII yazımı da **takma ad (alias)** olarak çalışmaya devam eder,
@@ -73,8 +74,11 @@ da her ekrana ulaşabilir.
 | `/liderlik` | — | Liderlik tabloları |
 | `/ünvan` | `/unvan` | Unvan gardırobu |
 | `/kozmetik` | — | Kozmetik gardırobu |
+| `/beceri` | `/beceriler` | Becerilerim ekranı (altı becerinin tümü) |
 | `/madencilik`, `/odunculuk` | — | O becerinin detay ekranı |
 | `/kazıcılık`, `/avcılık`, `/tarımcılık`, `/hayvancılık` | `/kazicilik`, `/avcilik`, `/tarimcilik`, `/hayvancilik` | O becerinin detay ekranı |
+| `/ev` | `/home` | Evine ışınlanır (`/ev ayarla <isim>`, `/ev sil`) |
+| `/takas <oyuncu>` | `/trade` | Takas isteği (`/takas kabul`, `/takas ret`, `/takas iptal`) |
 | `/panel` | — | Sağdaki bilgi panelini gizler/gösterir |
 | `/haliladmin` | — | Yönetici paneli (`halilibrahimmmo.admin` izni gerekir) |
 
@@ -124,14 +128,19 @@ içindeki aynı açık 1–100 seviye eğrisini kullanır, ama her biri farklı 
 eylemden beslenir ve her blok/yaratık/iş **oyun içindeki gerçek değerine
 göre** XP verir.
 
-| Beceri | Nasıl kazanılır | En az → en çok XP |
-|---|---|---|
-| **Kazıcılık** (`/kazıcılık`) | Toprak, kum, çakıl, kil gibi yumuşak blokları kazmak | 6 (toprak) → 18 (kil) |
-| **Odunculuk** (`/odunculuk`) | Kütük kesmek | 9 (meşe) → 21 (nether sapları) |
-| **Madencilik** (`/madencilik`) | Cevher kırmak | 12 (kömür) → 300 (kadim kalıntı) |
-| **Avcılık** (`/avcılık`) | Yaratık öldürmek | 15 (zararsız hayvanlar) → 2400 (Ejderha) |
-| **Tarımcılık** (`/tarımcılık`) | Tarlada yapılan her iş (aşağıda) | 3 (çapalama) → 30 (köylü ticareti) |
-| **Hayvancılık** (`/hayvancılık`) | Hayvan yetiştirmenin her adımı (aşağıda) | 3 (süt sağma) → 45 (evcilleştirme) |
+| Beceri | Simge | Nasıl kazanılır | En az → en çok XP |
+|---|---|---|---|
+| **Kazıcılık** (`/kazıcılık`) | Demir kürek | Toprak, kum, çakıl, kil gibi yumuşak blokları kazmak | 6 (toprak) → 18 (kil) |
+| **Odunculuk** (`/odunculuk`) | Demir balta | Kütük kesmek | 9 (meşe) → 21 (nether sapları) |
+| **Madencilik** (`/madencilik`) | Demir kazma | Cevher kırmak | 12 (kömür) → 300 (kadim kalıntı) |
+| **Avcılık** (`/avcılık`) | Demir kılıç | Yaratık öldürmek | 15 (zararsız hayvanlar) → 2400 (Ejderha) |
+| **Tarımcılık** (`/tarımcılık`) | Buğday | Tarlada yapılan her iş (aşağıda) | 3 (çapalama) → 30 (köylü ticareti) |
+| **Hayvancılık** (`/hayvancılık`) | Kayış | Hayvan yetiştirmenin her adımı (aşağıda) | 3 (süt sağma) → 45 (evcilleştirme) |
+
+Her becerinin kendine ait bir simgesi vardır ve bu simge her yerde aynıdır:
+`/beceri` listesinde, o becerinin kendi detay ekranında ve liderlik
+tablosunda. Sınıfının beslendiği beceriler listede ayrıca işaretlenir ve
+parlar. Bir beceriye tıklamak doğrudan o becerinin detay ekranını açar.
 
 Aradaki farklar bilinçli olarak büyük tutulmuştur. Örneğin madencilikte
 redstone 21, altın 60, elmas 135, zümrüt 180 XP verir; avcılıkta bir inek ya
@@ -198,6 +207,17 @@ becerinin asıl güçlü bonusu her zaman 75. ve 100. seviyelerde.
   kütüğünü kestiğinizde ağacın tamamı devrilir; bağlı bütün kütükler (en
   fazla 48) birden düşer. Gövdenin ortasından kesmek bunu tetiklemez, yoksa
   her kütük kırışı zincirleme bir yıkıma dönerdi.
+
+  **Yalnızca gerçek ağaçlarda çalışır.** Bir köy evinin kütük direği de
+  dünyanın kendi ürettiği bir bloktur, dolayısıyla "oyuncunun koyduğu blok"
+  kuralı orada işe yaramaz. Bunun yerine üç şart birden aranır: kütüğün altında
+  ağacın kök salabileceği bir zemin (toprak, yosun, çamur, kum/kil ya da
+  nylium) olmalı; gövdeye değen en az 4 yaprak (nether mantarlarında wart
+  bloğu/shroomlight) bulunmalı; ve gövde hiçbir yapı malzemesine
+  (tahta/merdiven/basamak/çit/kapı/kapak/duvar/cam/yün ve köy iş istasyonları)
+  değmemelidir. Ormanın ortasındaki bir evi güvende tutan da bu üçüncü şarttır.
+  Aynı denetim **Ağaç Kırıcı kabiliyeti** için de geçerlidir; bina üzerinde
+  kullanıldığında kabiliyet harcanmaz, kurulu kalır ve sizi uyarır.
 - **Yem iadesi** (hayvancılık 25) — bir yavru doğduktan sonra %15 ihtimalle
   çiftleştirme yeminin **iki adedi birden** (iki ebeveyn için harcadığınız
   kadarı) elinize geri döner. Zar yavru doğduktan *sonra* atılır, yani
@@ -306,12 +326,25 @@ kullanılamaz. Açılma koşulu **sınıf seviyesidir** (beceri seviyesi değil)
 
 1. `/kabiliyet` menüsünden bir kabiliyet seçin. Her kabiliyetin konusuna uygun
    kendi simgesi vardır; **seçili olan büyülü (parlayan)** görünür, seçildiğinde
-   kısa bir ses efekti çalar ve sohbete onay mesajı gelir.
+   kısa bir ses efekti çalar ve sohbete onay mesajı gelir. Menü, sınıfınızın
+   kendi renginde çerçevelenir.
 2. Kabiliyetin istediği aleti (kazma / balta / kürek / kılıç, kabiliyete göre
    değişir) elinize alın.
-3. **Sağ tıklayın.** Bir bloğa, boş havaya ya da bir yaratığa — üçü de
-   çalışır. Saldırı kabiliyetlerini kullanmak için önce bir duvar bulmanız
-   gerekmez.
+3. **Çift sağ tıklayın.** İlk sağ tıklamada ekranın altında
+   *"… kabiliyetini aktif etmek için tekrar sağ tıkla"* yazar; kabiliyeti
+   gerçekten çalıştıran ikinci tıklamadır. Onay için 3 saniyeniz vardır.
+   Bir bloğa, boş havaya ya da bir yaratığa tıklamak — üçü de çalışır;
+   saldırı kabiliyetleri için önce bir duvar bulmanız gerekmez.
+
+   Tek tıkla çalışmamasının sebebi basit: kabiliyetler enerji harcar ve uzun
+   bekleme süreleri başlatır, sağ tıklamak ise kapı açarken, blok koyarken,
+   hayvan beslerken sürekli yaptığınız bir şeydir.
+
+**Yaratıcı (Creative) modda hiçbir sınır yoktur:** kabiliyet değiştirme
+beklemesi, kabiliyet bekleme süresi, enerji maliyeti ve süre sınırı
+uygulanmaz. Kabiliyet siz kapatana kadar açık kalır — açarken olduğu gibi
+**çift sağ tıklayarak kapatırsınız**. Eylem çubuğunda geri sayım yerine
+"Yaratıcı mod — kapatmak için çift sağ tıkla" yazar.
 
 Alet **yalnızca kabiliyeti başlatmak** için gereklidir: kabiliyet bir kez
 etkinleştikten sonra elindeki eşyayı değiştirmen, hatta düşürmen onu bozmaz.
@@ -354,16 +387,30 @@ dolar. Eylem çubuğunda her zaman `mevcut/maksimum` biçiminde görünür.
 
 ## Profil paneli (sidebar)
 
-Ekranın sağında kalıcı, renklendirilmiş bir bilgi paneli; oyuncu adını
-(varsa kuşanılan unvan kendi rengiyle isimden önce, "Oyuncu: [Unvan] Ad"
-sırasıyla), Güç seviyesini (altın), prestiji (açık mor), seçili sınıfı ve o
-sınıfın kendi seviyesini (camgöbeği), açık kabiliyetlerin adlarını (seçili
-olan yeşil, diğerleri kırmızı), henüz tamamlanmamış ilk-adım görevlerini
-(tamamlanınca bu bölüm tamamen kaybolur) ve **atanmış her günlük ve haftalık
-görevi ayrı bir satırda** gösterir. Tamamlanmamış görevler ilerlemeleri ve XP
-ödülleriyle sarı; **tamamlanmış görevler yeşil renkte, yanında "Tamamlandı"
-yazısı ve kazandırdığı XP ile** listelenir. Bölümler arasında ince ayırıcı
-çizgiler vardır.
+Ekranın sağında kalıcı, renklendirilmiş bir bilgi paneli. Yukarıdan aşağıya:
+
+1. **Oyuncu adı** — varsa kuşanılan unvan kendi rengiyle isimden önce
+   ("Oyuncu: [Unvan] Ad").
+2. **Güç ve prestij** — tek satırda, altın ve açık mor.
+3. **Sınıf ve sınıf seviyesi** — tek satırda, XP ilerlemesiyle birlikte.
+4. **Kabiliyet** — çalışan bir kabiliyet varsa adı ve kalan süresi, yoksa
+   seçili olan, o da yoksa "Kabiliyet seçilmedi".
+5. **Ev / Takas durumu** — ikisinden biri açıldıktan sonra görünür; evinizin
+   adını (ya da "Ayarlanmadı") ve takasın açık olup olmadığını gösterir.
+   **Bir takas sürerken** hemen altında "Takas açık: <oyuncu>" satırı çıkar.
+6. **Başlangıç Görevleri** — yalnızca tamamlanmamış olanlar varken; hepsi
+   bitince bu bölüm tamamen kaybolur.
+7. **Günlük Görevler** ve **Haftalık Görevler** — her biri kendi başlığı
+   altında ayrı bir bölüm, atanmış her görev ayrı bir satırda. Tamamlanmamış
+   görevler ilerlemeleri ve XP ödülleriyle sarı; **tamamlanmış görevler yeşil**
+   listelenir.
+8. En altta `/panel` hatırlatması.
+
+Bölümler arasında ince ayırıcı çizgiler vardır. **Minecraft bu panelde en
+fazla 15 satır gösterir**; eklenti fazlasını kendisi kırpar (en alttaki
+`/panel` satırı her zaman korunur), bu yüzden satırlar bilinçli olarak
+birleştirilmiştir — örneğin sınıfınızın açık kabiliyetleri artık tek tek
+listelenmez, tam listeyi `/kabiliyet` ekranı gösterir.
 
 Panel, sunucuda gerçekleşen her değişikliği (beceri/sınıf XP kazanımı, unvan
 değişikliği, yönetici müdahalesi dahil) yaklaşık 2 saniye içinde
@@ -398,23 +445,108 @@ sayısı 10'dur.
 
 ## Görevler
 
-`/görev` dört bölümlü bir görev panosu açar:
+`/görev`, solunda dört sekme bulunan bir görev panosu açar. Aynı anda tek bir
+bölüm gösterilir, o bölüme de 42 slot ayrılmıştır:
 
 - **Günlük Görevler** — geniş bir havuzdan her gün rastgele atanan 3 görev.
 - **Haftalık Görevler** — havuzdan her hafta rastgele atanan 2 görev.
 - **Kalıcı Görevler** — tek seferlik, hiç sıfırlanmayan, herkeste ortak görevler.
-- **Tamamlanan Görevler** — bu dönemde bitirdikleriniz, ayrı bir bölümde.
+- **Tamamlanan Görevler** — bu dönemde bitirdikleriniz.
 
 Bir görevin üstüne geldiğinizde **ne yapmanız gerektiğini anlatan açıklaması**,
-mevcut ilerlemeniz ve **kazandıracağı XP miktarı** yazar. Tamamlanan bir görev
-kendi bölümünden çıkıp yeşil ve parlayarak "Tamamlanan Görevler" bölümüne
+mevcut ilerlemeniz ve **kazandıracağı XP ile hangi beceriye yazılacağı** yazar.
+Tamamlanan bir görev kendi bölümünden çıkıp "Tamamlanan Görevler" sekmesine
 geçer, böylece üst bölümler her zaman dürüst bir yapılacaklar listesi kalır.
 
-Görevler doğru blokları kırdıkça veya doğru yaratıkları öldürdükçe otomatik
-ilerler (Yaratıcı/İzleyici modda ve oyuncunun yerleştirdiği bloklarda ilerleme
-kaydedilmez), periyodu bitince yeni bir rastgele atamayla sıfırlanır. Bir
-günlük/haftalık görevi tamamlamak sunucu genelinde (XP miktarı gösterilmeden)
-duyurulur.
+### Görev ödülleri hangi beceriye yazılır?
+
+Her görev **eğittiği beceriyi** kendisi bildirir ve ödülünü oraya öder — üstelik
+sıradan bir beceri XP'si gibi, aynı sinerji ve prestij çarpanlarıyla. Bunun
+doğrudan sonucu şudur: bir görev hem ilgili beceriyi hem de **o beceriden
+beslenen sınıfı** birden büyütür.
+
+| Örnek görev | Beceri | Sınıfı buysa ayrıca |
+|---|---|---|
+| Zombi Temizliği, Örümcek Avı | Avcılık | Amansız Savaşçı |
+| Toprak Temizliği, Taş Ustası | Kazıcılık | Tabiat Vârisi |
+| Haftalık Derin Kazı, Nether Madenciliği | Madencilik | Mağara Adamı |
+| Günlük Oduncu, Haftalık Orman Kesimi | Odunculuk | Tabiat Vârisi |
+| Günlük Hasat, Bereketli Tarla | Tarımcılık | Tabiat Vârisi |
+
+Sınıfınız o beceriden beslenmiyorsa sınıf XP'nizi yine alırsınız — hiçbir görev
+"yanlış uzmanlık" diye sıfır sınıf XP'si vermez, ama iki kere de saymaz.
+Görevden gelen bir seviye atlaması artık diğer bütün seviye atlamalarıyla
+**birebir aynı** geri bildirimi verir: sohbet mesajı, ses efekti, boss çubuğu
+ve varsa "yeni kabiliyet açıldı" bildirimi.
+
+### Görev türleri
+
+Blok kırma ve yaratık öldürmenin yanına iki tür daha eklendi:
+
+- **Yapı bulma** — o yapının içinde durmanız yeterlidir. Köy (1 800 XP),
+  batık gemi, terk edilmiş maden, batık hazine, kadim kalıntılar, yağmacı
+  karakolu, nether kalesi, bastion kalıntısı, okyanus anıtı, deneme odaları,
+  kale, ormandaki konak (15 000 XP) ve **Kadim Şehir** (18 000 XP).
+- **Eşya edinme** — hem yerden alınan hem de bir sandıktan çıkarılan eşyalar
+  sayılır. Müzik diski, isim etiketi, ölümsüzlük totemi, elytra ve en zoru
+  **ejderha yumurtası** (36 000 XP).
+
+XP'ler kasıtlı olarak zorlukla ölçeklenir: bir köy bulmak ile Kadim Şehir'e
+inmek arasında yirmi katlık bir fark vardır.
+
+Görevler otomatik ilerler (Yaratıcı/İzleyici modda ve oyuncunun yerleştirdiği
+bloklarda ilerleme kaydedilmez — ekinler bu kuralın istisnasıdır, tıpkı beceri
+XP'sinde olduğu gibi), periyodu bitince yeni bir rastgele atamayla sıfırlanır.
+Bir günlük/haftalık görevi tamamlamak sunucu genelinde (XP miktarı
+gösterilmeden) duyurulur.
+
+---
+
+## Ev (`/ev`)
+
+Sınıf seviyeniz **15**'e ulaştığında — ya da **bir kez prestij yaptıysanız**,
+sınıf seviyeniz ne olursa olsun — kendinize bir ev ayarlayabilirsiniz.
+Prestijin de sayılmasının sebebi basit: prestij sınıf seviyenizi 1'e
+sıfırlar, dolayısıyla yalnızca seviyeye bakan bir kural bu özelliği tam da en
+çok emek vermiş oyunculardan her prestijde geri alırdı.
+
+| Komut | Ne yapar |
+|---|---|
+| `/ev ayarla <isim>` | Bulunduğunuz noktayı, verdiğiniz isimle eviniz yapar |
+| `/ev` | Nerede olursanız olun evinize ışınlanır |
+| `/ev sil` | Evinizi siler |
+
+Her oyuncunun **bir** evi vardır; yeniden ayarlamak eskisinin üzerine yazar.
+İsim en fazla 32 karakter olabilir ve panelde görünür.
+
+**Nether ve End'de çalışmaz** — ne oralarda ev ayarlayabilirsiniz, ne de
+oradan evinize dönebilirsiniz. Bir nether portalını komutla kısa devre etmek,
+o boyutların oyunda var oluş sebebini silerdi.
+
+---
+
+## Takas (`/takas`)
+
+Sınıf seviyeniz **20**'ye ulaştığında (ya da bir kez prestij yaptıysanız)
+**sunucudaki herhangi bir oyuncuyla, aranızda ne kadar mesafe olursa olsun**
+takas yapabilirsiniz. Karşı tarafın da en az **15.** sınıf seviyesinde olması
+veya bir kez prestij yapmış olması gerekir.
+
+1. `/takas <oyuncu>` ile istek gönderin. Karşı tarafın yanıtlamak için
+   1 dakikası vardır.
+2. Karşı taraf `/takas kabul` derse ikinizde de takas tezgahı açılır
+   (`/takas ret` ile reddedebilir).
+3. **Envanterinizdeki bir eşyaya tıklayın**, tezgaha konur. Tezgahtaki kendi
+   eşyanıza tıklarsanız geri alırsınız. Solda sizin teklifiniz, sağda karşı
+   tarafınki görünür.
+4. İkiniz de **Onayla**'ya bastığında eşyalar el değiştirir.
+
+Tezgahta bir şey her değiştiğinde **iki tarafın da onayı sıfırlanır**; yoksa
+biri onaylayıp diğerinin onayını bekler, sonra da kendi mallarını geri
+çekebilirdi. Pencereyi kapatmak, `/takas iptal` yazmak ya da sunucudan
+düşmek takası iptal eder ve **her eşya sahibine geri döner** — teklif edilen
+eşyalar takas boyunca tek bir yerde tutulur, envanterde de tezgahta da
+kopyası bulunmaz.
 
 ## Koleksiyonlar ve macera günlüğü
 
@@ -462,11 +594,16 @@ süre görünür kalacağını ve hangi ses efektinin çalacağını denetler).
 
 `/menü`, çerçeveli bir merkez menü açar: en üstte kendi kafanı taşıyan,
 Gücünü/prestijini/sınıfını özetleyen kişisel bir başlık, altında dört kategori
-— **İlerleme** (profil, beceriler, sınıf/yetenekler, prestij),
+— **İlerleme** (profil, **Becerilerim**, sınıf/yetenekler, prestij),
 **Kabiliyetlerim**, **Görevler** (görevler, koleksiyonlar, macera günlüğü) ve
 **Topluluk** (liderlik tabloları, unvanlar, kozmetikler) — her biri ne
 içerdiğini anlatan bir açıklama satırıyla, ve en altta **Eklenti Hakkında**
 düğmesi.
+
+**Sınıfa özel çerçeveler:** kabiliyet listesi, yetenek ağacı ve her becerinin
+detay ekranı, o ekranın ait olduğu sınıfın kendi renginde camla çerçevelenir —
+Amansız Savaşçı kırmızı, Mağara Adamı mavi, Tabiat Vârisi yeşil. Böylece bir
+ekranın kime ait olduğu tek bir yazı okumadan anlaşılır.
 
 **Eklenti Hakkında** ekranı (hem `/menü`'den hem `/haliladmin`'den açılır)
 sürüm bilgisini ve emeği geçenleri listeler: **Furkan Okan (fxrkqnplus)** ve

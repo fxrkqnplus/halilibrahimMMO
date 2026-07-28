@@ -108,6 +108,18 @@ final class SkillMaterialConfigTest {
         );
     }
 
+    /** Every skill needs its own icon, and no two skills may share one - the whole point is telling them apart at a glance. */
+    @Test
+    void everySkillDeclaresItsOwnDistinctIcon() {
+        ConfigurationSection skills = skills();
+        Set<String> icons = new HashSet<>();
+        for (String id : skills.getKeys(false)) {
+            String icon = skills.getString(id + ".simge", "");
+            assertNotNull(Material.matchMaterial(icon), () -> "Unknown simge material in skills.yml for " + id + ": " + icon);
+            assertTrue(icons.add(icon), () -> "Two skills share the simge " + icon);
+        }
+    }
+
     private ConfigurationSection skills() {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(
                 getClass().getClassLoader().getResourceAsStream("skills.yml"), StandardCharsets.UTF_8));

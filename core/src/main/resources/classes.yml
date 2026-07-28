@@ -77,6 +77,9 @@ sinif-ilerleme:
 # prestij-etkisi: her prestij rankinda kalici olarak eklenen, secili sinif icin
 # gecerli bonus (MAX_HEALTH/PVE_DAMAGE_MULTIPLIER/MAX_ENERGY turlerinden biri).
 #
+# cerceve: o sinifa ait ekranlarin (kabiliyet listesi, yetenek agaci, beceri
+#          detayi) kenarlarini cerceveleyen cam panel - sinifin bossbar rengiyle
+#          ayni renkte olmasi tavsiye edilir.
 # simge: sinif secim ekranlarinda bu sinifi temsil eden esya. Her sinif kendi
 # temasina uygun bir esya kullanir; gecerli bir Bukkit Material adi olmalidir.
 # Her sinifin yetenek agacinda hem OZELLIK hem KABILIYET yetenekleri vardir;
@@ -87,6 +90,7 @@ siniflar:
     sinerji-beceriler: [avcilik]
     bossbar-rengi: KIRMIZI
     simge: DIAMOND_SWORD
+    cerceve: RED_STAINED_GLASS_PANE
     prestij-etkisi: { tur: PVE_DAMAGE_MULTIPLIER, deger-basina: 0.02 }
     yetenekler:
       # --- Özellik yetenekleri ---
@@ -104,6 +108,7 @@ siniflar:
     sinerji-beceriler: [madencilik]
     bossbar-rengi: MAVI
     simge: DIAMOND_PICKAXE
+    cerceve: BLUE_STAINED_GLASS_PANE
     prestij-etkisi: { tur: MAX_ENERGY, deger-basina: 3 }
     yetenekler:
       # --- Özellik yetenekleri ---
@@ -123,6 +128,7 @@ siniflar:
     sinerji-beceriler: [odunculuk, kazicilik, tarimcilik, hayvancilik]
     bossbar-rengi: YESIL
     simge: IRON_AXE
+    cerceve: GREEN_STAINED_GLASS_PANE
     prestij-etkisi: { tur: MAX_HEALTH, deger-basina: 1 }
     yetenekler:
       # --- Özellik yetenekleri ---
