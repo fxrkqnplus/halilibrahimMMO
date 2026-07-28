@@ -264,6 +264,14 @@ never drift apart.
 | `hmmo_player_equipped_title` | Phase 6 (part 3), `TitleCosmeticSchemaMigration` v6 | The single title id a player currently has equipped. |
 | `hmmo_player_unlocked_cosmetics` | Phase 6 (part 3), `TitleCosmeticSchemaMigration` v6 | One row per player/cosmetic a player has ever unlocked (INSERT-only membership). |
 | `hmmo_player_equipped_cosmetic` | Phase 6 (part 3), `TitleCosmeticSchemaMigration` v6 | The single cosmetic id a player currently has equipped. |
+| `hmmo_player_class_progress` | Phase 9.2, `ClassProgressSchemaMigration` v7 | Per (player, class) level/XP - the third leveling track, independent of talent ranks. |
+| `hmmo_player_activation` | Phase 9.6, `PlayerActivationSchemaMigration` v8 | INSERT-only membership: a row means this player has run `/mmo`. |
+| `hmmo_player_quest_assignments` | Phase 11.7, `QuestAssignmentSchemaMigration` v9 | One row per player/quest type: the comma-joined ids randomly assigned this period, and the period end. |
+| `hmmo_player_onboarding_tasks` | Phase 11.8, `OnboardingSchemaMigration` v10 | INSERT-only membership per completed onboarding task. |
+| `hmmo_player_banked_power` | Phase 12.4, `PrestigeBankedPowerSchemaMigration` v11 | The Güç banked at each prestige, so prestige never lowers Güç. |
+| `hmmo_player_home` | Phase 16.6, `PlayerHomeSchemaMigration` v12 | One named home per player, stored as world UUID plus raw coordinates. |
+| `hmmo_player_wealth` | Phase 17.11, `WealthSchemaMigration` v13 | One lifetime-cumulative Zenginlik Puanı total per player. Never decremented. |
+| `hmmo_player_quest_pins` | Phase 17.12, `QuestPinSchemaMigration` v14 | One row per player/quest type: the comma-joined ids that player pinned to their sidebar (at most three). |
 
 Phase 2 will add the real player-profile schema as new `Migration` classes with
 version `2`, `3`, ... - `CoreSchemaMigration` (v1) itself must never be edited.
@@ -286,7 +294,9 @@ version `2`, `3`, ... - `CoreSchemaMigration` (v1) itself must never be edited.
 | `leaderboards.yml` | Entry count per board and the database re-query refresh interval. |
 | `titles.yml` | Configured title catalogue: display name, icon and one unlock condition per title. |
 | `cosmetics.yml` | Configured cosmetic catalogue: display name, icon, particle effect and one unlock condition per cosmetic. |
-| `feedback.yml` | How long the level-up/quest/collection/prestige bossbar and on-screen title stay visible. |
+| `feedback.yml` | How long the level-up/quest/collection/prestige bossbar and on-screen title stay visible, plus every named sound cue. |
+| `zenginlik.yml` | Phase 17: Zenginlik Puanı values per block, entity and quest, plus the milestone thresholds. |
+| `bosslar.yml` | Phase 17: world boss spawn interval and distance ring, the five rarity tiers (multipliers, gear, behaviour flags, rewards, loot) and one archetype per creature kind with its own name pool. |
 
 Both are Turkish-commented, UTF-8, copied-not-rewritten (§5.3). Future phases add
 new files listed in the original brief (`skills.yml`, `quests.yml`,
@@ -3313,3 +3323,290 @@ harvest quest would refuse the exact wheat the tarımcılık skill rewards.
   toggling an ability off; the structure-discovery sweep actually firing on
   entering a village; the rebuilt sidebar staying inside 15 lines across all
   states; the tabbed quest board and the reframed class screens.
+
+## 31. Phase 17 — interaction guards, world bosses, Zenginlik Puanı, quest
+    rework, /rtp, admin redesign (Phase 17 complete)
+
+A user-requested follow-on phase covering 14 items. Three load-bearing
+decisions were taken before implementation, each turning a one-off request into
+a mechanism rather than a special case:
+
+1. **"The ability must not open when I right-click a door" is a question about
+   the block, not about the ability.** The answer is one bounded list of blocks
+   that already answer a right click with something of their own, consulted by
+   the activation listener - not a per-ability opt-out.
+2. **Zenginlik Puanı had to be a score, not a currency.** This project has had
+   no economy since Phase 1 (§1) and adding a spendable number would have been
+   exactly the thing that rule forbids. Every source is one-shot by
+   construction, nothing is ever deducted, and what it buys is standing:
+   leaderboard rank, titles, cosmetics and announcements.
+3. **A world boss spawns near a player, not at a uniform point on the map.** A
+   boss nobody can reach is a boss nobody fights; the announcement carries the
+   coordinates so the whole server can converge on it.
+
+### 17.1 - Right-click guards and message noise
+
+- New `abilities.InteractableBlocks`: a bounded list (a `Set<Material>` of
+  containers/workstations plus the `Tag` families - doors, trapdoors, fence
+  gates, buttons, beds, shulker boxes, anvils, cauldrons, candles, flower pots,
+  campfires, signs). `AbilityActivationListener#onInteract` now ignores a
+  `RIGHT_CLICK_BLOCK` on any of them. **Sneaking is the deliberate escape
+  hatch**, because vanilla already suppresses a block's own right-click
+  behaviour while sneaking - so the gesture a player already knows is the one
+  that gets their ability at a door.
+  Chosen over `Material#isInteractable()`, which is documented as not
+  comprehensive; a hand-written list is the same bounded-value discipline
+  everything else in this project follows and cannot silently change meaning
+  when Mojang adds a block. Entity right-clicks were left alone: §14.6 added
+  that path on purpose so combat abilities can be started while aiming at a mob.
+- Outside Creative, a click aimed at an **already-running** ability now returns
+  silently before the confirm step. It previously produced the "click again"
+  action-bar prompt and then, on the second click, a cooldown refusal - two
+  messages for something the player could not have done anyway. The action-bar
+  countdown is already saying it is running.
+
+### 17.2 - Class change unequips the ability
+
+`ClassConfirmMenu` already called `AbilityService#clearSelection`; the admin
+force-set path (`AdminClassPickerMenu`) did not, so staff-driven changes left a
+foreign class's ability equipped. Both now do. `clearSelection`'s contract also
+widened from "selection only" to "the selection and anything it left running" -
+armed block abilities, damage/drop buffs, instant potion effects and ORE_REVEAL
+outlines all end, because none of them belong to the new class. **Cooldowns are
+deliberately preserved**, so a class change can never be used to wipe one. The
+player-touching half is hopped onto the target's own region scheduler, since
+the admin path resolves on a database thread.
+
+### 17.3 - Maden Feneri: nearest-first scan, bigger outline, Creative cleanup
+
+- **The reported "only the ores behind walls glow" was a scan-order bug, not a
+  rendering one.** `revealOres` swept column-major from the *western corner* of
+  the search box and stopped at `MAX_REVEALED_ORES` (200), so at radius 36 the
+  two hundred ores that got lit were whichever ones happened to lie west - the
+  seam the player was standing in front of was frequently never reached.
+  Replaced with an outward walk, one cube shell at a time
+  (`shellOffsets(int)` enumerates the exact Chebyshev-distance surface rather
+  than filtering the whole cube, so the whole scan stays O(r^3) and stops as
+  soon as the budget is spent).
+- The outline scale went 1.02 to 1.08 (translation -0.01 to -0.04): at 2% the
+  halo of an ore the player could already see was hidden inside its own faces.
+- `revealedOres`' value became a `RevealedOre(ownerId, display)` record, so
+  `deactivate(Player)` - the Creative off switch - can take down that player's
+  own outlines and nobody else's. Previously switching the ability off in
+  Creative left the whole cave glowing until the (six-hour) Creative duration
+  ran out.
+
+### 17.4 - One-shot abilities expire normally in Creative
+
+New `AbilityEffectType#resolvesImmediately()` (`KNOCKBACK_SLAM`,
+`GROWTH_SURGE`, `LOVE_CALL`). Creative stretches an ability's duration to
+`CREATIVE_DURATION_MILLIS` so a *sustained* buff stays up until switched off -
+but a shockwave has already thrown everything nearby before the timer starts,
+so holding it open only made Yıkıcı Darbe unusable again until the player
+remembered to toggle it. Those three now keep their configured duration even in
+Creative (2 seconds for Yıkıcı Darbe), which is what the request asked for.
+
+### 17.5 - Talent tree laid out as two labelled blocks
+
+`ClassMenu` was one unbroken run of talent items starting at slot 28, which ran
+off its row and over the frame, and the only way to tell which of the two point
+pools a talent belonged to was to hover it. Rebuilt: a class header at slot 4
+(icon, class level and XP), the class icons and both point counters sharing row
+1, then a labelled **Özellik** block (header + 6 slots) and a labelled
+**Kabiliyet** block (header + 13 slots). `GUI_TALENT_CATEGORY_FEATURE`/`_ABILITY`
+were repurposed from a per-item lore line into those two headers (text updated
+in `messages.yml`, keys unchanged), and each gained a `_LORE` sibling. Talents
+sort alphabetically inside a pool so a talent keeps its place between opens.
+
+### 17.6 - Tabiat Vârisi cut from 8 abilities to 4
+
+`kazici-darbe`, `yesil-yol`, `doga-kalkani` and `doga-sifasi` are gone. The
+surviving four are **exactly one per synergy skill**, unlocking weakest to
+strongest: Toprak Sezgisi (kazıcılık, 5) → Filiz Patlaması (tarımcılık, 15) →
+Sürü Çağrısı (hayvancılık, 25) → Ağaç Kırıcı (odunculuk, 40). One orphaned
+talent (`sifa-suresi`, which pointed at the removed `doga-sifasi`) was
+retargeted rather than deleted, becoming `toprak-tasarrufu` on
+`toprak-sezgisi` - the class keeps 3 feature + 7 ability talents, so
+`ClassConfigTest`'s "every class offers both pools" invariant still holds.
+
+### 17.7 - `/rtp` (alias `/rastgele`)
+
+New `command.RandomTeleportCommand`: a random point 500-10 000 blocks either
+side of world spawn, overworld only, 30-minute cooldown, on-screen title plus a
+chat line carrying the landing coordinates
+(`FeedbackService#celebrateRandomTeleport`, new `rastgele-isinlanma` sound cue).
+**The search is asynchronous by necessity**: a candidate ten thousand blocks
+away is almost never in a loaded chunk, and asking for its highest block would
+generate that chunk synchronously - each candidate goes through
+`World#getChunkAtAsync` first, and a candidate that turns out to be ocean, lava
+or a cave ceiling costs another round of the loop rather than a bad landing (16
+attempts, then the player keeps their turn). The cooldown is claimed *before*
+the search so spamming the command cannot start a dozen at once, and refunded
+if nothing was found. Nether and End are refused: the Nether's roof is what
+every "highest block" answer lands on, and a random point in the End is either
+void or a dragon's island.
+
+### 17.8 - `/ev` teleport cooldown
+
+New shared `util.PlayerCooldowns` (in-memory only, deliberately - a cooldown
+surviving a restart would punish players for something the server did), used by
+both `/rtp` and `/ev`. `HomeService.TELEPORT_COOLDOWN_MILLIS` is 5 minutes and
+applies to the trip only: setting or deleting a home stays free, and the clock
+starts only once the trip is actually happening, so "you have no home" never
+costs five minutes. New `HomeActionResult.COOLDOWN` + `ev.bekleme` message.
+
+### 17.9 - World bosses (new `boss` package)
+
+- New `bosslar.yml` and package: `BossRarity` (5 tiers, each owning four
+  fully-authored `MessageKey`s - nameplate, spawn broadcast, death broadcast,
+  head name), `BossArchetype`, `BossWeaponType`, `BossLootEntry`,
+  `BossRaritySettings`, `BossSettings`, `BossService`/`YamlBossService`,
+  `BossListener`.
+- **Rarity is picked by weight, not percentage.** The requested split
+  (49/30/20/10/1) sums to 110, which no set of percentages can be; weights
+  express exactly the ratio that was asked for and can never quietly stop
+  summing to a whole. Shipped weights are the requested numbers verbatim.
+- **Per-rarity MessageKeys rather than one template fed a rarity label** - the
+  same discipline §8.2 established for per-cause XP bossbars. The concrete
+  payoff: a rarity's colour lives in `messages.yml` where a server owner can
+  change it, instead of being a Java colour constant that no placeholder could
+  carry anyway (§10.6's documented limitation), so this needed no
+  `MessageKey`-bypass exception at all.
+- **A boss is a tagged vanilla mob and nothing else.** Health/damage/speed are
+  attribute multipliers, gear comes from the rarity (the archetype picks the
+  weapon *kind*, the rarity picks the item, so "a mystic boss carries a far
+  better weapon" is one line per rarity rather than a matrix), and identity
+  lives in the entity's own `PersistentDataContainer`. That is what makes the
+  whole system **survive a restart with no table of its own**: the server saves
+  the entity, the tag rides along, and `BossListener` reads the tag rather than
+  an in-memory registry. **Known, documented limitation:** the flee/heal/blink
+  behaviour loop is in-memory and is not re-attached to a boss that outlived a
+  restart - it keeps its stats, its name and its full reward and simply fights
+  like a very strong ordinary mob.
+- Behaviour, per rarity: self-heal at half health (30s cooldown), blink toward
+  the nearest player every 12s, and a one-time flee at a quarter health
+  (teleport away + Speed II). Running takes priority over repositioning.
+- 35 names across 5 archetypes (zombi/iskelet/boğulmuş/büyücü/baltacı), 7 each,
+  **themed per archetype on purpose**: a name should say what you are looking
+  at before you can read the rarity.
+- On death: vanilla XP (`setDroppedExp`), class XP through the ordinary
+  `ClassAwardHandler` path so a boss kill levels a class exactly like anything
+  else, rarity-scaled loot, Zenginlik Puanı, and the boss's own head named after
+  it in its rarity's colour. Ordinary skill XP/quest progress/wealth for the
+  underlying creature still flow through `SkillListener` - the boss reward is
+  entirely *on top*.
+
+### 17.10 - `/haliladmin` rebuilt
+
+`AdminMenu` went from a bare 27-slot grid to the same visual language as
+`/menü`: 45 slots, framed, a `PLAYER_HEAD` header reading the live version and
+online count, and every action carrying a lore line explaining it. New action:
+**Dünya Bossu Çağır** (`BossService#spawnNow`), which starts the next boss
+immediately without letting staff hand-pick its rarity.
+
+### 17.11 - Zenginlik Puanı (new `wealth` package)
+
+- New `zenginlik.yml`, migration **V13** (`hmmo_player_wealth`),
+  `WealthService`/`CachedWealthService`/`WealthRepository`/`WealthSettings`/
+  `WealthAward`, and `WealthAwardHandler` - the third member of the
+  `SkillAwardHandler`/`ClassAwardHandler` family, so a milestone looks identical
+  whichever of the four sources produced it.
+- Sources: world-generated blocks (diamond ore 10 000, iron 500, ancient debris
+  40 000, dragon egg 250 000...), kills (Warden 250 000, Ender Dragon 500 000,
+  ~40 tiered mobs, unlisted mobs get the floor), **quest completion** and world
+  bosses. Discovering somewhere valuable pays out through the discovery quest
+  rather than a "you entered a structure" hook, because a quest completes
+  exactly once and a structure can be walked into all day.
+- **Wired into `SkillListener` rather than a listener of its own**, deliberately:
+  wealth answers to exactly the same four gates skill XP does (activated,
+  real gamemode, world-generated block, plausible break rate) and a second
+  listener would have had to reproduce all four and keep them in step forever.
+- Milestones (7 thresholds) fire a personal cue plus a server-wide broadcast;
+  only the **highest** crossed is announced, since one boss kill can vault a new
+  player past several at once.
+- Surfaces: a blue `sidebar.zenginlik` line, a new `LeaderboardCategory.WEALTH`
+  board (diamond icon), and a new `UnlockConditionType.WEALTH`.
+  `UnlockCondition` gained a `long amount` field because wealth totals run past
+  what an `int` holds; `UnlockContext` gained `wealth`, so `UnlockContextLoader`
+  now depends on `WealthService`.
+- **Titles went 5 → 19 and cosmetics 4 → 14**, including 5 wealth-gated titles
+  and 3 wealth-gated cosmetics. `CosmeticConfigTest`'s hand-maintained particle
+  allow-list was migrated to §27's reflective field-name technique, which is
+  what made adding new particle effects a one-line change.
+
+### 17.12 - Quest rework and sidebar pinning
+
+- **`quests.yml` rewritten: 65 quests** (36 permanent, 16 daily, 13 weekly),
+  every one carrying a new required **`kisa-ad`**. That field exists because a
+  scoreboard line does not wrap, it truncates - the full titles are written for
+  a menu tooltip and were being cut off mid-word on the panel.
+  `QuestConfigTest` enforces a 20-character ceiling on it.
+- **Two new objective mechanisms**, both driven by the specific quests that were
+  asked for:
+  - `hedef.boyut` (optional `NORMAL`/`NETHER`/`THE_END`) on block and kill
+    objectives, so "kill a hundred endermen in the End" means the End rather
+    than a plains biome at night.
+  - `QuestObjectiveType.DEED` + a bounded `QuestDeed` enum (6 constants) and
+    `QuestDeedListener`, for objectives that are a story rather than a counter.
+    The ghast one is why that listener has state: Minecraft never reports "a
+    ghast died to its own fireball", so the damage event notices the reflection
+    and remembers the ghast, and the death event asks whether that is the one
+    dying. `QuestConfigTest` asserts every deed is used by at least one quest -
+    an unused constant would be a listener firing for nobody.
+  - The requested quests landed as: mansion evokers (3 EVOKER), elder guardian,
+    bastion gold blocks (10 `GOLD_BLOCK` in the Nether - the placed-block
+    tracker already means only generated ones count), piglin bartering,
+    10 blaze + 10 wither skeletons in the Nether, the ghast reflection, and
+    100 endermen in the End.
+- **Sidebar pinning**: migration **V14** (`hmmo_player_quest_pins`, same
+  comma-joined shape as `hmmo_player_quest_assignments`),
+  `QuestService#togglePin`/`cachedPins`/`loadPins`, `QuestPinResult`, capped at
+  `MAXIMUM_PINS_PER_TYPE = 3` per type. Clicking an unfinished quest on the
+  board pins it. A new **permanent** sidebar section exists only because of
+  this - there are 36 permanent quests, so listing them all was never an option
+  and listing none was the old behaviour.
+  **For daily and weekly, pins act as a filter rather than an addition**, and
+  that is a deliberate reading of the request: pinning nothing keeps the old
+  default of showing every assigned one, and pinning is not allowed to *add* an
+  unassigned pool quest, because `isRelevant(...)` means an unassigned pool
+  quest cannot make progress at all - showing one would be a line that never
+  moves.
+
+### Verification (this phase)
+
+- `./gradlew build` / `./gradlew test` / `:core:compileIntegrationTestJava` are
+  all green with Java 26 (`JAVA_HOME=C:\Program Files\Java\jdk-26.0.1`),
+  including a forced `--rerun-tasks` pass.
+- Test changes: `UnlockConditionsTest` rewritten for the widened
+  `UnlockCondition`/`UnlockContext` records and gained a WEALTH case;
+  `QuestConfigTest` gained `kisa-ad` length validation, `DEED`/`boyut`
+  validation and the every-deed-is-used case; `CosmeticConfigTest` migrated off
+  its hardcoded particle allow-list; new `WealthSchemaMigrationTest` (V13) and
+  `QuestPinSchemaMigrationTest` (V14); `SqliteMigrationContractTest`/
+  `AbstractMigrationCrossEngineTest`/`IntegrationDatabaseSupport` updated to
+  include V13/V14.
+- An unused-import scan over every changed file found two (a stale `MessageKey`
+  import in each of the two new `boss` classes); both removed. A programmatic
+  sweep confirmed every `MessageKey` constant has a real call site, and
+  `MessageCatalogTest` independently enforces the 1:1 match with `messages.yml`
+  and that every `<simge:...>` names a real `IconPack` entry - which now
+  includes the two new icons (`zenginlik`, `boss`).
+- **A live `./gradlew runServer` boot was performed**, with
+  `core/run/plugins/HalilIbrahimMMO/`'s bundled YAML *and* its SQLite database
+  deleted first so every changed resource regenerated and all 14 migrations -
+  including the new V13/V14 - applied against a fresh database. The plugin
+  enabled with zero exceptions, the server reached `Done` in ~7.6s, and the log
+  had zero "eksik mesaj anahtari" warnings - confirming the rewritten 65-quest
+  `quests.yml` (including `boyut` and `DEED` parsing), the new `zenginlik.yml`
+  and `bosslar.yml` (every rarity, weapon material, armour piece and loot line),
+  the expanded `titles.yml`/`cosmetics.yml` and every new `MessageKey` parse on
+  a real server.
+- **Not verified this session, requires a live client** (the same honest caveat
+  every feature-touching phase since §17 has carried): right-clicking a door
+  with an ability selected and confirming nothing fires, versus sneak-clicking
+  the same door and confirming it does; Maden Feneri lighting the seam directly
+  in front of the player; Yıkıcı Darbe being re-triggerable after two seconds in
+  Creative; a world boss actually spawning, fleeing at low health and dropping
+  its named head; the Zenginlik milestone broadcast; the six new deed objectives
+  firing; pinning quests and watching the sidebar sections change; `/rtp`
+  landing somewhere survivable; the redesigned talent tree and admin panel.

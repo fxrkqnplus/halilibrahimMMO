@@ -64,8 +64,16 @@ public final class AdminClassPickerMenu implements GuiView {
             return;
         }
         services.classes().adminForceSetClass(targetId, targetName, classId).thenRun(() -> {
+            // The same unequip the player's own change performs: an ability
+            // selected for the class the target no longer has must not stay
+            // equipped just because staff made the change instead of them.
+            services.abilities().clearSelection(targetId);
             services.logger().info("Yonetici " + player.getName() + ", " + targetName + " oyuncusunun sinifini "
                     + (classId.isEmpty() ? "temizledi" : classId + " olarak zorla ayarladi") + ".");
+            Player target = services.plugin().getServer().getPlayer(targetId);
+            if (target != null) {
+                target.getScheduler().run(services.plugin(), task -> services.sidebar().refresh(target), null);
+            }
             player.getScheduler().run(services.plugin(), task -> GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName)), null);
         });
     }

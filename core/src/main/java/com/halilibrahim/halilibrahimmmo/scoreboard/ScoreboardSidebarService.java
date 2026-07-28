@@ -22,6 +22,7 @@ import com.halilibrahim.halilibrahimmmo.titles.TitleChatStyle;
 import com.halilibrahim.halilibrahimmmo.titles.TitleService;
 import com.halilibrahim.halilibrahimmmo.trade.TradeService;
 import com.halilibrahim.halilibrahimmmo.trade.TradeSession;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -85,6 +86,7 @@ public final class ScoreboardSidebarService implements SidebarService {
     private final OnboardingService onboarding;
     private final HomeService homes;
     private final TradeService trades;
+    private final WealthService wealth;
     private final ConcurrentHashMap<UUID, Boolean> visible = new ConcurrentHashMap<>();
     private ScheduledTask refreshTask;
 
@@ -100,7 +102,8 @@ public final class ScoreboardSidebarService implements SidebarService {
             TitleService titles,
             OnboardingService onboarding,
             HomeService homes,
-            TradeService trades
+            TradeService trades,
+            WealthService wealth
     ) {
         this.plugin = plugin;
         this.messages = messages;
@@ -114,6 +117,7 @@ public final class ScoreboardSidebarService implements SidebarService {
         this.onboarding = onboarding;
         this.homes = homes;
         this.trades = trades;
+        this.wealth = wealth;
     }
 
     @Override
@@ -268,6 +272,9 @@ public final class ScoreboardSidebarService implements SidebarService {
                 "seviye", Integer.toString(progression.cachedGlobalLevel(playerId)),
                 "prestij", Integer.toString(profile.prestige())
         )));
+        lines.add(messages.render(MessageKey.SIDEBAR_LINE_WEALTH, Map.of(
+                "zenginlik", Long.toString(wealth.cached(playerId))
+        )));
 
         String classId = profile.selectedClass();
         if (classId.isEmpty()) {
@@ -379,11 +386,12 @@ public final class ScoreboardSidebarService implements SidebarService {
                 .orElseGet(() -> messages.plain(MessageKey.SIDEBAR_FEATURE_UNSET, Map.of()));
     }
 
-    /** Daily and weekly each get their own labelled block, so the two never read as one undifferentiated list. */
+    /** Daily, weekly and permanent each get their own labelled block, so they never read as one undifferentiated list. */
     private void addQuestSections(List<Component> lines, UUID playerId) {
         Map<String, QuestProgress> questProgress = quests.cachedAll(playerId);
-        addQuestSection(lines, questProgress, QuestType.DAILY, MessageKey.SIDEBAR_LINE_QUESTS_DAILY_HEADER);
-        addQuestSection(lines, questProgress, QuestType.WEEKLY, MessageKey.SIDEBAR_LINE_QUESTS_WEEKLY_HEADER);
+        addQuestSection(lines, questProgress, playerId, QuestType.DAILY, MessageKey.SIDEBAR_LINE_QUESTS_DAILY_HEADER);
+        addQuestSection(lines, questProgress, playerId, QuestType.WEEKLY, MessageKey.SIDEBAR_LINE_QUESTS_WEEKLY_HEADER);
+        addQuestSection(lines, questProgress, playerId, QuestType.PERMANENT, MessageKey.SIDEBAR_LINE_QUESTS_PERMANENT_HEADER);
     }
 
     /** Purely cosmetic separator between sidebar sections - no service-layer meaning. */
@@ -416,33 +424,52 @@ public final class ScoreboardSidebarService implements SidebarService {
     }
 
     /**
-     * A labelled block of one line per currently-assigned quest of
-     * {@code type}, omitted entirely when the player has none of that type. A
-     * finished quest switches to its own green "Tamamlandı" template carrying
-     * the XP it paid out, instead of sitting at a maxed-out progress fraction
-     * that looks identical to an unclaimed one.
+     * A labelled block for one quest type, omitted entirely when it would be
+     * empty. A finished quest switches to its own green "Tamamlandı" template
+     * carrying the XP it paid out, instead of sitting at a maxed-out progress
+     * fraction that looks identical to an unclaimed one.
+     *
+     * <p><strong>Pins decide what a section contains.</strong> The permanent
+     * section exists only because of them - there are dozens of permanent
+     * quests and nobody is "assigned" any, so listing them all was never an
+     * option and listing none was the old behaviour. For daily and weekly the
+     * pins act as a filter over the quests the period actually handed out:
+     * pinning nothing keeps the old default of showing every assigned one, and
+     * pinning some narrows the section to those. Pinning is deliberately not
+     * allowed to <em>add</em> an unassigned daily, because an unassigned pool
+     * quest cannot make progress at all - showing one would be a line that
+     * never moves.</p>
+     *
+     * <p>Names come from each quest's {@code kisa-ad} rather than its full
+     * title: a scoreboard line does not wrap, it truncates, and the full titles
+     * are written to be read in a menu tooltip.</p>
      */
-    private void addQuestSection(List<Component> lines, Map<String, QuestProgress> progress, QuestType type, MessageKey header) {
-        List<QuestDefinition> assigned = quests.definitions().stream()
+    private void addQuestSection(
+            List<Component> lines, Map<String, QuestProgress> progress, UUID playerId, QuestType type, MessageKey header
+    ) {
+        Set<String> pinned = quests.cachedPins(playerId, type);
+        boolean pinsOnly = type == QuestType.PERMANENT || !pinned.isEmpty();
+        List<QuestDefinition> shown = quests.definitions().stream()
                 .filter(definition -> definition.type() == type)
                 .filter(definition -> progress.containsKey(definition.id()))
+                .filter(definition -> !pinsOnly || pinned.contains(definition.id()))
                 .toList();
-        if (assigned.isEmpty()) {
+        if (shown.isEmpty()) {
             return;
         }
         lines.add(divider());
         lines.add(messages.render(header));
-        assigned.forEach(definition -> {
+        shown.forEach(definition -> {
             QuestProgress current = progress.get(definition.id());
             if (current.completed()) {
                 lines.add(messages.render(MessageKey.SIDEBAR_LINE_QUEST_COMPLETED_ENTRY, Map.of(
-                        "gorev", definition.displayName(),
+                        "gorev", definition.shortName(),
                         "xp", Long.toString(definition.rewardExperience())
                 )));
                 return;
             }
             lines.add(messages.render(MessageKey.SIDEBAR_LINE_QUEST_DAILY_ENTRY, Map.of(
-                    "gorev", definition.displayName(),
+                    "gorev", definition.shortName(),
                     "ilerleme", current.progress() + "/" + definition.target(),
                     "xp", Long.toString(definition.rewardExperience())
             )));

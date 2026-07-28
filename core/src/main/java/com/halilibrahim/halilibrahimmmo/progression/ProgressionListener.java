@@ -5,6 +5,7 @@ import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.prestige.BankedPowerService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -25,19 +26,22 @@ public final class ProgressionListener implements Listener {
     private final BlockBreakRateLimiter breakRateLimiter;
     private final ActivationService activation;
     private final BankedPowerService bankedPower;
+    private final WealthService wealth;
 
     public ProgressionListener(
             ProfileService profiles,
             FeedbackService feedback,
             BlockBreakRateLimiter breakRateLimiter,
             ActivationService activation,
-            BankedPowerService bankedPower
+            BankedPowerService bankedPower,
+            WealthService wealth
     ) {
         this.profiles = profiles;
         this.feedback = feedback;
         this.breakRateLimiter = breakRateLimiter;
         this.activation = activation;
         this.bankedPower = bankedPower;
+        this.wealth = wealth;
     }
 
     public void close() {
@@ -50,6 +54,7 @@ public final class ProgressionListener implements Listener {
         profiles.load(player.getUniqueId(), player.getName());
         activation.isActivated(player.getUniqueId());
         bankedPower.load(player.getUniqueId());
+        wealth.load(player.getUniqueId());
     }
 
     @EventHandler
@@ -59,5 +64,6 @@ public final class ProgressionListener implements Listener {
         feedback.clearExperienceProgress(event.getPlayer());
         activation.evict(event.getPlayer().getUniqueId());
         bankedPower.evict(event.getPlayer().getUniqueId());
+        wealth.evict(event.getPlayer().getUniqueId());
     }
 }

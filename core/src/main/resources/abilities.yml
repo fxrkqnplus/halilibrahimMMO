@@ -43,10 +43,10 @@ kabiliyetler:
   # =====================================================================
   #  Tabiat Vârisi (tabiat-varisi)
   #  Sinerji: odunculuk + kazicilik + tarimcilik + hayvancilik
-  #  Tek basina dort beceriyi birden besledigi icin diger iki siniftan daha
-  #  fazla kabiliyeti vardir; karsiliginda hepsi tekil olarak daha yardimci
-  #  ve daha az yikici tasarlanmistir, ve sinif seviyesi boyunca cok daha
-  #  genis bir araliga yayilarak acilirlar.
+  #  Dort becerinin her biri icin tam olarak bir kabiliyet: kazicilik,
+  #  tarimcilik, hayvancilik ve odunculuk sirasiyla. Kabiliyetler en zayiftan
+  #  en gucluye dogru acilir (5 -> 15 -> 25 -> 40), boylece sinif seviyesi
+  #  yukseldikce elindeki arac da gorunur bicimde guclenir.
   # =====================================================================
   toprak-sezgisi:
     gorunen-ad: "Toprak Sezgisi"
@@ -71,127 +71,13 @@ kabiliyetler:
       partikul: WAX_ON
       partikul-sayisi: 40
 
-  kazici-darbe:
-    gorunen-ad: "Kazıcı Darbesi"
-    aciklama: "Sonraki uygun blok kırmanda çevredeki 9 bloğu birden kazır."
-    simge: IRON_SHOVEL
-    beceri: kazicilik
-    sinif: tabiat-varisi
-    gerekli-seviye: 10
-    enerji: 20
-    bekleme-suresi-saniye: 60
-    etki-suresi-saniye: 15
-    # Menuden secilip sag tikla etkinlestirmek icin gereken alet: herhangi bir kurek.
-    arac:
-      tur: SHOVEL
-    etki:
-      tur: EXCAVATE
-      limit: 9
-    gorsel:
-      renk: TURUNCU
-      ses: BLOCK_GRASS_BREAK
-      ses-seviyesi: 1.0
-      ton: 0.7
-      partikul: DUST_PLUME
-      partikul-sayisi: 45
-
-  doga-kalkani:
-    gorunen-ad: "Doğa Kalkanı"
-    aciklama: "3 saniye boyunca neredeyse tüm hasara karşı dirençli olursun."
-    simge: SHIELD
-    beceri: kazicilik
-    sinif: tabiat-varisi
-    gerekli-seviye: 30
-    enerji: 30
-    bekleme-suresi-saniye: 150
-    etki-suresi-saniye: 3
-    arac:
-      tur: ANY
-    etki:
-      tur: BRIEF_INVULNERABILITY
-    gorsel:
-      renk: BEYAZ
-      ses: ENTITY_IRON_GOLEM_REPAIR
-      ses-seviyesi: 1.0
-      ton: 1.2
-      partikul: TOTEM_OF_UNDYING
-      partikul-sayisi: 60
-
-  yesil-yol:
-    gorunen-ad: "Yeşil Yol"
-    aciklama: "10 saniye boyunca hareket hızın artar."
-    simge: SUGAR
-    beceri: odunculuk
-    sinif: tabiat-varisi
-    gerekli-seviye: 15
-    enerji: 20
-    bekleme-suresi-saniye: 75
-    etki-suresi-saniye: 10
-    arac:
-      tur: AXE
-    etki:
-      tur: SPEED_BURST
-    gorsel:
-      renk: KOYU_YESIL
-      ses: ENTITY_BAT_TAKEOFF
-      ses-seviyesi: 1.0
-      ton: 1.5
-      partikul: HAPPY_VILLAGER
-      partikul-sayisi: 40
-
-  agac-kirici:
-    gorunen-ad: "Ağaç Kırıcı"
-    aciklama: "Sonraki ağaç kırmanda bağlı tüm kütükleri (en fazla 32) birden keser."
-    simge: IRON_AXE
-    beceri: odunculuk
-    sinif: tabiat-varisi
-    gerekli-seviye: 25
-    enerji: 25
-    bekleme-suresi-saniye: 75
-    etki-suresi-saniye: 15
-    # Menuden secilip sag tikla etkinlestirmek icin gereken alet: herhangi bir balta.
-    arac:
-      tur: AXE
-    etki:
-      tur: TREE_FELL
-      limit: 32
-    gorsel:
-      renk: YESIL
-      ses: ITEM_AXE_STRIP
-      ses-seviyesi: 1.0
-      ton: 0.8
-      partikul: CHERRY_LEAVES
-      partikul-sayisi: 50
-
-  doga-sifasi:
-    gorunen-ad: "Doğa Şifası"
-    aciklama: "8 saniye boyunca can yenilenmen hızlanır."
-    simge: GLISTERING_MELON_SLICE
-    beceri: odunculuk
-    sinif: tabiat-varisi
-    gerekli-seviye: 40
-    enerji: 25
-    bekleme-suresi-saniye: 120
-    etki-suresi-saniye: 8
-    arac:
-      tur: HOE
-    etki:
-      tur: AREA_HEAL
-    gorsel:
-      renk: MOR
-      ses: ENTITY_ZOMBIE_VILLAGER_CURE
-      ses-seviyesi: 0.8
-      ton: 1.4
-      partikul: HEART
-      partikul-sayisi: 25
-
   filiz-patlamasi:
     gorunen-ad: "Filiz Patlaması"
     aciklama: "Çevrendeki 6 blok yarıçapındaki bütün olmamış ekinler bir anda hasada hazır hâle gelir. Hiç kemik tozu harcamazsın."
     simge: BONE_MEAL
     beceri: tarimcilik
     sinif: tabiat-varisi
-    gerekli-seviye: 20
+    gerekli-seviye: 15
     enerji: 25
     bekleme-suresi-saniye: 180
     etki-suresi-saniye: 3
@@ -214,7 +100,7 @@ kabiliyetler:
     simge: WHEAT
     beceri: hayvancilik
     sinif: tabiat-varisi
-    gerekli-seviye: 35
+    gerekli-seviye: 25
     enerji: 30
     bekleme-suresi-saniye: 240
     etki-suresi-saniye: 20
@@ -230,6 +116,30 @@ kabiliyetler:
       ton: 1.3
       partikul: HEART
       partikul-sayisi: 40
+
+  agac-kirici:
+    gorunen-ad: "Ağaç Kırıcı"
+    aciklama: "Sonraki ağaç kırmanda bağlı tüm kütükleri (en fazla 32) birden keser. Sınıfın en güçlü kabiliyeti."
+    simge: IRON_AXE
+    beceri: odunculuk
+    sinif: tabiat-varisi
+    gerekli-seviye: 40
+    enerji: 25
+    bekleme-suresi-saniye: 75
+    etki-suresi-saniye: 15
+    # Menuden secilip sag tikla etkinlestirmek icin gereken alet: herhangi bir balta.
+    arac:
+      tur: AXE
+    etki:
+      tur: TREE_FELL
+      limit: 32
+    gorsel:
+      renk: YESIL
+      ses: ITEM_AXE_STRIP
+      ses-seviyesi: 1.0
+      ton: 0.8
+      partikul: CHERRY_LEAVES
+      partikul-sayisi: 50
 
   # =====================================================================
   #  Amansız Savaşçı (avci) - sinerji: avcilik

@@ -124,4 +124,50 @@ public final class QuestRepository {
             }
         });
     }
+
+    /** The quest ids this player has pinned to their sidebar for one section. */
+    CompletableFuture<Set<String>> findPins(UUID playerId, QuestType type) {
+        return database.execute(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT pinned_quest_ids FROM hmmo_player_quest_pins
+                    WHERE player_id = ? AND quest_type = ?
+                    """)) {
+                statement.setString(1, playerId.toString());
+                statement.setString(2, type.name());
+                try (ResultSet result = statement.executeQuery()) {
+                    if (!result.next()) {
+                        return Set.<String>of();
+                    }
+                    String raw = result.getString("pinned_quest_ids");
+                    return raw.isBlank() ? Set.<String>of() : Set.of(raw.split(","));
+                }
+            }
+        });
+    }
+
+    CompletableFuture<Void> savePins(UUID playerId, QuestType type, Set<String> questIds) {
+        String joined = String.join(",", questIds);
+        return database.executeVoid(connection -> {
+            try (PreparedStatement update = connection.prepareStatement("""
+                    UPDATE hmmo_player_quest_pins SET pinned_quest_ids = ?
+                    WHERE player_id = ? AND quest_type = ?
+                    """)) {
+                update.setString(1, joined);
+                update.setString(2, playerId.toString());
+                update.setString(3, type.name());
+                if (update.executeUpdate() != 0) {
+                    return;
+                }
+            }
+            try (PreparedStatement insert = connection.prepareStatement("""
+                    INSERT INTO hmmo_player_quest_pins (player_id, quest_type, pinned_quest_ids)
+                    VALUES (?, ?, ?)
+                    """)) {
+                insert.setString(1, playerId.toString());
+                insert.setString(2, type.name());
+                insert.setString(3, joined);
+                insert.executeUpdate();
+            }
+        });
+    }
 }

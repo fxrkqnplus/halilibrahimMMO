@@ -3,6 +3,8 @@ package com.halilibrahim.halilibrahimmmo.gui;
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.api.HalilIbrahimMMOAPI;
+import com.halilibrahim.halilibrahimmmo.boss.BossService;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.collections.CollectionService;
 import com.halilibrahim.halilibrahimmmo.config.ConfigService;
@@ -56,6 +58,8 @@ public record GuiServices(
         OnboardingService onboarding,
         OnboardingRewarder onboardingRewards,
         HomeService homes,
-        TradeService trades
+        TradeService trades,
+        WealthService wealth,
+        BossService bosses
 ) {
 }

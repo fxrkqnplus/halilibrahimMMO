@@ -256,6 +256,29 @@ public final class BossBarFeedbackService implements FeedbackService {
                 Map.of("guc", Integer.toString(newGuc)), BossBar.Color.GREEN);
     }
 
+    @Override
+    public void celebrateBossSpawned(Player player) {
+        playSound(player, "boss-belirdi");
+    }
+
+    @Override
+    public void celebrateBossDefeated(Player player) {
+        playSound(player, "boss-olduruldu");
+    }
+
+    @Override
+    public void celebrateWealthMilestone(Player player, long newTotal) {
+        messages.send(player, MessageKey.WEALTH_MILESTONE_PERSONAL, Map.of("zenginlik", Long.toString(newTotal)));
+        playSound(player, "zenginlik-kilometre-tasi");
+    }
+
+    @Override
+    public void celebrateRandomTeleport(Player player, String x, String y, String z) {
+        show(player, MessageKey.FEEDBACK_RANDOM_TELEPORT_BOSSBAR, MessageKey.FEEDBACK_RANDOM_TELEPORT_TITLE,
+                MessageKey.FEEDBACK_RANDOM_TELEPORT_SUBTITLE, Map.of("x", x, "y", y, "z", z), BossBar.Color.GREEN);
+        playSound(player, "rastgele-isinlanma");
+    }
+
     private void show(
             Player player, MessageKey bossBarKey, MessageKey titleKey, MessageKey subtitleKey,
             Map<String, String> placeholders, BossBar.Color color

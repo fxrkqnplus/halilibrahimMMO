@@ -15,6 +15,8 @@ import com.halilibrahim.halilibrahimmmo.skills.SkillAwardHandler;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import com.halilibrahim.halilibrahimmmo.titles.TitleDefinition;
 import com.halilibrahim.halilibrahimmmo.titles.TitleService;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthAwardHandler;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -64,11 +66,14 @@ public final class QuestCompletionHandler {
     private final SidebarService sidebar;
     private final SkillAwardHandler skillAwards;
     private final ClassAwardHandler classAwards;
+    private final WealthService wealth;
+    private final WealthAwardHandler wealthAwards;
 
     public QuestCompletionHandler(
             JavaPlugin plugin, QuestService quests, ProfileService profiles, ClassService classes, SkillService skills,
             TitleService titles, CosmeticService cosmetics, FeedbackService feedback, MessageService messages,
-            JournalService journal, SidebarService sidebar, SkillAwardHandler skillAwards, ClassAwardHandler classAwards
+            JournalService journal, SidebarService sidebar, SkillAwardHandler skillAwards, ClassAwardHandler classAwards,
+            WealthService wealth, WealthAwardHandler wealthAwards
     ) {
         this.plugin = plugin;
         this.quests = quests;
@@ -83,6 +88,8 @@ public final class QuestCompletionHandler {
         this.sidebar = sidebar;
         this.skillAwards = skillAwards;
         this.classAwards = classAwards;
+        this.wealth = wealth;
+        this.wealthAwards = wealthAwards;
     }
 
     public void notifyCompleted(Player player, List<QuestProgress> completed) {
@@ -105,6 +112,11 @@ public final class QuestCompletionHandler {
                 ));
             }
             awardExperience(player, definition);
+            // Discovering somewhere valuable pays Zenginlik Puanı here rather
+            // than from a "you entered a structure" hook, because a quest
+            // completes exactly once and a structure can be walked into all day.
+            wealth.awardQuest(player.getUniqueId(), definition.id())
+                    .thenAccept(award -> wealthAwards.handle(player, award));
             journal.recordQuestCompleted(player.getUniqueId(), definition.id(), definition.displayName(), definition.rewardExperience());
             titles.evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyTitles(player, unlocked));
             cosmetics.evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyCosmetics(player, unlocked));

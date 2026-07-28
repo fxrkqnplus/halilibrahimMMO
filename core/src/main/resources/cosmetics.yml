@@ -1,8 +1,10 @@
 # HalilIbrahimMMO - Kozmetik kataloğu
 # Kozmetikler, katılım ve seviye atlama anında kısa bir parçacık efekti
 # olarak görünür. Her kozmetiğin tek bir kazanma koşulu vardır - geçerli
-# değerler için titles.yml'nin başındaki açıklamaya bakın.
+# değerler için titles.yml'nin başındaki açıklamaya bakın (WEALTH dahil).
+# "efekt" herhangi bir geçerli Bukkit Particle adı olabilir.
 kozmetikler:
+  # ----- İlerlemeye dayalı -----
   yildiz-tozu:
     gorunen-ad: "Yıldız Tozu"
     esya: NETHER_STAR
@@ -19,14 +21,15 @@ kozmetikler:
       tur: PRESTIGE
       prestij: 1
 
-  deniz-kopugu:
-    gorunen-ad: "Deniz Köpüğü"
-    esya: PRISMARINE_CRYSTALS
-    efekt: BUBBLE_POP
+  yildirim-izi:
+    gorunen-ad: "Yıldırım İzi"
+    esya: LIGHTNING_ROD
+    efekt: ELECTRIC_SPARK
     kosul:
-      tur: COLLECTION_COMPLETED
-      koleksiyon-id: deniz-hazineleri
+      tur: PRESTIGE
+      prestij: 3
 
+  # ----- Beceri ustalıkları -----
   usta-avci:
     gorunen-ad: "Usta Avcı"
     esya: BOW
@@ -35,3 +38,89 @@ kozmetikler:
       tur: SKILL_LEVEL
       beceri-id: avcilik
       seviye: 50
+
+  kalp-yagmuru:
+    gorunen-ad: "Kalp Yağmuru"
+    esya: LEAD
+    efekt: HEART
+    kosul:
+      tur: SKILL_LEVEL
+      beceri-id: hayvancilik
+      seviye: 50
+
+  bahar-esintisi:
+    gorunen-ad: "Bahar Esintisi"
+    esya: BONE_MEAL
+    efekt: HAPPY_VILLAGER
+    kosul:
+      tur: SKILL_LEVEL
+      beceri-id: tarimcilik
+      seviye: 50
+
+  yaprak-firtinasi:
+    gorunen-ad: "Yaprak Fırtınası"
+    esya: CHERRY_LEAVES
+    efekt: CHERRY_LEAVES
+    kosul:
+      tur: SKILL_LEVEL
+      beceri-id: odunculuk
+      seviye: 50
+
+  toz-bulutu:
+    gorunen-ad: "Toz Bulutu"
+    esya: GRAVEL
+    efekt: DUST_PLUME
+    kosul:
+      tur: SKILL_LEVEL
+      beceri-id: kazicilik
+      seviye: 50
+
+  # ----- Görev ve koleksiyon -----
+  deniz-kopugu:
+    gorunen-ad: "Deniz Köpüğü"
+    esya: PRISMARINE_CRYSTALS
+    efekt: BUBBLE_POP
+    kosul:
+      tur: COLLECTION_COMPLETED
+      koleksiyon-id: deniz-hazineleri
+
+  ruh-isigi:
+    gorunen-ad: "Ruh Işığı"
+    esya: SOUL_LANTERN
+    efekt: SCULK_SOUL
+    kosul:
+      tur: QUEST_COMPLETED
+      gorev-id: kesif-kadim-sehir
+
+  ejderha-nefesi:
+    gorunen-ad: "Ejderha Nefesi"
+    esya: DRAGON_BREATH
+    efekt: DRAGON_BREATH
+    kosul:
+      tur: QUEST_COMPLETED
+      gorev-id: esya-ejderha-yumurtasi
+
+  # ----- Zenginlik Puanı -----
+  altin-sagnagi:
+    gorunen-ad: "Altın Sağanağı"
+    esya: GOLD_NUGGET
+    efekt: WAX_ON
+    kosul:
+      tur: WEALTH
+      zenginlik: 250000
+
+  kutsal-hale:
+    gorunen-ad: "Kutsal Hâle"
+    esya: TOTEM_OF_UNDYING
+    efekt: TOTEM_OF_UNDYING
+    kosul:
+      tur: WEALTH
+      zenginlik: 1000000
+
+  boyut-yirtigi:
+    gorunen-ad: "Boyut Yırtığı"
+    esya: ENDER_EYE
+    efekt: PORTAL
+    kosul:
+      tur: WEALTH
+      zenginlik: 5000000

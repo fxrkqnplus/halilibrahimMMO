@@ -5,6 +5,7 @@ import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
+import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
@@ -42,6 +43,7 @@ public final class CachedQuestService implements QuestService {
     private final ConcurrentHashMap<QuestKey, QuestProgress> cache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<QuestKey, CompletableFuture<Optional<QuestProgress>>> updateChains = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<AssignmentKey, QuestAssignment> assignmentCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<AssignmentKey, Set<String>> pinCache = new ConcurrentHashMap<>();
 
     public CachedQuestService(JavaPlugin plugin, QuestRepository repository, SkillService skills) {
         this.plugin = plugin;
@@ -164,14 +166,23 @@ public final class CachedQuestService implements QuestService {
     }
 
     @Override
-    public CompletableFuture<List<QuestProgress>> awardBlock(UUID playerId, Material material) {
-        return awardMatching(playerId, QuestObjectiveType.BLOCK_BREAK, definition -> definition.materials().contains(material));
+    public CompletableFuture<List<QuestProgress>> awardBlock(UUID playerId, Material material, World.Environment environment) {
+        return awardMatching(playerId, QuestObjectiveType.BLOCK_BREAK,
+                definition -> definition.materials().contains(material) && definition.acceptsDimension(environment));
     }
 
     @Override
-    public CompletableFuture<List<QuestProgress>> awardMob(UUID playerId, EntityType entityType) {
+    public CompletableFuture<List<QuestProgress>> awardMob(UUID playerId, EntityType entityType, World.Environment environment) {
         return awardMatching(playerId, QuestObjectiveType.MOB_KILL,
-                definition -> definition.entityTypes().isEmpty() || definition.entityTypes().contains(entityType));
+                definition -> (definition.entityTypes().isEmpty() || definition.entityTypes().contains(entityType))
+                        && definition.acceptsDimension(environment));
+    }
+
+    @Override
+    public CompletableFuture<List<QuestProgress>> awardDeed(UUID playerId, QuestDeed deed, World.Environment environment) {
+        return awardMatching(playerId, QuestObjectiveType.DEED,
+                definition -> definition.deed().filter(configured -> configured == deed).isPresent()
+                        && definition.acceptsDimension(environment));
     }
 
     @Override
@@ -207,6 +218,54 @@ public final class CachedQuestService implements QuestService {
     public void evict(UUID playerId) {
         cache.keySet().removeIf(key -> key.playerId().equals(playerId));
         assignmentCache.keySet().removeIf(key -> key.playerId().equals(playerId));
+        pinCache.keySet().removeIf(key -> key.playerId().equals(playerId));
+    }
+
+    @Override
+    public CompletableFuture<Void> loadPins(UUID playerId) {
+        List<CompletableFuture<Set<String>>> futures = new ArrayList<>();
+        for (QuestType type : QuestType.values()) {
+            futures.add(repository.findPins(playerId, type).thenApply(pinned -> {
+                pinCache.put(new AssignmentKey(playerId, type), pinned);
+                return pinned;
+            }));
+        }
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+    }
+
+    @Override
+    public Set<String> cachedPins(UUID playerId, QuestType type) {
+        return pinCache.getOrDefault(new AssignmentKey(playerId, type), Set.of());
+    }
+
+    /**
+     * Adds or removes one pin, capped at {@link #MAXIMUM_PINS_PER_TYPE}. The cap
+     * is what keeps the sidebar readable: it renders at most fifteen lines
+     * total, so an uncapped pin list would push the quest sections it was meant
+     * to enrich straight off the bottom of the panel.
+     */
+    @Override
+    public CompletableFuture<QuestPinResult> togglePin(UUID playerId, String questId) {
+        QuestDefinition definition = settings().definitions().get(questId);
+        if (definition == null) {
+            return CompletableFuture.completedFuture(QuestPinResult.UNKNOWN_QUEST);
+        }
+        AssignmentKey key = new AssignmentKey(playerId, definition.type());
+        Set<String> current = new LinkedHashSet<>(pinCache.getOrDefault(key, Set.of()));
+        QuestPinResult result;
+        if (current.remove(questId)) {
+            result = QuestPinResult.UNPINNED;
+        } else if (current.size() >= MAXIMUM_PINS_PER_TYPE) {
+            return CompletableFuture.completedFuture(QuestPinResult.FULL);
+        } else {
+            current.add(questId);
+            result = QuestPinResult.PINNED;
+        }
+        Set<String> updated = Set.copyOf(current);
+        return repository.savePins(playerId, definition.type(), updated).thenApply(ignored -> {
+            pinCache.put(key, updated);
+            return result;
+        });
     }
 
     private CompletableFuture<List<QuestProgress>> awardMatching(UUID playerId, QuestObjectiveType objectiveType, Predicate<QuestDefinition> matches) {
@@ -312,6 +371,10 @@ public final class CachedQuestService implements QuestService {
             if (!skills.settings().definitions().containsKey(skillId)) {
                 throw new IllegalArgumentException("Quest must declare a known beceri id: " + id);
             }
+            String shortName = section.getString("kisa-ad", displayName);
+            if (shortName.isBlank()) {
+                throw new IllegalArgumentException("Quest kisa-ad cannot be blank: " + id);
+            }
             ConfigurationSection objective = requiredSection(section, "hedef");
             QuestObjectiveType objectiveType = QuestObjectiveType.valueOf(objective.getString("tur", "").toUpperCase(Locale.ROOT));
             Set<Material> materials = objectiveType == QuestObjectiveType.BLOCK_BREAK
@@ -335,13 +398,20 @@ public final class CachedQuestService implements QuestService {
             if (objectiveType == QuestObjectiveType.ITEM_OBTAIN && items.isEmpty()) {
                 throw new IllegalArgumentException("Item quest must define esyalar: " + id);
             }
+            Optional<QuestDeed> deed = Optional.empty();
+            if (objectiveType == QuestObjectiveType.DEED) {
+                String rawDeed = objective.getString("eylem", "");
+                deed = Optional.of(QuestDeed.byId(rawDeed).orElseThrow(() ->
+                        new IllegalArgumentException("Unknown quest deed '" + rawDeed + "': " + id)));
+            }
+            Optional<World.Environment> dimension = parseDimension(objective.getString("boyut", ""), id);
             int target = section.getInt("sayi", 0);
             long reward = section.getLong("xp", 0);
             if (target < 1 || reward <= 0) {
                 throw new IllegalArgumentException("Quest target and XP reward must be positive: " + id);
             }
-            definitions.put(id, new QuestDefinition(id, displayName, description, icon, type, skillId, objectiveType,
-                    materials, entityTypes, structures, items, target, reward));
+            definitions.put(id, new QuestDefinition(id, displayName, shortName, description, icon, type, skillId, objectiveType,
+                    materials, entityTypes, structures, items, deed, dimension, target, reward));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("quests.yml must define at least one quest.");
@@ -391,6 +461,18 @@ public final class CachedQuestService implements QuestService {
             throw new IllegalArgumentException("Invalid structure: " + raw);
         }
         return structure;
+    }
+
+    /** {@code boyut} is optional; a blank value means the objective counts in every world. */
+    private Optional<World.Environment> parseDimension(String raw, String questId) {
+        if (raw.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(World.Environment.valueOf(raw.toUpperCase(Locale.ROOT)));
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Invalid hedef.boyut '" + raw + "': " + questId, exception);
+        }
     }
 
     private EntityType parseEntityType(String raw) {

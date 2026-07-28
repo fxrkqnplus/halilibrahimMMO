@@ -4,6 +4,7 @@ import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.FeatureUnlockRules;
+import com.halilibrahim.halilibrahimmmo.util.PlayerCooldowns;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -22,6 +23,7 @@ public final class CachedHomeService implements HomeService {
     private final ProfileService profiles;
     private final ClassService classes;
     private final ConcurrentHashMap<UUID, Optional<PlayerHome>> cache = new ConcurrentHashMap<>();
+    private final PlayerCooldowns teleportCooldowns = new PlayerCooldowns(TELEPORT_COOLDOWN_MILLIS);
 
     public CachedHomeService(JavaPlugin plugin, HomeRepository repository, ProfileService profiles, ClassService classes) {
         this.plugin = plugin;
@@ -38,6 +40,7 @@ public final class CachedHomeService implements HomeService {
     @Override
     public void disable() {
         cache.clear();
+        teleportCooldowns.clear();
     }
 
     @Override
@@ -89,6 +92,11 @@ public final class CachedHomeService implements HomeService {
     }
 
     @Override
+    public long teleportCooldownRemaining(UUID playerId) {
+        return teleportCooldowns.remainingMillis(playerId);
+    }
+
+    @Override
     public CompletableFuture<HomeActionResult> teleportHome(Player player) {
         if (!isUnlocked(player.getUniqueId())) {
             return CompletableFuture.completedFuture(HomeActionResult.LOCKED);
@@ -98,6 +106,9 @@ public final class CachedHomeService implements HomeService {
         if (isForbidden(player.getWorld())) {
             return CompletableFuture.completedFuture(HomeActionResult.FORBIDDEN_WORLD);
         }
+        if (teleportCooldowns.remainingMillis(player.getUniqueId()) > 0) {
+            return CompletableFuture.completedFuture(HomeActionResult.COOLDOWN);
+        }
         return load(player.getUniqueId()).thenApply(found -> {
             if (found.isEmpty()) {
                 return HomeActionResult.NOT_SET;
@@ -106,6 +117,10 @@ public final class CachedHomeService implements HomeService {
             if (destination.isEmpty()) {
                 return HomeActionResult.WORLD_MISSING;
             }
+            // Only started once the trip is actually happening, so a refused
+            // attempt (no home, missing world) never costs the player five
+            // minutes for nothing.
+            teleportCooldowns.start(player.getUniqueId());
             // The lookup resolved on a database thread; an entity may only be
             // moved from the region that owns it.
             player.getScheduler().run(plugin, task -> player.teleportAsync(destination.get()), null);
@@ -129,6 +144,7 @@ public final class CachedHomeService implements HomeService {
     @Override
     public void evict(UUID playerId) {
         cache.remove(playerId);
+        teleportCooldowns.evict(playerId);
     }
 
     private boolean isForbidden(World world) {

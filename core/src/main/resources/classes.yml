@@ -123,8 +123,9 @@ siniflar:
 
   tabiat-varisi:
     gorunen-ad: "Tabiat Vârisi"
-    # Tek sinif dort beceriyi birden besler: bu yuzden hem daha genis bir
-    # kabiliyet listesi hem de daha genis bir yetenek agaci vardir.
+    # Tek sinif dort beceriyi birden besler. Her beceri icin tam olarak bir
+    # kabiliyeti vardir (bkz. abilities.yml); yetenek agaci ise o dort
+    # kabiliyetin uzerine kuruludur.
     sinerji-beceriler: [odunculuk, kazicilik, tarimcilik, hayvancilik]
     bossbar-rengi: YESIL
     simge: IRON_AXE
@@ -140,6 +141,6 @@ siniflar:
       kesim-ritmi: { gorunen-ad: "Kesim Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }
       kesim-uzmanligi: { gorunen-ad: "Kesim Uzmanlığı", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: agac-kirici, deger-rank-basina: 1 } }
       toprak-bereketi: { gorunen-ad: "Toprak Bereketi", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: toprak-sezgisi, deger-rank-basina: 0.10 } }
-      sifa-suresi: { gorunen-ad: "Şifa Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: doga-sifasi, deger-rank-basina: 0.15 } }
+      toprak-tasarrufu: { gorunen-ad: "Toprak Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: toprak-sezgisi, deger-rank-basina: 0.05 } }
       filiz-genisligi: { gorunen-ad: "Filiz Genişliği", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: filiz-patlamasi, deger-rank-basina: 1 } }
       suru-suresi: { gorunen-ad: "Sürü Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: suru-cagrisi, deger-rank-basina: 0.15 } }

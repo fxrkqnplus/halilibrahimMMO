@@ -80,10 +80,12 @@ public final class YamlAbilityService implements AbilityService {
     /** How far an activation particle burst scatters around the caster, in blocks. */
     private static final double BURST_SPREAD = 0.6D;
     /**
-     * How long an ability stays up in Creative mode. Long enough to be
-     * effectively "until switched off" for any realistic session, but still a
-     * real expiry, so nothing can be left armed forever by a player who logs
-     * out mid-test.
+     * How long a <em>sustained</em> ability stays up in Creative mode. Long
+     * enough to be effectively "until switched off" for any realistic session,
+     * but still a real expiry, so nothing can be left armed forever by a player
+     * who logs out mid-test. Abilities that resolve the instant they fire
+     * ({@link AbilityEffectType#resolvesImmediately()}) keep their configured
+     * duration even here - see that method for why.
      */
     private static final long CREATIVE_DURATION_MILLIS = 6L * 60L * 60L * 1_000L;
 
@@ -105,7 +107,7 @@ public final class YamlAbilityService implements AbilityService {
     private final ConcurrentHashMap<UUID, Long> lastSwitchMillis = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ScheduledTask> activationFeedbackTasks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Integer> glintedSlots = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<RevealedBlock, BlockDisplay> revealedOres = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<RevealedBlock, RevealedOre> revealedOres = new ConcurrentHashMap<>();
     private final ThreadLocal<Set<Block>> secondaryBreaks = ThreadLocal.withInitial(HashSet::new);
 
     public YamlAbilityService(
@@ -142,7 +144,7 @@ public final class YamlAbilityService implements AbilityService {
         // Removed directly rather than through each entity's own scheduler: no
         // new task may be scheduled during plugin shutdown, and this project
         // targets Paper, where disable runs on the thread owning these entities.
-        revealedOres.values().forEach(BlockDisplay::remove);
+        revealedOres.values().forEach(ore -> ore.display().remove());
         revealedOres.clear();
     }
 
@@ -333,9 +335,40 @@ public final class YamlAbilityService implements AbilityService {
         feedback.celebrateAbilitySelected(player);
     }
 
+    /**
+     * Clears the selection <em>and</em> everything it left running. A class
+     * change is the only caller, and after one the player no longer owns the
+     * ability at all - leaving a buff from the abandoned class ticking away, or
+     * a block ability still armed, would let it fire for a class its owner has
+     * left. Cooldowns are deliberately kept: they are per (player, ability) and
+     * survive so a change cannot be used to wipe one.
+     */
     @Override
     public void clearSelection(UUID playerId) {
         selectedAbility.remove(playerId);
+        ArmedAbility instant = activeEffects.remove(playerId);
+        armed.remove(playerId);
+        damageBuffs.remove(playerId);
+        dropBuffs.remove(playerId);
+        clearRevealedOres(playerId);
+        Player player = plugin.getServer().getPlayer(playerId);
+        if (player == null) {
+            cancelFeedbackTask(playerId);
+            glintedSlots.remove(playerId);
+            return;
+        }
+        // An admin force-set resolves on a database thread; the potion effect,
+        // the held item's glint and the action bar may only be touched from the
+        // region that owns the player.
+        player.getScheduler().run(plugin, task -> {
+            if (instant != null) {
+                AbilityDefinition definition = settings().definitions().get(instant.abilityId());
+                if (definition != null) {
+                    clearInstantEffect(player, definition);
+                }
+            }
+            clearActivationFeedback(player);
+        }, null);
     }
 
     @Override
@@ -379,6 +412,7 @@ public final class YamlAbilityService implements AbilityService {
         damageBuffs.remove(playerId);
         dropBuffs.remove(playerId);
         activeEffects.remove(playerId);
+        clearRevealedOres(playerId);
         if (instant != null) {
             AbilityDefinition definition = settings().definitions().get(instant.abilityId());
             if (definition != null) {
@@ -556,9 +590,10 @@ public final class YamlAbilityService implements AbilityService {
         int energyCost = creative ? 0 : modifiers.adjustedEnergyCost(definition.id(), definition.energyCost());
         long cooldownMillis = creative ? 0L : modifiers.adjustedCooldownMillis(definition.id(), definition.cooldownMillis());
         int limit = modifiers.adjustedLimit(definition.id(), definition.limit());
-        long activeMillis = creative
+        long configuredMillis = modifiers.adjustedDurationMillis(definition.id(), definition.activeMillis());
+        long activeMillis = creative && !definition.effectType().resolvesImmediately()
                 ? CREATIVE_DURATION_MILLIS
-                : modifiers.adjustedDurationMillis(definition.id(), definition.activeMillis());
+                : configuredMillis;
         CooldownKey cooldownKey = new CooldownKey(player.getUniqueId(), definition.id());
         long now = System.currentTimeMillis();
         long readyAt = cooldowns.getOrDefault(cooldownKey, 0L);
@@ -754,6 +789,18 @@ public final class YamlAbilityService implements AbilityService {
      * {@code skills.yml} stays the single source of truth for what an ore
      * is.</p>
      *
+     * <p><strong>The scan walks outward from the player, one cube shell at a
+     * time, and that is load-bearing rather than a micro-optimisation.</strong>
+     * The previous column-major sweep began at the western corner of the search
+     * box, so once {@link #MAX_REVEALED_ORES} was reached - which at radius 36 a
+     * real cave hits easily - the ores that got lit were whichever ones happened
+     * to lie west of the player, and the exposed coal seam they were standing in
+     * front of was never reached at all. That was the whole "only the ones
+     * behind walls glow" report: nothing was wrong with the outline, the nearby
+     * ores were simply never in the first two hundred. Shell order also means
+     * the loop stops as soon as the budget is spent, instead of sweeping a
+     * 73-block cube whenever ores are scarce.</p>
+     *
      * @return how many ores were actually lit up, for the player's feedback message.
      */
     private int revealOres(Player player, AbilityDefinition definition, long activeMillis) {
@@ -769,28 +816,65 @@ public final class YamlAbilityService implements AbilityService {
         int originX = origin.getBlockX();
         int originY = origin.getBlockY();
         int originZ = origin.getBlockZ();
-        int minY = Math.max(world.getMinHeight(), originY - radius);
-        int maxY = Math.min(world.getMaxHeight() - 1, originY + radius);
+        int minY = world.getMinHeight();
+        int maxY = world.getMaxHeight() - 1;
         int revealed = 0;
-        // Column-major so the loaded-chunk test runs once per (x, z) pair rather
-        // than per block: at this radius an unguarded getBlockAt would otherwise
-        // synchronously generate dozens of chunks the player cannot even see.
-        for (int x = originX - radius; x <= originX + radius && revealed < MAX_REVEALED_ORES; x++) {
-            for (int z = originZ - radius; z <= originZ + radius && revealed < MAX_REVEALED_ORES; z++) {
+        for (int shell = 0; shell <= radius && revealed < MAX_REVEALED_ORES; shell++) {
+            for (int[] offset : shellOffsets(shell)) {
+                if (revealed >= MAX_REVEALED_ORES) {
+                    break;
+                }
+                int y = originY + offset[1];
+                if (y < minY || y > maxY) {
+                    continue;
+                }
+                int x = originX + offset[0];
+                int z = originZ + offset[2];
+                // Never generate a chunk the player cannot even see just to
+                // look for ore in it.
                 if (!world.isChunkLoaded(x >> 4, z >> 4)) {
                     continue;
                 }
-                for (int y = minY; y <= maxY && revealed < MAX_REVEALED_ORES; y++) {
-                    Block block = world.getBlockAt(x, y, z);
-                    if (!eligible.contains(block.getType())) {
-                        continue;
-                    }
-                    highlight(block, definition, expiryTicks);
-                    revealed++;
+                Block block = world.getBlockAt(x, y, z);
+                if (!eligible.contains(block.getType())) {
+                    continue;
                 }
+                highlight(block, definition, expiryTicks, player.getUniqueId());
+                revealed++;
             }
         }
         return revealed;
+    }
+
+    /**
+     * Every offset whose Chebyshev distance from the origin is exactly
+     * {@code shell} - the surface of one cube - enumerated directly rather than
+     * by filtering the whole cube, so walking outward stays proportional to the
+     * volume actually visited.
+     */
+    private static List<int[]> shellOffsets(int shell) {
+        List<int[]> offsets = new ArrayList<>();
+        if (shell == 0) {
+            offsets.add(new int[]{0, 0, 0});
+            return offsets;
+        }
+        for (int x = -shell; x <= shell; x++) {
+            for (int z = -shell; z <= shell; z++) {
+                offsets.add(new int[]{x, -shell, z});
+                offsets.add(new int[]{x, shell, z});
+            }
+        }
+        for (int y = -shell + 1; y <= shell - 1; y++) {
+            for (int x = -shell; x <= shell; x++) {
+                offsets.add(new int[]{x, y, -shell});
+                offsets.add(new int[]{x, y, shell});
+            }
+            for (int z = -shell + 1; z <= shell - 1; z++) {
+                offsets.add(new int[]{-shell, y, z});
+                offsets.add(new int[]{shell, y, z});
+            }
+        }
+        return offsets;
     }
 
     /**
@@ -854,7 +938,13 @@ public final class YamlAbilityService implements AbilityService {
         return called;
     }
 
-    private void highlight(Block block, AbilityDefinition definition, long expiryTicks) {
+    /**
+     * The outline is scaled a clear 8% larger than the real block rather than
+     * the 2% it started at. At 2% an ore the player could already see plainly
+     * had its halo hidden inside its own faces, so only ores buried in rock -
+     * where the glow renders through the wall - looked lit at all.
+     */
+    private void highlight(Block block, AbilityDefinition definition, long expiryTicks, UUID ownerId) {
         RevealedBlock position = RevealedBlock.of(block);
         BlockDisplay display = block.getWorld().spawn(block.getLocation(), BlockDisplay.class, entity -> {
             entity.setBlock(block.getBlockData());
@@ -863,20 +953,37 @@ public final class YamlAbilityService implements AbilityService {
             entity.setBrightness(new Display.Brightness(15, 15));
             entity.setPersistent(false);
             entity.setTransformation(new Transformation(
-                    new Vector3f(-0.01F, -0.01F, -0.01F), new AxisAngle4f(),
-                    new Vector3f(1.02F, 1.02F, 1.02F), new AxisAngle4f()
+                    new Vector3f(-0.04F, -0.04F, -0.04F), new AxisAngle4f(),
+                    new Vector3f(1.08F, 1.08F, 1.08F), new AxisAngle4f()
             ));
         });
         // A second activation can legitimately re-light a block whose previous
         // outline is still up; the old display is dropped rather than orphaned.
-        BlockDisplay previous = revealedOres.put(position, display);
+        RevealedOre previous = revealedOres.put(position, new RevealedOre(ownerId, display));
         if (previous != null) {
-            previous.remove();
+            previous.display().remove();
         }
         display.getScheduler().runDelayed(plugin, task -> {
-            revealedOres.remove(position, display);
+            revealedOres.remove(position, new RevealedOre(ownerId, display));
             display.remove();
         }, null, expiryTicks);
+    }
+
+    /**
+     * Takes down every outline this player put up. In Creative the ability has
+     * no expiry worth waiting for, so switching it back off is the only thing
+     * that ends it - and an ability that is off must not leave the cave still
+     * glowing. Another player's outlines on the same blocks are untouched.
+     */
+    private void clearRevealedOres(UUID ownerId) {
+        revealedOres.entrySet().removeIf(entry -> {
+            if (!entry.getValue().ownerId().equals(ownerId)) {
+                return false;
+            }
+            BlockDisplay display = entry.getValue().display();
+            display.getScheduler().run(plugin, task -> display.remove(), null);
+            return true;
+        });
     }
 
     /**
@@ -888,9 +995,9 @@ public final class YamlAbilityService implements AbilityService {
      * must stop glowing exactly the same way.
      */
     private void clearRevealedOre(Block block) {
-        BlockDisplay display = revealedOres.remove(RevealedBlock.of(block));
-        if (display != null) {
-            display.remove();
+        RevealedOre ore = revealedOres.remove(RevealedBlock.of(block));
+        if (ore != null) {
+            ore.display().remove();
         }
     }
 
@@ -1097,6 +1204,10 @@ public final class YamlAbilityService implements AbilityService {
         static RevealedBlock of(Block block) {
             return new RevealedBlock(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ());
         }
+    }
+
+    /** One outline plus who lit it, so switching the ability off only takes down that player's own. */
+    private record RevealedOre(UUID ownerId, BlockDisplay display) {
     }
 
     private record CooldownKey(UUID playerId, String abilityId) {

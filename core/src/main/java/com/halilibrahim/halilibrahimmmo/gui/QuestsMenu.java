@@ -3,6 +3,7 @@ package com.halilibrahim.halilibrahimmmo.gui;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.quests.QuestDefinition;
 import com.halilibrahim.halilibrahimmmo.quests.QuestProgress;
+import com.halilibrahim.halilibrahimmmo.quests.QuestService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestType;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -13,6 +14,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -56,6 +58,7 @@ public final class QuestsMenu implements GuiView {
 
     private final GuiServices services;
     private final Section section;
+    private final Map<Integer, String> slotToQuestId = new LinkedHashMap<>();
 
     public QuestsMenu(GuiServices services) {
         this(services, Section.DAILY);
@@ -87,7 +90,7 @@ public final class QuestsMenu implements GuiView {
             inventory.setItem(TAB_SLOTS[index], tabItem(TABS[index]));
         }
         services.quests().loadAll(player.getUniqueId()).thenAccept(progressById ->
-                player.getScheduler().run(services.plugin(), task -> render(inventory, progressById), null));
+                player.getScheduler().run(services.plugin(), task -> render(player, inventory, progressById), null));
     }
 
     private ItemStack tabItem(Section tab) {
@@ -117,7 +120,7 @@ public final class QuestsMenu implements GuiView {
         return GuiItems.of(icon, services.messages().render(name), tooltip, active);
     }
 
-    private void render(Inventory inventory, Map<String, QuestProgress> progressById) {
+    private void render(Player player, Inventory inventory, Map<String, QuestProgress> progressById) {
         List<QuestDefinition> assigned = services.quests().definitions().stream()
                 .filter(definition -> progressById.containsKey(definition.id()))
                 .sorted(Comparator.comparing(QuestDefinition::displayName, String.CASE_INSENSITIVE_ORDER))
@@ -126,17 +129,28 @@ public final class QuestsMenu implements GuiView {
 
         inventory.setItem(INFO_SLOT, GuiItems.of(Material.WRITABLE_BOOK,
                 services.messages().render(MessageKey.GUI_QUESTS_INFO_ITEM),
-                List.of(services.messages().render(MessageKey.GUI_QUESTS_INFO_LORE, Map.of(
-                        "tamamlanan", Long.toString(completedCount),
-                        "toplam", Integer.toString(assigned.size())
-                )))));
+                List.of(
+                        services.messages().render(MessageKey.GUI_QUESTS_INFO_LORE, Map.of(
+                                "tamamlanan", Long.toString(completedCount),
+                                "toplam", Integer.toString(assigned.size())
+                        )),
+                        services.messages().render(MessageKey.GUI_QUESTS_INFO_PIN_HINT, Map.of(
+                                "sayi", Integer.toString(QuestService.MAXIMUM_PINS_PER_TYPE)
+                        ))
+                )));
 
         List<QuestDefinition> shown = assigned.stream().filter(definition -> belongsToSection(definition, progressById)).toList();
+        slotToQuestId.clear();
         ItemStack blank = GuiItems.filler();
         for (int index = 0; index < ENTRY_SLOTS.length; index++) {
-            inventory.setItem(ENTRY_SLOTS[index], index < shown.size()
-                    ? questItem(shown.get(index), progressById.get(shown.get(index).id()))
-                    : blank);
+            if (index >= shown.size()) {
+                inventory.setItem(ENTRY_SLOTS[index], blank);
+                continue;
+            }
+            QuestDefinition definition = shown.get(index);
+            slotToQuestId.put(ENTRY_SLOTS[index], definition.id());
+            boolean pinned = services.quests().cachedPins(player.getUniqueId(), definition.type()).contains(definition.id());
+            inventory.setItem(ENTRY_SLOTS[index], questItem(definition, progressById.get(definition.id()), pinned));
         }
         if (shown.isEmpty()) {
             inventory.setItem(ENTRY_SLOTS[0], GuiItems.of(Material.GRAY_DYE,
@@ -160,7 +174,7 @@ public final class QuestsMenu implements GuiView {
         };
     }
 
-    private ItemStack questItem(QuestDefinition definition, QuestProgress progress) {
+    private ItemStack questItem(QuestDefinition definition, QuestProgress progress, boolean pinned) {
         List<Component> lore = new ArrayList<>();
         lore.add(services.messages().render(MessageKey.GUI_QUEST_ITEM_LORE_DESCRIPTION, Map.of("aciklama", definition.description())));
         lore.add(services.messages().render(MessageKey.GUI_QUEST_ITEM_LORE, Map.of(
@@ -172,10 +186,13 @@ public final class QuestsMenu implements GuiView {
         )));
         if (progress.completed()) {
             lore.add(services.messages().render(MessageKey.GUI_QUEST_ITEM_LORE_COMPLETED));
+        } else {
+            lore.add(services.messages().render(pinned
+                    ? MessageKey.GUI_QUEST_ITEM_LORE_PINNED : MessageKey.GUI_QUEST_ITEM_LORE_UNPINNED));
         }
         MessageKey nameKey = progress.completed() ? MessageKey.GUI_QUEST_ITEM_COMPLETED : MessageKey.GUI_QUEST_ITEM;
         return GuiItems.of(definition.icon(), services.messages().render(nameKey, Map.of("gorev", definition.displayName())),
-                lore, progress.completed());
+                lore, progress.completed() || pinned);
     }
 
     private String skillName(String skillId) {
@@ -195,5 +212,39 @@ public final class QuestsMenu implements GuiView {
                 return;
             }
         }
+        String questId = slotToQuestId.get(slot);
+        if (questId != null) {
+            togglePin(player, questId);
+        }
+    }
+
+    /**
+     * Clicking an unfinished quest pins it to (or unpins it from) the sidebar
+     * section for its type. The board reopens afterwards so the glint and the
+     * lore line reflect the new state immediately - the same reopen-to-refresh
+     * pattern every other action menu in this codebase uses.
+     */
+    private void togglePin(Player player, String questId) {
+        services.quests().togglePin(player.getUniqueId(), questId).thenAccept(result ->
+                player.getScheduler().run(services.plugin(), task -> {
+                    switch (result) {
+                        case PINNED -> services.messages().send(player, MessageKey.QUEST_PINNED,
+                                Map.of("gorev", questName(questId)));
+                        case UNPINNED -> services.messages().send(player, MessageKey.QUEST_UNPINNED,
+                                Map.of("gorev", questName(questId)));
+                        case FULL -> services.messages().send(player, MessageKey.QUEST_PIN_FULL,
+                                Map.of("sayi", Integer.toString(QuestService.MAXIMUM_PINS_PER_TYPE)));
+                        case UNKNOWN_QUEST -> {
+                            // Only reachable if the catalogue was reloaded between
+                            // the render and the click; nothing useful to say.
+                        }
+                    }
+                    GuiManager.open(player, new QuestsMenu(services, section));
+                }, null));
+    }
+
+    private String questName(String questId) {
+        QuestDefinition definition = services.quests().settings().definitions().get(questId);
+        return definition == null ? questId : definition.displayName();
     }
 }

@@ -63,9 +63,11 @@ public interface AbilityService extends PluginService {
     void select(Player player, String abilityId);
 
     /**
-     * Clears a player's menu-selected ability without touching any armed/buffed
-     * game state - called when the player's class changes, since a
-     * previously-selected ability may no longer belong to their new class.
+     * Clears a player's menu-selected ability, along with anything that
+     * selection left armed, buffed or running - called when the player's class
+     * changes (by their own choice or an admin's), since neither the selection
+     * nor its effects belong to the new class. Safe for an offline target;
+     * per-ability cooldowns are deliberately preserved.
      */
     void clearSelection(UUID playerId);
 

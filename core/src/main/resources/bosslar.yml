@@ -1,0 +1,218 @@
+# =====================================================================
+#  HalilIbrahimMMO - Dünya Bossları
+# =====================================================================
+#  Belirli aralıklarla haritada, çevrimiçi bir oyuncunun birkaç yüz blok
+#  uzağında bir dünya bossu belirir ve koordinatlarıyla birlikte tüm
+#  sunucuya duyurulur. Boss, adı ve nadirliği olan, çok güçlendirilmiş
+#  bir yaratıktır; sunucu yeniden başlasa bile ödülleriyle birlikte
+#  yerinde kalır.
+#
+#  NADİRLİK: "agirlik" bir yüzde DEĞİL, bir paydır. Bir nadirliğin çıkma
+#  ihtimali = kendi ağırlığı / bütün ağırlıkların toplamı. Yüzde yerine
+#  ağırlık kullanılmasının sebebi basit: toplamı 100 etmeyen bir yüzde
+#  listesi sessiz bir hatadır, ağırlık listesi ise her zaman geçerlidir.
+#  Aşağıdaki 49/30/20/10/1 dağılımı istenen "sıradan çok, mistik neredeyse
+#  hiç" oranını korur.
+#
+#  Her nadirlik şunları belirler:
+#    can-carpani / hasar-carpani / hiz-carpani : temel yaratığın kaç katı
+#    silahlar     : hangi silah türü hangi eşyaya karşılık gelir
+#    zirh         : sırasıyla kask, göğüslük, pantolon, bot (en fazla 4)
+#    kacar        : canı %25'in altına düşünce uzağa ışınlanıp kaçar
+#    isinlanir    : savaş sırasında oyuncuya doğru kısa ışınlamalar yapar
+#    iksir-icer   : canı yarıya düşünce kendine yenilenme basar
+#    sinif-xp     : öldüren oyuncunun sınıfına yazılan XP
+#    oyun-xp      : yere düşen normal Minecraft tecrübesi
+#    zenginlik    : öldüren oyuncuya yazılan Zenginlik Puanı
+#    ganimet      : ölünce düşen eşyalar (sans: 0-1 arası ihtimal)
+#
+#  BOSS TÜRLERİ: her türün kendi isim havuzu vardır - isim, uzaktan
+#  bakıldığında neyle karşı karşıya olduğunu söylemelidir. Boss öldüğünde
+#  "kafa" alanındaki eşya, o bossun kendi ismiyle ve nadirlik rengiyle
+#  yere düşer.
+#
+#  silah-turu: KILIC | BALTA | YAY | YOK
+# =====================================================================
+
+spawn-araligi-dakika: 30
+
+# Boss'un, seçilen oyuncuya olan uzaklığı. Gidilmesi gereken kadar uzak,
+# bir sonraki boss gelmeden varılabilecek kadar yakın.
+oyuncuya-uzaklik:
+  en-az: 120
+  en-fazla: 320
+
+nadirlikler:
+  SIRADAN:
+    agirlik: 49
+    can-carpani: 3.0
+    hasar-carpani: 1.5
+    hiz-carpani: 1.05
+    sinif-xp: 400
+    oyun-xp: 60
+    zenginlik: 2000
+    kacar: false
+    isinlanir: false
+    iksir-icer: false
+    silahlar:
+      KILIC: STONE_SWORD
+      BALTA: STONE_AXE
+      YAY: BOW
+    zirh: [LEATHER_HELMET, LEATHER_CHESTPLATE]
+    ganimet:
+      - { esya: IRON_INGOT, en-az: 3, en-fazla: 6, sans: 1.0 }
+      - { esya: GOLDEN_APPLE, en-az: 1, en-fazla: 1, sans: 0.35 }
+
+  NADIR:
+    agirlik: 30
+    can-carpani: 6.0
+    hasar-carpani: 2.0
+    hiz-carpani: 1.12
+    sinif-xp: 1200
+    oyun-xp: 150
+    zenginlik: 8000
+    kacar: false
+    isinlanir: false
+    iksir-icer: true
+    silahlar:
+      KILIC: IRON_SWORD
+      BALTA: IRON_AXE
+      YAY: BOW
+    zirh: [IRON_HELMET, IRON_CHESTPLATE, IRON_LEGGINGS, IRON_BOOTS]
+    ganimet:
+      - { esya: DIAMOND, en-az: 2, en-fazla: 5, sans: 1.0 }
+      - { esya: GOLD_INGOT, en-az: 6, en-fazla: 12, sans: 1.0 }
+      - { esya: GOLDEN_APPLE, en-az: 1, en-fazla: 2, sans: 0.6 }
+
+  EPIK:
+    agirlik: 20
+    can-carpani: 10.0
+    hasar-carpani: 2.6
+    hiz-carpani: 1.2
+    sinif-xp: 3000
+    oyun-xp: 320
+    zenginlik: 25000
+    kacar: false
+    isinlanir: true
+    iksir-icer: true
+    silahlar:
+      KILIC: DIAMOND_SWORD
+      BALTA: DIAMOND_AXE
+      YAY: CROSSBOW
+    zirh: [DIAMOND_HELMET, DIAMOND_CHESTPLATE, DIAMOND_LEGGINGS, DIAMOND_BOOTS]
+    ganimet:
+      - { esya: DIAMOND_BLOCK, en-az: 1, en-fazla: 2, sans: 1.0 }
+      - { esya: ENCHANTED_GOLDEN_APPLE, en-az: 1, en-fazla: 1, sans: 0.5 }
+      - { esya: EXPERIENCE_BOTTLE, en-az: 8, en-fazla: 16, sans: 1.0 }
+      - { esya: NETHERITE_SCRAP, en-az: 1, en-fazla: 2, sans: 0.3 }
+
+  EFSANEVI:
+    agirlik: 10
+    can-carpani: 16.0
+    hasar-carpani: 3.2
+    hiz-carpani: 1.3
+    sinif-xp: 8000
+    oyun-xp: 700
+    zenginlik: 80000
+    kacar: true
+    isinlanir: true
+    iksir-icer: true
+    silahlar:
+      KILIC: NETHERITE_SWORD
+      BALTA: NETHERITE_AXE
+      YAY: CROSSBOW
+    zirh: [NETHERITE_HELMET, DIAMOND_CHESTPLATE, DIAMOND_LEGGINGS, NETHERITE_BOOTS]
+    ganimet:
+      - { esya: NETHERITE_INGOT, en-az: 1, en-fazla: 2, sans: 1.0 }
+      - { esya: ENCHANTED_GOLDEN_APPLE, en-az: 2, en-fazla: 3, sans: 1.0 }
+      - { esya: TOTEM_OF_UNDYING, en-az: 1, en-fazla: 1, sans: 0.5 }
+      - { esya: DIAMOND_BLOCK, en-az: 2, en-fazla: 4, sans: 1.0 }
+
+  MISTIK:
+    agirlik: 1
+    can-carpani: 26.0
+    hasar-carpani: 4.0
+    hiz-carpani: 1.45
+    sinif-xp: 25000
+    oyun-xp: 1800
+    zenginlik: 400000
+    kacar: true
+    isinlanir: true
+    iksir-icer: true
+    silahlar:
+      KILIC: NETHERITE_SWORD
+      BALTA: NETHERITE_AXE
+      YAY: CROSSBOW
+    zirh: [NETHERITE_HELMET, NETHERITE_CHESTPLATE, NETHERITE_LEGGINGS, NETHERITE_BOOTS]
+    ganimet:
+      - { esya: NETHER_STAR, en-az: 1, en-fazla: 1, sans: 1.0 }
+      - { esya: NETHERITE_INGOT, en-az: 3, en-fazla: 5, sans: 1.0 }
+      - { esya: ENCHANTED_GOLDEN_APPLE, en-az: 4, en-fazla: 6, sans: 1.0 }
+      - { esya: TOTEM_OF_UNDYING, en-az: 2, en-fazla: 2, sans: 1.0 }
+      - { esya: ELYTRA, en-az: 1, en-fazla: 1, sans: 0.25 }
+
+bosslar:
+  zombi:
+    varlik: ZOMBIE
+    kafa: ZOMBIE_HEAD
+    silah-turu: KILIC
+    isimler:
+      - "Diriltilmiş Jackson"
+      - "İnsan Yiyen Annabelle"
+      - "Çürük Hamdi"
+      - "Mezarcı Gregor"
+      - "Kokuşmuş Bertha"
+      - "Sürüklenen Marcus"
+      - "Aç Gözlü Ivan"
+
+  iskelet:
+    varlik: SKELETON
+    kafa: SKELETON_SKULL
+    silah-turu: YAY
+    isimler:
+      - "Nişancı Edward"
+      - "Kemik Usta Silas"
+      - "Okçu Rowena"
+      - "Kırık Kaburga Otto"
+      - "Gölge Atıcı Cassian"
+      - "Sessiz Nişan Vera"
+      - "Kavrulmuş Barnabas"
+
+  bogulmus:
+    varlik: DROWNED
+    kafa: ZOMBIE_HEAD
+    silah-turu: KILIC
+    isimler:
+      - "Derin Su Nadia"
+      - "Boğulmuş Kaptan Yusuf"
+      - "Yosun Sakal Osric"
+      - "Mercan Dişli Selma"
+      - "Fırtına Boğan Halvard"
+      - "Batık Gemici Cosmo"
+      - "Tuzlu Su Melisa"
+
+  buyucu:
+    varlik: WITCH
+    kafa: PLAYER_HEAD
+    silah-turu: YOK
+    isimler:
+      - "Zehirli Elma Morgana"
+      - "Kazan Karıştıran Hilda"
+      - "Kara Duman Esmeray"
+      - "İksirci Ophelia"
+      - "Lanetli Şifacı Rosalind"
+      - "Batıl Nine Zübeyde"
+      - "Fısıldayan Cadı Ilse"
+
+  baltaci:
+    varlik: VINDICATOR
+    kafa: PLAYER_HEAD
+    silah-turu: BALTA
+    isimler:
+      - "Baltacı John"
+      - "Kan Baltası Ragnar"
+      - "İki Elli Dietrich"
+      - "Konak Muhafızı Ulric"
+      - "Öfkeli Balta Sven"
+      - "Kırık Kalkan Bruno"
+      - "Sessiz Katil Anselm"

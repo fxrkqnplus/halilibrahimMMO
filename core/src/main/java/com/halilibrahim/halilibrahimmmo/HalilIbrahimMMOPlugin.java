@@ -4,6 +4,9 @@ import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.activation.ActivationRepository;
 import com.halilibrahim.halilibrahimmmo.activation.CachedActivationService;
 import com.halilibrahim.halilibrahimmmo.api.HalilIbrahimMMOAPI;
+import com.halilibrahim.halilibrahimmmo.boss.BossListener;
+import com.halilibrahim.halilibrahimmmo.boss.BossService;
+import com.halilibrahim.halilibrahimmmo.boss.YamlBossService;
 import com.halilibrahim.halilibrahimmmo.command.AdminCommand;
 import com.halilibrahim.halilibrahimmmo.command.MmoCommand;
 import com.halilibrahim.halilibrahimmmo.command.ProfileCommand;
@@ -17,6 +20,7 @@ import com.halilibrahim.halilibrahimmmo.command.MenuCommand;
 import com.halilibrahim.halilibrahimmmo.command.PanelCommand;
 import com.halilibrahim.halilibrahimmmo.command.PrestigeCommand;
 import com.halilibrahim.halilibrahimmmo.command.QuestCommand;
+import com.halilibrahim.halilibrahimmmo.command.RandomTeleportCommand;
 import com.halilibrahim.halilibrahimmmo.command.HomeCommand;
 import com.halilibrahim.halilibrahimmmo.command.SkillDetailCommand;
 import com.halilibrahim.halilibrahimmmo.command.SkillsCommand;
@@ -55,9 +59,11 @@ import com.halilibrahim.halilibrahimmmo.database.migration.ClassProgressSchemaMi
 import com.halilibrahim.halilibrahimmmo.database.migration.OnboardingSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerActivationSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.QuestAssignmentSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.QuestPinSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.TitleCosmeticSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerHomeSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PrestigeBankedPowerSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.WealthSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CachedCosmeticService;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticListener;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticRepository;
@@ -97,6 +103,7 @@ import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.progression.YamlProgressionService;
 import com.halilibrahim.halilibrahimmmo.quests.CachedQuestService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestCompletionHandler;
+import com.halilibrahim.halilibrahimmmo.quests.QuestDeedListener;
 import com.halilibrahim.halilibrahimmmo.quests.QuestDiscoveryListener;
 import com.halilibrahim.halilibrahimmmo.quests.QuestListener;
 import com.halilibrahim.halilibrahimmmo.quests.QuestRepository;
@@ -125,6 +132,10 @@ import com.halilibrahim.halilibrahimmmo.trade.InMemoryTradeService;
 import com.halilibrahim.halilibrahimmmo.trade.TradeListener;
 import com.halilibrahim.halilibrahimmmo.trade.TradeService;
 import com.halilibrahim.halilibrahimmmo.unlock.UnlockContextLoader;
+import com.halilibrahim.halilibrahimmmo.wealth.CachedWealthService;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthAwardHandler;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthRepository;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -184,6 +195,9 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             );
             BankedPowerService bankedPowerService = startService(
                     new CachedBankedPowerService(new BankedPowerRepository(databaseService)), BankedPowerService.class
+            );
+            WealthService wealthService = startService(
+                    new CachedWealthService(this, new WealthRepository(databaseService)), WealthService.class
             );
             FeedbackService feedbackService = startService(
                     new BossBarFeedbackService(this, messageService), FeedbackService.class
@@ -259,7 +273,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             LeaderboardService leaderboardService = startService(
                     new CachedLeaderboardService(this, new LeaderboardRepository(databaseService, skillService)), LeaderboardService.class
             );
-            UnlockContextLoader unlockContextLoader = new UnlockContextLoader(profileService, skillService, questService, collectionService);
+            UnlockContextLoader unlockContextLoader = new UnlockContextLoader(profileService, skillService, questService, collectionService, wealthService);
             TitleService titleService = startService(
                     new CachedTitleService(this, new TitleRepository(databaseService), unlockContextLoader), TitleService.class
             );
@@ -269,17 +283,22 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             SidebarService sidebarService = startService(
                     new ScoreboardSidebarService(this, messageService, profileService, classService, progressionService,
                             activationService, abilityService, questService, titleService, onboardingService,
-                            homeService, tradeService), SidebarService.class
+                            homeService, tradeService, wealthService), SidebarService.class
             );
             OnboardingRewarder onboardingRewarder = new OnboardingRewarder(
                     this, onboardingService, profileService, classService, messageService, sidebarService, classAwardHandler
             );
+            WealthAwardHandler wealthAwardHandler = new WealthAwardHandler(this, messageService, feedbackService, sidebarService);
+            YamlBossService bossService = new YamlBossService(this, messageService, feedbackService);
+            startService(bossService, BossService.class);
+            getServer().getPluginManager().registerEvents(new BossListener(this, bossService, profileService, classService,
+                    classAwardHandler, wealthService, wealthAwardHandler, feedbackService, messageService), this);
             BlockBreakRateLimiter breakRateLimiter = new BlockBreakRateLimiter();
             getServer().getPluginManager().registerEvents(placedBlockTracker, this);
-            this.progressionListener = new ProgressionListener(profileService, feedbackService, breakRateLimiter, activationService, bankedPowerService);
+            this.progressionListener = new ProgressionListener(profileService, feedbackService, breakRateLimiter, activationService, bankedPowerService, wealthService);
             getServer().getPluginManager().registerEvents(progressionListener, this);
             SkillAwardHandler skillAwardHandler = new SkillAwardHandler(this, skillService, feedbackService, progressionService, messageService);
-            getServer().getPluginManager().registerEvents(new SkillListener(this, skillService, abilityService, energyService, activationService, breakRateLimiter, placedBlockTracker, skillAwardHandler), this);
+            getServer().getPluginManager().registerEvents(new SkillListener(this, skillService, abilityService, energyService, activationService, breakRateLimiter, placedBlockTracker, skillAwardHandler, wealthService, wealthAwardHandler), this);
             this.husbandryListener = new HusbandryListener(this, skillService, activationService, messageService, skillAwardHandler);
             getServer().getPluginManager().registerEvents(husbandryListener, this);
             husbandryListener.start();
@@ -289,10 +308,14 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new SidebarListener(this, sidebarService, profileService, classService, activationService, onboardingService, homeService), this);
             QuestCompletionHandler questCompletionHandler = new QuestCompletionHandler(
                     this, questService, profileService, classService, skillService, titleService, cosmeticService,
-                    feedbackService, messageService, journalService, sidebarService, skillAwardHandler, classAwardHandler
+                    feedbackService, messageService, journalService, sidebarService, skillAwardHandler, classAwardHandler,
+                    wealthService, wealthAwardHandler
             );
             getServer().getPluginManager().registerEvents(
                     new QuestListener(questService, abilityService, breakRateLimiter, placedBlockTracker, activationService, questCompletionHandler), this
+            );
+            getServer().getPluginManager().registerEvents(
+                    new QuestDeedListener(questService, activationService, questCompletionHandler), this
             );
             this.questDiscoveryListener = new QuestDiscoveryListener(this, questService, activationService, questCompletionHandler);
             getServer().getPluginManager().registerEvents(questDiscoveryListener, this);
@@ -309,7 +332,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             this.api = new HalilIbrahimMMOApiImpl(
                     this, configService, messageService, pluginLogger, profileService, progressionService, skillService,
                     abilityService, classService, prestigeService, questService, collectionService, leaderboardService,
-                    titleService, cosmeticService, feedbackService
+                    titleService, cosmeticService, feedbackService, wealthService, bossService
             );
             getServer().getServicesManager().register(HalilIbrahimMMOAPI.class, api, this, ServicePriority.Normal);
 
@@ -324,14 +347,15 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     this, messageService, profileService, progressionService, skillService, abilityService, energyService,
                     classService, prestigeService, questService, collectionService, journalService, leaderboardService,
                     titleService, cosmeticService, feedbackService, sidebarService, configService, api, activationService,
-                    pluginLogger, onboardingService, onboardingRewarder, homeService, tradeService
+                    pluginLogger, onboardingService, onboardingRewarder, homeService, tradeService,
+                    wealthService, bossService
             );
             // The trade screen lives in the GUI layer, which needs the trade
             // service to build - so the service is told how to draw itself only
             // once both halves exist.
             tradeService.bindRenderer(new TradeScreenBridge(guiServices));
 
-            registerCommands(messageService, sidebarService, guiServices, activationService, homeService, tradeService);
+            registerCommands(messageService, sidebarService, guiServices, activationService, homeService, tradeService, feedbackService);
 
             pluginLogger.info("HalilIbrahimMMO " + getPluginMeta().getVersion() + " basariyla etkinlestirildi.");
         } catch (Exception exception) {
@@ -390,7 +414,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
     }
 
     private void runPendingMigrations(DatabaseService databaseService) {
-        List<Migration> migrations = List.of(new CoreSchemaMigration(), new PlayerProfileSchemaMigration(), new SkillSchemaMigration(), new ClassSchemaMigration(), new QuestSchemaMigration(), new TitleCosmeticSchemaMigration(), new ClassProgressSchemaMigration(), new PlayerActivationSchemaMigration(), new QuestAssignmentSchemaMigration(), new OnboardingSchemaMigration(), new PrestigeBankedPowerSchemaMigration(), new PlayerHomeSchemaMigration());
+        List<Migration> migrations = List.of(new CoreSchemaMigration(), new PlayerProfileSchemaMigration(), new SkillSchemaMigration(), new ClassSchemaMigration(), new QuestSchemaMigration(), new TitleCosmeticSchemaMigration(), new ClassProgressSchemaMigration(), new PlayerActivationSchemaMigration(), new QuestAssignmentSchemaMigration(), new OnboardingSchemaMigration(), new PrestigeBankedPowerSchemaMigration(), new PlayerHomeSchemaMigration(), new WealthSchemaMigration(), new QuestPinSchemaMigration());
         MigrationRunner migrationRunner = new MigrationRunner(databaseService, pluginLogger, migrations);
 
         try {
@@ -426,7 +450,8 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             GuiServices guiServices,
             ActivationService activationService,
             HomeService homeService,
-            TradeService tradeService
+            TradeService tradeService,
+            FeedbackService feedbackService
     ) {
         registerCommand("haliladmin", "HalilIbrahimMMO yonetici paneli", List.of(), new AdminCommand(guiServices));
         registerCommand("profil", "MMO profil ekranini acar", List.of(), new ProfileCommand(guiServices));
@@ -451,6 +476,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
         registerCommand("beceri", "Beceri ekranini acar", List.of("beceriler"), new SkillsCommand(guiServices));
         registerCommand("ev", "Evine isinlanir veya evini ayarlar", List.of("home"), new HomeCommand(this, homeService, messageService, sidebarService));
         registerCommand("takas", "Baska bir oyuncuyla takas baslatir", List.of("trade"), new TradeCommand(tradeService, messageService));
+        registerCommand("rtp", "Haritada rastgele bir noktaya isinlanir", List.of("rastgele"), new RandomTeleportCommand(this, messageService, feedbackService));
     }
 
     private boolean isDebugModeCurrentlyEnabled() {

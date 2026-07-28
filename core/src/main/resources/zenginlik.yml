@@ -1,0 +1,131 @@
+# =====================================================================
+#  HalilIbrahimMMO - Zenginlik Puanı Ayarları
+# =====================================================================
+#  Zenginlik Puanı herkeste 0 olarak başlar ve yalnızca ARTAR - hiçbir
+#  şekilde harcanmaz, takas edilmez, bir şey satın almaz. Bu bir para
+#  birimi DEĞİLDİR; bu sunucuda ekonomi yoktur. Puan, oyuncunun dünyadan
+#  gerçekte ne çıkardığının bir ölçüsüdür: liderlik tablosundaki yerini,
+#  hangi ünvan ve kozmetikleri açtığını ve hangi anların tüm sunucuya
+#  duyurulacağını belirler.
+#
+#  Her kaynak tasarım gereği tek seferliktir; çiftlik kurup tekrar tekrar
+#  kazanılamaz:
+#    - bloklar   : yalnızca DÜNYANIN kendi oluşturduğu bloklar sayılır.
+#                  Oyuncunun kendi koyduğu bir blok hiçbir puan vermez.
+#    - varliklar : bir yaratığı öldürmek. Listelenmeyen her yaratık
+#                  "varsayilan-varlik" kadar verir (bilerek en düşük
+#                  değerdir, çünkü listelenmeyenler genelde çiftlik
+#                  hayvanlarıdır).
+#    - gorevler  : bir görevi TAMAMLAMAK. Değerli bir yeri keşfetmenin
+#                  karşılığı buradan gelir - keşif görevleri bir kez
+#                  tamamlanır ve bir daha tamamlanamaz.
+#    - dünya bossları ayrıca kendi nadirliğine göre puan verir (bkz.
+#      bosslar.yml).
+#
+#  kilometre-taslari: bu eşiklerin her biri bir kez geçilir; geçildiğinde
+#  hem oyuncunun kendisine bir mesaj gider hem de tüm sunucuya duyurulur.
+#  Bir ödül aynı anda birkaç eşiği birden geçerse yalnızca en yükseği
+#  duyurulur.
+# =====================================================================
+
+varsayilan-varlik: 25
+varsayilan-gorev: 2500
+
+kilometre-taslari: [10000, 50000, 250000, 1000000, 5000000, 25000000, 100000000]
+
+# ----- Doğal olarak oluşmuş bloklar -----
+bloklar:
+  COAL_ORE: 100
+  DEEPSLATE_COAL_ORE: 100
+  COPPER_ORE: 200
+  DEEPSLATE_COPPER_ORE: 200
+  IRON_ORE: 500
+  DEEPSLATE_IRON_ORE: 500
+  NETHER_QUARTZ_ORE: 700
+  REDSTONE_ORE: 800
+  DEEPSLATE_REDSTONE_ORE: 800
+  LAPIS_ORE: 900
+  DEEPSLATE_LAPIS_ORE: 900
+  NETHER_GOLD_ORE: 1500
+  GOLD_ORE: 2500
+  DEEPSLATE_GOLD_ORE: 2500
+  EMERALD_ORE: 8000
+  DEEPSLATE_EMERALD_ORE: 8000
+  DIAMOND_ORE: 10000
+  DEEPSLATE_DIAMOND_ORE: 10000
+  ANCIENT_DEBRIS: 40000
+  # Cevher olmayan ama bulunmasi baslibasina bir olay olan bloklar.
+  AMETHYST_CLUSTER: 1200
+  SUSPICIOUS_SAND: 1500
+  SUSPICIOUS_GRAVEL: 1500
+  SEA_LANTERN: 1800
+  SCULK_CATALYST: 3000
+  BUDDING_AMETHYST: 5000
+  SPAWNER: 15000
+  TRIAL_SPAWNER: 18000
+  VAULT: 22000
+  REINFORCED_DEEPSLATE: 25000
+  DRAGON_EGG: 250000
+
+# ----- Yaratıklar -----
+varliklar:
+  SILVERFISH: 60
+  ENDERMITE: 60
+  ZOMBIE: 50
+  SKELETON: 50
+  SPIDER: 50
+  CREEPER: 50
+  SLIME: 100
+  MAGMA_CUBE: 100
+  HUSK: 75
+  STRAY: 75
+  DROWNED: 75
+  CAVE_SPIDER: 75
+  ZOMBIE_VILLAGER: 120
+  PHANTOM: 200
+  IRON_GOLEM: 200
+  PIGLIN: 200
+  VEX: 250
+  ENDERMAN: 300
+  HOGLIN: 300
+  ZOGLIN: 300
+  SKELETON_HORSE: 300
+  WITCH: 400
+  PILLAGER: 400
+  VINDICATOR: 400
+  GUARDIAN: 400
+  BLAZE: 500
+  CREAKING: 500
+  BOGGED: 600
+  BREEZE: 600
+  GHAST: 700
+  WITHER_SKELETON: 800
+  PIGLIN_BRUTE: 900
+  SHULKER: 1500
+  ILLUSIONER: 1500
+  RAVAGER: 2000
+  EVOKER: 2500
+  ELDER_GUARDIAN: 12000
+  WITHER: 150000
+  WARDEN: 250000
+  ENDER_DRAGON: 500000
+
+# ----- Görevler -----
+# Burada yazmayan her görev "varsayilan-gorev" kadar verir.
+gorevler:
+  kesif-koy: 4000
+  kesif-terkedilmis-maden: 6000
+  kesif-batik-gemi: 7000
+  kesif-kadim-kalintilar: 8000
+  kesif-batik-hazine: 9000
+  kesif-yagmaci-karakolu: 11000
+  kesif-nether-kalesi: 14000
+  kesif-bastion: 18000
+  kesif-deneme-odalari: 19000
+  kesif-okyanus-aniti: 21000
+  kesif-kale: 26000
+  kesif-orman-konagi: 30000
+  kesif-kadim-sehir: 40000
+  esya-totem: 24000
+  esya-elytra: 60000
+  esya-ejderha-yumurtasi: 120000

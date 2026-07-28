@@ -77,7 +77,8 @@ da her ekrana ulaşabilir.
 | `/beceri` | `/beceriler` | Becerilerim ekranı (altı becerinin tümü) |
 | `/madencilik`, `/odunculuk` | — | O becerinin detay ekranı |
 | `/kazıcılık`, `/avcılık`, `/tarımcılık`, `/hayvancılık` | `/kazicilik`, `/avcilik`, `/tarimcilik`, `/hayvancilik` | O becerinin detay ekranı |
-| `/ev` | `/home` | Evine ışınlanır (`/ev ayarla <isim>`, `/ev sil`) |
+| `/ev` | `/home` | Evine ışınlanır (`/ev ayarla <isim>`, `/ev sil`) — 5 dakikada bir |
+| `/rtp` | `/rastgele` | Haritada rastgele, güvenli bir noktaya ışınlanır — 30 dakikada bir |
 | `/takas <oyuncu>` | `/trade` | Takas isteği (`/takas kabul`, `/takas ret`, `/takas iptal`) |
 | `/panel` | — | Sağdaki bilgi panelini gizler/gösterir |
 | `/haliladmin` | — | Yönetici paneli (`halilibrahimmmo.admin` izni gerekir) |
@@ -242,13 +243,13 @@ dolayısıyla sınıfınıza uygun oynamak hem beceriyi hem sınıfı birlikte b
 |---|---|---|---|
 | **Amansız Savaşçı** (`avci`) | Avcılık | Elmas kılıç | 3 |
 | **Mağara Adamı** (`madenci`) | Madencilik | Elmas kazma | 3 |
-| **Tabiat Vârisi** (`tabiat-varisi`) | Odunculuk, Kazıcılık, Tarımcılık, Hayvancılık | Demir balta | 8 |
+| **Tabiat Vârisi** (`tabiat-varisi`) | Odunculuk, Kazıcılık, Tarımcılık, Hayvancılık | Demir balta | 4 |
 
 **Tabiat Vârisi** tek başına dört beceriyi birden besler — toprağın, ormanın,
-tarlanın ve sürünün vârisidir. Karşılığında en geniş kabiliyet listesine ve en
-geniş yetenek ağacına sahiptir, ama kabiliyetleri tek tek daha az yıkıcı ve
-daha çok yardımcı niteliktedir, ve sınıf seviyesinin tamamına (5'ten 40'a)
-yayılarak açılır. Amansız Savaşçı ve Mağara Adamı ise dar ama derin
+tarlanın ve sürünün vârisidir. Kabiliyetleri de tam olarak bu dört becerinin
+her birine bir tane düşer ve **en zayıftan en güçlüye** doğru açılır (5 → 15 →
+25 → 40), böylece sınıf seviyesi yükseldikçe elindeki araç da gözle görülür
+şekilde güçlenir. Amansız Savaşçı ve Mağara Adamı ise dar ama derin
 uzmanlardır.
 
 Her sınıf ayrıca prestij yaptıkça büyüyen, kendine özgü kalıcı bir bonus
@@ -274,9 +275,16 @@ Kabiliyet yetenekleri bir kabiliyetin **enerji maliyetini azaltabilir**,
 **bekleme süresini kısaltabilir**, **etki sınırını genişletebilir**, **etki
 süresini uzatabilir** veya **etkisinin gücünü arttırabilir** (bir hasar
 çarpanını, bir düşme ihtimalini ya da ham hasarı). Menüde bir yeteneğin üstüne
-geldiğinizde hangi havuzdan ödendiği, her rankın tam olarak ne verdiği ve şu
-ana kadar biriken toplam etki yazar. Özellik yetenekleri kitap, kabiliyet
-yetenekleri büyülü kitap simgesiyle ayrılır.
+geldiğinizde her rankın tam olarak ne verdiği ve şu ana kadar biriken toplam
+etki yazar.
+
+**Ekran iki ayrı bloktan oluşur.** En üstte oynadığınız sınıfı ve o sınıfın
+kendi seviyesini/XP'sini gösteren bir başlık, altında sınıf simgeleri ve iki
+puan sayacı yan yana, sonra **Özellik Yetenekleri** ve **Kabiliyet
+Yetenekleri** kendi başlıkları altında ayrı satır blokları hâlinde. Özellik
+yetenekleri kitap, kabiliyet yetenekleri büyülü kitap simgesi taşır ve her
+blok kendi içinde alfabetik sıralanır, böylece bir yetenek her açılışta aynı
+yerde durur. Ekran, sınıfınızın kendi renginde çerçevelenir.
 
 Her iki havuz da tüm sınıflar arasında **paylaşılır**, dolayısıyla sınıf
 değiştirmek harcanmış rankları silmez.
@@ -298,6 +306,13 @@ Değişiklik onaylandığında ekranın ortasında bir başlık, üstte bir boss
 ve sohbette kişisel bir mesaj olarak **"Sınıf Değiştirildi — <Sınıf İsmi>"**
 görünür ve buna özel bir ses efekti çalar.
 
+Sınıf değiştiğinde **seçili kabiliyetiniz kuşanılmış olmaktan çıkar** — ister
+kendiniz değiştirin, ister bir yönetici değiştirsin. O sırada çalışan bir
+kabiliyet varsa (kurulu bir blok kabiliyeti, bir hasar/düşme etkisi ya da
+Maden Feneri'nin parıltıları) o da sona erer; hiçbiri artık sahip olmadığınız
+bir sınıfa aittir. Kabiliyet bekleme süreleri bilerek korunur, yani sınıf
+değiştirmek bir beklemeyi sıfırlamanın yolu değildir.
+
 ---
 
 ## Kabiliyetler
@@ -308,13 +323,9 @@ kullanılamaz. Açılma koşulu **sınıf seviyesidir** (beceri seviyesi değil)
 | Sınıf | Kabiliyet | Sv. | Enerji | Bekleme | Etki |
 |---|---|---|---|---|---|
 | Tabiat Vârisi | Toprak Sezgisi | 5 | 20 | 1 dk 30 sn | Kırdığın bloklardan %50 ihtimalle ekstra düşme |
-| Tabiat Vârisi | Kazıcı Darbesi | 10 | 20 | 1 dk | Sonraki kırışta çevredeki 9 bloğu birden kazar |
-| Tabiat Vârisi | Yeşil Yol | 15 | 20 | 1 dk 15 sn | 10 saniye artan hareket hızı |
-| Tabiat Vârisi | Filiz Patlaması | 20 | 25 | 3 dk | 6 blok yarıçapındaki tüm ekinleri anında olgunlaştırır |
-| Tabiat Vârisi | Ağaç Kırıcı | 25 | 25 | 1 dk 15 sn | Bağlı tüm kütükleri (en fazla 32) birden keser |
-| Tabiat Vârisi | Doğa Kalkanı | 30 | 30 | 2 dk 30 sn | 3 saniye neredeyse tüm hasara dirençlilik |
-| Tabiat Vârisi | Sürü Çağrısı | 35 | 30 | 4 dk | 8 blok yarıçapındaki tüm yetişkin hayvanları yem harcamadan çiftleşme moduna sokar |
-| Tabiat Vârisi | Doğa Şifası | 40 | 25 | 2 dk | 8 saniye hızlı can yenilenmesi |
+| Tabiat Vârisi | Filiz Patlaması | 15 | 25 | 3 dk | 6 blok yarıçapındaki tüm ekinleri anında olgunlaştırır |
+| Tabiat Vârisi | Sürü Çağrısı | 25 | 30 | 4 dk | 8 blok yarıçapındaki tüm yetişkin hayvanları yem harcamadan çiftleşme moduna sokar |
+| Tabiat Vârisi | Ağaç Kırıcı | 40 | 25 | 1 dk 15 sn | Bağlı tüm kütükleri (en fazla 32) birden keser |
 | Amansız Savaşçı | Gece Görüşü | 5 | 15 | 2 dk | 60 saniye karanlıkta net görüş |
 | Amansız Savaşçı | Avcı Odağı | 10 | 25 | 1 dk 30 sn | PvE hasarı %50 artar (enerji tüketir) |
 | Amansız Savaşçı | Yıkıcı Darbe | 30 | 30 | 30 sn | Ayağının altında şok dalgası, 4 blok yarıçapı |
@@ -340,11 +351,33 @@ kullanılamaz. Açılma koşulu **sınıf seviyesidir** (beceri seviyesi değil)
    bekleme süreleri başlatır, sağ tıklamak ise kapı açarken, blok koyarken,
    hayvan beslerken sürekli yaptığınız bir şeydir.
 
+**Kendi işi olan bloklar kabiliyeti tetiklemez.** Kapı, çiftlik kapısı, tuzak
+kapısı, şalter, düğme, örs, çalışma masası, fırın çeşitleri, sandık, varil,
+büyü masası, not bloğu, çiçek saksısı, tabela, yatak ve benzeri — sağ
+tıkladığınızda zaten kendi işini yapan hiçbir blok kabiliyetinizi açmaz.
+Üssünüzde dolaşırken kapı açmak artık enerji ve bekleme süresi harcamaz.
+Gerçekten o kapının önünde kabiliyetinizi kullanmak istiyorsanız **shift
+basılı tutup sağ tıklayın**: Minecraft zaten shift'liyken bloğun kendi
+davranışını bastırır, yani sandığa blok koyarken kullandığınız hareketin
+aynısı burada da işe yarar.
+
+**Zaten çalışan bir kabiliyete tekrar tıklamak** (yaratıcı mod dışında)
+hiçbir mesaj üretmez. Eskiden önce "tekrar sağ tıkla" yazar, sonra ikinci
+tıklamada "beklemelisin" diye reddederdi; oysa eylem çubuğundaki geri sayım
+kabiliyetin çalıştığını zaten söylüyor.
+
 **Yaratıcı (Creative) modda hiçbir sınır yoktur:** kabiliyet değiştirme
 beklemesi, kabiliyet bekleme süresi, enerji maliyeti ve süre sınırı
 uygulanmaz. Kabiliyet siz kapatana kadar açık kalır — açarken olduğu gibi
 **çift sağ tıklayarak kapatırsınız**. Eylem çubuğunda geri sayım yerine
 "Yaratıcı mod — kapatmak için çift sağ tıkla" yazar.
+
+Bunun **tek istisnası, işini anında bitiren kabiliyetlerdir**: Yıkıcı Darbe,
+Filiz Patlaması ve Sürü Çağrısı. Şok dalgası zaten atıldıktan, ekinler zaten
+olgunlaştıktan sonra süreyi açık tutmanın hiçbir anlamı yok — üstelik
+kabiliyeti siz kapatana kadar tekrar kullanılamaz hâle getiriyordu. Bu üçü
+yaratıcı modda da kendi normal sürelerini kullanır (Yıkıcı Darbe için 2
+saniye), yani çift sağ tıkladıkça tekrar tekrar kullanılabilir.
 
 Alet **yalnızca kabiliyeti başlatmak** için gereklidir: kabiliyet bir kez
 etkinleştikten sonra elindeki eşyayı değiştirmen, hatta düşürmen onu bozmaz.
@@ -358,9 +391,13 @@ serbesttir. Henüz açılmamış kabiliyetler menüde kilitli gösterilir.
 
 **Maden Feneri** özel bir durumdur: yalnızca **geniş ve üstü kapalı bir
 madende** kullanılabilir (dar bir tünelde ya da açık arazide çalışmaz).
-Çalıştığında 36 blok yarıçapındaki tüm cevherler 30 saniye boyunca duvarların
+Çalıştığında 36 blok yarıçapındaki cevherler 30 saniye boyunca duvarların
 ardından bile parlar; işaretlenmiş bir cevheri kırdığınızda parıltısı anında
-söner.
+söner. Tarama **size en yakın cevherlerden başlayarak dışa doğru** genişler,
+dolayısıyla gözünüzün önündeki açıkta duran kömür/demir damarı da en az
+duvarın arkasındaki kadar kesin biçimde parlar. Yaratıcı modda kabiliyeti
+çift sağ tıklayarak kapattığınızda **sizin yaktığınız bütün parıltılar da
+anında söner**.
 
 **Avcı Odağı** süreye değil enerjiye dayalıdır: her isabetli vuruşta enerji
 tüketir, enerjiniz biterse ya da en fazla 30 saniye sonra kendiliğinden sona
@@ -392,25 +429,28 @@ Ekranın sağında kalıcı, renklendirilmiş bir bilgi paneli. Yukarıdan aşa�
 1. **Oyuncu adı** — varsa kuşanılan unvan kendi rengiyle isimden önce
    ("Oyuncu: [Unvan] Ad").
 2. **Güç ve prestij** — tek satırda, altın ve açık mor.
-3. **Sınıf ve sınıf seviyesi** — tek satırda, XP ilerlemesiyle birlikte.
-4. **Kabiliyet** — çalışan bir kabiliyet varsa adı ve kalan süresi, yoksa
+3. **Zenginlik** — mavi renkte toplam Zenginlik Puanınız.
+4. **Sınıf ve sınıf seviyesi** — tek satırda, XP ilerlemesiyle birlikte.
+5. **Kabiliyet** — çalışan bir kabiliyet varsa adı ve kalan süresi, yoksa
    seçili olan, o da yoksa "Kabiliyet seçilmedi".
-5. **Ev / Takas durumu** — ikisinden biri açıldıktan sonra görünür; evinizin
+6. **Ev / Takas durumu** — ikisinden biri açıldıktan sonra görünür; evinizin
    adını (ya da "Ayarlanmadı") ve takasın açık olup olmadığını gösterir.
    **Bir takas sürerken** hemen altında "Takas açık: <oyuncu>" satırı çıkar.
-6. **Başlangıç Görevleri** — yalnızca tamamlanmamış olanlar varken; hepsi
+7. **Başlangıç Görevleri** — yalnızca tamamlanmamış olanlar varken; hepsi
    bitince bu bölüm tamamen kaybolur.
-7. **Günlük Görevler** ve **Haftalık Görevler** — her biri kendi başlığı
-   altında ayrı bir bölüm, atanmış her görev ayrı bir satırda. Tamamlanmamış
-   görevler ilerlemeleri ve XP ödülleriyle sarı; **tamamlanmış görevler yeşil**
-   listelenir.
-8. En altta `/panel` hatırlatması.
+8. **Günlük**, **Haftalık** ve **Kalıcı Görevler** — her biri kendi başlığı
+   altında ayrı bir bölüm. Tamamlanmamış görevler ilerlemeleri ve XP
+   ödülleriyle sarı; **tamamlanmış görevler yeşil** listelenir. Görevler
+   panelde **kısa adlarıyla** yazılır (bkz. Görevler bölümü).
+9. En altta `/panel` hatırlatması.
 
 Bölümler arasında ince ayırıcı çizgiler vardır. **Minecraft bu panelde en
 fazla 15 satır gösterir**; eklenti fazlasını kendisi kırpar (en alttaki
 `/panel` satırı her zaman korunur), bu yüzden satırlar bilinçli olarak
 birleştirilmiştir — örneğin sınıfınızın açık kabiliyetleri artık tek tek
-listelenmez, tam listeyi `/kabiliyet` ekranı gösterir.
+listelenmez, tam listeyi `/kabiliyet` ekranı gösterir. **Panelde hangi
+görevlerin görüneceğine siz karar verebilirsiniz**: bkz. "Görevleri panele
+sabitleme".
 
 Panel, sunucuda gerçekleşen her değişikliği (beceri/sınıf XP kazanımı, unvan
 değişikliği, yönetici müdahalesi dahil) yaklaşık 2 saniye içinde
@@ -445,18 +485,40 @@ sayısı 10'dur.
 
 ## Görevler
 
-`/görev`, solunda dört sekme bulunan bir görev panosu açar. Aynı anda tek bir
-bölüm gösterilir, o bölüme de 42 slot ayrılmıştır:
+Toplam **65 görev** vardır: 36 kalıcı, 16 günlük, 13 haftalık. `/görev`,
+solunda dört sekme bulunan bir görev panosu açar. Aynı anda tek bir bölüm
+gösterilir, o bölüme de 42 slot ayrılmıştır:
 
-- **Günlük Görevler** — geniş bir havuzdan her gün rastgele atanan 3 görev.
-- **Haftalık Görevler** — havuzdan her hafta rastgele atanan 2 görev.
-- **Kalıcı Görevler** — tek seferlik, hiç sıfırlanmayan, herkeste ortak görevler.
+- **Günlük Görevler** — 16 görevlik havuzdan her gün rastgele atanan 3 görev.
+- **Haftalık Görevler** — 13 görevlik havuzdan her hafta rastgele atanan 2 görev.
+- **Kalıcı Görevler** — tek seferlik, hiç sıfırlanmayan, herkeste ortak 36 görev.
 - **Tamamlanan Görevler** — bu dönemde bitirdikleriniz.
 
 Bir görevin üstüne geldiğinizde **ne yapmanız gerektiğini anlatan açıklaması**,
 mevcut ilerlemeniz ve **kazandıracağı XP ile hangi beceriye yazılacağı** yazar.
 Tamamlanan bir görev kendi bölümünden çıkıp "Tamamlanan Görevler" sekmesine
 geçer, böylece üst bölümler her zaman dürüst bir yapılacaklar listesi kalır.
+
+### Görevleri panele sabitleme
+
+Görev panosunda **tamamlanmamış bir göreve tıklamak onu sağdaki panele
+sabitler** (tekrar tıklamak kaldırır). Her bölüm için en fazla **3** görev
+sabitlenebilir. Sabitli görevler menüde parlar ve açıklamasında "Panele
+sabitlendi" yazar.
+
+- **Kalıcı görevler panelde yalnızca sabitlediklerinizle görünür.** 36 kalıcı
+  görevin hepsini listelemek zaten mümkün değildi (panel 15 satır gösterir),
+  bu bölüm de tam olarak bu yüzden var: hangi üç uzun soluklu hedefin gözünüzün
+  önünde duracağına siz karar verirsiniz.
+- **Günlük ve haftalıkta sabitleme bir filtredir.** Hiçbir şey sabitlemezseniz
+  o dönem size atanmış görevlerin hepsi görünür (eskisi gibi); sabitlerseniz
+  yalnızca seçtikleriniz görünür. Size atanmamış bir havuz görevi sabitlenip
+  panele *eklenemez*, çünkü atanmamış bir görev zaten hiç ilerlemez — hiç
+  hareket etmeyen bir satır olurdu.
+
+Panelde görevler **kısa adlarıyla** yazılır (`quests.yml` içindeki `kisa-ad`).
+Scoreboard satırları alt satıra kaymaz, kesilir; menüde okunan uzun başlıklar
+panelde kelimenin ortasından kopuyordu.
 
 ### Görev ödülleri hangi beceriye yazılır?
 
@@ -481,8 +543,9 @@ ve varsa "yeni kabiliyet açıldı" bildirimi.
 
 ### Görev türleri
 
-Blok kırma ve yaratık öldürmenin yanına iki tür daha eklendi:
+Beş görev türü vardır:
 
+- **Blok kırma** ve **yaratık öldürme** — klasik sayaçlar.
 - **Yapı bulma** — o yapının içinde durmanız yeterlidir. Köy (1 800 XP),
   batık gemi, terk edilmiş maden, batık hazine, kadim kalıntılar, yağmacı
   karakolu, nether kalesi, bastion kalıntısı, okyanus anıtı, deneme odaları,
@@ -490,15 +553,141 @@ Blok kırma ve yaratık öldürmenin yanına iki tür daha eklendi:
 - **Eşya edinme** — hem yerden alınan hem de bir sandıktan çıkarılan eşyalar
   sayılır. Müzik diski, isim etiketi, ölümsüzlük totemi, elytra ve en zoru
   **ejderha yumurtası** (36 000 XP).
+- **Belirli bir iş (`DEED`)** — sayaçla anlatılamayan, hikâyesi olan hedefler:
+  bir ghast'ı **kendi ateş topuyla** öldürmek, piglinlerle takas yapmak,
+  köylülerle ticaret, büyü masasında büyüleme, balık tutma, hayvan
+  evcilleştirme.
 
-XP'ler kasıtlı olarak zorlukla ölçeklenir: bir köy bulmak ile Kadim Şehir'e
-inmek arasında yirmi katlık bir fark vardır.
+**Boyut şartı.** Bir görev `NORMAL`, `NETHER` ya da `THE_END` boyutuna
+kilitlenebilir; böylece "End'de 100 enderman öldür" gerçekten End'i şart
+koşar, gece bir ovada öldürdüğünüz enderman sayılmaz.
+
+**Bir yeri bulmak yarısıdır.** Kalıcı görevlerin bir kısmı, keşfettiğiniz
+yerde iş bitirmenizi ister:
+
+| Görev | Ne ister |
+|---|---|
+| Konağın Büyücüleri | Ormandaki konağı bul, 3 evoker öldür |
+| Yaşlı Muhafız | Okyanus anıtını bul, Elder Guardian'ı öldür |
+| Bastion'un Altını | Bastion kalıntısı bul, 10 altın bloğu kaz (Nether) |
+| Piglin Ticareti | Piglinlerle 8 kez takas yap |
+| Alev Avı / Kara Kemikler | Nether kalesinde 10 blaze ve 10 wither iskeleti öldür |
+| Kendi Ateşiyle | Bir ghast'ı geri yolladığın ateş topuyla öldür |
+| End'in Sakinleri | End'de toplam 100 enderman öldür |
+| Derinin Bekçisi | Warden'ı uyandır ve öldür (45 000 XP) |
+
+XP'ler kasıtlı olarak zorlukla ölçeklenir: bir köy bulmak (1 800) ile Warden'ı
+öldürmek (45 000) arasında yirmi beş katlık bir fark vardır.
 
 Görevler otomatik ilerler (Yaratıcı/İzleyici modda ve oyuncunun yerleştirdiği
 bloklarda ilerleme kaydedilmez — ekinler bu kuralın istisnasıdır, tıpkı beceri
 XP'sinde olduğu gibi), periyodu bitince yeni bir rastgele atamayla sıfırlanır.
 Bir günlük/haftalık görevi tamamlamak sunucu genelinde (XP miktarı
 gösterilmeden) duyurulur.
+
+---
+
+## Zenginlik Puanı
+
+Herkes **0** puanla başlar ve bu sayı yalnızca **artar**. Zenginlik Puanı bir
+para birimi **değildir**: harcanmaz, takas edilmez, hiçbir şey satın almaz —
+bu sunucuda ekonomi yoktur. Ölçtüğü şey, dünyadan gerçekte ne çıkardığınızdır.
+
+Her kaynak tasarımı gereği tek seferliktir, çiftlik kurup tekrarlanamaz:
+
+| Kaynak | Örnekler |
+|---|---|
+| **Doğal bloklar** | Kömür 100, demir 500, altın 2 500, zümrüt 8 000, **elmas 10 000**, kadim kalıntı 40 000, spawner 15 000, ejderha yumurtası 250 000 |
+| **Yaratıklar** | Zombi 50, enderman 300, blaze 500, wither iskeleti 800, evoker 2 500, Elder Guardian 12 000, Wither 150 000, **Warden 250 000**, **Ejderha 500 000** |
+| **Görev tamamlama** | Varsayılan 2 500; keşif görevleri değerine göre (köy 4 000 → Kadim Şehir 40 000 → ejderha yumurtası 120 000) |
+| **Dünya bossları** | Nadirliğine göre 2 000 (sıradan) → 400 000 (mistik) |
+
+Oyuncunun kendi koyduğu bloklar hiçbir puan vermez; listede yer almayan
+yaratıklar en düşük değeri alır (çünkü listelenmeyenler neredeyse her zaman
+çiftlik hayvanlarıdır).
+
+**Kilometre taşları** (10 bin, 50 bin, 250 bin, 1 milyon, 5 milyon, 25 milyon,
+100 milyon) geçildiğinde hem size özel bir mesaj gelir hem de tüm sunucuya
+duyurulur. Bir ödül aynı anda birkaç eşiği birden geçerse yalnızca en yükseği
+duyurulur — yeni bir oyuncuyu tek bir boss birkaç eşik birden atlatabilir ve
+aynı anda beş duyuru gürültüden başka bir şey olmaz.
+
+Zenginlik puanınız panelde mavi renkte, `/liderlik` içinde kendi tablosunda
+(elmas simgesiyle) görünür ve **kendine ait ünvanlar ve kozmetikler** açar
+(Varlıklı 50 bin → Zengin 250 bin → Servet Sahibi 1 milyon → Hazine Kralı
+5 milyon → Efsanevi Zengin 25 milyon).
+
+Bütün değerler `zenginlik.yml` üzerinden değiştirilebilir.
+
+---
+
+## Dünya bossları
+
+**Her 30 dakikada bir**, çevrimiçi bir oyuncunun 120–320 blok uzağında,
+haritada isimli bir dünya bossu belirir ve **koordinatlarıyla birlikte tüm
+sunucuya duyurulur**. Kimsenin ulaşamayacağı bir boss kimsenin dövüşmediği bir
+bosstur; bu mesafe hem gerçekten yola çıkmayı gerektirir hem de bir sonraki
+boss gelmeden varılabilir. `/haliladmin` panelinden beklemeden de çağrılabilir.
+
+**Beş nadirlik** vardır ve hangisinin çıkacağı ağırlıklara göre belirlenir
+(sıradan 49, nadir 30, epik 20, efsanevi 10, mistik 1 pay):
+
+| Nadirlik | Can | Hasar | Zırh | Davranış | Sınıf XP | Oyun XP | Zenginlik |
+|---|---|---|---|---|---|---|---|
+| Sıradan | ×3 | ×1.5 | Deri | — | 400 | 60 | 2 000 |
+| Nadir | ×6 | ×2.0 | Demir | İksir içer | 1 200 | 150 | 8 000 |
+| Epik | ×10 | ×2.6 | Elmas | Işınlanır, iksir içer | 3 000 | 320 | 25 000 |
+| Efsanevi | ×16 | ×3.2 | Netherite/Elmas | Kaçar, ışınlanır, iksir içer | 8 000 | 700 | 80 000 |
+| Mistik | ×26 | ×4.0 | Tam netherite | Kaçar, ışınlanır, iksir içer | 25 000 | 1 800 | 400 000 |
+
+Nadirlik arttıkça boss daha hızlı, daha canlı ve daha iyi silahlıdır; belirli
+bir eşikten sonra kalıcı Güç/Direnç etkileri de taşır. **Canı yarıya
+düştüğünde kendine yenilenme basar**, savaş sırasında oyuncuya doğru kısa
+ışınlamalar yapar ve **canı çeyreğe düştüğünde bir kez uzağa kaçar** (Hız II
+ile birlikte).
+
+**Beş boss türü** vardır — zombi, iskelet, boğulmuş, büyücü, baltacı — ve her
+birinin **kendine ait 7 isimlik havuzu** (toplam 35 isim) vardır. İsim,
+nadirliği okuyacak kadar yaklaşmadan önce neyle karşı karşıya olduğunuzu
+söylemelidir: *Diriltilmiş Jackson* bir zombidir, *Nişancı Edward* bir
+iskelet, *Baltacı John* bir baltacı, *İnsan Yiyen Annabelle* de bir zombi.
+
+Boss öldürüldüğünde:
+
+- Öldüren oyuncunun **sınıfına XP** yazılır (normal seviye atlama geri
+  bildiriminin tamamıyla: sohbet, ses, cübuk, "yeni kabiliyet açıldı"),
+- yere **normal oyun XP'si** düşer,
+- nadirliğine göre **ganimet** düşer (mistik bir bossta nether yıldızı,
+  netherite külçeleri, büyülü altın elmalar ve %25 ihtimalle elytra),
+- ve **bossun kendi ismini taşıyan, nadirlik renginde bir kafa** düşer:
+  *"İnsan Yiyen Annabelle'nin Kafası"*.
+
+Boss ayrıca sıradan bir yaratık olarak avcılık XP'si, görev ilerlemesi ve
+Zenginlik Puanı da verir — yukarıdakilerin hepsi bunun **üstüne** eklenir.
+
+Bir boss sunucu yeniden başlasa bile yerinde ve ödülleriyle birlikte kalır
+(kimliği yaratığın kendi kalıcı verisinde saklanır). Yeniden başlatmadan sağ
+kalan bir bossun yalnızca kaçma/iyileşme davranış döngüsü kaybolur; istatistik
+ve ödülleriyle çok güçlü sıradan bir yaratık gibi dövüşmeye devam eder.
+
+Bütün değerler, isim havuzları ve ganimet tabloları `bosslar.yml` üzerinden
+değiştirilebilir.
+
+---
+
+## Rastgele ışınlanma (`/rtp`)
+
+`/rtp` (takma ad `/rastgele`) sizi haritada rastgele, **güvenli** bir noktaya
+ışınlar: dünya doğuş noktasından 500–10 000 blok uzakta, üstü açık, ayak
+basacak katı zemini olan bir yer. Su, lav, kaktüs ya da ateş üstüne
+bırakılmazsınız. İndiğinizde ekranda bir başlık ve sohbette **indiğiniz
+koordinatlar** görünür.
+
+**30 dakikada bir** kullanılabilir. Yalnızca normal dünyada çalışır: Nether'ın
+tavanı her "en yüksek blok" cevabının indiği yerdir, End'de rastgele bir nokta
+ise ya boşluktur ya da ejderhanın adası.
+
+Güvenli bir nokta bulunamazsa (16 denemeden sonra) hakkınız yanmaz.
 
 ---
 
@@ -518,6 +707,10 @@ sıfırlar, dolayısıyla yalnızca seviyeye bakan bir kural bu özelliği tam d
 
 Her oyuncunun **bir** evi vardır; yeniden ayarlamak eskisinin üzerine yazar.
 İsim en fazla 32 karakter olabilir ve panelde görünür.
+
+**Eve ışınlanmak 5 dakikada bir kullanılabilir.** Ev ayarlamak ve silmek
+serbesttir; sayaç yalnızca gerçekten yola çıktığınızda başlar, dolayısıyla
+"henüz ev ayarlamadın" cevabı size beş dakikaya mal olmaz.
 
 **Nether ve End'de çalışmaz** — ne oralarda ev ayarlayabilirsiniz, ne de
 oradan evinize dönebilirsiniz. Bir nether portalını komutla kısa devre etmek,
@@ -559,17 +752,19 @@ XP'sini kazandırır (sınıf seçili değilse ödül verilmez).
 ## Liderlik tabloları
 
 `/liderlik`; Güç (önce prestij, sonra toplam beceri seviyesi sırasına göre),
-prestij, tamamlanan görev sayısı, edinilen koleksiyon ögesi sayısı ve her
-yapılandırılmış beceri için en üst sıradaki oyuncuları gösteren tablolara
-açılır. Aynı tablolara `/menü`'nün Topluluk kategorisinden de göz atılabilir.
+prestij, tamamlanan görev sayısı, edinilen koleksiyon ögesi sayısı,
+**Zenginlik Puanı** (elmas simgesiyle) ve her yapılandırılmış beceri için en
+üst sıradaki oyuncuları gösteren tablolara açılır. Aynı tablolara `/menü`'nün Topluluk kategorisinden de göz atılabilir.
 Sonuçlar her açılışta veritabanını sorgulamak yerine kısa, yapılandırılabilir
 bir süre için önbelleğe alınır (`leaderboards.yml`).
 
 ## Unvanlar ve kozmetikler
 
-`titles.yml` ve `cosmetics.yml`, her biri tek bir kazanma koşuluna sahip
-(seviye/prestije ulaşma, belirli bir görevi/koleksiyonu tamamlama veya bir
-beceri seviyesine ulaşma) açılabilir öge katalogları tanımlar. `/ünvan` ve
+`titles.yml` **19 ünvan**, `cosmetics.yml` **14 kozmetik** tanımlar; her birinin
+tek bir kazanma koşulu vardır: seviye, prestij, belirli bir görevi/koleksiyonu
+tamamlama, bir beceri seviyesine ulaşma ya da bir **Zenginlik Puanı** eşiğini
+geçme. Altı becerinin her birinin kendi ustalık ünvanı ve kendi kozmetiği,
+zenginliğin de kendi beş ünvanı ve üç kozmetiği vardır. `/ünvan` ve
 `/kozmetik` neyi açtığınızı gösterir ve tıklayarak kuşanmanızı sağlar; aynı
 kataloglara `/menü`'den de göz atılabilir. Kuşanılan bir unvan, sohbette
 adınızın önünde **kendi yapılandırılmış rengi ve kalınlığıyla** görünür.
@@ -613,13 +808,18 @@ sürüm bilgisini ve emeği geçenleri listeler: **Furkan Okan (fxrkqnplus)** ve
 
 `/haliladmin` (`halilibrahimmmo.admin` izni gerektirir, varsayılan op) tamamen
 GUI üzerinden çalışan bir yönetici paneli açar — sohbet argümanlı bir yönetici
-komutu yoktur. Sunduğu işlemler: `config.yml`/`messages.yml`/tüm oyun verisi
-dosyalarını yeniden yükleme, mevcut oturum için ayrıntılı hata ayıklama
-kaydını açıp kapatma, çalışan eklenti/Paper sürümünü görüntüleme, çevrimiçi
+komutu yoktur. Panel `/menü` ile aynı görsel dilde çerçevelenmiştir: en üstte
+kendi kafanızı taşıyan, çalışan sürümü ve çevrimiçi oyuncu sayısını gösteren
+bir başlık, altında ne yaptığını açıklayan birer satırla her işlem. Sunduğu
+işlemler: `config.yml`/`messages.yml`/tüm oyun verisi dosyalarını yeniden
+yükleme, mevcut oturum için ayrıntılı hata ayıklama kaydını açıp kapatma,
+çalışan eklenti/Paper sürümünü görüntüleme, **beklemeden bir dünya bossu
+çağırma** (türünü, nadirliğini ve yerini yine sistem seçer), çevrimiçi
 oyuncuları gezip herhangi birinin salt okunur profil/sınıf/beceri özetini
 görüntüleme, ve **kayıtlı her oyuncuyu** (çevrimdışı olanlar dahil) listeleyip
 beceri/sınıf seviyesini ve XP'sini tıklamalarla ayarlama ya da oyuncunun
-sınıfını zorla değiştirme. Bir seviye atlamaya yol açan her müdahale, hedef
+sınıfını zorla değiştirme (bu da, oyuncunun kendi değiştirmesi gibi, seçili
+kabiliyetini kuşanmasından çıkarır). Bir seviye atlamaya yol açan her müdahale, hedef
 oyuncu çevrimiçiyse organik bir seviye atlamayla birebir aynı geri bildirimi
 (cübuk, ses, "yeni kabiliyet açıldı" ekran yazısı, panel güncellemesi)
 tetikler. Her yönetici müdahalesi Türkçe bir sunucu günlüğü kaydı bırakır.
