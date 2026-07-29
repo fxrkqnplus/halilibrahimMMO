@@ -125,6 +125,78 @@ public final class LeaderboardRepository {
         });
     }
 
+    /**
+     * One player's standing on the Güç board: how many players sit above them,
+     * plus one.
+     *
+     * <p>Deliberately takes the player's own numbers as parameters rather than
+     * looking them up again. Güç is a derived value (Phase 11) that the caller
+     * already has in memory from the same caches the sidebar reads, and passing
+     * it in keeps this a single counting query instead of the aggregate being
+     * computed twice and possibly disagreeing with what the screen shows.</p>
+     */
+    CompletableFuture<Integer> rankOfPower(int prestige, long total) {
+        List<String> skillIds = skills.definitions().stream().map(definition -> definition.id()).toList();
+        String placeholders = skillIds.stream().map(id -> "?").collect(Collectors.joining(","));
+        String sql = """
+                SELECT COUNT(*) + 1 FROM (
+                    SELECT p.player_id, p.prestige AS prestige,
+                           COALESCE(SUM(s.skill_level), 0) + COALESCE(b.banked_power, 0) AS total_level
+                    FROM hmmo_player_profiles p
+                    LEFT JOIN hmmo_player_skills s ON s.player_id = p.player_id AND s.skill_id IN (%s)
+                    LEFT JOIN hmmo_player_banked_power b ON b.player_id = p.player_id
+                    GROUP BY p.player_id, p.prestige, b.banked_power
+                ) ranked
+                WHERE ranked.prestige > ? OR (ranked.prestige = ? AND ranked.total_level > ?)
+                """.formatted(placeholders);
+        return database.execute(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                int index = 1;
+                for (String skillId : skillIds) {
+                    statement.setString(index++, skillId);
+                }
+                statement.setInt(index++, prestige);
+                statement.setInt(index++, prestige);
+                statement.setLong(index, total);
+                return readCount(statement);
+            }
+        });
+    }
+
+    /** One player's standing on the Zenginlik board, tie-broken the same way the board itself orders. */
+    CompletableFuture<Integer> rankOfWealth(long wealth) {
+        return database.execute(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT COUNT(*) + 1 FROM hmmo_player_wealth WHERE wealth_points > ?
+                    """)) {
+                statement.setLong(1, wealth);
+                return readCount(statement);
+            }
+        });
+    }
+
+    /** One player's standing on a single skill's board, level first then XP - the board's own ordering. */
+    CompletableFuture<Integer> rankOfSkill(String skillId, int level, long experience) {
+        return database.execute(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT COUNT(*) + 1 FROM hmmo_player_skills
+                    WHERE skill_id = ? AND (skill_level > ? OR (skill_level = ? AND skill_experience > ?))
+                    """)) {
+                statement.setString(1, skillId);
+                statement.setInt(2, level);
+                statement.setInt(3, level);
+                statement.setLong(4, experience);
+                return readCount(statement);
+            }
+        });
+    }
+
+    private static int readCount(PreparedStatement statement) throws SQLException {
+        try (ResultSet result = statement.executeQuery()) {
+            return result.next() ? result.getInt(1) : 1;
+        }
+    }
+
     private static List<LeaderboardEntry> readEntries(ResultSet result) throws SQLException {
         List<LeaderboardEntry> entries = new ArrayList<>();
         int rank = 1;

@@ -7,6 +7,9 @@ import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
 import com.halilibrahim.halilibrahimmmo.exploit.PlacedBlockTracker;
 import com.halilibrahim.halilibrahimmmo.wealth.WealthAwardHandler;
 import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
+import org.bukkit.block.Block;
+import org.bukkit.block.data.Ageable;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -15,7 +18,11 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Bridges valid player actions into persistent skills and ephemeral energy
@@ -92,17 +99,82 @@ public final class SkillListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
-        abilities.handleBlockBreak(event);
+        abilities.handleBlockBreak(event, energy);
         Player player = event.getPlayer();
         if (activation.cached(player.getUniqueId()) && !abilities.isSecondaryBreak(event)
                 && SkillAwardHandler.isGameplayGameMode(player) && placedBlocks.isEligibleTerrain(event.getBlock())
                 && breakRateLimiter.allow(player.getUniqueId())) {
             fellTreeIfUnlocked(player, event);
+            applyBlockMilestones(player, event);
             skills.awardBlock(player.getUniqueId(), player.getName(), event.getBlock().getType())
                     .thenAccept(result -> awards.handle(player, result));
             wealth.awardBlock(player.getUniqueId(), event.getBlock().getType())
                     .thenAccept(award -> wealthAwards.handle(player, award));
         }
+    }
+
+    /**
+     * The three milestone features that act on the broken block itself, all
+     * scoped to the one skill that claims it.
+     *
+     * <p>Resolving the owning skill first is what keeps them honest: a maxed
+     * odunculuk grants {@code DOUBLE_DROP} too, and reading the cross-skill
+     * aggregate here would have let a lumberjack double diamond ore. The block
+     * is still standing at this point in the event, which is what
+     * {@code getDrops} and the crop snapshot both need.</p>
+     */
+    private void applyBlockMilestones(Player player, BlockBreakEvent event) {
+        String skillId = skills.blockSkillId(event.getBlock().getType()).orElse(null);
+        if (skillId == null) {
+            return;
+        }
+        UUID playerId = player.getUniqueId();
+        int excavationLimit = (int) skills.milestoneValue(playerId, skillId, SkillMilestoneEffectType.EXCAVATION);
+        if (excavationLimit > 0) {
+            abilities.excavate(event, skillId, excavationLimit);
+        }
+        if (event.isDropItems()) {
+            doubleDropIfLucky(player, event, skills.milestoneValue(playerId, skillId, SkillMilestoneEffectType.DOUBLE_DROP));
+        }
+        replantIfLucky(player, event, skills.milestoneValue(playerId, skillId, SkillMilestoneEffectType.AUTO_REPLANT));
+    }
+
+    /** Duplicates the block's own drop table rather than granting a fixed item, so enchantments and block state still decide what falls. */
+    private void doubleDropIfLucky(Player player, BlockBreakEvent event, double chance) {
+        if (chance <= 0 || ThreadLocalRandom.current().nextDouble() >= chance) {
+            return;
+        }
+        Block block = event.getBlock();
+        for (ItemStack drop : block.getDrops(player.getInventory().getItemInMainHand())) {
+            block.getWorld().dropItemNaturally(block.getLocation(), drop);
+        }
+    }
+
+    /**
+     * Puts the harvested crop straight back in the ground at age 0, one tick
+     * after the break so the server has actually cleared the block first.
+     *
+     * <p>Only fully-grown crops reach here at all - {@code isEligibleTerrain}
+     * already refuses an immature one - so this can never be used to farm a
+     * block that was never ripe. The replanted crop costs no seed: manual
+     * replanting is net-neutral on seeds anyway, and saving the player that
+     * click is the whole point of the milestone.</p>
+     */
+    private void replantIfLucky(Player player, BlockBreakEvent event, double chance) {
+        if (chance <= 0 || !(event.getBlock().getBlockData() instanceof Ageable crop)) {
+            return;
+        }
+        if (ThreadLocalRandom.current().nextDouble() >= chance) {
+            return;
+        }
+        Block block = event.getBlock();
+        BlockData seedling = crop.clone();
+        ((Ageable) seedling).setAge(0);
+        player.getScheduler().runDelayed(plugin, task -> {
+            if (block.getType().isAir()) {
+                block.setBlockData(seedling);
+            }
+        }, null, 1L);
     }
 
     @EventHandler(ignoreCancelled = true)

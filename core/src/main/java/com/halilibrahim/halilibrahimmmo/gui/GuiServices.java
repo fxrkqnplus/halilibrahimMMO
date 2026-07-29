@@ -62,6 +62,7 @@ public record GuiServices(
         TradeService trades,
         WealthService wealth,
         BossService bosses,
-        ModVerificationService modVerification
+        ModVerificationService modVerification,
+        ChatPromptService chatPrompts
 ) {
 }

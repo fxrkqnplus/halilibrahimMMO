@@ -36,7 +36,23 @@ public enum AbilityEffectType {
      * into love mode for the ability's duration, pairing up a whole herd at
      * once without spending a single breeding item.
      */
-    LOVE_CALL;
+    LOVE_CALL,
+    /**
+     * Armed for a window: the next eligible block break clears a solid cube of
+     * {@code limit} blocks around it, restricted to the ability's own skill's
+     * materials. Distinct from {@link #EXCAVATE} (a flat 3x3 plane) and
+     * {@link #VEIN_MINE} (only blocks of the one broken type) - this is the
+     * mining line's heaviest tool and takes a cube out of a wall in one swing.
+     */
+    BLAST_MINE,
+    /**
+     * Buffed for a window: a fraction ({@code damageMultiplier}) of the damage
+     * dealt to a creature is returned to the attacker as health. The combat
+     * line's last ability - it changes how long a fight can be sustained rather
+     * than how hard one hit lands, which is what separates it from
+     * {@link #DAMAGE_BUFF}.
+     */
+    LIFE_STEAL;
 
     /**
      * Whether the whole effect has already happened by the time activation

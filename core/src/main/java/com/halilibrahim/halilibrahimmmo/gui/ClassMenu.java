@@ -206,8 +206,10 @@ public final class ClassMenu implements GuiView {
      */
     private Component effectLore(TalentNodeDefinition talent) {
         return switch (talent.effectType()) {
+            // Health is stated in hearts, matching the skill milestone screen and
+            // the player's own HUD - the configured value is half-heart points.
             case MAX_HEALTH -> services.messages().render(MessageKey.GUI_TALENT_LORE_HEALTH,
-                    Map.of("deger", formatAmount(talent.valuePerRank())));
+                    Map.of("kalp", formatAmount(talent.valuePerRank() / 2)));
             case PVE_DAMAGE_MULTIPLIER -> services.messages().render(MessageKey.GUI_TALENT_LORE_DAMAGE,
                     Map.of("yuzde", formatAmount(talent.valuePerRank() * 100)));
             case MAX_ENERGY -> services.messages().render(MessageKey.GUI_TALENT_LORE_ENERGY,
@@ -228,8 +230,10 @@ public final class ClassMenu implements GuiView {
     /** The total already earned, so spending the next point is an informed decision rather than a blind one. */
     private Component currentEffectLore(TalentNodeDefinition talent, int rank) {
         double total = talent.valuePerRank() * rank;
-        boolean percentage = talent.effectType() != ClassEffectType.MAX_HEALTH
-                && talent.effectType() != ClassEffectType.MAX_ENERGY
+        if (talent.effectType() == ClassEffectType.MAX_HEALTH) {
+            return services.messages().render(MessageKey.GUI_TALENT_LORE_CURRENT_HEART, Map.of("kalp", formatAmount(total / 2)));
+        }
+        boolean percentage = talent.effectType() != ClassEffectType.MAX_ENERGY
                 && talent.effectType() != ClassEffectType.ABILITY_LIMIT_BONUS;
         return services.messages().render(percentage ? MessageKey.GUI_TALENT_LORE_CURRENT_PERCENT : MessageKey.GUI_TALENT_LORE_CURRENT,
                 Map.of("deger", formatAmount(percentage ? total * 100 : total)));
@@ -274,6 +278,7 @@ public final class ClassMenu implements GuiView {
                     if (result.status() == TalentSpendResult.Status.SPENT) {
                         services.classes().applyPlayerEffects(player);
                         services.energy().reconcile(player);
+                        services.feedback().celebrateTalentUnlocked(player);
                         services.messages().send(player, MessageKey.CLASS_TALENT_SPENT, Map.of(
                                 "yetenek", result.talentId(), "rank", Integer.toString(result.rank()), "kalan", Integer.toString(result.availablePoints())
                         ));

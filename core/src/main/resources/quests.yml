@@ -17,6 +17,12 @@
 #    buyuleme        : büyü masasında bir eşya büyülemek
 #    balik-tutma     : oltayla balık çıkarmak
 #    evcillestirme   : herhangi bir hayvanı evcilleştirmek
+#    ciftlestirme    : iki hayvanı çiftleştirip yavru elde etmek
+#    koyun-kirpma    : bir koyunu makasla kırpmak
+#    gezgin-tuccar   : haritada dolaşan gezgin tüccarı bulup sağ tıklamak
+#    maden-sandigi   : DÜNYANIN kendi oluşturduğu bir raylı sandığı açmak
+#                      (oyuncunun koyduğu vagonun ganimet tablosu olmadığı için
+#                       sayılmaz - görev evde kurulamaz)
 #
 #  hedef.boyut (isteğe bağlı): NORMAL | NETHER | THE_END. Yazılırsa görev
 #  yalnızca o boyutta ilerler - "End'de 100 enderman öldür" gibi hedefler
@@ -29,7 +35,9 @@
 #    fortress bastion_remnant nether_fossil end_city pillager_outpost
 #    desert_pyramid jungle_pyramid igloo swamp_hut ocean_ruin_cold
 #    ocean_ruin_warm ruined_portal (ve ruined_portal_* çeşitleri)
-#  Yapı görevleri, oyuncu o yapının içinde durduğu anda ilerler.
+#  Yapı görevleri, oyuncu o yapının içinde durduğu anda ilerler. Bu tür
+#  BİLEREK azdır: bir yere varmak tek başına görev sayılmaz, neredeyse her
+#  keşif görevi oraya vardıktan sonra yapılacak bir iş ister.
 #
 #  ITEM_OBTAIN görevleri hem yerden eşya alındığında hem de bir sandıktan
 #  eşya çıkarıldığında ilerler.
@@ -113,6 +121,12 @@ gorevler:
     xp: 15000
 
   # ----- Keşif -----
+  # TASARIM KURALI: bir yere varmak tek başına görev değildir. Neredeyse her
+  # keşif görevi, oraya vardıktan sonra yapılacak bir iş ister - bir sandığı
+  # açmak, bir yaratığı öldürmek, bir eşyayı çıkarmak. Yalnızca üç görev
+  # "sadece bul" olarak bırakıldı (köy, batık gemi, gezgin tüccar); bunlar
+  # oyunun ilk saatlerinde yön veren, zorluğu keşfin kendisinde olan
+  # görevlerdir.
   kesif-koy:
     gorunen-ad: "İlk Komşular"
     kisa-ad: "Bir köy keşfet"
@@ -128,29 +142,29 @@ gorevler:
 
   kesif-batik-hazine:
     gorunen-ad: "Batık Hazine"
-    kisa-ad: "Batık hazine bul"
-    aciklama: "Bir haritanın peşine düş ve gömülü hazineyi bul. Kazman gerekecek."
+    kisa-ad: "Denizin Kalbini çıkar"
+    aciklama: "Bir hazine haritasının peşine düş, gömülü sandığı kaz ve içindeki Denizin Kalbi'ni al."
     simge: HEART_OF_THE_SEA
     tur: PERMANENT
     beceri: kazicilik
     hedef:
-      tur: STRUCTURE_DISCOVER
-      yapilar: [buried_treasure]
+      tur: ITEM_OBTAIN
+      esyalar: [HEART_OF_THE_SEA]
     sayi: 1
     xp: 4500
 
   kesif-terkedilmis-maden:
     gorunen-ad: "Terk Edilmiş Maden"
-    kisa-ad: "Terk edilmiş maden bul"
-    aciklama: "Yer altındaki eski maden ocaklarından birini bul."
-    simge: RAIL
+    kisa-ad: "2 maden sandığı aç"
+    aciklama: "Yer altındaki eski maden ocaklarından birini bul ve orada bırakılmış raylı sandıklardan 2 tanesini aç. Kendi koyduğun vagon sayılmaz."
+    simge: CHEST_MINECART
     tur: PERMANENT
     beceri: madencilik
     hedef:
-      tur: STRUCTURE_DISCOVER
-      yapilar: [mineshaft, mineshaft_mesa]
-    sayi: 1
-    xp: 3000
+      tur: DEED
+      eylem: maden-sandigi
+    sayi: 2
+    xp: 3600
 
   kesif-batik-gemi:
     gorunen-ad: "Karaya Vuran Gemi"
@@ -165,121 +179,135 @@ gorevler:
     sayi: 1
     xp: 3600
 
+  kesif-gezgin-tuccar:
+    gorunen-ad: "Yolların Adamı"
+    kisa-ad: "Gezgin tüccarı bul"
+    aciklama: "Haritada dolaşan gezgin tüccarı bul ve onunla konuş. Nerede olduğunu kimse söyleyemez."
+    simge: LEAD
+    tur: PERMANENT
+    beceri: hayvancilik
+    hedef:
+      tur: DEED
+      eylem: gezgin-tuccar
+    sayi: 1
+    xp: 2400
+
   kesif-yagmaci-karakolu:
     gorunen-ad: "Yağmacı Karakolu"
-    kisa-ad: "Yağmacı karakolu bul"
-    aciklama: "Bir yağmacı karakolu bul - ama hazırlıklı git."
+    kisa-ad: "8 yağmacı öldür"
+    aciklama: "Bir yağmacı karakolu bul ve kulesini savunan 8 yağmacıyı temizle."
     simge: CROSSBOW
     tur: PERMANENT
     beceri: avcilik
     hedef:
-      tur: STRUCTURE_DISCOVER
-      yapilar: [pillager_outpost]
-    sayi: 1
+      tur: MOB_KILL
+      varliklar: [PILLAGER]
+    sayi: 8
     xp: 5400
 
   kesif-orman-konagi:
     gorunen-ad: "Ormandaki Konak"
-    kisa-ad: "Orman konağı keşfet"
-    aciklama: "Kara meşe ormanlarının derinliğindeki devasa konağı bul. Kolay olmayacak."
+    kisa-ad: "8 intikamcı öldür"
+    aciklama: "Kara meşe ormanlarının derinliğindeki konağı bul ve odalarını tutan 8 intikamcıyı öldür."
     simge: DARK_OAK_DOOR
     tur: PERMANENT
     beceri: avcilik
     hedef:
-      tur: STRUCTURE_DISCOVER
-      yapilar: [mansion]
-    sayi: 1
+      tur: MOB_KILL
+      varliklar: [VINDICATOR]
+    sayi: 8
     xp: 15000
 
   kesif-nether-kalesi:
     gorunen-ad: "Nether Kalesi"
-    kisa-ad: "Nether kalesi keşfet"
-    aciklama: "Nether'a in ve bir nether kalesi bul."
-    simge: NETHER_BRICK
+    kisa-ad: "12 alev çubuğu topla"
+    aciklama: "Bir nether kalesi bul ve blaze'lerden 12 alev çubuğu topla."
+    simge: BLAZE_ROD
     tur: PERMANENT
     beceri: madencilik
     hedef:
-      tur: STRUCTURE_DISCOVER
-      yapilar: [fortress]
-    sayi: 1
+      tur: ITEM_OBTAIN
+      esyalar: [BLAZE_ROD]
+    sayi: 12
     xp: 7200
 
   kesif-bastion:
     gorunen-ad: "Bastion Kalıntısı"
-    kisa-ad: "Bastion kalıntısı bul"
-    aciklama: "Nether'daki piglin bastion kalıntılarından birini bul."
-    simge: GOLD_BLOCK
+    kisa-ad: "5 piglin vahşisi öldür"
+    aciklama: "Nether'daki bir bastion kalıntısını bul ve hazinesini koruyan 5 piglin vahşisini öldür."
+    simge: GOLDEN_AXE
     tur: PERMANENT
-    beceri: madencilik
+    beceri: avcilik
     hedef:
-      tur: STRUCTURE_DISCOVER
-      yapilar: [bastion_remnant]
-    sayi: 1
+      tur: MOB_KILL
+      varliklar: [PIGLIN_BRUTE]
+      boyut: NETHER
+    sayi: 5
     xp: 9000
 
   kesif-okyanus-aniti:
     gorunen-ad: "Okyanus Anıtı"
-    kisa-ad: "Okyanus anıtı keşfet"
-    aciklama: "Denizin dibindeki devasa anıtı bul. Nefesine dikkat et."
+    kisa-ad: "64 prizmarin kır"
+    aciklama: "Denizin dibindeki anıtı bul ve duvarlarından 64 prizmarin blok sök. Nefesine dikkat et."
     simge: PRISMARINE
     tur: PERMANENT
-    beceri: avcilik
+    beceri: madencilik
     hedef:
-      tur: STRUCTURE_DISCOVER
-      yapilar: [monument]
-    sayi: 1
+      tur: BLOCK_BREAK
+      malzemeler: [PRISMARINE, PRISMARINE_BRICKS, DARK_PRISMARINE]
+    sayi: 64
     xp: 10800
 
   kesif-kadim-kalintilar:
     gorunen-ad: "Kadim Kalıntılar"
-    kisa-ad: "Kadim kalıntı bul"
-    aciklama: "Toprağın altına gömülmüş antik kalıntıları bul ve fırçanı hazırla."
+    kisa-ad: "Kalıntı plağını çıkar"
+    aciklama: "Toprağa gömülü antik kalıntıları bul ve fırçanla yalnızca oradan çıkan 'relic' plağını gün yüzüne çıkar."
     simge: BRUSH
     tur: PERMANENT
     beceri: kazicilik
     hedef:
-      tur: STRUCTURE_DISCOVER
-      yapilar: [trail_ruins]
+      tur: ITEM_OBTAIN
+      esyalar: [MUSIC_DISC_RELIC]
     sayi: 1
     xp: 4200
 
   kesif-kadim-sehir:
     gorunen-ad: "Kadim Şehir"
-    kisa-ad: "Kadim şehri keşfet"
-    aciklama: "Derin karanlıkta uyuyan Kadim Şehir'i bul. Sessiz ol."
-    simge: SCULK_CATALYST
+    kisa-ad: "4 yankı parçası al"
+    aciklama: "Derin karanlıkta uyuyan Kadim Şehir'i bul ve sandıklarından 4 yankı parçası çıkar. Sessiz ol."
+    simge: ECHO_SHARD
     tur: PERMANENT
     beceri: madencilik
     hedef:
-      tur: STRUCTURE_DISCOVER
-      yapilar: [ancient_city]
-    sayi: 1
+      tur: ITEM_OBTAIN
+      esyalar: [ECHO_SHARD]
+    sayi: 4
     xp: 18000
 
   kesif-deneme-odalari:
     gorunen-ad: "Deneme Odaları"
-    kisa-ad: "Deneme odalarını bul"
-    aciklama: "Yer altındaki deneme odalarını bul."
+    kisa-ad: "4 deneme anahtarı al"
+    aciklama: "Yer altındaki deneme odalarını bul ve deneme doğurucularını yenerek 4 anahtar kazan."
     simge: TRIAL_KEY
     tur: PERMANENT
     beceri: avcilik
     hedef:
-      tur: STRUCTURE_DISCOVER
-      yapilar: [trial_chambers]
-    sayi: 1
+      tur: ITEM_OBTAIN
+      esyalar: [TRIAL_KEY]
+    sayi: 4
     xp: 9600
 
   kesif-kale:
     gorunen-ad: "Son Kapı"
-    kisa-ad: "Kaleyi keşfet"
-    aciklama: "End portalını barındıran kaleyi bul."
+    kisa-ad: "20 gümüş balığı ez"
+    aciklama: "End portalını barındıran kaleyi bul ve koridorlarındaki 20 gümüş balığını temizle."
     simge: ENDER_EYE
     tur: PERMANENT
-    beceri: madencilik
+    beceri: avcilik
     hedef:
-      tur: STRUCTURE_DISCOVER
-      yapilar: [stronghold]
-    sayi: 1
+      tur: MOB_KILL
+      varliklar: [SILVERFISH]
+    sayi: 20
     xp: 13200
 
   # ----- Keşfettiğin yerde yapılacak işler -----
@@ -484,6 +512,90 @@ gorevler:
       eylem: koylu-takasi
     sayi: 30
     xp: 4200
+
+  # ----- Sürü ve tarla -----
+  # Hayvancılık ve tarımcılık uzun süre yalnızca birkaç göreve sahipti;
+  # aşağıdakiler o boşluğu kapatır ve iki beceriye de kendi kalıcı hedeflerini
+  # verir.
+  suru-sahibi:
+    gorunen-ad: "Sürü Sahibi"
+    kisa-ad: "100 hayvan çiftleştir"
+    aciklama: "Ahırını büyüt: toplam 100 kez hayvan çiftleştir."
+    simge: HAY_BLOCK
+    tur: PERMANENT
+    beceri: hayvancilik
+    hedef:
+      tur: DEED
+      eylem: ciftlestirme
+    sayi: 100
+    xp: 6000
+
+  yun-tuccari:
+    gorunen-ad: "Yün Tüccarı"
+    kisa-ad: "150 koyun kırp"
+    aciklama: "Makasını kuşan ve 150 koyun kırp."
+    simge: SHEARS
+    tur: PERMANENT
+    beceri: hayvancilik
+    hedef:
+      tur: DEED
+      eylem: koyun-kirpma
+    sayi: 150
+    xp: 4500
+
+  bereket-elleri:
+    gorunen-ad: "Bereketli Eller"
+    kisa-ad: "1000 ekin hasat et"
+    aciklama: "Tarlanı büyüt: toplam 1000 olgun ekin hasat et. Olmamış ekinler sayılmaz."
+    simge: WHEAT
+    tur: PERMANENT
+    beceri: tarimcilik
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [WHEAT, CARROTS, POTATOES, BEETROOTS]
+    sayi: 1000
+    xp: 7000
+
+  nether-bahcivani:
+    gorunen-ad: "Nether Bahçıvanı"
+    kisa-ad: "256 nether mantarı"
+    aciklama: "Nether'da 256 nether mantarı hasat et. Ruh kumu olmadan olmaz."
+    simge: NETHER_WART
+    tur: PERMANENT
+    beceri: tarimcilik
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [NETHER_WART]
+      boyut: NETHER
+    sayi: 256
+    xp: 6000
+
+  orman-katliami:
+    gorunen-ad: "Kızıl Orman"
+    kisa-ad: "200 nether sapı kes"
+    aciklama: "Nether'ın dev mantar ormanlarından 200 sap kes."
+    simge: CRIMSON_STEM
+    tur: PERMANENT
+    beceri: odunculuk
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [CRIMSON_STEM, WARPED_STEM]
+      boyut: NETHER
+    sayi: 200
+    xp: 6600
+
+  kum-firtinasi:
+    gorunen-ad: "Kum Fırtınası"
+    kisa-ad: "800 kum kaz"
+    aciklama: "Çölleri ve plajları tara: toplam 800 kum ya da kızıl kum kaz."
+    simge: SAND
+    tur: PERMANENT
+    beceri: kazicilik
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [SAND, RED_SAND]
+    sayi: 800
+    xp: 5000
 
   # ----- Kalıcı eşya görevleri -----
   esya-muzik-diski:
@@ -767,8 +879,180 @@ gorevler:
     xp: 900
 
   # ===================================================================
+  #  GÜNLÜK HAVUZ - sürü ve tarla
+  # ===================================================================
+  gunluk-ciftlestirme:
+    gorunen-ad: "Günlük Çiftleştirme"
+    kisa-ad: "10 hayvan çiftleştir"
+    aciklama: "Bugün ahırında 10 kez hayvan çiftleştir."
+    simge: WHEAT
+    tur: DAILY
+    beceri: hayvancilik
+    hedef:
+      tur: DEED
+      eylem: ciftlestirme
+    sayi: 10
+    xp: 900
+
+  gunluk-kirpma:
+    gorunen-ad: "Günlük Kırpma"
+    kisa-ad: "20 koyun kırp"
+    aciklama: "Bugün 20 koyun kırp."
+    simge: WHITE_WOOL
+    tur: DAILY
+    beceri: hayvancilik
+    hedef:
+      tur: DEED
+      eylem: koyun-kirpma
+    sayi: 20
+    xp: 800
+
+  gunluk-evcillestirme:
+    gorunen-ad: "Günlük Dostluk"
+    kisa-ad: "2 hayvan evcilleştir"
+    aciklama: "Bugün 2 hayvan evcilleştir - kurt, kedi, at, hepsi sayılır."
+    simge: BONE
+    tur: DAILY
+    beceri: hayvancilik
+    hedef:
+      tur: DEED
+      eylem: evcillestirme
+    sayi: 2
+    xp: 1100
+
+  gunluk-tarla-hasadi:
+    gorunen-ad: "Günlük Hasat Turu"
+    kisa-ad: "128 ekin hasat et"
+    aciklama: "Bugün tarlandan 128 olgun buğday, havuç, patates ya da pancar hasat et."
+    simge: GOLDEN_HOE
+    tur: DAILY
+    beceri: tarimcilik
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [WHEAT, CARROTS, POTATOES, BEETROOTS]
+    sayi: 128
+    xp: 900
+
+  gunluk-bostan:
+    gorunen-ad: "Günlük Bostan"
+    kisa-ad: "64 kabak/karpuz kır"
+    aciklama: "Bugün 64 balkabağı ya da karpuz topla."
+    simge: PUMPKIN
+    tur: DAILY
+    beceri: tarimcilik
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [PUMPKIN, MELON]
+    sayi: 64
+    xp: 850
+
+  gunluk-kil-toplama:
+    gorunen-ad: "Günlük Kil Toplama"
+    kisa-ad: "64 kil kaz"
+    aciklama: "Bugün nehir yataklarından 64 kil çıkar."
+    simge: CLAY
+    tur: DAILY
+    beceri: kazicilik
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [CLAY]
+    sayi: 64
+    xp: 900
+
+  gunluk-agac-kesimi:
+    gorunen-ad: "Günlük Kereste"
+    kisa-ad: "120 kütük kes"
+    aciklama: "Bugün 120 kütük kes. Ağaç türü fark etmez."
+    simge: IRON_AXE
+    tur: DAILY
+    beceri: odunculuk
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [OAK_LOG, SPRUCE_LOG, BIRCH_LOG, JUNGLE_LOG, ACACIA_LOG, DARK_OAK_LOG, MANGROVE_LOG, CHERRY_LOG, PALE_OAK_LOG]
+    sayi: 120
+    xp: 950
+
+  # ===================================================================
   #  HAFTALIK HAVUZ - her hafta 2 tanesi rastgele atanır
   # ===================================================================
+  haftalik-suru-buyutme:
+    gorunen-ad: "Haftalık Sürü Büyütme"
+    kisa-ad: "40 hayvan çiftleştir"
+    aciklama: "Bir hafta boyunca 40 kez hayvan çiftleştir."
+    simge: HAY_BLOCK
+    tur: WEEKLY
+    beceri: hayvancilik
+    hedef:
+      tur: DEED
+      eylem: ciftlestirme
+    sayi: 40
+    xp: 3600
+
+  haftalik-yun-hasadi:
+    gorunen-ad: "Haftalık Yün Hasadı"
+    kisa-ad: "80 koyun kırp"
+    aciklama: "Bir hafta boyunca 80 koyun kırp."
+    simge: SHEARS
+    tur: WEEKLY
+    beceri: hayvancilik
+    hedef:
+      tur: DEED
+      eylem: koyun-kirpma
+    sayi: 80
+    xp: 3200
+
+  haftalik-tarla:
+    gorunen-ad: "Haftalık Tarla"
+    kisa-ad: "400 ekin hasat et"
+    aciklama: "Bir hafta boyunca 400 olgun ekin hasat et."
+    simge: WHEAT
+    tur: WEEKLY
+    beceri: tarimcilik
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [WHEAT, CARROTS, POTATOES, BEETROOTS, NETHER_WART]
+    sayi: 400
+    xp: 4000
+
+  haftalik-toprak-kazma:
+    gorunen-ad: "Haftalık Toprak İşi"
+    kisa-ad: "1000 toprak kaz"
+    aciklama: "Bir hafta boyunca 1000 toprak, kum ya da çakıl kaz."
+    simge: IRON_SHOVEL
+    tur: WEEKLY
+    beceri: kazicilik
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [DIRT, GRASS_BLOCK, COARSE_DIRT, SAND, RED_SAND, GRAVEL]
+    sayi: 1000
+    xp: 3800
+
+  haftalik-kereste:
+    gorunen-ad: "Haftalık Kereste"
+    kisa-ad: "500 kütük kes"
+    aciklama: "Bir hafta boyunca 500 kütük kes."
+    simge: OAK_LOG
+    tur: WEEKLY
+    beceri: odunculuk
+    hedef:
+      tur: BLOCK_BREAK
+      malzemeler: [OAK_LOG, SPRUCE_LOG, BIRCH_LOG, JUNGLE_LOG, ACACIA_LOG, DARK_OAK_LOG, MANGROVE_LOG, CHERRY_LOG, PALE_OAK_LOG]
+    sayi: 500
+    xp: 4200
+
+  haftalik-maden-sandiklari:
+    gorunen-ad: "Haftalık Maden Talanı"
+    kisa-ad: "5 maden sandığı aç"
+    aciklama: "Bir hafta boyunca terk edilmiş madenlerde 5 raylı sandık bul ve aç."
+    simge: CHEST_MINECART
+    tur: WEEKLY
+    beceri: madencilik
+    hedef:
+      tur: DEED
+      eylem: maden-sandigi
+    sayi: 5
+    xp: 3800
+
   haftalik-zombi-avi:
     gorunen-ad: "Haftalık Zombi Avı"
     kisa-ad: "100 zombi öldür"

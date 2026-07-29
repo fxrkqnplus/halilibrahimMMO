@@ -13,6 +13,13 @@ import org.bukkit.Material;
  * {@link AbilityEffectType#DAMAGE_BUFF}, a 0-1 chance for
  * {@link AbilityEffectType#EXTRA_DROP_CHANCE} and a 0-1 minimum open-air ratio
  * for {@link AbilityEffectType#ORE_REVEAL}'s "wide mine" precondition.
+ *
+ * <p>{@code energyPerBlock} is the per-block running cost of a sweep ability
+ * ({@code EXCAVATE}/{@code TREE_FELL}/{@code VEIN_MINE}): energy is spent as
+ * the sweep progresses and the sweep stops the moment the player runs out, so
+ * "how much can I fell in one go" is answered by the energy bar rather than by
+ * a flat block limit alone. {@code 0} restores the older behaviour of paying
+ * only {@code energyCost} up front.</p>
  */
 public record AbilityDefinition(
         String id,
@@ -31,6 +38,7 @@ public record AbilityDefinition(
         String classId,
         AbilityActivationMode mode,
         int energyPerHit,
+        int energyPerBlock,
         AbilityVisual visual
 ) {
 }

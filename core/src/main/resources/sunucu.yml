@@ -1,0 +1,30 @@
+# =====================================================================
+#  HalilIbrahimMMO - Sunucu Kolaylıkları
+# =====================================================================
+#  Burada yalnızca DAVRANIŞ ayarları vardır. Oyuncunun ekranda gördüğü
+#  metinlerin tamamı (sunucu adı, adres, TAB başlığı, harita linki)
+#  messages.yml içindeki "tab:" ve "harita:" bölümlerindedir - orayı
+#  düzenleyin.
+#
+#  Bu dosyayı değiştirdikten sonra /haliladmin panelindeki "Yeniden Yükle"
+#  düğmesiyle anında uygulayabilirsiniz.
+# =====================================================================
+
+uyku:
+  # true iken gece yatağa giren TEK bir oyuncu bile sabahı getirir; vanilla'nın
+  # "oyuncuların %X'i uyumalı" kuralı beklenmez. Oyuncu yatakta yeterince
+  # kaldıktan sonra (vanilla'nın kendi derin uyku anı) tetiklenir.
+  tek-kisi-yeter: true
+  # Sabah olurken yağmur/fırtına da dinsin mi? (Vanilla'da uyumak zaten havayı
+  # temizler; false yaparsanız yalnızca saat ilerler.)
+  hava-durumunu-temizle: true
+  # Sabaha geçildiğinde o dünyadaki herkese duyuru gönderilsin mi?
+  duyuru-yapilsin: true
+
+tab-listesi:
+  # TAB tuşuna basılı tutulduğunda görünen listenin başlık/alt bilgi alanını
+  # ve oyuncu adlarını eklentinin yönetip yönetmeyeceği.
+  etkin: true
+  # Başlık/alt bilgi kaç saniyede bir yenilensin. TPS ve ping canlı değerler
+  # olduğu için düşük tutulur; 1'in altına inilemez.
+  yenileme-saniye: 2

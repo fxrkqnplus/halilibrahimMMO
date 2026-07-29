@@ -112,10 +112,13 @@ public final class YamlPrestigeService implements PrestigeService {
             if (definition != null) {
                 // A class may power several skills (Tabiat Vârisi powers four).
                 // The weakest one is what the single "synergy skill" condition
-                // reports, so "at the cap" keeps meaning *all* of them are.
+                // reports, so the requirement keeps meaning *all* of them are
+                // there - and the level asked for is the class's own
+                // prestij-sinerji-seviyesi, not a single global cap.
                 synergySkillLevel = definition.synergySkillIds().stream()
                         .mapToInt(skillId -> skills.cached(playerId, skillId).map(progress -> progress.level()).orElse(1))
                         .min().orElse(1);
+                synergySkillCap = definition.prestigeSynergyLevel();
             }
         }
         return new PrestigeEligibilityInput(

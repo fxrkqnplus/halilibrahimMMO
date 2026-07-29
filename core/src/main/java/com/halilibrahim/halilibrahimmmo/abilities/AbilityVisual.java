@@ -23,11 +23,14 @@ public record AbilityVisual(
         float volume,
         float pitch,
         Optional<Particle> particle,
-        int particleCount
+        int particleCount,
+        AbilityVisualShape shape,
+        Optional<Sound> echoSound
 ) {
 
     /** The neutral visual an ability with no {@code gorsel} section gets. */
     public static AbilityVisual defaults() {
-        return new AbilityVisual(AbilityColor.BEYAZ, Optional.empty(), 1.0F, 1.0F, Optional.empty(), 0);
+        return new AbilityVisual(AbilityColor.BEYAZ, Optional.empty(), 1.0F, 1.0F, Optional.empty(), 0,
+                AbilityVisualShape.PATLAMA, Optional.empty());
     }
 }

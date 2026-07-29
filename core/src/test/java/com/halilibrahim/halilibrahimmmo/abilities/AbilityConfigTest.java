@@ -10,10 +10,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -34,6 +36,9 @@ final class AbilityConfigTest {
      * for {@code Material#isBlock()}.
      */
     private static final Set<String> SUPPORTED_TOOL_TAGS = Set.of("PICKAXE", "AXE", "SHOVEL", "SWORD", "HOE", "ANY");
+
+    /** The four rungs every class's ability line is built on, weakest to strongest. */
+    private static final List<Integer> EXPECTED_UNLOCK_LEVELS = List.of(10, 20, 35, 50);
 
     private static final Set<String> SOUND_NAMES = constantNames("org.bukkit.Sound");
     private static final Set<String> PARTICLE_NAMES = constantNames("org.bukkit.Particle");
@@ -59,10 +64,42 @@ final class AbilityConfigTest {
                 assertTrue(ratio > 0 && ratio < 1, id + " must declare etki.acik-alan-orani in (0, 1)");
             }
             if (effect == AbilityEffectType.ORE_REVEAL || effect == AbilityEffectType.KNOCKBACK_SLAM
-                    || effect == AbilityEffectType.GROWTH_SURGE || effect == AbilityEffectType.LOVE_CALL) {
+                    || effect == AbilityEffectType.GROWTH_SURGE || effect == AbilityEffectType.LOVE_CALL
+                    || effect == AbilityEffectType.BLAST_MINE) {
                 assertTrue(ability.getInt("etki.yaricap", 0) > 0, id + " must declare a positive etki.yaricap");
             }
+            if (effect == AbilityEffectType.LIFE_STEAL) {
+                double ratio = ability.getDouble("etki.can-orani", -1);
+                assertTrue(ratio > 0 && ratio <= 1, id + " must declare etki.can-orani in (0, 1]");
+            }
+            assertTrue(ability.getInt("enerji-blok-basi", 0) >= 0, id + " has a negative enerji-blok-basi");
             assertVisual(ability.getConfigurationSection("gorsel"), id);
+        }
+    }
+
+    /**
+     * The shape every class's ability line is designed around: exactly four
+     * abilities, unlocking at 10/20/35/50.
+     *
+     * <p>{@code AbilitiesMenu} lays out four fixed pedestals and four rung
+     * markers, so a fifth ability would simply never be shown and a class with
+     * three would leave a hole. Both failures are invisible until somebody opens
+     * the screen - which is exactly the kind of thing a config test is for.</p>
+     */
+    @Test
+    void everyClassHasFourAbilitiesOnTheSameRungs() {
+        YamlConfiguration abilities = load("abilities.yml");
+        YamlConfiguration classes = load("classes.yml");
+        ConfigurationSection definitions = abilities.getConfigurationSection("kabiliyetler");
+        ConfigurationSection classSection = classes.getConfigurationSection("siniflar");
+        assertNotNull(classSection);
+        for (String classId : classSection.getKeys(false)) {
+            List<Integer> levels = definitions.getKeys(false).stream()
+                    .filter(id -> classId.equals(definitions.getString(id + ".sinif")))
+                    .map(id -> definitions.getInt(id + ".gerekli-seviye"))
+                    .sorted()
+                    .toList();
+            assertEquals(EXPECTED_UNLOCK_LEVELS, levels, classId + " must own exactly four abilities at 10/20/35/50");
         }
     }
 
@@ -90,6 +127,10 @@ final class AbilityConfigTest {
         assertNotNull(visual, id + " is missing its gorsel section");
         assertDoesNotThrow(() -> AbilityColor.valueOf(visual.getString("renk", "")), id + " has an unknown gorsel.renk");
         assertTrue(SOUND_NAMES.contains(visual.getString("ses", "")), id + " has an unknown gorsel.ses");
+        String echo = visual.getString("yanki-ses", "");
+        assertTrue(echo.isEmpty() || SOUND_NAMES.contains(echo), id + " has an unknown gorsel.yanki-ses");
+        assertDoesNotThrow(() -> AbilityVisualShape.valueOf(visual.getString("sekil", "PATLAMA")),
+                id + " has an unknown gorsel.sekil");
         assertTrue(PARTICLE_NAMES.contains(visual.getString("partikul", "")), id + " has an unknown gorsel.partikul");
         assertTrue(visual.getInt("partikul-sayisi", -1) >= 0, id + " has a negative gorsel.partikul-sayisi");
         assertTrue(visual.getDouble("ses-seviyesi", 0) > 0, id + " has a non-positive gorsel.ses-seviyesi");

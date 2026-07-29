@@ -45,6 +45,8 @@ import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.classes.TalentNodeDefinition;
 import com.halilibrahim.halilibrahimmmo.api.classes.TalentNodeSnapshot;
 import com.halilibrahim.halilibrahimmmo.prestige.PrestigeService;
+import com.halilibrahim.halilibrahimmmo.server.ServerInfoService;
+import com.halilibrahim.halilibrahimmmo.server.TabListService;
 
 import java.util.Collection;
 import java.util.List;
@@ -77,6 +79,8 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
     private final WealthService wealth;
     private final BossService bosses;
     private final ModVerificationService modVerification;
+    private final ServerInfoService serverInfo;
+    private final TabListService tabList;
 
     public HalilIbrahimMMOApiImpl(
             HalilIbrahimMMOPlugin plugin,
@@ -97,7 +101,9 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
             FeedbackService feedback,
             WealthService wealth,
             BossService bosses,
-            ModVerificationService modVerification
+            ModVerificationService modVerification,
+            ServerInfoService serverInfo,
+            TabListService tabList
     ) {
         this.plugin = plugin;
         this.configService = configService;
@@ -118,6 +124,8 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
         this.wealth = wealth;
         this.bosses = bosses;
         this.modVerification = modVerification;
+        this.serverInfo = serverInfo;
+        this.tabList = tabList;
     }
 
     @Override
@@ -152,6 +160,11 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
             feedback.reload();
             wealth.reload();
             bosses.reload();
+            serverInfo.reload();
+            // Must follow serverInfo: the TAB refresh loop is restarted against
+            // the interval that was just read, and stops entirely if the file
+            // now disables it.
+            tabList.reload();
             // Reloading the mod list deliberately does not re-verify players who are
             // already online; it only changes what the next join is judged against.
             modVerification.reload();

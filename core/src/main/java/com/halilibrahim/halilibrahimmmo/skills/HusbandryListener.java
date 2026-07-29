@@ -6,6 +6,8 @@ import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -89,6 +91,7 @@ public final class HusbandryListener implements Listener {
         }
         award(player, SkillAction.HAYVAN_CIFTLESTIRME, null);
         refundBreedingFood(player, event.getBredWith());
+        spawnTwinIfLucky(player, event);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -179,6 +182,35 @@ public final class HusbandryListener implements Listener {
             player.getInventory().addItem(refund).values()
                     .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
             messages.send(player, MessageKey.HUSBANDRY_BREED_REFUND, Map.of("miktar", Integer.toString(BREED_REFUND_AMOUNT)));
+        }, null);
+    }
+
+    /**
+     * The hayvancılık {@code BREED_TWIN} milestone: one breeding occasionally
+     * produces a second baby.
+     *
+     * <p>Spawned as a copy of the baby that was actually born rather than of
+     * either parent, so a mooshroom stays a mooshroom and a bred variant is not
+     * silently normalised. It is deliberately <em>not</em> put into love mode or
+     * given any head start - it is an extra animal, not a shortcut past the
+     * growing-up timer.</p>
+     */
+    private void spawnTwinIfLucky(Player player, EntityBreedEvent event) {
+        double chance = skills.milestoneModifiers(player.getUniqueId()).breedTwinChance();
+        Entity newborn = event.getEntity();
+        if (chance <= 0 || !(newborn instanceof Ageable)) {
+            return;
+        }
+        if (ThreadLocalRandom.current().nextDouble() >= chance) {
+            return;
+        }
+        newborn.getScheduler().run(plugin, task -> {
+            Entity twin = newborn.getWorld().spawnEntity(newborn.getLocation(), newborn.getType());
+            if (twin instanceof Ageable twinAge) {
+                twinAge.setBaby();
+            }
+            newborn.getWorld().spawnParticle(Particle.HEART, newborn.getLocation().add(0, 0.6D, 0), 8, 0.3D, 0.3D, 0.3D, 0.0D);
+            messages.send(player, MessageKey.HUSBANDRY_BREED_TWIN);
         }, null);
     }
 

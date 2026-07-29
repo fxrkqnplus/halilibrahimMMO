@@ -108,6 +108,29 @@ public final class CachedWealthService implements WealthService {
         }
     }
 
+    /**
+     * Rides the same serial chain {@link #award} uses rather than writing
+     * straight through: an admin correction landing in the same tick as an
+     * organic award must not be silently undone by it, in either order.
+     */
+    @Override
+    public CompletableFuture<Long> adminSetTotal(UUID playerId, long total) {
+        long clamped = Math.max(0L, total);
+        synchronized (updateChains) {
+            CompletableFuture<Optional<WealthAward>> previous =
+                    updateChains.getOrDefault(playerId, CompletableFuture.completedFuture(Optional.empty()));
+            CompletableFuture<Optional<WealthAward>> next = previous
+                    .handle((ignoredValue, ignoredThrowable) -> null)
+                    .thenCompose(ignored -> repository.save(playerId, clamped).thenApply(saved -> {
+                        cache.put(playerId, clamped);
+                        return Optional.empty();
+                    }));
+            updateChains.put(playerId, next);
+            next.whenComplete((ignored, throwable) -> updateChains.remove(playerId, next));
+            return next.thenApply(ignored -> clamped);
+        }
+    }
+
     private CompletableFuture<Optional<WealthAward>> awardNow(UUID playerId, long amount) {
         return load(playerId).thenCompose(previousTotal -> {
             long newTotal = previousTotal + amount;

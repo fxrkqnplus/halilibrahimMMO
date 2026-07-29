@@ -8,7 +8,10 @@ import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.wealth.WealthAwardHandler;
 import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -86,9 +89,25 @@ public final class BossListener implements Listener {
         messages.broadcast(rarity.get().deathBroadcastKey(), Map.of("isim", name, "oyuncu", killer.getName()));
         Bukkit.getOnlinePlayers().forEach(online ->
                 online.getScheduler().run(plugin, task -> feedback.celebrateBossDefeated(online), null));
+        celebrateAtCorpse(entity);
         awardClassExperience(killer, tier);
         wealth.award(killer.getUniqueId(), tier.wealthReward())
                 .thenAccept(award -> wealthAwards.handle(killer, award));
+    }
+
+    /**
+     * The visible half of a boss falling. The death cue is a sound every online
+     * player hears, which tells the server <em>that</em> it happened; this marks
+     * <em>where</em>, for the people who actually went and fought it. Spawned at
+     * the corpse rather than on the killer, so a whole raid party sees the same
+     * thing in the same place.
+     */
+    private void celebrateAtCorpse(LivingEntity entity) {
+        Location at = entity.getLocation().add(0, 1, 0);
+        at.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, at, 3, 1.0D, 0.6D, 1.0D, 0.0D);
+        at.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, at, 120, 1.4D, 1.0D, 1.4D, 0.4D);
+        at.getWorld().spawnParticle(Particle.END_ROD, at, 60, 0.8D, 1.2D, 0.8D, 0.15D);
+        at.getWorld().playSound(at, Sound.ENTITY_WITHER_DEATH, 1.0F, 1.2F);
     }
 
     /** Goes through the ordinary class-XP path, so a boss kill levels a class exactly like anything else does. */

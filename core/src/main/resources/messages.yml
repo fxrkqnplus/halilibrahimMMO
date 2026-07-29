@@ -46,9 +46,23 @@ yonetici:
   debug-kapatildi: "<yellow>Hata ayıklama modu <white>kapatıldı</white>.</yellow>"
   boss-cagirildi: "<gold><simge:boss> Dünya bossu çağırıldı:</gold> <white><isim></white> <gray>(koordinatlar sohbete duyuruldu)</gray>"
   boss-oyuncu-yok: "<red>Boss çağırmak için normal dünyada en az bir oyuncu çevrimiçi olmalı.</red>"
+  # Yonetici panelinden zenginlik ayarlama akisi: dugmeye tiklaninca ekran
+  # kapanir, admin sohbete sayiyi yazar. Bu, tikla-arttir satirlarinin
+  # yetmedigi tek alan (zenginlik totalleri milyonlara ciker).
+  zenginlik-sor: "<gold><simge:zenginlik> Yeni zenginlik puanını sohbete yaz.</gold> <gray>Sadece sayı, örn: <white>250000</white></gray>"
+  zenginlik-ayarlandi: "<green><simge:tamam> <oyuncu> oyuncusunun zenginliği <white><zenginlik></white> olarak ayarlandı.</green>"
+  zenginlik-gecersiz: "<red>Bu bir sayı değil:</red> <white><deger></white>"
   oyuncu:
     bilgi: "<gold><oyuncu></gold> <dark_gray>•</dark_gray> <gray>Güç:</gray> <white><seviye></white> <dark_gray>|</dark_gray> <gray>Prestij:</gray> <white><prestij></white> <dark_gray>|</dark_gray> <gray>Sınıf:</gray> <white><sinif></white> <dark_gray>|</dark_gray> <gray>Beceriler:</gray> <white><beceriler></white>"
     bilgi-sinifsiz: "<gold><oyuncu></gold> <dark_gray>•</dark_gray> <gray>Güç:</gray> <white><seviye></white> <dark_gray>|</dark_gray> <gray>Prestij:</gray> <white><prestij></white> <dark_gray>|</dark_gray> <gray>Sınıf:</gray> <white>Seçilmedi</white> <dark_gray>|</dark_gray> <gray>Beceriler:</gray> <white><beceriler></white>"
+
+# Bir arayuz oyuncudan sohbete tek satir yazmasini istediginde kullanilir
+# (su an yalnizca yonetici panelindeki zenginlik alani). Yazilan satir
+# sohbete DUSMEZ, dogrudan arayuze gider.
+sohbet-giris:
+  iptal-ipucu: "<gray>Vazgeçmek için <white>iptal</white> yaz.</gray>"
+  iptal-edildi: "<yellow>İşlem iptal edildi.</yellow>"
+  suresi-doldu: "<red>Çok geç kaldın, soru zaman aşımına uğradı.</red>"
 
 # "/mmo" komutuna ait mesajlar (aktivasyon akisi).
 mmo:
@@ -101,10 +115,46 @@ sidebar:
   onboarding-kabiliyet: "<gray>• Kabiliyetlerini incele</gray>"
   onboarding-beceri-komutu: "<gray>• Beceri komutlarını incele (/madencilik, /avcılık vb.)</gray>"
 
+# "/profil <oyuncu>" ile aranan oyuncu hicbir kayitta bulunamadiginda.
+profil:
+  oyuncu-bulunamadi: "<red>Böyle bir oyuncu bulunamadı:</red> <white><oyuncu></white>"
+
 # "/panel" komutuna ait mesajlar.
 panel:
   acildi: "<green>Bilgi ekranı açıldı.</green>"
   kapatildi: "<yellow>Bilgi ekranı kapatıldı.</yellow>"
+
+# Tek bir oyuncu yatakta geceyi tamamladiginda o dunyadaki herkese gider.
+# Acilip kapanmasi sunucu.yml -> uyku.duyuru-yapilsin ile yonetilir.
+uyku:
+  gece-atlandi: "<aqua><simge:bilgi> <oyuncu> geceyi devirdi.</aqua> <gray>Herkese hayırlı sabahlar!</gray>"
+
+# "/harita" ("/map") komutu.
+# NOT: Adres iki yerde birden geçer - biri tıklanan bağlantı (click:open_url
+# etiketinin içi), digeri ekranda okunan metin. Adresi degistirirken İKİSİNİ
+# birden degistirin. Yer tutucu kullanilamaz: MiniMessage etiket argumanlari
+# duz metin olmak zorundadir.
+harita:
+  link: "<green><simge:liderlik> Canlı oyuniçi harita linki:</green> <click:open_url:'https://harita.fxrkqn.org:8100'><aqua><underlined>https://harita.fxrkqn.org:8100</underlined></aqua></click> <gray>(tıkla)</gray>"
+
+# =====================================================================
+#  TAB listesi (TAB tuşuna basılı tutulduğunda görünen ekran)
+# =====================================================================
+#  Başlık ve alt bilgi <newline> ile satırlara ayrılır.
+#  Yer tutucular: <cevrimici> <maksimum> <tps> <ping>
+#  Alt bilgi üç ayrı satırdır ve hangisinin kullanılacağını sunucunun anlık
+#  TPS'i belirler: 19+ sağlıklı, 15-19 yoğun, 15 altı yavaş. Renkleri
+#  buradan değiştirebilirsiniz.
+#  Sunucu adı ve adresi doğrudan aşağıdaki metinlerin içindedir.
+tab:
+  baslik: "<newline><gradient:#7C3AED:#3B82F6><bold><simge:kutlama> HALİL İBRAHİM MMO</bold></gradient><newline><gray>Türkiye'nin beceri odaklı hayatta kalma sunucusu</gray><newline><dark_gray>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</dark_gray><newline><gray>Çevrimiçi:</gray> <white><cevrimici></white><dark_gray>/</dark_gray><gray><maksimum></gray>"
+  altbilgi-saglikli: "<dark_gray>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</dark_gray><newline><gray>TPS:</gray> <green><tps></green> <dark_gray>|</dark_gray> <gray>Ping:</gray> <green><ping> ms</green><newline><yellow><bold>oyna.fxrkqn.org</bold></yellow><newline><gray>Canlı harita:</gray> <aqua>/harita</aqua><newline>"
+  altbilgi-yogun: "<dark_gray>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</dark_gray><newline><gray>TPS:</gray> <yellow><tps></yellow> <dark_gray>|</dark_gray> <gray>Ping:</gray> <yellow><ping> ms</yellow><newline><yellow><bold>oyna.fxrkqn.org</bold></yellow><newline><gray>Canlı harita:</gray> <aqua>/harita</aqua><newline>"
+  altbilgi-yavas: "<dark_gray>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</dark_gray><newline><gray>TPS:</gray> <red><tps></red> <dark_gray>|</dark_gray> <gray>Ping:</gray> <red><ping> ms</red><newline><yellow><bold>oyna.fxrkqn.org</bold></yellow><newline><gray>Canlı harita:</gray> <aqua>/harita</aqua><newline>"
+  # Oyuncu satiri. Unvani olan oyuncularda bu metnin ONUNE, unvanin kendi
+  # renginde bir "[Unvan] " etiketi eklenir - o etiket koddan uretilir, cunku
+  # her unvanin rengi titles.yml'de kendine aittir.
+  oyuncu: "<white><oyuncu></white> <dark_gray>|</dark_gray> <gold><simge:guc> <guc></gold>"
 
 enerji:
   durum: "<aqua><simge:enerji> Enerji:</aqua> <white><mevcut></white><gray>/</gray><white><maksimum></white>"
@@ -114,6 +164,10 @@ kabiliyet:
   kilitli: "<red><kabiliyet> için <seviye>. sınıf seviyesine ulaşmalısın.</red>"
   yetersiz-enerji: "<red><kabiliyet> için yeterli enerjin yok.</red> <gray>Gereken: <gereken>, mevcut: <mevcut></gray>"
   bekleme: "<yellow><kabiliyet> yeniden kullanılabilir olmadan önce <sure> beklemelisin.</yellow>"
+  # Bekleme suresi dolmamisken sag tiklandiginda eylem cubugunda gorunur;
+  # sohbete hicbir sey gitmez, cunku bu tiklama cogunlukla kaza eseridir.
+  bekleme-eylem-cubugu: "<yellow><simge:kabiliyet> <kabiliyet></yellow> <dark_gray>•</dark_gray> <gray>Hazır olmasına <white><sure></white> var</gray>"
+  enerji-bitti: "<yellow><simge:enerji> Enerjin tükendi,</yellow> <white><kabiliyet></white> <gray><sayi> blokta sona erdi.</gray>"
   kuruldu: "<green><kabiliyet> kuruldu.</green> <gray><sure> içinde uygun bir blok kır.</gray>"
   etkin: "<green><kabiliyet> etkin.</green> <gray><sure> boyunca PvE hasarın güçlendi.</gray>"
   etkin-genel: "<green><kabiliyet> etkin.</green> <gray><sure> sürecek.</gray>"
@@ -121,6 +175,7 @@ kabiliyet:
   etkin-cevher: "<green><simge:madencilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> cevher <sure> boyunca parlıyor.</gray>"
   etkin-filiz: "<green><simge:tarimcilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> ekin bir anda olgunlaştı.</gray>"
   etkin-suru: "<green><simge:hayvancilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> hayvan çağrına karşılık verdi.</gray>"
+  etkin-kan: "<dark_red><simge:can> <kabiliyet> etkin.</dark_red> <gray><sure> boyunca yaratıklara verdiğin hasarın <white>%<yuzde></white> kadarı cana dönüşüyor.</gray>"
   maden-gerekli: "<red><simge:uyari> <kabiliyet> yalnızca geniş, üstü kapalı bir madende kullanılabilir.</red>"
   agac-gerekli: "<red><simge:uyari> <kabiliyet> yalnızca gerçek bir ağacın kök kütüğünde çalışır - binalarda değil.</red>"
   yanlis-sinif: "<red><kabiliyet> kabiliyetini kullanmak için doğru sınıfa sahip olmalısın.</red>"
@@ -132,6 +187,7 @@ kabiliyet:
   onay-aktif: "<yellow><simge:kabiliyet> <kabiliyet> kabiliyetini aktif etmek için tekrar sağ tıkla</yellow>"
   onay-kapat: "<yellow><simge:kabiliyet> <kabiliyet> kabiliyetini kapatmak için tekrar sağ tıkla</yellow>"
   kapatildi: "<yellow><simge:kabiliyet> Kabiliyet kapatıldı.</yellow>"
+  cikarildi: "<yellow><simge:kabiliyet> Kuşandığın kabiliyeti çıkardın.</yellow> <gray>Yeni bir kabiliyet seçmek için bekleme süresi işlemeye devam eder.</gray>"
   geri-sayim: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <white><kalan></white> <dark_gray>•</dark_gray> <aqua><simge:enerji> Enerji <white><mevcut></white><gray>/</gray><white><maksimum></white></aqua>"
   geri-sayim-enerji: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <aqua><simge:enerji> Enerji <white><mevcut></white><gray>/</gray><white><maksimum></white></aqua>"
   geri-sayim-yaratici: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <light_purple>Yaratıcı mod</light_purple> <dark_gray>•</dark_gray> <gray>Kapatmak için çift sağ tıkla</gray>"
@@ -147,9 +203,10 @@ sinif:
   maksimum-rank: "<yellow><yetenek> zaten maksimum rankta.</yellow>"
   puan-yok: "<red>Bu yeteneğin puan havuzunda harcayacak puanın kalmadı.</red>"
 
-# Hayvancilik becerisinin 25. seviyesinde acilan yem iadesi.
+# Hayvancilik becerisinin kilometre taslarinda acilan iki ozellik.
 hayvancilik:
   ciftlestirme-iadesi: "<green><simge:hayvancilik> Şansın yaver gitti!</green> <gray>Çiftleştirme yeminin <white><miktar></white> tanesi sana geri döndü.</gray>"
+  ikiz-dogum: "<green><simge:hayvancilik> İkiz doğum!</green> <gray>Sürüne bir yavru daha katıldı.</gray>"
 
 prestij:
   basarili: "<green>Prestij yaptın! Yeni prestij seviyen: <prestij>.</green> <gray>Sınıf seviyen ve 4 becerin sıfırlandı; karşılığında kalıcı +%25 XP bonusu ve sınıfa özel kalıcı bir bonus kazandın.</gray>"
@@ -392,6 +449,8 @@ gui:
     duzenle-sinif-seviye-aciklama: "<gray>Sol tık +1, Shift+Sol +10 <dark_gray>|</dark_gray> Sağ tık -1, Shift+Sağ -10</gray>"
     duzenle-sinif-xp-oge: "<light_purple><sinif> XP <xp></light_purple>"
     duzenle-sinif-xp-aciklama: "<gray>Sol tık +50 XP, Shift+Sol +500 XP <dark_gray>|</dark_gray> XP azaltmak için seviyeyi ayarla</gray>"
+    duzenle-zenginlik-oge: "<blue><simge:zenginlik> Zenginlik <zenginlik></blue>"
+    duzenle-zenginlik-aciklama: "<gray>Tıkla, yeni değeri sohbete yaz. <dark_gray>Yazdığın sayı toplamın YERİNE geçer (eklenmez).</dark_gray></gray>"
     duzenle-sinifsiz-oge: "<red>Sınıf seçilmedi</red>"
     duzenle-sinif-zorla-oge: "<gold>Sınıfı Zorla Ayarla</gold>"
     duzenle-sinif-zorla-aciklama: "<gray>Bekleme süresi olmadan bir sınıf ata veya sınıfı temizle.</gray>"
@@ -449,6 +508,37 @@ gui:
   topluluk:
     baslik: "<dark_gray>Topluluk</dark_gray>"
 
+  # "/profil <oyuncu>" ile acilan BASKA bir oyuncunun profil ekrani.
+  # Her sayinin yaninda o oyuncunun siralamasi da yazar - bir sayinin anlami
+  # ancak digerlerine gore vardir.
+  oyuncu-profil:
+    baslik: "<dark_gray><simge:guc> <oyuncu></dark_gray>"
+    yukleniyor: "<gray>Yükleniyor...</gray>"
+    baslik-oge: "<gradient:#7C3AED:#3B82F6><bold><oyuncu></bold></gradient>"
+    baslik-aciklama: "<gray><simge:prestij> Prestij <white><prestij></white> <dark_gray>|</dark_gray> <simge:sinif> <white><sinif></white></gray>"
+    guc-oge: "<gold><simge:guc> Güç: <white><guc></white></gold>"
+    zenginlik-oge: "<blue><simge:zenginlik> Zenginlik: <white><zenginlik></white></blue>"
+    sira-aciklama: "<gray>Sıralama: <white>#<sira></white></gray>"
+    sinif-oge: "<red><simge:sinif> <sinif></red>"
+    sinif-aciklama: "<gray>Sınıf seviyesi <white><seviye></white> <dark_gray>|</dark_gray> <simge:xp> <white><xp></white> XP</gray>"
+    sinif-yok: "<gray>Sınıf seçilmemiş</gray>"
+    beceri-oge: "<green><beceri>: <white><seviye></white></green>"
+    yetenek-oge: "<light_purple><simge:kabiliyet> Odak Ağacı</light_purple>"
+    yetenek-satiri: "<gray>• <white><yetenek></white> <dark_gray>(<rank>/<maksimum>)</dark_gray></gray>"
+    kabiliyet-oge: "<yellow><simge:kabiliyet> Kabiliyetler</yellow>"
+    kabiliyet-acik: "<green><simge:tamam> <kabiliyet></green>"
+    kabiliyet-kilitli: "<dark_gray><simge:eksik> <kabiliyet> (Sv. <seviye>)</dark_gray>"
+    unvan-oge: "<gold><simge:unvan> Unvanlar</gold>"
+    kozmetik-oge: "<light_purple><simge:kozmetik> Kozmetikler</light_purple>"
+    acilan-sayi: "<gray>Açılan: <white><acik></white><dark_gray>/</dark_gray><white><toplam></white></gray>"
+    liste-satiri: "<gray>• <white><ad></white></gray>"
+    liste-bos: "<dark_gray>Henüz yok</dark_gray>"
+    takas-oge: "<green><simge:koleksiyon> <oyuncu> ile Takas Yap</green>"
+    takas-aciklama: "<gray>Tıkla, takas daveti gönderilsin.</gray>"
+    takas-kendine: "<dark_gray>Kendinle takas yapamazsın</dark_gray>"
+    takas-cevrimdisi: "<dark_gray>Takas için karşı taraf çevrimiçi olmalı</dark_gray>"
+    takas-kilitli: "<dark_gray>Takas iki tarafta da açık değil</dark_gray>"
+
   profil:
     baslik: "<dark_gray>Profilim</dark_gray>"
     oge: "<gold>Profilin</gold>"
@@ -476,22 +566,42 @@ gui:
   kilometre-tasi:
     baslik: "<dark_gray>Kilometre Taşları</dark_gray>"
     kademe-oge: "<gold>Seviye <seviye></gold>"
-    kademe-aciklama-can: "<gray><simge:can> Kalıcı +<can> can</gray>"
+    # Can, oyuncunun ekranda gordugu birimle - yani KALP olarak - yazilir.
+    # skills.yml icindeki "deger" hala yarim-kalp puanidir (2 puan = 1 kalp);
+    # cevirimi eklenti yapar.
+    kademe-aciklama-can: "<gray><simge:can> Kalıcı +<kalp> kalp</gray>"
     kademe-aciklama-hasar: "<gray><simge:avcilik> Kalıcı yaratıklara karşı +%<yuzde> hasar</gray>"
     kademe-aciklama-enerji: "<gray><simge:enerji> Kalıcı +<enerji> maksimum enerji</gray>"
     kademe-aciklama-acele: "<gray><simge:madencilik> Kalıcı Acele kademesi <kademe></gray>"
     kademe-aciklama-hiz: "<gray>Kalıcı Hız kademesi <kademe></gray>"
     kademe-aciklama-agac-devirme: "<gray><simge:odunculuk> Ağaç devirme: kökündeki kütüğü kestiğinde ağacın tamamı düşer (en fazla <deger> kütük)</gray>"
     kademe-aciklama-yem-iadesi: "<gray><simge:hayvancilik> Çiftleştirme yeminin %<yuzde> ihtimalle geri dönmesi</gray>"
+    kademe-aciklama-ikiz: "<gray><simge:hayvancilik> Her çiftleştirmede %<yuzde> ihtimalle ikinci bir yavru doğar</gray>"
+    kademe-aciklama-cift-dusme: "<gray><simge:xp> Bu becerinin bloklarından %<yuzde> ihtimalle iki kat düşme</gray>"
+    kademe-aciklama-genis-kazi: "<gray><simge:kazicilik> Geniş kazı: bu becerinin bir bloğunu kırdığında çevresindeki 3x3 alan da kazılır (en fazla <deger> blok)</gray>"
+    kademe-aciklama-oto-ekim: "<gray><simge:tarimcilik> Hasat ettiğin olgun ekin %<yuzde> ihtimalle kendini yeniden eker</gray>"
 
+  # Kabiliyet ekrani: her sinifin tam olarak DORT kabiliyeti var ve bunlar
+  # 10/20/35/50. sinif seviyelerinde acilir. Ekran bu dort kademeyi bir
+  # ilerleme cizgisi gibi gosterir.
   kabiliyetler:
     baslik: "<dark_gray><simge:kabiliyet> Kabiliyetlerim</dark_gray>"
+    baslik-oge: "<gold><simge:sinif> <sinif></gold>"
+    baslik-aciklama: "<gray>Sınıf seviyesi <white><seviye></white> <dark_gray>|</dark_gray> Açılan kabiliyet <white><acik></white><dark_gray>/</dark_gray><white><toplam></white></gray>"
+    kademe-acik: "<green><kademe>. Kademe <dark_gray>(Sv. <seviye>)</dark_gray></green>"
+    kademe-kilitli: "<dark_gray><kademe>. Kademe (Sv. <seviye>)</dark_gray>"
     # Not: acik bir kabiliyetin adi, her kabiliyetin abilities.yml'deki kendi
     # "gorsel.renk" degeriyle boyandigi icin buradan degil koddan uretilir.
     oge-aciklama-detay: "<gray><aciklama></gray>"
-    oge-aciklama: "<gray>Gerekli seviye <white><seviye></white> <dark_gray>|</dark_gray> Bekleme <white><bekleme></white> <dark_gray>•</dark_gray> Seçmek için tıkla</gray>"
-    oge-enerji-satiri: "<aqua>Enerji: <white><enerji></white></aqua>"
-    secili-isaret: "<green><simge:tamam> Seçili - uygun alete sağ tıkla</green>"
+    oge-aciklama: "<gray>Gerekli seviye <white><seviye></white> <dark_gray>|</dark_gray> Bekleme <white><bekleme></white></gray>"
+    oge-enerji-satiri: "<aqua><simge:enerji> Başlatma enerjisi: <white><enerji></white></aqua>"
+    oge-enerji-blok-satiri: "<aqua><simge:enerji> Blok başına: <white><enerji></white> enerji <dark_gray>(enerjin bitince süpürme durur)</dark_gray></aqua>"
+    secili-isaret: "<green><simge:tamam> Kuşanıldı - uygun aleti tutup çift sağ tıkla</green>"
+    kusan-ipucu: "<dark_gray>Kuşanmak için tıkla</dark_gray>"
+    cikar-oge: "<red><simge:eksik> Kabiliyeti Çıkar</red>"
+    cikar-aciklama: "<gray>Kuşandığın kabiliyeti bırakır ve çalışan etkisini sonlandırır. <dark_gray>Bekleme süreleri sıfırlanmaz.</dark_gray></gray>"
+    cikar-bos-oge: "<dark_gray>Kuşanılı kabiliyet yok</dark_gray>"
+    cikar-bos-aciklama: "<dark_gray>Önce yukarıdan bir kabiliyet seç.</dark_gray>"
     sinifsiz: "<gray>Önce bir sınıf seçmelisin.</gray>"
     kilitli-oge: "<red><kabiliyet></red>"
     kilitli-aciklama: "<red>Kilitli</red> <gray>- <seviye>. sınıf seviyesinde açılır.</gray>"
@@ -512,7 +622,7 @@ gui:
     # Yetenek agacindaki her arttirilabilir ozelligin uzerine gelindiginde
     # gorunen aciklama satirlari - hangi satirin kullanildigini yetenegin
     # classes.yml'deki "etki.tur" degeri belirler.
-    yetenek-etki-can: "<gray>Her rank <white><simge:can> +<deger> can</white> verir.</gray>"
+    yetenek-etki-can: "<gray>Her rank <white><simge:can> +<kalp> kalp</white> verir.</gray>"
     yetenek-etki-hasar: "<gray>Her rank yaratıklara karşı <white>+%<yuzde> hasar</white> verir.</gray>"
     yetenek-etki-enerji: "<gray>Her rank <white><simge:enerji> +<deger> maksimum enerji</white> verir.</gray>"
     yetenek-etki-kabiliyet-enerji: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin enerji maliyetini <white>%<yuzde></white> azaltır.</gray>"
@@ -522,6 +632,7 @@ gui:
     yetenek-etki-kabiliyet-guc: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin etkisini <white>%<yuzde></white> güçlendirir.</gray>"
     yetenek-mevcut-etki: "<dark_gray>Şu anki toplam: <white><deger></white></dark_gray>"
     yetenek-mevcut-etki-yuzde: "<dark_gray>Şu anki toplam: <white>%<deger></white></dark_gray>"
+    yetenek-mevcut-etki-kalp: "<dark_gray>Şu anki toplam: <white><kalp> kalp</white></dark_gray>"
     # Yetenek agaci iki bloga ayrilir; bunlar o bloklarin baslik ogeleridir.
     yetenek-kategori-ozellik: "<gold><simge:guc> Özellik Yetenekleri</gold>"
     yetenek-kategori-ozellik-aciklama: "<gray>Sağdaki yetenekler <white>özellik puanı</white> ile açılır: can, hasar ve enerji.</gray>"
@@ -540,7 +651,7 @@ gui:
     durum-hazir: "<green><simge:tamam> Şu anda sınıf değiştirebilirsin.</green>"
     durum-bekleme: "<red><simge:eksik> Sınıf değiştirebilmen için <white><sure></white> geçmesi gerekiyor.</red>"
     mevcut-sinif-isareti: "<green><simge:tamam> Şu anki sınıfın</green>"
-    yetenek-satiri: "<gray>- <white><kabiliyet></white></gray>"
+    yetenek-satiri: "<gray>- <white><kabiliyet></white> <dark_gray>(Sv. <seviye>)</dark_gray></gray>"
     aciklama-avci: "<gray>Canavarların korkulu rüyası, amansız bir dövüşçü. Avcılıktan ekstra XP kazanır.</gray>"
     aciklama-madenci: "<gray>Mağaraların derinliklerinde yaşayan bir cevher ustası. Madencilikten ekstra XP kazanır.</gray>"
     aciklama-tabiat-varisi: "<gray>Toprağın, ormanın, tarlanın ve sürünün tek vârisi. Odunculuk, kazıcılık, tarımcılık ve hayvancılığın DÖRDÜNDEN birden ekstra XP kazanır; kabiliyetleri de bu dört becerinin her birine bir tane düşer.</gray>"

@@ -22,6 +22,7 @@ import com.halilibrahim.halilibrahimmmo.command.PrestigeCommand;
 import com.halilibrahim.halilibrahimmmo.command.QuestCommand;
 import com.halilibrahim.halilibrahimmmo.command.RandomTeleportCommand;
 import com.halilibrahim.halilibrahimmmo.command.HomeCommand;
+import com.halilibrahim.halilibrahimmmo.command.MapCommand;
 import com.halilibrahim.halilibrahimmmo.command.SkillDetailCommand;
 import com.halilibrahim.halilibrahimmmo.command.SkillsCommand;
 import com.halilibrahim.halilibrahimmmo.command.TitleCommand;
@@ -74,6 +75,7 @@ import com.halilibrahim.halilibrahimmmo.exploit.PlacedBlockTracker;
 import com.halilibrahim.halilibrahimmmo.energy.PlayerEnergyService;
 import com.halilibrahim.halilibrahimmmo.feedback.BossBarFeedbackService;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
+import com.halilibrahim.halilibrahimmmo.gui.ChatPromptService;
 import com.halilibrahim.halilibrahimmmo.gui.GuiListener;
 import com.halilibrahim.halilibrahimmmo.gui.GuiServices;
 import com.halilibrahim.halilibrahimmmo.gui.TradeScreenBridge;
@@ -112,6 +114,10 @@ import com.halilibrahim.halilibrahimmmo.quests.QuestDiscoveryListener;
 import com.halilibrahim.halilibrahimmmo.quests.QuestListener;
 import com.halilibrahim.halilibrahimmmo.quests.QuestRepository;
 import com.halilibrahim.halilibrahimmmo.quests.QuestService;
+import com.halilibrahim.halilibrahimmmo.server.ServerInfoService;
+import com.halilibrahim.halilibrahimmmo.server.SleepListener;
+import com.halilibrahim.halilibrahimmmo.server.TabListService;
+import com.halilibrahim.halilibrahimmmo.server.YamlServerInfoService;
 import com.halilibrahim.halilibrahimmmo.scoreboard.ScoreboardSidebarService;
 import com.halilibrahim.halilibrahimmmo.scoreboard.SidebarListener;
 import com.halilibrahim.halilibrahimmmo.scoreboard.SidebarService;
@@ -183,6 +189,9 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             PlacedBlockTracker placedBlockTracker = new PlacedBlockTracker(this);
             ConfigService configService = startService(new YamlConfigService(this, pluginLogger), ConfigService.class);
             MessageService messageService = startService(new MiniMessageService(this, pluginLogger), MessageService.class);
+            // Behaviour switches only (sleep, TAB list) and no dependency of its
+            // own, so it can sit next to the two config services it belongs with.
+            ServerInfoService serverInfoService = startService(new YamlServerInfoService(this), ServerInfoService.class);
 
             // Depends only on config + locale, and deliberately runs before the
             // database: a player who fails mod verification must be turned away
@@ -280,7 +289,9 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             HomeService homeService = startService(
                     new CachedHomeService(this, new HomeRepository(databaseService), profileService, classService), HomeService.class
             );
-            InMemoryTradeService tradeService = new InMemoryTradeService(profileService, classService, activationService, messageService);
+            InMemoryTradeService tradeService = new InMemoryTradeService(
+                    profileService, classService, activationService, messageService, feedbackService
+            );
             startService(tradeService, TradeService.class);
             CollectionService collectionService = startService(
                     new CachedCollectionService(this, new CollectionRepository(databaseService)), CollectionService.class
@@ -299,6 +310,11 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     new ScoreboardSidebarService(this, messageService, profileService, classService, progressionService,
                             activationService, abilityService, questService, titleService, onboardingService,
                             homeService, tradeService, wealthService), SidebarService.class
+            );
+            // After TitleService (entry names carry the equipped title) and
+            // ProgressionService (each entry shows its owner's Güç).
+            TabListService tabListService = startService(
+                    new TabListService(this, messageService, serverInfoService, titleService, progressionService), TabListService.class
             );
             OnboardingRewarder onboardingRewarder = new OnboardingRewarder(
                     this, onboardingService, profileService, classService, messageService, sidebarService, classAwardHandler
@@ -345,11 +361,17 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new TitleChatListener(titleService), this);
             getServer().getPluginManager().registerEvents(new CosmeticListener(this, cosmeticService), this);
             getServer().getPluginManager().registerEvents(new GuiListener(), this);
+            getServer().getPluginManager().registerEvents(new SleepListener(serverInfoService, messageService), this);
+            // Both a service (so it clears its pending prompts on shutdown) and
+            // a listener (so it can claim the answer out of chat).
+            ChatPromptService chatPromptService = startService(new ChatPromptService(this, messageService), ChatPromptService.class);
+            getServer().getPluginManager().registerEvents(chatPromptService, this);
 
             this.api = new HalilIbrahimMMOApiImpl(
                     this, configService, messageService, pluginLogger, profileService, progressionService, skillService,
                     abilityService, classService, prestigeService, questService, collectionService, leaderboardService,
-                    titleService, cosmeticService, feedbackService, wealthService, bossService, modVerificationService
+                    titleService, cosmeticService, feedbackService, wealthService, bossService, modVerificationService,
+                    serverInfoService, tabListService
             );
             getServer().getServicesManager().register(HalilIbrahimMMOAPI.class, api, this, ServicePriority.Normal);
 
@@ -365,7 +387,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     classService, prestigeService, questService, collectionService, journalService, leaderboardService,
                     titleService, cosmeticService, feedbackService, sidebarService, configService, api, activationService,
                     pluginLogger, onboardingService, onboardingRewarder, homeService, tradeService,
-                    wealthService, bossService, modVerificationService
+                    wealthService, bossService, modVerificationService, chatPromptService
             );
             // The trade screen lives in the GUI layer, which needs the trade
             // service to build - so the service is told how to draw itself only
@@ -509,9 +531,10 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
         registerCommand("tarımcılık", "Tarimcilik beceri detayini acar", List.of("tarimcilik"), new SkillDetailCommand(guiServices, "tarimcilik"));
         registerCommand("hayvancılık", "Hayvancilik beceri detayini acar", List.of("hayvancilik"), new SkillDetailCommand(guiServices, "hayvancilik"));
         registerCommand("beceri", "Beceri ekranini acar", List.of("beceriler"), new SkillsCommand(guiServices));
-        registerCommand("ev", "Evine isinlanir veya evini ayarlar", List.of("home"), new HomeCommand(this, homeService, messageService, sidebarService));
+        registerCommand("ev", "Evine isinlanir veya evini ayarlar", List.of("home"), new HomeCommand(this, homeService, messageService, sidebarService, feedbackService));
         registerCommand("takas", "Baska bir oyuncuyla takas baslatir", List.of("trade"), new TradeCommand(tradeService, messageService));
         registerCommand("rtp", "Haritada rastgele bir noktaya isinlanir", List.of("rastgele"), new RandomTeleportCommand(this, messageService, feedbackService));
+        registerCommand("harita", "Canli oyunici harita adresini gosterir", List.of("map"), new MapCommand(messageService));
     }
 
     private boolean isDebugModeCurrentlyEnabled() {

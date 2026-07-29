@@ -1,6 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.gui;
 
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityDefinition;
+import com.halilibrahim.halilibrahimmmo.classes.ClassLevelProgress;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.locale.DurationFormatter;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
@@ -13,29 +14,39 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Click-to-select view over the player's own class's abilities only, mirroring
- * {@link com.halilibrahim.halilibrahimmmo.abilities.AbilityService#select}.
- * Activation itself now happens by right-clicking a matching tool in-world
- * (see {@code AbilityActivationListener}), not from this menu.
+ * The class's four abilities, laid out as the four rungs they are.
+ *
+ * <p>Every class now owns exactly four abilities, unlocking at class level
+ * 10/20/35/50, so this screen is built around four fixed, evenly spaced
+ * pedestals rather than a running list that filled two rows and could silently
+ * overflow. Each pedestal carries its rung number under it, which is what turns
+ * "these are my abilities" into "this is how far along my class I am".</p>
+ *
+ * <p>Clicking a pedestal equips that ability; the button below the row takes
+ * the current one back off. Activation itself still happens by double
+ * right-clicking a matching tool in the world (see
+ * {@code AbilityActivationListener}), never from here.</p>
  */
 public final class AbilitiesMenu implements GuiView {
 
-    /**
-     * Two explicit rows rather than a running counter: Tabiat Vârisi alone owns
-     * eight abilities, which would otherwise spill past the first row's inner
-     * slots and into the frame.
-     */
-    private static final int[] ABILITY_SLOTS = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25};
-    private static final int NO_CLASS_SLOT = 13;
-    private static final int BACK_SLOT = 35;
+    /** Row 3's inner slots, evenly spaced so four abilities read as four rungs. */
+    private static final int[] ABILITY_SLOTS = {19, 21, 23, 25};
+    /** Directly below each ability, carrying that rung's number. */
+    private static final int[] RUNG_SLOTS = {28, 30, 32, 34};
+    private static final int HEADER_SLOT = 4;
+    private static final int NO_CLASS_SLOT = 22;
+    private static final int UNEQUIP_SLOT = 39;
+    private static final int BACK_SLOT = 41;
 
     private final GuiServices services;
     private final Map<Integer, String> slotToAbilityId = new LinkedHashMap<>();
+    private volatile boolean hasSelection;
 
     public AbilitiesMenu(GuiServices services) {
         this.services = services;
@@ -48,7 +59,7 @@ public final class AbilitiesMenu implements GuiView {
 
     @Override
     public int size() {
-        return 36;
+        return 45;
     }
 
     @Override
@@ -72,48 +83,92 @@ public final class AbilitiesMenu implements GuiView {
             return;
         }
         String selectedAbilityId = services.abilities().selected(player.getUniqueId()).orElse(null);
+        hasSelection = selectedAbilityId != null;
+        ClassLevelProgress progress = services.classes().classProgress(player.getUniqueId(), selectedClassId);
         List<AbilityDefinition> definitions = services.abilities().definitions().stream()
                 .filter(definition -> definition.classId().equals(selectedClassId))
-                .sorted((left, right) -> {
-                    int byLevel = Integer.compare(left.requiredLevel(), right.requiredLevel());
-                    return byLevel != 0 ? byLevel : left.displayName().compareToIgnoreCase(right.displayName());
-                }).toList();
-        int index = 0;
-        for (AbilityDefinition definition : definitions) {
-            if (index >= ABILITY_SLOTS.length) {
-                break;
+                .sorted(Comparator.comparingInt(AbilityDefinition::requiredLevel)
+                        .thenComparing(AbilityDefinition::displayName, String.CASE_INSENSITIVE_ORDER))
+                .limit(ABILITY_SLOTS.length)
+                .toList();
+
+        inventory.setItem(HEADER_SLOT, header(classDefinition, progress, definitions));
+        for (int index = 0; index < definitions.size(); index++) {
+            AbilityDefinition definition = definitions.get(index);
+            inventory.setItem(RUNG_SLOTS[index], rungMarker(index, definition, progress.level()));
+            inventory.setItem(ABILITY_SLOTS[index], abilityItem(definition, progress.level(), selectedAbilityId));
+            if (progress.level() >= definition.requiredLevel()) {
+                slotToAbilityId.put(ABILITY_SLOTS[index], definition.id());
             }
-            int slot = ABILITY_SLOTS[index++];
-            int classLevel = services.classes().classProgress(player.getUniqueId(), definition.classId()).level();
-            if (classLevel < definition.requiredLevel()) {
-                inventory.setItem(slot, GuiItems.of(
-                        Material.BARRIER,
-                        services.messages().render(MessageKey.GUI_ABILITY_LOCKED_ITEM, Map.of("kabiliyet", definition.displayName())),
-                        List.of(services.messages().render(MessageKey.GUI_ABILITY_LOCKED_LORE, Map.of("seviye", Integer.toString(definition.requiredLevel()))))
-                ));
-                continue;
-            }
-            slotToAbilityId.put(slot, definition.id());
-            boolean selected = definition.id().equals(selectedAbilityId);
-            List<Component> lore = new ArrayList<>();
-            lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_DESCRIPTION, Map.of("aciklama", definition.description())));
-            lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE, Map.of(
-                    "seviye", Integer.toString(definition.requiredLevel()),
-                    "bekleme", DurationFormatter.ofMillis(services.messages(), definition.cooldownMillis())
-            )));
-            if (definition.energyCost() > 0) {
-                lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_ENERGY_LINE, Map.of("enerji", Integer.toString(definition.energyCost()))));
-            }
-            if (selected) {
-                lore.add(services.messages().render(MessageKey.GUI_ABILITY_SELECTED_MARKER));
-            }
-            inventory.setItem(slot, GuiItems.of(
-                    definition.icon(),
-                    abilityName(definition),
-                    lore,
-                    selected
-            ));
         }
+        inventory.setItem(UNEQUIP_SLOT, unequipButton(selectedAbilityId));
+    }
+
+    private ItemStack header(PlayerClassDefinition classDefinition, ClassLevelProgress progress, List<AbilityDefinition> definitions) {
+        long unlocked = definitions.stream().filter(definition -> progress.level() >= definition.requiredLevel()).count();
+        return GuiItems.of(classDefinition.icon(),
+                services.messages().render(MessageKey.GUI_ABILITIES_HEADER_ITEM, Map.of("sinif", classDefinition.displayName())),
+                List.of(services.messages().render(MessageKey.GUI_ABILITIES_HEADER_LORE, Map.of(
+                        "seviye", Integer.toString(progress.level()),
+                        "acik", Long.toString(unlocked),
+                        "toplam", Integer.toString(definitions.size())
+                ))));
+    }
+
+    /**
+     * The rung number under each pedestal, green once its level is behind the
+     * player and grey while it is still ahead - so the row doubles as a
+     * progress track for the class itself, not just a list of four items.
+     */
+    private ItemStack rungMarker(int index, AbilityDefinition definition, int classLevel) {
+        boolean reached = classLevel >= definition.requiredLevel();
+        Material material = reached ? Material.LIME_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE;
+        return GuiItems.of(material, services.messages().render(
+                reached ? MessageKey.GUI_ABILITIES_RUNG_REACHED : MessageKey.GUI_ABILITIES_RUNG_LOCKED,
+                Map.of("kademe", Integer.toString(index + 1), "seviye", Integer.toString(definition.requiredLevel()))
+        ));
+    }
+
+    private ItemStack abilityItem(AbilityDefinition definition, int classLevel, String selectedAbilityId) {
+        if (classLevel < definition.requiredLevel()) {
+            return GuiItems.of(
+                    Material.BARRIER,
+                    services.messages().render(MessageKey.GUI_ABILITY_LOCKED_ITEM, Map.of("kabiliyet", definition.displayName())),
+                    List.of(services.messages().render(MessageKey.GUI_ABILITY_LOCKED_LORE, Map.of("seviye", Integer.toString(definition.requiredLevel()))))
+            );
+        }
+        boolean selected = definition.id().equals(selectedAbilityId);
+        List<Component> lore = new ArrayList<>();
+        lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_DESCRIPTION, Map.of("aciklama", definition.description())));
+        lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE, Map.of(
+                "seviye", Integer.toString(definition.requiredLevel()),
+                "bekleme", DurationFormatter.ofMillis(services.messages(), definition.cooldownMillis())
+        )));
+        if (definition.energyCost() > 0) {
+            lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_ENERGY_LINE, Map.of("enerji", Integer.toString(definition.energyCost()))));
+        }
+        // Only the sweep abilities have a running per-block cost, and it is the
+        // number that decides how much of a vein or a tree they actually take.
+        if (definition.energyPerBlock() > 0) {
+            lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_ENERGY_PER_BLOCK, Map.of(
+                    "enerji", Integer.toString(definition.energyPerBlock())
+            )));
+        }
+        lore.add(services.messages().render(selected
+                ? MessageKey.GUI_ABILITY_SELECTED_MARKER
+                : MessageKey.GUI_ABILITY_EQUIP_HINT));
+        return GuiItems.of(definition.icon(), abilityName(definition), lore, selected);
+    }
+
+    private ItemStack unequipButton(String selectedAbilityId) {
+        if (selectedAbilityId == null) {
+            return GuiItems.of(Material.GRAY_DYE,
+                    services.messages().render(MessageKey.GUI_ABILITY_UNEQUIP_EMPTY_ITEM),
+                    List.of(services.messages().render(MessageKey.GUI_ABILITY_UNEQUIP_EMPTY_LORE)));
+        }
+        return GuiItems.of(Material.RED_DYE,
+                services.messages().render(MessageKey.GUI_ABILITY_UNEQUIP_ITEM),
+                List.of(services.messages().render(MessageKey.GUI_ABILITY_UNEQUIP_LORE)));
     }
 
     /**
@@ -135,9 +190,22 @@ public final class AbilitiesMenu implements GuiView {
             GuiManager.open(player, new AnaMenu(services));
             return;
         }
+        if (slot == UNEQUIP_SLOT) {
+            if (!hasSelection) {
+                return;
+            }
+            if (services.abilities().unequip(player)) {
+                services.messages().send(player, MessageKey.ABILITY_UNEQUIPPED);
+                services.feedback().celebrateAbilityUnequipped(player);
+                services.sidebar().refresh(player);
+                GuiManager.open(player, new AbilitiesMenu(services));
+            }
+            return;
+        }
         String abilityId = slotToAbilityId.get(slot);
         if (abilityId != null) {
             services.abilities().select(player, abilityId);
+            services.sidebar().refresh(player);
             GuiManager.open(player, new AbilitiesMenu(services));
         }
     }

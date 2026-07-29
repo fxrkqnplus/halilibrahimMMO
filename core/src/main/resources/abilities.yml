@@ -2,14 +2,38 @@
 #  HalilIbrahimMMO - Kabiliyet ve Enerji Ayarları
 # =====================================================================
 #  Kabiliyetler /kabiliyet menüsünden seçilir ve uygun aleti tutarken havaya,
-#  bir bloğa ya da bir yaratığa sağ tıklayarak etkinleştirilir. Bunun dışında
-#  kabiliyet kullanmanın başka bir yolu yoktur. Blok kabiliyetleri, etki-suresi-saniye
-#  içinde yalnız sonraki uygun blok kırmada tüketilir. Her kabiliyet tam
-#  olarak bir sınıfa aittir (sinif alanı) - o sınıf seçili olmayan bir
-#  oyuncu bu kabiliyeti kullanamaz.
+#  bir bloğa ya da bir yaratığa ÇİFT sağ tıklayarak etkinleştirilir. Bunun
+#  dışında kabiliyet kullanmanın başka bir yolu yoktur. Blok kabiliyetleri,
+#  etki-suresi-saniye içinde yalnız sonraki uygun blok kırmada tüketilir.
+#  Her kabiliyet tam olarak bir sınıfa aittir (sinif alanı) - o sınıf seçili
+#  olmayan bir oyuncu bu kabiliyeti kullanamaz.
 #
 #  Kabiliyet bir kez başladıktan sonra elindeki eşyayı değiştirmen onu
 #  bozmaz; alet yalnızca kabiliyeti BAŞLATMAK için gereklidir.
+#
+#  ---------------------------------------------------------------------
+#  HER SINIFTA DÖRT KABİLİYET VARDIR ve hepsi aynı basamaklarda açılır:
+#      10 -> 20 -> 35 -> 50 (sınıf seviyesi)
+#  Basamak yükseldikçe kabiliyet güçlenir ve bekleme süresi uzar. 50.
+#  seviyedeki kabiliyet sınıfın "son sözü"dür: en güçlü etki, en uzun
+#  bekleme süresi (10 dakika).
+#  ---------------------------------------------------------------------
+#
+#  ENERJİ NASIL ÇALIŞIR (Faz 20 Bölüm 2'de değişti):
+#    - Enerji SADECE kabiliyet kullanırken harcanır; başka hiçbir şey
+#      enerji götürmez.
+#    - Bir kabiliyet açıkken enerji ASLA yenilenmez. Kabiliyet bittikten
+#      sonra yenilenme yeniden başlar.
+#    - "enerji"          : kabiliyeti başlatmanın tek seferlik bedeli.
+#    - "enerji-blok-basi": süpürme kabiliyetlerinde (TREE_FELL / VEIN_MINE /
+#                          EXCAVATE / BLAST_MINE) düşen HER blok için ayrıca
+#                          harcanır. Enerji biterse süpürme orada durur -
+#                          yani bir seferde kaç blok alacağını blok sınırı
+#                          değil enerji barın belirler.
+#    - "enerji-vurus-basi": sadece sure-modu ENERJI olan kabiliyetlerde, her
+#                          isabetli vuruşta harcanır.
+#    - Süpürme sırasında düşen her blok için elindeki alet 1 dayanıklılık
+#      kaybeder - blokları elle kırsaydın ödeyeceğin bedelin aynısı.
 #
 #  sure-modu: SURE (varsayılan) kabiliyet sadece etki-suresi-saniye kadar
 #  sürer. ENERJI ise (yalnız etki.tur: DAMAGE_BUFF ile birlikte kullanılabilir)
@@ -20,20 +44,27 @@
 #  simge: kabiliyet menüsünde görünen eşya simgesi (herhangi bir Bukkit
 #  Material adı). Seçili kabiliyet ayrıca büyülü (parlayan) görünür.
 #
-#  gorsel: her kabiliyetin kendine ait rengi, etkinleştirme sesi ve
-#  partikülü. Bu bölüm isteğe bağlıdır; yazılmazsa kabiliyet feedback.yml
-#  içindeki ortak "kabiliyet-baslangic" sesini kullanır ve partikül çıkarmaz.
+#  gorsel: her kabiliyetin kendine ait rengi, sesi ve partikül gösterisi.
+#  Bu bölüm isteğe bağlıdır; yazılmazsa kabiliyet feedback.yml içindeki
+#  ortak "kabiliyet-baslangic" sesini kullanır ve partikül çıkarmaz.
 #    renk           : KIRMIZI, TURUNCU, SARI, YESIL, KOYU_YESIL, TURKUAZ,
 #                     MAVI, MOR, KOYU_MOR, BEYAZ
 #    ses            : bir Bukkit Sound adı
+#    yanki-ses      : 4 tick sonra biraz daha tiz çalan ikinci ses (isteğe
+#                     bağlı). Tek bir örneği "an"a dönüştüren şey budur.
 #    partikul       : bir Bukkit Particle adı (DUST ise "renk" ile boyanır)
-#    partikul-sayisi: kaç partikül saçılacağı
+#    partikul-sayisi: gösteride kullanılacak partikül yoğunluğu
+#    sekil          : partiküllerin nasıl dizileceği
+#                     PATLAMA (saçılma, varsayılan) | HALKA (genişleyen
+#                     halkalar) | SARMAL (yukarı sarılan helis) |
+#                     KUBBE (baş üstünde kubbe)
 # =====================================================================
 
 enerji:
   maksimum: 100
-  # Enerjinin saniyede kac puan dolduğu. Yuksek deger = daha hizli dolan bar.
-  yenilenme-saniye-basina: 6
+  # Enerjinin saniyede kac puan doldugu. Kabiliyet ACIKKEN bu hic islemez.
+  # 3 puan/saniye = bos bardan dolu bara yaklasik 33 saniye.
+  yenilenme-saniye-basina: 3
 
 # Menüden farklı bir kabiliyet secmeden once beklenmesi gereken sure (ayni
 # kabiliyeti yeniden secmek her zaman ucretsizdir).
@@ -43,66 +74,69 @@ kabiliyetler:
   # =====================================================================
   #  Tabiat Vârisi (tabiat-varisi)
   #  Sinerji: odunculuk + kazicilik + tarimcilik + hayvancilik
-  #  Dort becerinin her biri icin tam olarak bir kabiliyet: kazicilik,
-  #  tarimcilik, hayvancilik ve odunculuk sirasiyla. Kabiliyetler en zayiftan
-  #  en gucluye dogru acilir (5 -> 15 -> 25 -> 40), boylece sinif seviyesi
-  #  yukseldikce elindeki arac da gorunur bicimde guclenir.
+  #  Dort becerinin her biri icin tam olarak bir kabiliyet. En zayiftan en
+  #  gucluye: kazicilik (10) -> tarimcilik (20) -> hayvancilik (35) ->
+  #  odunculuk (50).
   # =====================================================================
   toprak-sezgisi:
     gorunen-ad: "Toprak Sezgisi"
-    aciklama: "Etkinken kırdığın bloklardan %50 ihtimalle ekstra bir düşme kazanırsın."
+    aciklama: "Etkinken kırdığın bloklardan %35 ihtimalle ekstra bir düşme kazanırsın."
     simge: GOLDEN_SHOVEL
     beceri: kazicilik
     sinif: tabiat-varisi
-    gerekli-seviye: 5
+    gerekli-seviye: 10
     enerji: 20
     bekleme-suresi-saniye: 90
-    etki-suresi-saniye: 20
+    etki-suresi-saniye: 25
     arac:
       tur: SHOVEL
     etki:
       tur: EXTRA_DROP_CHANCE
-      sans: 0.5
+      sans: 0.35
     gorsel:
       renk: SARI
       ses: BLOCK_AMETHYST_BLOCK_CHIME
+      yanki-ses: BLOCK_ROOTED_DIRT_BREAK
       ses-seviyesi: 0.9
       ton: 1.4
       partikul: WAX_ON
-      partikul-sayisi: 40
+      partikul-sayisi: 28
+      sekil: SARMAL
 
   filiz-patlamasi:
     gorunen-ad: "Filiz Patlaması"
-    aciklama: "Çevrendeki 6 blok yarıçapındaki bütün olmamış ekinler bir anda hasada hazır hâle gelir. Hiç kemik tozu harcamazsın."
+    aciklama: "Çevrendeki 7 blok yarıçapındaki bütün olmamış ekinler bir anda hasada hazır hâle gelir. Hiç kemik tozu harcamazsın."
     simge: BONE_MEAL
     beceri: tarimcilik
     sinif: tabiat-varisi
-    gerekli-seviye: 15
+    gerekli-seviye: 20
     enerji: 25
-    bekleme-suresi-saniye: 180
+    bekleme-suresi-saniye: 150
     etki-suresi-saniye: 3
     arac:
       tur: HOE
     etki:
       tur: GROWTH_SURGE
-      yaricap: 6
+      yaricap: 7
     gorsel:
       renk: YESIL
       ses: ITEM_BONE_MEAL_USE
+      yanki-ses: BLOCK_MOSS_PLACE
       ses-seviyesi: 1.0
       ton: 1.2
       partikul: COMPOSTER
-      partikul-sayisi: 50
+      partikul-sayisi: 32
+      sekil: HALKA
 
   suru-cagrisi:
     gorunen-ad: "Sürü Çağrısı"
-    aciklama: "Çevrendeki 8 blok yarıçapındaki bütün yetişkin hayvanlar tek bir yem harcamadan çiftleşme moduna girer."
+    aciklama: "Çevrendeki 10 blok yarıçapındaki bütün yetişkin hayvanlar tek bir yem harcamadan çiftleşme moduna girer."
     simge: WHEAT
     beceri: hayvancilik
     sinif: tabiat-varisi
-    gerekli-seviye: 25
+    gerekli-seviye: 35
     enerji: 30
-    bekleme-suresi-saniye: 180
+    bekleme-suresi-saniye: 240
     # Cagri aninda biter: hayvanlar zaten cagriya o anda karsilik veriyor,
     # kabiliyetin acik kalmasinin bir islevi yok. 2 saniye sonra hem
     # survival'da hem yaratici modda kendiliginden kapanir.
@@ -111,52 +145,62 @@ kabiliyetler:
       tur: ANY
     etki:
       tur: LOVE_CALL
-      yaricap: 8
+      yaricap: 10
     gorsel:
       renk: MOR
       ses: ENTITY_CAT_PURR
+      yanki-ses: ENTITY_ALLAY_ITEM_GIVEN
       ses-seviyesi: 1.0
       ton: 1.3
       partikul: HEART
-      partikul-sayisi: 40
+      partikul-sayisi: 30
+      sekil: KUBBE
 
   agac-kirici:
     gorunen-ad: "Ağaç Kırıcı"
-    aciklama: "Sonraki ağaç kırmanda bağlı tüm kütükleri (en fazla 32) birden keser. Sınıfın en güçlü kabiliyeti."
+    aciklama: "Sonraki ağaç kırmanda bağlı tüm kütükleri (en fazla 64) birden keser. Her düşen kütük 5 enerji ve baltandan 1 dayanıklılık götürür - enerjin biterse kesim orada durur. Sınıfın en güçlü kabiliyeti."
     simge: IRON_AXE
     beceri: odunculuk
     sinif: tabiat-varisi
-    gerekli-seviye: 40
-    enerji: 25
-    bekleme-suresi-saniye: 75
-    etki-suresi-saniye: 15
+    gerekli-seviye: 50
+    enerji: 10
+    # Sinifin son kabiliyeti: 10 dakika bekleme.
+    bekleme-suresi-saniye: 600
+    etki-suresi-saniye: 20
+    # Her dusen kutuk 5 enerji goturur; 100 enerjilik bir barla yaklasik 18
+    # kutuk devrilir. Kacini alacagini blok siniri degil enerjin belirler.
+    enerji-blok-basi: 5
     # Menuden secilip sag tikla etkinlestirmek icin gereken alet: herhangi bir balta.
     arac:
       tur: AXE
     etki:
       tur: TREE_FELL
-      limit: 32
+      limit: 64
     gorsel:
       renk: YESIL
       ses: ITEM_AXE_STRIP
+      yanki-ses: BLOCK_BAMBOO_WOOD_BREAK
       ses-seviyesi: 1.0
       ton: 0.8
       partikul: CHERRY_LEAVES
-      partikul-sayisi: 50
+      partikul-sayisi: 36
+      sekil: HALKA
 
   # =====================================================================
   #  Amansız Savaşçı (avci) - sinerji: avcilik
+  #  Gece Görüşü (10) -> Avcı Odağı (20) -> Yıkıcı Darbe (35) ->
+  #  Kan Yemini (50)
   # =====================================================================
   gece-gorusu:
     gorunen-ad: "Gece Görüşü"
-    aciklama: "60 saniye boyunca karanlıkta net görürsün."
+    aciklama: "90 saniye boyunca karanlıkta net görürsün."
     simge: GOLDEN_CARROT
     beceri: avcilik
     sinif: avci
-    gerekli-seviye: 5
+    gerekli-seviye: 10
     enerji: 15
-    bekleme-suresi-saniye: 120
-    etki-suresi-saniye: 60
+    bekleme-suresi-saniye: 90
+    etki-suresi-saniye: 90
     arac:
       tur: SWORD
     etki:
@@ -164,10 +208,12 @@ kabiliyetler:
     gorsel:
       renk: KOYU_MOR
       ses: ENTITY_ILLUSIONER_MIRROR_MOVE
+      yanki-ses: BLOCK_AMETHYST_BLOCK_RESONATE
       ses-seviyesi: 0.9
       ton: 1.3
       partikul: SCULK_SOUL
-      partikul-sayisi: 35
+      partikul-sayisi: 26
+      sekil: SARMAL
 
   avci-odagi:
     gorunen-ad: "Avcı Odağı"
@@ -175,9 +221,9 @@ kabiliyetler:
     simge: IRON_SWORD
     beceri: avcilik
     sinif: avci
-    gerekli-seviye: 10
+    gerekli-seviye: 20
     enerji: 25
-    bekleme-suresi-saniye: 90
+    bekleme-suresi-saniye: 150
     etki-suresi-saniye: 30
     sure-modu: ENERJI
     enerji-vurus-basi: 16
@@ -191,98 +237,136 @@ kabiliyetler:
     gorsel:
       renk: KIRMIZI
       ses: ENTITY_PLAYER_ATTACK_SWEEP
+      yanki-ses: ITEM_TRIDENT_RIPTIDE_1
       ses-seviyesi: 1.0
       ton: 0.7
       partikul: CRIT
-      partikul-sayisi: 45
+      partikul-sayisi: 34
+      sekil: SARMAL
 
   yikici-darbe:
     gorunen-ad: "Yıkıcı Darbe"
-    aciklama: "Ayağının altında bir patlama yaratır: 4 blok yarıçapındaki tüm yaratıkları çok uzağa savurur ve ağır hasar verir."
+    aciklama: "Ayağının altında bir patlama yaratır: 5 blok yarıçapındaki tüm yaratıkları çok uzağa savurur ve ağır hasar verir."
     simge: TNT
     beceri: avcilik
     sinif: avci
-    gerekli-seviye: 30
+    gerekli-seviye: 35
     enerji: 30
-    bekleme-suresi-saniye: 30
+    bekleme-suresi-saniye: 240
     etki-suresi-saniye: 2
     arac:
       tur: SWORD
     etki:
       tur: KNOCKBACK_SLAM
-      yaricap: 4
+      yaricap: 5
       # KNOCKBACK_SLAM icin bu bir carpan degil, dogrudan verilen ham hasardir.
-      hasar-carpani: 9.0
+      hasar-carpani: 11.0
     # Patlama sesi/partikulu kabiliyetin kendi etkisinde zaten var; buradaki
     # ses onun uzerine binen "catlama" vurusudur.
     gorsel:
       renk: TURUNCU
       ses: BLOCK_ANVIL_LAND
+      yanki-ses: ENTITY_DRAGON_FIREBALL_EXPLODE
       ses-seviyesi: 1.0
       ton: 0.6
       partikul: LARGE_SMOKE
+      partikul-sayisi: 32
+      sekil: HALKA
+
+  kan-yemini:
+    gorunen-ad: "Kan Yemini"
+    aciklama: "45 saniye boyunca bir yaratığa verdiğin hasarın %35'i sana can olarak geri döner. Uzun bir avın ortasında ayakta kalmanın tek yolu. Sınıfın en güçlü kabiliyeti."
+    simge: NETHERITE_SWORD
+    beceri: avcilik
+    sinif: avci
+    gerekli-seviye: 50
+    enerji: 40
+    # Sinifin son kabiliyeti: 10 dakika bekleme.
+    bekleme-suresi-saniye: 600
+    etki-suresi-saniye: 45
+    arac:
+      tur: SWORD
+    etki:
+      tur: LIFE_STEAL
+      # Verilen hasarin ne kadari cana donusur (0-1 arasi).
+      can-orani: 0.35
+    gorsel:
+      renk: KIRMIZI
+      ses: ENTITY_WITHER_SHOOT
+      yanki-ses: ENTITY_RAVAGER_ROAR
+      ses-seviyesi: 1.0
+      ton: 0.6
+      partikul: DUST
       partikul-sayisi: 40
+      sekil: KUBBE
 
   # =====================================================================
   #  Mağara Adamı (madenci) - sinerji: madencilik
+  #  Cevher Sezgisi (10) -> Damar Kırıcı (20) -> Maden Feneri (35) ->
+  #  Kaya Patlaması (50)
   # =====================================================================
   cevher-sezgisi:
     gorunen-ad: "Cevher Sezgisi"
-    aciklama: "Etkinken kırdığın bloklardan %40 ihtimalle ekstra bir düşme kazanırsın."
+    aciklama: "Etkinken kırdığın bloklardan %30 ihtimalle ekstra bir düşme kazanırsın."
     simge: GOLDEN_PICKAXE
     beceri: madencilik
     sinif: madenci
-    gerekli-seviye: 5
+    gerekli-seviye: 10
     enerji: 25
     bekleme-suresi-saniye: 90
-    etki-suresi-saniye: 20
+    etki-suresi-saniye: 25
     arac:
       tur: PICKAXE
     etki:
       tur: EXTRA_DROP_CHANCE
-      sans: 0.4
+      sans: 0.30
     gorsel:
       renk: TURKUAZ
       ses: BLOCK_AMETHYST_CLUSTER_BREAK
+      yanki-ses: BLOCK_AMETHYST_BLOCK_CHIME
       ses-seviyesi: 1.0
       ton: 1.3
       partikul: GLOW
-      partikul-sayisi: 40
+      partikul-sayisi: 28
+      sekil: SARMAL
 
   damar-kirici:
     gorunen-ad: "Damar Kırıcı"
-    aciklama: "Sonraki uygun blok kırmanda bağlı aynı cevher damarını (en fazla 16 blok) birden kazır."
+    aciklama: "Sonraki uygun blok kırmanda bağlı aynı cevher damarını (en fazla 24 blok) birden kazır. Her blok 4 enerji ve kazmandan 1 dayanıklılık götürür."
     simge: IRON_PICKAXE
     beceri: madencilik
     sinif: madenci
     gerekli-seviye: 20
-    enerji: 30
-    bekleme-suresi-saniye: 100
-    etki-suresi-saniye: 15
+    enerji: 10
+    bekleme-suresi-saniye: 150
+    etki-suresi-saniye: 20
+    enerji-blok-basi: 4
     # Menuden secilip sag tikla etkinlestirmek icin gereken alet: herhangi bir kazma.
     arac:
       tur: PICKAXE
     etki:
       tur: VEIN_MINE
-      limit: 16
+      limit: 24
     gorsel:
       renk: MAVI
       ses: BLOCK_DEEPSLATE_BREAK
+      yanki-ses: BLOCK_STONE_BREAK
       ses-seviyesi: 1.0
       ton: 0.6
       partikul: DUST
-      partikul-sayisi: 50
+      partikul-sayisi: 34
+      sekil: HALKA
 
   maden-feneri:
     gorunen-ad: "Maden Feneri"
-    aciklama: "Yalnızca geniş, üstü kapalı bir madende kullanılabilir: 36 blok yarıçapındaki tüm cevherler 30 saniye boyunca duvarların ardından bile parlar. Süre dolmadan kırdığın cevherin parıltısı anında söner."
+    aciklama: "Yalnızca geniş, üstü kapalı bir madende kullanılabilir: 36 blok yarıçapındaki tüm cevherler 40 saniye boyunca duvarların ardından bile parlar. Süre dolmadan kırdığın cevherin parıltısı anında söner."
     simge: GLOWSTONE
     beceri: madencilik
     sinif: madenci
     gerekli-seviye: 35
     enerji: 30
-    bekleme-suresi-saniye: 450
-    etki-suresi-saniye: 30
+    bekleme-suresi-saniye: 300
+    etki-suresi-saniye: 40
     arac:
       tur: PICKAXE
     etki:
@@ -294,7 +378,37 @@ kabiliyetler:
     gorsel:
       renk: TURUNCU
       ses: BLOCK_BEACON_ACTIVATE
+      yanki-ses: BLOCK_CONDUIT_ACTIVATE
       ses-seviyesi: 1.0
       ton: 1.4
       partikul: END_ROD
-      partikul-sayisi: 60
+      partikul-sayisi: 36
+      sekil: KUBBE
+
+  kaya-patlamasi:
+    gorunen-ad: "Kaya Patlaması"
+    aciklama: "Sonraki cevher kırmanda çevresindeki 3x3x3 küpteki bütün cevherler birden düşer. Her blok 3 enerji ve kazmandan 1 dayanıklılık götürür. Sınıfın en güçlü kabiliyeti."
+    simge: NETHERITE_PICKAXE
+    beceri: madencilik
+    sinif: madenci
+    gerekli-seviye: 50
+    enerji: 15
+    # Sinifin son kabiliyeti: 10 dakika bekleme.
+    bekleme-suresi-saniye: 600
+    etki-suresi-saniye: 20
+    enerji-blok-basi: 3
+    arac:
+      tur: PICKAXE
+    etki:
+      tur: BLAST_MINE
+      # 1 = 3x3x3 kup (en fazla 27 blok), 2 = 5x5x5.
+      yaricap: 1
+    gorsel:
+      renk: KOYU_MOR
+      ses: ENTITY_GENERIC_EXPLODE
+      yanki-ses: BLOCK_DEEPSLATE_BREAK
+      ses-seviyesi: 1.0
+      ton: 0.7
+      partikul: DUST
+      partikul-sayisi: 40
+      sekil: HALKA

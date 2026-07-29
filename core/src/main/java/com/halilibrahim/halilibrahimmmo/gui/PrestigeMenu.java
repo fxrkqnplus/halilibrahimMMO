@@ -91,7 +91,7 @@ public final class PrestigeMenu implements GuiView {
         // One line per synergy skill rather than one combined line: a class may
         // power four of them, and "your synergy skill is at 78" would not say
         // which of the four is holding the player back.
-        int synergyCap = services.skills().settings().curve().maximumLevel();
+        int synergyCap = classDefinition.prestigeSynergyLevel();
         for (String synergySkillId : classDefinition.synergySkillIds()) {
             var synergySkill = services.skills().settings().definitions().get(synergySkillId);
             if (synergySkill == null) {
