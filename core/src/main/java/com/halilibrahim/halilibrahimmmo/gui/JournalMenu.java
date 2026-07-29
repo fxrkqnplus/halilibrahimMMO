@@ -40,6 +40,7 @@ public final class JournalMenu implements GuiView {
 
     @Override
     public void populate(Player player, Inventory inventory) {
+        int contentSlots = GuiItems.listBoard(inventory, GuiItems.pane(Material.WHITE_STAINED_GLASS_PANE));
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
         services.journal().recent(player.getUniqueId(), RECENT_LIMIT).thenAccept(entries ->
                 player.getScheduler().run(services.plugin(), task -> {
@@ -49,6 +50,9 @@ public final class JournalMenu implements GuiView {
                     }
                     int slot = 0;
                     for (JournalEntry entry : entries) {
+                        if (slot >= contentSlots) {
+                            break;
+                        }
                         String label = entry.referenceName() + " (" + TIMESTAMP_FORMAT.format(Instant.ofEpochMilli(entry.createdAtMillis())) + ")";
                         inventory.setItem(slot++, GuiItems.of(
                                 materialFor(entry),

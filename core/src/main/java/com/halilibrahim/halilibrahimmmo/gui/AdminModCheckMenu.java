@@ -48,6 +48,7 @@ public final class AdminModCheckMenu implements GuiView {
 
     @Override
     public void populate(Player player, Inventory inventory) {
+        GuiItems.listBoard(inventory, GuiItems.pane(Material.ORANGE_STAINED_GLASS_PANE));
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
 
         ModVerificationSettings settings = services.modVerification().settings();
@@ -70,7 +71,7 @@ public final class AdminModCheckMenu implements GuiView {
 
         int slot = FIRST_SLOT;
         for (Player online : Bukkit.getOnlinePlayers()) {
-            if (slot >= BACK_SLOT) {
+            if (slot >= 45) {
                 break;
             }
             inventory.setItem(slot++, entryItem(online));

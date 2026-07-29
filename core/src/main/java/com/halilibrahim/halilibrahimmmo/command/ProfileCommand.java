@@ -4,7 +4,7 @@ import com.halilibrahim.halilibrahimmmo.activation.ActivatedPlayer;
 import com.halilibrahim.halilibrahimmmo.gui.GuiManager;
 import com.halilibrahim.halilibrahimmmo.gui.GuiServices;
 import com.halilibrahim.halilibrahimmmo.gui.PlayerProfileMenu;
-import com.halilibrahim.halilibrahimmmo.gui.ProfileMenu;
+import com.halilibrahim.halilibrahimmmo.gui.PlayerProfileMenu;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -48,7 +48,10 @@ public final class ProfileCommand implements BasicCommand {
             return;
         }
         if (args.length == 0) {
-            GuiManager.open(player, new ProfileMenu(services));
+            // The same screen /profil <isim> opens, pointed at yourself:
+            // there was never a reason for your own profile to be a
+            // three-line strip while everybody else's was a full record.
+            GuiManager.open(player, new PlayerProfileMenu(services, player.getUniqueId(), player.getName()));
             return;
         }
         String requested = args[0];

@@ -52,7 +52,55 @@ public enum AbilityEffectType {
      * than how hard one hit lands, which is what separates it from
      * {@link #DAMAGE_BUFF}.
      */
-    LIFE_STEAL;
+    LIFE_STEAL,
+    /**
+     * Armed for a window and <em>not</em> consumed by the first break: every
+     * eligible break while it lasts clears a cube of {@code limit} blocks
+     * around itself, of whatever the pickaxe can dig rather than of the
+     * ability's own skill's materials. The mining line's tunnelling tool -
+     * where {@link #BLAST_MINE} was one enormous swing, this is a shape the
+     * player keeps digging with until the energy bar says stop.
+     */
+    BULLDOZER,
+    /**
+     * Instant: places a harmless charge that clears filler stone in a large
+     * sphere without touching a single ore, a creature or a player, then leaves
+     * the exposed ores glowing briefly. {@code limit} is the radius.
+     */
+    MINE_BOMB,
+    /**
+     * Instant: raises the held pickaxe's Efficiency by {@code limit} levels for
+     * the ability's duration, stacking on whatever it already had, and puts it
+     * back exactly as it was afterwards.
+     */
+    TOOL_EFFICIENCY,
+    /**
+     * Instant: for the ability's duration nothing hostile can see the player -
+     * every creature currently hunting them loses its target and cannot
+     * re-acquire it - and they get Invisibility and Speed to leave with.
+     */
+    PHANTOM_STEP,
+    /**
+     * Instant: the tame and passive animals around the player turn on whatever
+     * is hunting them, charging it, shoving it back and worrying at it for the
+     * ability's duration. {@code limit} is how many answer the call and
+     * {@code damageMultiplier} is what one of their hits is worth.
+     */
+    GUARDIAN_CALL;
+
+    /**
+     * Whether this ability keeps working after its first block break, rather
+     * than being spent by it.
+     *
+     * <p>A one-shot sweep is a single decision: point it at the right block and
+     * it is over. These two are a <em>mode</em> - the player keeps felling, keeps
+     * tunnelling, and what ends it is the energy bar or the clock, which is
+     * exactly what makes the per-block energy cost the interesting number rather
+     * than a formality.</p>
+     */
+    public boolean isSustainedSweep() {
+        return this == TREE_FELL || this == BULLDOZER;
+    }
 
     /**
      * Whether the whole effect has already happened by the time activation
@@ -69,6 +117,6 @@ public enum AbilityEffectType {
      * watch the dust settle.</p>
      */
     public boolean resolvesImmediately() {
-        return this == KNOCKBACK_SLAM || this == GROWTH_SURGE || this == LOVE_CALL;
+        return this == KNOCKBACK_SLAM || this == GROWTH_SURGE || this == LOVE_CALL || this == MINE_BOMB;
     }
 }

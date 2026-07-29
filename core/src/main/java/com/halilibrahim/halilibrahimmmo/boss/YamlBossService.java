@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.boss;
 
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
+import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.kyori.adventure.bossbar.BossBar;
@@ -16,10 +17,13 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.AbstractSkeleton;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -178,6 +182,11 @@ public final class YamlBossService implements BossService {
 
     @Override
     public CompletableFuture<Optional<String>> spawnNow() {
+        return spawnNow(null, null);
+    }
+
+    @Override
+    public CompletableFuture<Optional<String>> spawnNow(BossRarity chosenRarity, String chosenName) {
         List<Player> candidates = Bukkit.getOnlinePlayers().stream()
                 .filter(player -> player.getWorld().getEnvironment() == World.Environment.NORMAL)
                 .map(player -> (Player) player)
@@ -187,8 +196,10 @@ public final class YamlBossService implements BossService {
         }
         Player anchor = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
         BossArchetype archetype = pickArchetype();
-        BossRarity rarity = pickRarity();
-        String name = archetype.names().get(ThreadLocalRandom.current().nextInt(archetype.names().size()));
+        BossRarity rarity = chosenRarity == null ? pickRarity() : chosenRarity;
+        String name = chosenName == null || chosenName.isBlank()
+                ? archetype.names().get(ThreadLocalRandom.current().nextInt(archetype.names().size()))
+                : chosenName.strip();
         CompletableFuture<Optional<String>> result = new CompletableFuture<>();
         findSpawn(anchor, 1, result, location ->
                 anchor.getScheduler().run(plugin, task -> {
@@ -205,6 +216,9 @@ public final class YamlBossService implements BossService {
         if (tier == null || !(location.getWorld().spawnEntity(location, archetype.entityType()) instanceof Mob mob)) {
             return false;
         }
+        // Cleared before the newcomer is announced, so the server never sees two
+        // spawn broadcasts and then finds the older boss still standing.
+        dismissUnengagedBosses();
         applyStats(mob, archetype, rarity, tier, name);
         BossState state = new BossState(rarity, name, createBossBar(mob, rarity, name));
         activeBosses.put(mob.getUniqueId(), state);
@@ -217,9 +231,103 @@ public final class YamlBossService implements BossService {
                 "z", Integer.toString(location.getBlockZ()),
                 "dunya", location.getWorld().getName()
         ));
+        shareWaypoint(location, rarity, name);
         Bukkit.getOnlinePlayers().forEach(online ->
                 online.getScheduler().run(plugin, task -> feedback.celebrateBossSpawned(online), null));
         return true;
+    }
+
+    /**
+     * Puts the boss on everyone's minimap as a Xaero's Minimap waypoint.
+     *
+     * <p>Xaero's reads waypoints out of ordinary chat messages, so the whole
+     * integration is one line of text in a documented format - no API, no
+     * dependency, and nothing to break when the mod updates. It is safe to send
+     * to everybody because Xaero's Minimap is a <em>required</em> mod on this
+     * server ({@code modlar.yml}), so no player is left staring at the raw
+     * token. The template lives in {@code messages.yml} rather than in Java for
+     * the ordinary reason every other line does, and because that is also the
+     * one place an owner can blank it out if they ever drop the mod
+     * requirement.</p>
+     *
+     * <p>What the waypoint can carry is genuinely limited by the format: a
+     * short label, a colour index and coordinates. A boss therefore shows up as
+     * its own initials in its rarity's colour - the closest thing to "its head
+     * on the map" the mod actually supports. Xaero's draws the off-screen
+     * direction arrow for a waypoint on its own, which is what covers a player
+     * who is nowhere near it yet.</p>
+     */
+    private void shareWaypoint(Location location, BossRarity rarity, String name) {
+        Map<String, String> placeholders = Map.of(
+                "isim", name,
+                "kisaltma", waypointInitials(name),
+                "x", Integer.toString(location.getBlockX()),
+                "y", Integer.toString(location.getBlockY()),
+                "z", Integer.toString(location.getBlockZ()),
+                "renk", Integer.toString(waypointColorIndex(rarity))
+        );
+        // render(...), not send(...): Xaero's matches the whole message against
+        // its own format, so the chat prefix every other line carries would stop
+        // the waypoint being recognised at all. Same reasoning §18.3 recorded
+        // for the kick screen.
+        Component waypoint = messages.render(MessageKey.BOSS_WAYPOINT, placeholders);
+        Bukkit.getOnlinePlayers().forEach(online -> online.sendMessage(waypoint));
+    }
+
+    /** Xaero's waypoint label: at most two characters, since that is all it draws. */
+    private String waypointInitials(String name) {
+        String letters = name.replaceAll("[^\\p{L}\\p{N}]", "");
+        if (letters.isEmpty()) {
+            return "BS";
+        }
+        return letters.substring(0, Math.min(2, letters.length())).toUpperCase(Locale.ROOT);
+    }
+
+    /** Xaero's takes a colour as an index into the vanilla chat-colour table, not as RGB. */
+    private int waypointColorIndex(BossRarity rarity) {
+        return switch (rarity) {
+            case SIRADAN -> 7;
+            case NADIR -> 10;
+            case EPIK -> 5;
+            case EFSANEVI -> 14;
+            case MISTIK -> 13;
+        };
+    }
+
+    @Override
+    public void markEngaged(LivingEntity entity) {
+        BossState state = activeBosses.get(entity.getUniqueId());
+        if (state != null) {
+            state.markEngaged();
+        }
+    }
+
+    /**
+     * Removes every living boss nobody ever hit, called at the moment a
+     * replacement arrives.
+     *
+     * <p>A boss that has taken a player's hit is deliberately left alone even
+     * though it is now the older of two: somebody is fighting it, and having it
+     * evaporate mid-swing would be far worse than briefly having two on the
+     * map. Bosses that outlived a restart are not in {@code activeBosses} at all
+     * and are therefore never touched by this - the same honest limitation the
+     * behaviour loop already carries.</p>
+     */
+    private void dismissUnengagedBosses() {
+        for (Map.Entry<UUID, BossState> entry : Map.copyOf(activeBosses).entrySet()) {
+            if (entry.getValue().isEngaged()) {
+                continue;
+            }
+            Entity existing = Bukkit.getEntity(entry.getKey());
+            retire(entry.getKey());
+            if (existing != null) {
+                existing.getScheduler().run(plugin, task -> {
+                    existing.getWorld().spawnParticle(Particle.SMOKE, existing.getLocation().add(0, 1, 0),
+                            30, 0.4D, 0.8D, 0.4D, 0.02D);
+                    existing.remove();
+                }, null);
+            }
+        }
     }
 
     /**
@@ -408,7 +516,31 @@ public final class YamlBossService implements BossService {
         if (tier.healthMultiplier() >= 6.0D) {
             mob.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, PotionEffect.INFINITE_DURATION, 1, false, false));
         }
-        mob.getWorld().spawnParticle(Particle.FLASH, mob.getLocation(), 1);
+        makeSunproof(mob);
+        // FLASH is a coloured particle on this server version and throws
+        // outright without a Color payload - which is what killed the whole
+        // spawn, after the creature had already been created. See BossRarity.
+        mob.getWorld().spawnParticle(Particle.FLASH, mob.getLocation().add(0, 1, 0), 1, rarity.auraColor());
+    }
+
+    /**
+     * Stops the morning from doing what a whole server could not.
+     *
+     * <p>A boss is announced with its coordinates and is meant to be travelled
+     * to; an undead one spawned before dawn would simply burn to death on its
+     * own before anybody arrived, and the announcement would have been a lie.
+     * The per-type switch is what actually stops the fire, and the infinite
+     * fire resistance is the belt to its braces - it also covers a boss that
+     * wanders into lava on the way, and it covers any future archetype whose
+     * type is not one of the two handled here.</p>
+     */
+    private void makeSunproof(Mob mob) {
+        if (mob instanceof Zombie zombie) {
+            zombie.setShouldBurnInDay(false);
+        } else if (mob instanceof AbstractSkeleton skeleton) {
+            skeleton.setShouldBurnInDay(false);
+        }
+        mob.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, PotionEffect.INFINITE_DURATION, 0, false, false));
     }
 
     private void applyArmour(EntityEquipment equipment, List<Material> armour) {
@@ -657,6 +789,7 @@ public final class YamlBossService implements BossService {
         private volatile long lastHealMillis;
         private volatile long lastTeleportMillis;
         private volatile boolean fled;
+        private volatile boolean engaged;
 
         private BossState(BossRarity rarity, String name, BossBar bossBar) {
             this.rarity = rarity;
@@ -702,6 +835,14 @@ public final class YamlBossService implements BossService {
 
         void markFled() {
             fled = true;
+        }
+
+        boolean isEngaged() {
+            return engaged;
+        }
+
+        void markEngaged() {
+            engaged = true;
         }
     }
 }

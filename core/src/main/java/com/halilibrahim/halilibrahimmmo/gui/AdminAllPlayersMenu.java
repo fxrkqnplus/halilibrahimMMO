@@ -22,7 +22,8 @@ public final class AdminAllPlayersMenu implements GuiView {
 
     private static final int FIRST_SLOT = 0;
     private static final int BACK_SLOT = 53;
-    private static final int MAXIMUM_LISTED = BACK_SLOT;
+    /** The footer row is reserved, so entries stop one row short of the board. */
+    private static final int MAXIMUM_LISTED = 45;
 
     private final GuiServices services;
     private final Map<Integer, ActivatedPlayer> slotToPlayer = new LinkedHashMap<>();
@@ -43,6 +44,7 @@ public final class AdminAllPlayersMenu implements GuiView {
 
     @Override
     public void populate(Player player, Inventory inventory) {
+        GuiItems.listBoard(inventory, GuiItems.pane(Material.ORANGE_STAINED_GLASS_PANE));
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
         services.activation().findAllActivated().thenAccept(players -> player.getScheduler().run(services.plugin(), task -> {
             if (players.isEmpty()) {

@@ -16,9 +16,10 @@ import java.util.Map;
 /** Static explanation of what levels 25/50/75/100 grant for one specific skill, opened from {@link SkillDetailMenu}. */
 public final class SkillMilestoneInfoMenu implements GuiView {
 
-    private static final int[] TIER_SLOTS = {2, 3, 4, 5};
+    /** Four evenly-spaced pedestals, weakest to strongest, so the row reads as a ladder. */
+    private static final int[] TIER_SLOTS = {19, 21, 23, 25};
     private static final int[] TIER_LEVELS = {25, 50, 75, 100};
-    private static final int BACK_SLOT = 8;
+    private static final int BACK_SLOT = 40;
 
     private final GuiServices services;
     private final String skillId;
@@ -35,11 +36,12 @@ public final class SkillMilestoneInfoMenu implements GuiView {
 
     @Override
     public int size() {
-        return 9;
+        return 45;
     }
 
     @Override
     public void populate(Player player, Inventory inventory) {
+        GuiItems.frame(inventory, GuiItems.pane(Material.LIME_STAINED_GLASS_PANE), GuiItems.filler());
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
         SkillDefinition definition = services.skills().settings().definitions().get(skillId);
         if (definition == null) {

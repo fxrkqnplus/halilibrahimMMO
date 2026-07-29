@@ -84,6 +84,28 @@ public final class GuiItems {
         return item;
     }
 
+    /**
+     * Lays a footer row across the bottom of a list-shaped screen and answers
+     * how many slots are left above it for entries.
+     *
+     * <p>A list cannot be framed on all four sides the way a hub can - its
+     * entries need whole rows - but it can still be closed off at the bottom,
+     * which is what stops the back button from being one more anonymous square
+     * at the end of the list and what gives the screen an edge. Returning the
+     * usable count is the point: every one of these lists used to write from
+     * slot zero with nothing bounding it, so a long enough list would silently
+     * overwrite its own back button.</p>
+     *
+     * @return the exclusive upper bound on entry slots
+     */
+    public static int listBoard(Inventory inventory, ItemStack footer) {
+        int contentSlots = inventory.getSize() - 9;
+        for (int slot = contentSlots; slot < inventory.getSize(); slot++) {
+            inventory.setItem(slot, footer);
+        }
+        return contentSlots;
+    }
+
     /** Lays {@code frame} around the outer edge of an inventory and {@code fill} through the middle. */
     public static void frame(Inventory inventory, ItemStack frame, ItemStack fill) {
         for (int slot = 0; slot < inventory.getSize(); slot++) {

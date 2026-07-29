@@ -72,6 +72,11 @@ final class DurationFormatterTest {
         }
 
         @Override
+        public Component renderText(String template) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void send(Audience audience, MessageKey key, Map<String, String> placeholders) {
             throw new UnsupportedOperationException();
         }

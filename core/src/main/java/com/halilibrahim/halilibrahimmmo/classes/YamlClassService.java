@@ -19,6 +19,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -43,6 +44,8 @@ public final class YamlClassService implements ClassService {
     private final AtomicReference<ClassSettings> settings = new AtomicReference<>();
     private final ConcurrentHashMap<UUID, PlayerClassProgress> progressCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, String> selectedClasses = new ConcurrentHashMap<>();
+    /** Admin-granted extra talent points per pool, warmed alongside the rest of a player's class state. */
+    private final ConcurrentHashMap<UUID, Map<TalentPointCategory, Integer>> grantCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, CompletableFuture<Void>> updateChains = new ConcurrentHashMap<>();
     private final NamespacedKey healthModifierKey;
 
@@ -60,7 +63,7 @@ public final class YamlClassService implements ClassService {
     }
 
     @Override public void enable() { reload(); }
-    @Override public void disable() { progressCache.clear(); selectedClasses.clear(); updateChains.clear(); }
+    @Override public void disable() { progressCache.clear(); selectedClasses.clear(); grantCache.clear(); updateChains.clear(); }
 
     @Override
     public void reload() {
@@ -88,11 +91,43 @@ public final class YamlClassService implements ClassService {
     public CompletableFuture<PlayerClassProgress> load(UUID playerId, String playerName) {
         PlayerClassProgress cached = progressCache.get(playerId);
         if (cached != null) return CompletableFuture.completedFuture(cached);
-        return profiles.load(playerId, playerName).thenCompose(profile -> repository.load(playerId).thenApply(progress -> {
-            selectedClasses.put(playerId, profile.selectedClass());
-            progressCache.put(playerId, progress);
-            return progress;
+        return profiles.load(playerId, playerName).thenCompose(profile -> repository.load(playerId).thenCompose(progress ->
+                repository.loadGrants(playerId).thenApply(grants -> {
+                    selectedClasses.put(playerId, profile.selectedClass());
+                    progressCache.put(playerId, progress);
+                    // Warmed here rather than lazily, because pointsFor(...) is
+                    // synchronous - every screen that shows a point counter
+                    // reads it during a render and cannot wait for a query.
+                    grantCache.put(playerId, grants);
+                    return progress;
+                })));
+    }
+
+    /**
+     * Adds to (or takes from) one pool's admin grant, and answers with the new
+     * total for that pool.
+     *
+     * <p>Floored at zero rather than allowed to go negative: a negative grant
+     * would silently swallow points the player later earns honestly, which is a
+     * punishment nobody asked this tool to be able to hand out. Taking a grant
+     * back to zero is the strongest thing it does.</p>
+     */
+    @Override
+    public CompletableFuture<Integer> adminAdjustTalentPoints(UUID playerId, String playerName, TalentPointCategory category, int delta) {
+        return serial(playerId, () -> load(playerId, playerName).thenCompose(ignored -> {
+            Map<TalentPointCategory, Integer> grants = new EnumMap<>(grantCache.getOrDefault(playerId, Map.of()));
+            int updated = Math.max(0, grants.getOrDefault(category, 0) + delta);
+            grants.put(category, updated);
+            return repository.saveGrant(playerId, category, updated).thenApply(saved -> {
+                grantCache.put(playerId, Map.copyOf(grants));
+                return updated;
+            });
         }));
+    }
+
+    @Override
+    public int grantedPoints(UUID playerId, TalentPointCategory category) {
+        return grantCache.getOrDefault(playerId, Map.of()).getOrDefault(category, 0);
     }
 
     @Override
@@ -167,7 +202,7 @@ public final class YamlClassService implements ClassService {
         double health = 0, damage = 0;
         int energy = 0;
         Map<String, Double> costs = new LinkedHashMap<>(), cooldowns = new LinkedHashMap<>();
-        Map<String, Integer> limits = new LinkedHashMap<>();
+        Map<String, Integer> limits = new LinkedHashMap<>(), blockEnergy = new LinkedHashMap<>();
         Map<String, Double> durations = new LinkedHashMap<>(), effects = new LinkedHashMap<>();
         Map<String, Integer> ranks = progress.talentRanks().getOrDefault(classId, Map.of());
         for (TalentNodeDefinition talent : definition.talents().values()) {
@@ -182,6 +217,7 @@ public final class YamlClassService implements ClassService {
                 case ABILITY_LIMIT_BONUS -> limits.merge(talent.abilityId(), (int) total, Integer::sum);
                 case ABILITY_DURATION_BONUS -> durations.merge(talent.abilityId(), total, Double::sum);
                 case ABILITY_EFFECT_BONUS -> effects.merge(talent.abilityId(), total, Double::sum);
+                case ABILITY_BLOCK_ENERGY_REDUCTION -> blockEnergy.merge(talent.abilityId(), (int) total, Integer::sum);
             }
         }
         int prestigeCount = profiles.cached(playerId).map(PlayerProfile::prestige).orElse(0);
@@ -191,14 +227,14 @@ public final class YamlClassService implements ClassService {
             case PVE_DAMAGE_MULTIPLIER -> damage += prestigeTotal;
             case MAX_ENERGY -> energy += (int) prestigeTotal;
             case ABILITY_ENERGY_COST_REDUCTION, ABILITY_COOLDOWN_REDUCTION, ABILITY_LIMIT_BONUS,
-                 ABILITY_DURATION_BONUS, ABILITY_EFFECT_BONUS -> {
+                 ABILITY_DURATION_BONUS, ABILITY_EFFECT_BONUS, ABILITY_BLOCK_ENERGY_REDUCTION -> {
                 // Prestige boosts are deliberately restricted to MAX_HEALTH/PVE_DAMAGE_MULTIPLIER/MAX_ENERGY
                 // at parse time (see parse(...)) - per-ability modifiers need an ability id this
                 // class-wide bonus does not have.
             }
         }
         return new ClassModifiers(health, damage, energy, Map.copyOf(costs), Map.copyOf(cooldowns), Map.copyOf(limits),
-                Map.copyOf(durations), Map.copyOf(effects));
+                Map.copyOf(durations), Map.copyOf(effects), Map.copyOf(blockEnergy));
     }
 
     @Override
@@ -310,7 +346,7 @@ public final class YamlClassService implements ClassService {
     public int pointsFor(PlayerProfile profile, TalentPointCategory category) {
         return TalentPointBudget.pointsFor(
                 progression.cachedGlobalLevel(profile.playerId()), profile.prestige(), settings().talentPoints(), category
-        );
+        ) + grantedPoints(profile.playerId(), category);
     }
 
     @Override
@@ -383,7 +419,8 @@ public final class YamlClassService implements ClassService {
                 boolean needsAbility = type.requiresAbility();
                 if (needsAbility != !abilityId.isBlank() || (needsAbility && !abilities.settings().definitions().containsKey(abilityId))) throw new IllegalArgumentException("Invalid talent ability: " + talentId);
                 if ((type == ClassEffectType.ABILITY_ENERGY_COST_REDUCTION || type == ClassEffectType.ABILITY_COOLDOWN_REDUCTION) && value * maximumRank >= 1.0D) throw new IllegalArgumentException("Reduction talent cannot reach 100%: " + talentId);
-                if ((type == ClassEffectType.MAX_ENERGY || type == ClassEffectType.ABILITY_LIMIT_BONUS) && value != Math.rint(value)) throw new IllegalArgumentException("Integer talent requires an integer value: " + talentId);
+                if ((type == ClassEffectType.MAX_ENERGY || type == ClassEffectType.ABILITY_LIMIT_BONUS
+                        || type == ClassEffectType.ABILITY_BLOCK_ENERGY_REDUCTION) && value != Math.rint(value)) throw new IllegalArgumentException("Integer talent requires an integer value: " + talentId);
                 nodes.put(talentId, new TalentNodeDefinition(talentId, nodeName, maximumRank, type, abilityId, value));
             }
             if (nodes.isEmpty()) throw new IllegalArgumentException("Class must define talents: " + id);

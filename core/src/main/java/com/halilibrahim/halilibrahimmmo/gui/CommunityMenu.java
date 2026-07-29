@@ -8,13 +8,15 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.List;
+
 /** "Topluluk" category sub-hub: leaderboards, titles and cosmetics. */
 public final class CommunityMenu implements GuiView {
 
-    private static final int LEADERBOARDS_SLOT = 10;
-    private static final int TITLES_SLOT = 12;
-    private static final int COSMETICS_SLOT = 14;
-    private static final int BACK_SLOT = 26;
+    private static final int LEADERBOARDS_SLOT = 20;
+    private static final int TITLES_SLOT = 22;
+    private static final int COSMETICS_SLOT = 24;
+    private static final int BACK_SLOT = 40;
 
     private final GuiServices services;
 
@@ -29,18 +31,21 @@ public final class CommunityMenu implements GuiView {
 
     @Override
     public int size() {
-        return 27;
+        return 45;
     }
 
     @Override
     public void populate(Player player, Inventory inventory) {
-        ItemStack filler = GuiItems.filler();
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, filler);
-        }
-        inventory.setItem(LEADERBOARDS_SLOT, GuiItems.of(Material.BEACON, services.messages().render(MessageKey.GUI_MAIN_LEADERBOARDS)));
-        inventory.setItem(TITLES_SLOT, GuiItems.of(Material.NAME_TAG, services.messages().render(MessageKey.GUI_MAIN_TITLES)));
-        inventory.setItem(COSMETICS_SLOT, GuiItems.of(Material.FIREWORK_STAR, services.messages().render(MessageKey.GUI_MAIN_COSMETICS)));
+        GuiItems.frame(inventory, GuiItems.pane(Material.PURPLE_STAINED_GLASS_PANE), GuiItems.filler());
+        inventory.setItem(LEADERBOARDS_SLOT, GuiItems.of(Material.BEACON,
+                services.messages().render(MessageKey.GUI_MAIN_LEADERBOARDS),
+                List.of(services.messages().render(MessageKey.GUI_MAIN_LEADERBOARDS_LORE))));
+        inventory.setItem(TITLES_SLOT, GuiItems.of(Material.NAME_TAG,
+                services.messages().render(MessageKey.GUI_MAIN_TITLES),
+                List.of(services.messages().render(MessageKey.GUI_MAIN_TITLES_LORE))));
+        inventory.setItem(COSMETICS_SLOT, GuiItems.of(Material.FIREWORK_STAR,
+                services.messages().render(MessageKey.GUI_MAIN_COSMETICS),
+                List.of(services.messages().render(MessageKey.GUI_MAIN_COSMETICS_LORE))));
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
     }
 

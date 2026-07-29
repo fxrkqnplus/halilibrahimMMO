@@ -41,7 +41,12 @@ final class ClassConfigTest {
             assertFalse(talents.getKeys(false).isEmpty(), classId + " must define talents");
             for (String talentId : talents.getKeys(false)) {
                 String path = classId + ".yetenekler." + talentId;
-                assertEquals(4, talents.getInt(talentId + ".maksimum-rank"));
+                // Four is the house style and most talents use it, but a talent
+                // whose rank buys a whole step - an Efficiency level, a Speed
+                // level, one energy off every swept block - has to stop sooner
+                // or a fully-ranked player gets something the game cannot mean.
+                int maximumRank = talents.getInt(talentId + ".maksimum-rank");
+                assertTrue(maximumRank >= 1 && maximumRank <= 4, path + " maksimum-rank must be 1-4");
                 ClassEffectType type = ClassEffectType.valueOf(talents.getString(talentId + ".etki.tur"));
                 String abilityId = talents.getString(talentId + ".etki.kabiliyet", "");
                 assertEquals(type.requiresAbility(), !abilityId.isBlank(), path);

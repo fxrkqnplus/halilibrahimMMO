@@ -8,13 +8,15 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.List;
+
 /** "Görevler" category sub-hub: quests, collections and the adventure journal. */
 public final class TasksMenu implements GuiView {
 
-    private static final int QUESTS_SLOT = 10;
-    private static final int COLLECTIONS_SLOT = 12;
-    private static final int JOURNAL_SLOT = 14;
-    private static final int BACK_SLOT = 26;
+    private static final int QUESTS_SLOT = 20;
+    private static final int COLLECTIONS_SLOT = 22;
+    private static final int JOURNAL_SLOT = 24;
+    private static final int BACK_SLOT = 40;
 
     private final GuiServices services;
 
@@ -29,18 +31,21 @@ public final class TasksMenu implements GuiView {
 
     @Override
     public int size() {
-        return 27;
+        return 45;
     }
 
     @Override
     public void populate(Player player, Inventory inventory) {
-        ItemStack filler = GuiItems.filler();
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, filler);
-        }
-        inventory.setItem(QUESTS_SLOT, GuiItems.of(Material.WRITTEN_BOOK, services.messages().render(MessageKey.GUI_MAIN_QUESTS)));
-        inventory.setItem(COLLECTIONS_SLOT, GuiItems.of(Material.CHEST, services.messages().render(MessageKey.GUI_MAIN_COLLECTIONS)));
-        inventory.setItem(JOURNAL_SLOT, GuiItems.of(Material.MAP, services.messages().render(MessageKey.GUI_MAIN_JOURNAL)));
+        GuiItems.frame(inventory, GuiItems.pane(Material.CYAN_STAINED_GLASS_PANE), GuiItems.filler());
+        inventory.setItem(QUESTS_SLOT, GuiItems.of(Material.WRITTEN_BOOK,
+                services.messages().render(MessageKey.GUI_MAIN_QUESTS),
+                List.of(services.messages().render(MessageKey.GUI_MAIN_QUESTS_LORE))));
+        inventory.setItem(COLLECTIONS_SLOT, GuiItems.of(Material.CHEST,
+                services.messages().render(MessageKey.GUI_MAIN_COLLECTIONS),
+                List.of(services.messages().render(MessageKey.GUI_MAIN_COLLECTIONS_LORE))));
+        inventory.setItem(JOURNAL_SLOT, GuiItems.of(Material.MAP,
+                services.messages().render(MessageKey.GUI_MAIN_JOURNAL),
+                List.of(services.messages().render(MessageKey.GUI_MAIN_JOURNAL_LORE))));
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
     }
 

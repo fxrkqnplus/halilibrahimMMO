@@ -21,7 +21,19 @@ public enum ClassEffectType {
      * {@code EXTRA_DROP_CHANCE}, the raw damage of a {@code KNOCKBACK_SLAM}.
      * Abilities whose effect carries no such scalar are simply unaffected.
      */
-    ABILITY_EFFECT_BONUS(TalentPointCategory.KABILIYET);
+    ABILITY_EFFECT_BONUS(TalentPointCategory.KABILIYET),
+    /**
+     * Takes a flat number of energy off what one ability pays for <em>each</em>
+     * block it sweeps.
+     *
+     * <p>Deliberately not folded into {@link #ABILITY_ENERGY_COST_REDUCTION},
+     * which is a fraction of the one-off activation cost: a sweep's real price
+     * is the per-block drain, and a percentage of 3 energy cannot express "one
+     * less per block" - the number is small enough that only whole steps are
+     * meaningful. The two also want to be buyable separately, since one buys
+     * more uses and the other buys a longer run.</p>
+     */
+    ABILITY_BLOCK_ENERGY_REDUCTION(TalentPointCategory.KABILIYET);
 
     private final TalentPointCategory category;
 

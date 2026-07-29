@@ -20,6 +20,11 @@ public final class FeatureUnlockRules {
     public static final int TRADE_CLASS_LEVEL = 20;
     /** Class level a trade's other side must have reached to be traded with. */
     public static final int TRADE_PARTNER_CLASS_LEVEL = 15;
+    /**
+     * Class level at which {@code /çanta} unlocks - the highest of the three,
+     * because it is the only one that gives storage nothing can take away.
+     */
+    public static final int BACKPACK_CLASS_LEVEL = 30;
 
     private FeatureUnlockRules() {
         throw new UnsupportedOperationException("FeatureUnlockRules is a static utility class");

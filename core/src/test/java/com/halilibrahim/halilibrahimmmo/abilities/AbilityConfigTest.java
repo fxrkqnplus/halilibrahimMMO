@@ -35,7 +35,8 @@ final class AbilityConfigTest {
      * plain JUnit run - the same standalone-registry limitation §16 already recorded
      * for {@code Material#isBlock()}.
      */
-    private static final Set<String> SUPPORTED_TOOL_TAGS = Set.of("PICKAXE", "AXE", "SHOVEL", "SWORD", "HOE", "ANY");
+    private static final Set<String> SUPPORTED_TOOL_TAGS =
+            Set.of("PICKAXE", "AXE", "SHOVEL", "SWORD", "MELEE", "HOE", "ANY");
 
     /** The four rungs every class's ability line is built on, weakest to strongest. */
     private static final List<Integer> EXPECTED_UNLOCK_LEVELS = List.of(10, 20, 35, 50);
@@ -65,12 +66,37 @@ final class AbilityConfigTest {
             }
             if (effect == AbilityEffectType.ORE_REVEAL || effect == AbilityEffectType.KNOCKBACK_SLAM
                     || effect == AbilityEffectType.GROWTH_SURGE || effect == AbilityEffectType.LOVE_CALL
-                    || effect == AbilityEffectType.BLAST_MINE) {
+                    || effect == AbilityEffectType.BLAST_MINE || effect == AbilityEffectType.BULLDOZER
+                    || effect == AbilityEffectType.MINE_BOMB) {
                 assertTrue(ability.getInt("etki.yaricap", 0) > 0, id + " must declare a positive etki.yaricap");
             }
             if (effect == AbilityEffectType.LIFE_STEAL) {
                 double ratio = ability.getDouble("etki.can-orani", -1);
                 assertTrue(ratio > 0 && ratio <= 1, id + " must declare etki.can-orani in (0, 1]");
+                int speed = ability.getInt("etki.hiz-seviyesi", 0);
+                assertTrue(speed >= 1 && speed <= 5, id + " must declare etki.hiz-seviyesi in [1, 5]");
+            }
+            // A cube sweep is bounded to a 3x3x3 or a 5x5x5 on purpose: the
+            // radius is a cube, so a third step would be 343 blocks a swing.
+            if (effect == AbilityEffectType.BULLDOZER || effect == AbilityEffectType.BLAST_MINE) {
+                int radius = ability.getInt("etki.yaricap", 0);
+                assertTrue(radius <= 2, id + " cube sweep yaricap must be 1 or 2");
+            }
+            if (effect == AbilityEffectType.TOOL_EFFICIENCY) {
+                int levels = ability.getInt("etki.seviye", 0);
+                assertTrue(levels >= 1 && levels <= 10, id + " must declare etki.seviye in [1, 10]");
+            }
+            if (effect == AbilityEffectType.GUARDIAN_CALL) {
+                assertTrue(ability.getInt("etki.hayvan-sayisi", 0) > 0, id + " must declare a positive etki.hayvan-sayisi");
+                assertTrue(ability.getDouble("etki.hasar", 0) > 0, id + " must declare a positive etki.hasar");
+            }
+            // Only the two sustained sweeps and the two cube sweeps charge per
+            // block; anywhere else the key would be silently ignored.
+            if (ability.getInt("enerji-blok-basi", 0) > 0) {
+                assertTrue(effect == AbilityEffectType.TREE_FELL || effect == AbilityEffectType.VEIN_MINE
+                                || effect == AbilityEffectType.EXCAVATE || effect == AbilityEffectType.BLAST_MINE
+                                || effect == AbilityEffectType.BULLDOZER,
+                        id + " declares enerji-blok-basi but is not a block sweep");
             }
             assertTrue(ability.getInt("enerji-blok-basi", 0) >= 0, id + " has a negative enerji-blok-basi");
             assertVisual(ability.getConfigurationSection("gorsel"), id);

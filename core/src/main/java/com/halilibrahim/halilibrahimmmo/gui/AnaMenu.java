@@ -32,7 +32,8 @@ public final class AnaMenu implements GuiView {
     private static final int ABILITIES_SLOT = 21;
     private static final int TASKS_SLOT = 23;
     private static final int COMMUNITY_SLOT = 25;
-    private static final int CREDITS_SLOT = 40;
+    private static final int GUIDE_SLOT = 39;
+    private static final int CREDITS_SLOT = 41;
 
     private final GuiServices services;
 
@@ -82,6 +83,14 @@ public final class AnaMenu implements GuiView {
                 services.messages().render(MessageKey.GUI_MAIN_CATEGORY_COMMUNITY),
                 List.of(services.messages().render(MessageKey.GUI_MAIN_CATEGORY_COMMUNITY_LORE))
         ));
+        // Sits alongside the credits rather than up with the four categories:
+        // it is not another part of the game to go and do, it is the thing you
+        // open when one of those four did not explain itself.
+        inventory.setItem(GUIDE_SLOT, GuiItems.of(
+                Material.ENCHANTED_BOOK,
+                services.messages().render(MessageKey.GUI_MAIN_GUIDE),
+                List.of(services.messages().render(MessageKey.GUI_MAIN_GUIDE_LORE))
+        ));
         inventory.setItem(CREDITS_SLOT, GuiItems.of(
                 Material.NETHER_STAR,
                 services.messages().render(MessageKey.GUI_MAIN_CREDITS),
@@ -115,6 +124,7 @@ public final class AnaMenu implements GuiView {
             case ABILITIES_SLOT -> GuiManager.open(player, new AbilitiesMenu(services));
             case TASKS_SLOT -> GuiManager.open(player, new TasksMenu(services));
             case COMMUNITY_SLOT -> GuiManager.open(player, new CommunityMenu(services));
+            case GUIDE_SLOT -> GuiManager.open(player, new GuideMenu(services, true));
             case CREDITS_SLOT -> GuiManager.open(player, new CreditsMenu(services, false));
             default -> {
             }

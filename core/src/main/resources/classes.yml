@@ -104,13 +104,23 @@ siniflar:
       savas-canliligi: { gorunen-ad: "Savaş Canlılığı", maksimum-rank: 4, etki: { tur: MAX_HEALTH, deger-rank-basina: 2 } }
       savas-dayanikliligi: { gorunen-ad: "Savaş Dayanıklılığı", maksimum-rank: 4, etki: { tur: MAX_ENERGY, deger-rank-basina: 5 } }
       # --- Kabiliyet yetenekleri ---
+      # ORANLAR MUTLAK DEGER ICIN SECILMISTIR. Her oran, kabiliyetin abilities.yml'deki
+      # KENDI temel degerine gore hesaplanir; asagidaki yorumlar rank basina dusen
+      # mutlak degisimi soyler. Temel degeri degistirirseniz oranlari da guncelleyin.
       odak-tasarrufu: { gorunen-ad: "Odak Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: avci-odagi, deger-rank-basina: 0.05 } }
       odak-ritmi: { gorunen-ad: "Odak Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: avci-odagi, deger-rank-basina: 0.05 } }
       odak-suresi: { gorunen-ad: "Odak Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: avci-odagi, deger-rank-basina: 0.10 } }
       yikim-gucu: { gorunen-ad: "Yıkım Gücü", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: yikici-darbe, deger-rank-basina: 0.08 } }
-      karanlik-goz: { gorunen-ad: "Karanlık Göz", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: gece-gorusu, deger-rank-basina: 0.15 } }
-      kan-suresi: { gorunen-ad: "Kan Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: kan-yemini, deger-rank-basina: 0.10 } }
-      kan-yemini-gucu: { gorunen-ad: "Kan Bağı", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: kan-yemini, deger-rank-basina: 0.08 } }
+      # B Plani: temel bekleme 120 sn -> her rank -15 sn (rank 4'te 60 sn).
+      kacis-ritmi: { gorunen-ad: "Kaçış Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: b-plani, deger-rank-basina: 0.125 } }
+      # B Plani: temel sure 5 sn -> her rank +5 sn (rank 4'te 25 sn).
+      golge-suresi: { gorunen-ad: "Gölge Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: b-plani, deger-rank-basina: 1.0 } }
+      # Kan Yemini: temel bekleme 450 sn -> her rank -30 sn (rank 4'te 330 sn).
+      kan-ritmi: { gorunen-ad: "Kan Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: kan-yemini, deger-rank-basina: 0.0667 } }
+      # Kan Yemini: temel can-orani %15 -> her rank +%5 (rank 4'te %35).
+      kan-yemini-gucu: { gorunen-ad: "Kan Bağı", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: kan-yemini, deger-rank-basina: 0.3333 } }
+      # Kan Yemini: temel Hiz 1 -> her rank +1 seviye (rank 2'de Hiz 3).
+      kan-hizi: { gorunen-ad: "Kan Hızı", maksimum-rank: 2, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: kan-yemini, deger-rank-basina: 1 } }
 
   madenci:
     gorunen-ad: "Mağara Adamı"
@@ -124,13 +134,21 @@ siniflar:
       maden-canliligi: { gorunen-ad: "Maden Canlılığı", maksimum-rank: 4, etki: { tur: MAX_HEALTH, deger-rank-basina: 2 } }
       maden-dayanikliligi: { gorunen-ad: "Maden Dayanıklılığı", maksimum-rank: 4, etki: { tur: MAX_ENERGY, deger-rank-basina: 5 } }
       # --- Kabiliyet yetenekleri ---
-      cevher-tasarrufu: { gorunen-ad: "Cevher Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: cevher-sezgisi, deger-rank-basina: 0.05 } }
-      cevher-bereketi: { gorunen-ad: "Cevher Bereketi", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: cevher-sezgisi, deger-rank-basina: 0.10 } }
-      damar-tasarrufu: { gorunen-ad: "Damar Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: damar-kirici, deger-rank-basina: 0.05 } }
-      damar-uzmanligi: { gorunen-ad: "Damar Uzmanlığı", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: damar-kirici, deger-rank-basina: 1 } }
+      # Bulldozer: blok basi 3 enerji -> her rank -1 (rank 2'de 1 enerji).
+      bulldozer-tasarrufu: { gorunen-ad: "Bulldozer Tasarrufu", maksimum-rank: 2, etki: { tur: ABILITY_BLOCK_ENERGY_REDUCTION, kabiliyet: bulldozer, deger-rank-basina: 1 } }
+      # Bulldozer: temel bekleme 150 sn -> her rank -15 sn (rank 4'te 90 sn).
+      bulldozer-ritmi: { gorunen-ad: "Bulldozer Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: bulldozer, deger-rank-basina: 0.10 } }
+      # Madenci Refleksleri: temel bekleme 120 sn -> her rank -15 sn (rank 4'te 60 sn).
+      refleks-ritmi: { gorunen-ad: "Refleks Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: madenci-refleksleri, deger-rank-basina: 0.125 } }
+      # Madenci Refleksleri: temel +3 Verimlilik -> her rank +1 (rank 3'te +6).
+      refleks-keskinligi: { gorunen-ad: "Refleks Keskinliği", maksimum-rank: 3, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: madenci-refleksleri, deger-rank-basina: 1 } }
+      # Madenci Refleksleri: temel sure 10 sn -> her rank +5 sn (rank 4'te 30 sn).
+      refleks-suresi: { gorunen-ad: "Refleks Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: madenci-refleksleri, deger-rank-basina: 0.5 } }
+      # Kaya Patlamasi: temel bekleme 300 sn -> her rank -30 sn (rank 4'te 180 sn).
+      patlama-ritmi: { gorunen-ad: "Patlama Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: kaya-patlamasi, deger-rank-basina: 0.10 } }
+      # Kaya Patlamasi: temel yaricap 35 -> her rank +1 blok (rank 4'te 39).
+      patlama-alani: { gorunen-ad: "Patlama Alanı", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: kaya-patlamasi, deger-rank-basina: 1 } }
       fener-ritmi: { gorunen-ad: "Fener Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: maden-feneri, deger-rank-basina: 0.05 } }
-      patlama-tasarrufu: { gorunen-ad: "Patlama Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: kaya-patlamasi, deger-rank-basina: 0.05 } }
-      patlama-ritmi: { gorunen-ad: "Patlama Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: kaya-patlamasi, deger-rank-basina: 0.05 } }
 
   tabiat-varisi:
     gorunen-ad: "Tabiat Vârisi"
@@ -153,7 +171,12 @@ siniflar:
       kesim-tasarrufu: { gorunen-ad: "Kesim Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }
       kesim-ritmi: { gorunen-ad: "Kesim Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }
       kesim-uzmanligi: { gorunen-ad: "Kesim Uzmanlığı", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: agac-kirici, deger-rank-basina: 1 } }
-      toprak-bereketi: { gorunen-ad: "Toprak Bereketi", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: toprak-sezgisi, deger-rank-basina: 0.10 } }
-      toprak-tasarrufu: { gorunen-ad: "Toprak Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: toprak-sezgisi, deger-rank-basina: 0.05 } }
+      # Doga Ana'nin Koruyuculari: temel sure 10 sn -> her rank +5 sn (rank 4'te 30 sn).
+      koruyucu-suresi: { gorunen-ad: "Koruyucu Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: doga-ana-koruyuculari, deger-rank-basina: 0.5 } }
+      # Doga Ana'nin Koruyuculari: temel 6 hayvan -> her rank +1 (rank 2'de 8).
+      # Bilerek kucuk: cagriya cevap veren her hayvan ayri bir yol bulma isi.
+      koruyucu-cagrisi: { gorunen-ad: "Koruyucu Çağrısı", maksimum-rank: 2, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: doga-ana-koruyuculari, deger-rank-basina: 1 } }
+      # Doga Ana'nin Koruyuculari: temel bekleme 150 sn -> her rank -15 sn (rank 4'te 90 sn).
+      koruyucu-ritmi: { gorunen-ad: "Koruyucu Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: doga-ana-koruyuculari, deger-rank-basina: 0.10 } }
       filiz-genisligi: { gorunen-ad: "Filiz Genişliği", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: filiz-patlamasi, deger-rank-basina: 1 } }
       suru-suresi: { gorunen-ad: "Sürü Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: suru-cagrisi, deger-rank-basina: 0.15 } }

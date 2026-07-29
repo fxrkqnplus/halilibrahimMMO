@@ -4,6 +4,7 @@ import com.halilibrahim.halilibrahimmmo.classes.ClassExperienceAwardResult;
 import com.halilibrahim.halilibrahimmmo.classes.ClassLevelProgress;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassProgress;
+import com.halilibrahim.halilibrahimmmo.classes.TalentPointCategory;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.NumberFormatter;
 import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
@@ -37,15 +38,20 @@ public final class AdminPlayerEditMenu implements GuiView {
     private static final int INFO_SLOT = 4;
     private static final int FIRST_SKILL_LEVEL_SLOT = 10;
     private static final int FIRST_SKILL_XP_SLOT = 19;
-    private static final int CLASS_LEVEL_SLOT = 30;
-    private static final int CLASS_XP_SLOT = 31;
-    private static final int WEALTH_SLOT = 32;
-    private static final int FORCE_CLASS_SLOT = 40;
+    private static final int CLASS_LEVEL_SLOT = 28;
+    private static final int CLASS_XP_SLOT = 29;
+    private static final int FORCE_CLASS_SLOT = 30;
+    private static final int ABILITY_SLOT = 31;
+    private static final int FEATURE_POINTS_SLOT = 32;
+    private static final int ABILITY_POINTS_SLOT = 33;
+    private static final int WEALTH_SLOT = 34;
     private static final int BACK_SLOT = 49;
 
     private final GuiServices services;
     private final UUID targetId;
     private final String targetName;
+    /** Where this screen returns to - staff reach it from both player lists. */
+    private final boolean fromOnlineList;
     private final Map<Integer, String> slotToSkillLevelId = new LinkedHashMap<>();
     private final Map<Integer, String> slotToSkillXpId = new LinkedHashMap<>();
     private final Map<String, Integer> currentSkillLevels = new LinkedHashMap<>();
@@ -53,9 +59,18 @@ public final class AdminPlayerEditMenu implements GuiView {
     private int currentClassLevel = 1;
 
     public AdminPlayerEditMenu(GuiServices services, UUID targetId, String targetName) {
+        this(services, targetId, targetName, false);
+    }
+
+    public AdminPlayerEditMenu(GuiServices services, UUID targetId, String targetName, boolean fromOnlineList) {
         this.services = services;
         this.targetId = targetId;
         this.targetName = targetName;
+        this.fromOnlineList = fromOnlineList;
+    }
+
+    private AdminPlayerEditMenu reopened() {
+        return new AdminPlayerEditMenu(services, targetId, targetName, fromOnlineList);
     }
 
     @Override
@@ -70,6 +85,7 @@ public final class AdminPlayerEditMenu implements GuiView {
 
     @Override
     public void populate(Player player, Inventory inventory) {
+        GuiItems.frame(inventory, GuiItems.pane(Material.ORANGE_STAINED_GLASS_PANE), GuiItems.filler());
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
         CompletableFuture<PlayerProfile> profileFuture = services.profiles().load(targetId, targetName);
         CompletableFuture<PlayerClassProgress> classFuture = services.classes().load(targetId, targetName);
@@ -84,14 +100,21 @@ public final class AdminPlayerEditMenu implements GuiView {
     private void render(Inventory inventory, PlayerProfile profile, PlayerClassProgress classProgress) {
         currentClassId = profile.selectedClass();
         int guc = services.progression().cachedGlobalLevel(targetId);
-        inventory.setItem(INFO_SLOT, GuiItems.of(Material.PLAYER_HEAD,
+        Player target = Bukkit.getPlayer(targetId);
+        // A real head instead of a generic one: staff working through a list of
+        // names need to know at a glance whose record is open.
+        inventory.setItem(INFO_SLOT, GuiItems.playerHead(Bukkit.getOfflinePlayer(targetId),
                 services.messages().render(MessageKey.GUI_ADMIN_EDIT_INFO_ITEM, Map.of("oyuncu", targetName)),
-                List.of(currentClassId.isEmpty()
-                        ? services.messages().render(MessageKey.GUI_ADMIN_EDIT_INFO_LORE_NO_CLASS, Map.of(
-                                "seviye", Integer.toString(guc), "prestij", Integer.toString(profile.prestige())))
-                        : services.messages().render(MessageKey.GUI_ADMIN_EDIT_INFO_LORE, Map.of(
-                                "seviye", Integer.toString(guc), "prestij", Integer.toString(profile.prestige()),
-                                "sinif", services.classes().displayName(currentClassId))))));
+                List.of(
+                        currentClassId.isEmpty()
+                                ? services.messages().render(MessageKey.GUI_ADMIN_EDIT_INFO_LORE_NO_CLASS, Map.of(
+                                        "seviye", Integer.toString(guc), "prestij", Integer.toString(profile.prestige())))
+                                : services.messages().render(MessageKey.GUI_ADMIN_EDIT_INFO_LORE, Map.of(
+                                        "seviye", Integer.toString(guc), "prestij", Integer.toString(profile.prestige()),
+                                        "sinif", services.classes().displayName(currentClassId))),
+                        services.messages().render(target == null
+                                ? MessageKey.GUI_ADMIN_EDIT_INFO_OFFLINE : MessageKey.GUI_ADMIN_EDIT_INFO_ONLINE)
+                )));
 
         int levelSlot = FIRST_SKILL_LEVEL_SLOT;
         int xpSlot = FIRST_SKILL_XP_SLOT;
@@ -100,7 +123,10 @@ public final class AdminPlayerEditMenu implements GuiView {
             long xp = services.skills().cached(targetId, definition.id()).map(progress -> progress.experience()).orElse(0L);
             currentSkillLevels.put(definition.id(), level);
             slotToSkillLevelId.put(levelSlot, definition.id());
-            inventory.setItem(levelSlot++, GuiItems.of(Material.EXPERIENCE_BOTTLE,
+            // Each skill's own icon from skills.yml rather than six identical
+            // bottles: the column is read top-to-bottom dozens of times and the
+            // icon is the only thing that makes a row findable without reading.
+            inventory.setItem(levelSlot++, GuiItems.of(definition.icon(),
                     services.messages().render(MessageKey.GUI_ADMIN_EDIT_SKILL_LEVEL_ITEM, Map.of("beceri", definition.displayName(), "seviye", Integer.toString(level))),
                     List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_SKILL_LEVEL_LORE))));
             slotToSkillXpId.put(xpSlot, definition.id());
@@ -117,13 +143,19 @@ public final class AdminPlayerEditMenu implements GuiView {
             ClassLevelProgress levelProgress = classProgress.levelProgress(currentClassId);
             currentClassLevel = levelProgress.level();
             String className = classDefinition == null ? currentClassId : classDefinition.displayName();
-            inventory.setItem(CLASS_LEVEL_SLOT, GuiItems.of(Material.NETHERITE_SWORD,
+            inventory.setItem(CLASS_LEVEL_SLOT, GuiItems.of(
+                    classDefinition == null ? Material.NETHERITE_SWORD : classDefinition.icon(),
                     services.messages().render(MessageKey.GUI_ADMIN_EDIT_CLASS_LEVEL_ITEM, Map.of("sinif", className, "seviye", Integer.toString(currentClassLevel))),
                     List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_CLASS_LEVEL_LORE))));
             inventory.setItem(CLASS_XP_SLOT, GuiItems.of(Material.NETHER_STAR,
                     services.messages().render(MessageKey.GUI_ADMIN_EDIT_CLASS_XP_ITEM, Map.of("sinif", className, "xp", Long.toString(levelProgress.experience()))),
                     List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_CLASS_XP_LORE))));
         }
+
+        renderPointRow(inventory, profile, classProgress, TalentPointCategory.OZELLIK,
+                FEATURE_POINTS_SLOT, Material.BOOK, MessageKey.GUI_ADMIN_EDIT_FEATURE_POINTS_ITEM);
+        renderPointRow(inventory, profile, classProgress, TalentPointCategory.KABILIYET,
+                ABILITY_POINTS_SLOT, Material.ENCHANTED_BOOK, MessageKey.GUI_ADMIN_EDIT_ABILITY_POINTS_ITEM);
 
         inventory.setItem(WEALTH_SLOT, GuiItems.of(Material.DIAMOND,
                 services.messages().render(MessageKey.GUI_ADMIN_EDIT_WEALTH_ITEM, Map.of(
@@ -134,20 +166,76 @@ public final class AdminPlayerEditMenu implements GuiView {
         inventory.setItem(FORCE_CLASS_SLOT, GuiItems.of(Material.ANVIL,
                 services.messages().render(MessageKey.GUI_ADMIN_EDIT_FORCE_CLASS_ITEM),
                 List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_FORCE_CLASS_LORE))));
+
+        // Equipping for the player is only meaningful while they are here to be
+        // equipped: the selection is in-memory and evaporates on quit, so
+        // offering it for an offline target would be a button that does nothing.
+        inventory.setItem(ABILITY_SLOT, target == null
+                ? GuiItems.of(Material.GRAY_DYE, services.messages().render(MessageKey.GUI_ADMIN_EDIT_ABILITY_OFFLINE_ITEM),
+                        List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_ABILITY_OFFLINE_LORE)))
+                : GuiItems.of(Material.BLAZE_POWDER,
+                        services.messages().render(MessageKey.GUI_ADMIN_EDIT_ABILITY_ITEM, Map.of(
+                                "kabiliyet", services.abilities().selected(targetId)
+                                        .map(this::abilityName)
+                                        .orElse(services.messages().plain(MessageKey.GUI_ADMIN_EDIT_ABILITY_NONE, Map.of()))
+                        )),
+                        List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_ABILITY_LORE))));
+    }
+
+    private String abilityName(String abilityId) {
+        return services.abilities().definitions().stream()
+                .filter(definition -> definition.id().equals(abilityId))
+                .map(definition -> definition.displayName())
+                .findFirst()
+                .orElse(abilityId);
+    }
+
+    /**
+     * One talent pool's row: how many the player has earned, how many are still
+     * unspent, and how many of the total came from staff. All three are shown
+     * because "give them a point" is a decision made against the first two.
+     */
+    private void renderPointRow(
+            Inventory inventory, PlayerProfile profile, PlayerClassProgress classProgress,
+            TalentPointCategory category, int slot, Material icon, MessageKey nameKey
+    ) {
+        inventory.setItem(slot, GuiItems.of(icon,
+                services.messages().render(nameKey, Map.of(
+                        "toplam", Integer.toString(services.classes().pointsFor(profile, category)),
+                        "kalan", Integer.toString(services.classes().availablePoints(profile, classProgress, category))
+                )),
+                List.of(
+                        services.messages().render(MessageKey.GUI_ADMIN_EDIT_POINTS_GRANTED, Map.of(
+                                "deger", Integer.toString(services.classes().grantedPoints(targetId, category)))),
+                        services.messages().render(MessageKey.GUI_ADMIN_EDIT_POINTS_LORE)
+                )));
     }
 
     @Override
     public void handleClick(Player player, int slot, ItemStack clicked, ClickType click) {
         if (slot == BACK_SLOT) {
-            GuiManager.open(player, new AdminAllPlayersMenu(services));
+            GuiManager.open(player, fromOnlineList
+                    ? new AdminOnlinePlayersMenu(services) : new AdminAllPlayersMenu(services));
             return;
         }
         if (slot == FORCE_CLASS_SLOT) {
             GuiManager.open(player, new AdminClassPickerMenu(services, targetId, targetName));
             return;
         }
+        if (slot == ABILITY_SLOT && Bukkit.getPlayer(targetId) != null) {
+            GuiManager.open(player, new AdminAbilityPickerMenu(services, targetId, targetName, fromOnlineList));
+            return;
+        }
         if (slot == WEALTH_SLOT) {
             promptForWealth(player);
+            return;
+        }
+        if (slot == FEATURE_POINTS_SLOT) {
+            adjustPoints(player, TalentPointCategory.OZELLIK, click);
+            return;
+        }
+        if (slot == ABILITY_POINTS_SLOT) {
+            adjustPoints(player, TalentPointCategory.KABILIYET, click);
             return;
         }
         String levelSkillId = slotToSkillLevelId.get(slot);
@@ -169,6 +257,35 @@ public final class AdminPlayerEditMenu implements GuiView {
         }
     }
 
+    /**
+     * Grants or takes back talent points, on the same click language every
+     * other row on this screen uses: left adds one, shift-left adds five, right
+     * and shift-right take them back. Five rather than ten because a point is
+     * worth far more than a skill level - a fully-ranked talent is four.
+     */
+    private void adjustPoints(Player player, TalentPointCategory category, ClickType click) {
+        int delta = switch (click) {
+            case LEFT -> 1;
+            case SHIFT_LEFT -> 5;
+            case RIGHT -> -1;
+            case SHIFT_RIGHT -> -5;
+            default -> 0;
+        };
+        if (delta == 0) {
+            return;
+        }
+        services.classes().adminAdjustTalentPoints(targetId, targetName, category, delta).thenAccept(total ->
+                player.getScheduler().run(services.plugin(), task -> {
+                    services.logger().info("Yonetici " + player.getName() + ", " + targetName + " oyuncusunun "
+                            + category.name() + " puan bagisini " + total + " olarak ayarladi.");
+                    Player target = Bukkit.getPlayer(targetId);
+                    if (target != null) {
+                        services.sidebar().refresh(target);
+                    }
+                    GuiManager.open(player, reopened());
+                }, null));
+    }
+
     private void adjustSkillLevel(Player player, String skillId, ClickType click) {
         int delta = switch (click) {
             case LEFT -> 1;
@@ -184,7 +301,7 @@ public final class AdminPlayerEditMenu implements GuiView {
         services.skills().adminSetLevel(targetId, skillId, newLevel).thenAccept(result -> {
             services.logger().info("Yonetici " + player.getName() + ", " + targetName + " oyuncusunun " + skillId + " becerisini " + result.newLevel() + ". seviyeye ayarladi.");
             celebrateSkillLevelUpIfNeeded(skillId, result);
-            player.getScheduler().run(services.plugin(), task -> GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName)), null);
+            player.getScheduler().run(services.plugin(), task -> GuiManager.open(player, reopened()), null);
         });
     }
 
@@ -200,7 +317,7 @@ public final class AdminPlayerEditMenu implements GuiView {
         services.skills().adminAddExperience(targetId, skillId, amount).thenAccept(result -> {
             services.logger().info("Yonetici " + player.getName() + ", " + targetName + " oyuncusunun " + skillId + " becerisine " + amount + " XP ekledi.");
             celebrateSkillLevelUpIfNeeded(skillId, result);
-            player.getScheduler().run(services.plugin(), task -> GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName)), null);
+            player.getScheduler().run(services.plugin(), task -> GuiManager.open(player, reopened()), null);
         });
     }
 
@@ -219,7 +336,7 @@ public final class AdminPlayerEditMenu implements GuiView {
         services.classes().adminSetClassLevel(targetId, targetName, currentClassId, newLevel).thenAccept(result -> {
             services.logger().info("Yonetici " + player.getName() + ", " + targetName + " oyuncusunun " + currentClassId + " sinif seviyesini " + result.newLevel() + " olarak ayarladi.");
             celebrateClassLevelUpIfNeeded(currentClassId, result);
-            player.getScheduler().run(services.plugin(), task -> GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName)), null);
+            player.getScheduler().run(services.plugin(), task -> GuiManager.open(player, reopened()), null);
         });
     }
 
@@ -235,7 +352,7 @@ public final class AdminPlayerEditMenu implements GuiView {
         services.classes().adminAddClassExperience(targetId, targetName, currentClassId, amount).thenAccept(result -> {
             services.logger().info("Yonetici " + player.getName() + ", " + targetName + " oyuncusunun " + currentClassId + " sinif XP'sine " + amount + " ekledi.");
             celebrateClassLevelUpIfNeeded(currentClassId, result);
-            player.getScheduler().run(services.plugin(), task -> GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName)), null);
+            player.getScheduler().run(services.plugin(), task -> GuiManager.open(player, reopened()), null);
         });
     }
 
@@ -260,12 +377,12 @@ public final class AdminPlayerEditMenu implements GuiView {
                 total = Long.parseLong(reply.replace(".", "").replace(",", "").trim());
             } catch (NumberFormatException exception) {
                 services.messages().send(player, MessageKey.ADMIN_WEALTH_INVALID, Map.of("deger", reply));
-                GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName));
+                GuiManager.open(player, reopened());
                 return;
             }
             if (total < 0) {
                 services.messages().send(player, MessageKey.ADMIN_WEALTH_INVALID, Map.of("deger", reply));
-                GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName));
+                GuiManager.open(player, reopened());
                 return;
             }
             services.wealth().adminSetTotal(targetId, total).thenAccept(applied ->
@@ -279,7 +396,7 @@ public final class AdminPlayerEditMenu implements GuiView {
                         if (target != null) {
                             services.sidebar().refresh(target);
                         }
-                        GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName));
+                        GuiManager.open(player, reopened());
                     }, null));
         });
     }

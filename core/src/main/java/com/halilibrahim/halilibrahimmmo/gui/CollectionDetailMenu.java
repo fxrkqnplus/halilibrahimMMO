@@ -5,6 +5,7 @@ import com.halilibrahim.halilibrahimmmo.collections.CollectionEntryDefinition;
 import com.halilibrahim.halilibrahimmmo.collections.CollectionProgress;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
@@ -40,6 +41,7 @@ public final class CollectionDetailMenu implements GuiView {
 
     @Override
     public void populate(Player player, Inventory inventory) {
+        int contentSlots = GuiItems.listBoard(inventory, GuiItems.pane(Material.BLUE_STAINED_GLASS_PANE));
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
         CollectionDefinition definition = services.collections().settings().definitions().get(collectionId);
         if (definition == null) {
@@ -50,6 +52,9 @@ public final class CollectionDetailMenu implements GuiView {
                     CollectionProgress progress = found.orElseThrow();
                     int slot = 0;
                     for (CollectionEntryDefinition entry : definition.entries().values()) {
+                        if (slot >= contentSlots) {
+                            break;
+                        }
                         boolean obtained = progress.obtainedEntryIds().contains(entry.id());
                         inventory.setItem(slot++, GuiItems.of(
                                 entry.item(),

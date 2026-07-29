@@ -32,9 +32,19 @@ import java.util.Map;
  */
 public final class ClassIntroMenu implements GuiView {
 
-    private static final int[] CLASS_SLOTS = {11, 13, 15};
-    private static final int STATUS_SLOT = 4;
-    private static final int BACK_SLOT = 26;
+    /**
+     * Three evenly-spaced pedestals in the middle row of a 45-slot board, with
+     * the class's own frame colour under each. Widened from a 27-slot strip in
+     * Faz 21: the entries had grown a blurb, a synergy line, four abilities and
+     * a prestige note, and three of those stacked side by side in a cramped
+     * screen read as one wall of grey text rather than as three choices.
+     */
+    private static final int[] CLASS_SLOTS = {20, 22, 24};
+    /** Directly under each pedestal, in that class's own {@code cerceve} colour. */
+    private static final int[] CLASS_BASE_SLOTS = {29, 31, 33};
+    private static final int HEADER_SLOT = 4;
+    private static final int STATUS_SLOT = 40;
+    private static final int BACK_SLOT = 36;
 
     private final GuiServices services;
     private final boolean fromMenu;
@@ -56,11 +66,20 @@ public final class ClassIntroMenu implements GuiView {
 
     @Override
     public int size() {
-        return 27;
+        return 45;
     }
 
     @Override
     public void populate(Player player, Inventory inventory) {
+        GuiItems.frame(inventory, GuiItems.border(), GuiItems.filler());
+        inventory.setItem(HEADER_SLOT, GuiItems.of(
+                Material.ENCHANTED_BOOK,
+                services.messages().render(MessageKey.GUI_CLASS_INTRO_HEADER),
+                List.of(
+                        services.messages().render(MessageKey.GUI_CLASS_INTRO_HEADER_LORE),
+                        services.messages().render(MessageKey.GUI_CLASS_INTRO_HEADER_LORE_TWO)
+                )
+        ));
         if (fromMenu) {
             inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
         }
@@ -82,7 +101,8 @@ public final class ClassIntroMenu implements GuiView {
             if (index >= CLASS_SLOTS.length) {
                 break;
             }
-            int slot = CLASS_SLOTS[index++];
+            int position = index++;
+            int slot = CLASS_SLOTS[position];
             boolean current = definition.id().equals(profile.selectedClass());
             slotToClassId.put(slot, definition.id());
             List<Component> lore = new ArrayList<>();
@@ -90,6 +110,19 @@ public final class ClassIntroMenu implements GuiView {
             if (blurb != null) {
                 lore.add(services.messages().render(blurb));
             }
+            lore.add(Component.empty());
+            // The synergy skills' own display names, joined into one unparsed
+            // placeholder rather than nested components - the same "plain data
+            // fragment into one placeholder" shape every list in this codebase
+            // uses, so no Turkish is ever assembled in Java.
+            lore.add(services.messages().render(MessageKey.GUI_CLASS_INTRO_SYNERGY_LINE,
+                    Map.of("beceriler", synergySkillNames(definition))));
+            MessageKey prestige = prestigeLoreKey(definition.id());
+            if (prestige != null) {
+                lore.add(services.messages().render(prestige));
+            }
+            lore.add(Component.empty());
+            lore.add(services.messages().render(MessageKey.GUI_CLASS_INTRO_ABILITY_HEADER));
             services.abilities().definitions().stream()
                     .filter(ability -> ability.classId().equals(definition.id()))
                     .sorted((left, right) -> Integer.compare(left.requiredLevel(), right.requiredLevel()))
@@ -99,16 +132,27 @@ public final class ClassIntroMenu implements GuiView {
                     // is comparing when they pick a class.
                     .forEach(ability -> lore.add(services.messages().render(MessageKey.GUI_CLASS_INTRO_ABILITY_LINE,
                             Map.of("kabiliyet", ability.displayName(), "seviye", Integer.toString(ability.requiredLevel())))));
-            if (current) {
-                lore.add(services.messages().render(MessageKey.GUI_CLASS_INTRO_CURRENT_MARKER));
-            }
+            lore.add(Component.empty());
+            lore.add(services.messages().render(current
+                    ? MessageKey.GUI_CLASS_INTRO_CURRENT_MARKER : MessageKey.GUI_CLASS_INTRO_PICK_HINT));
             inventory.setItem(slot, GuiItems.of(
                     definition.icon(),
                     services.messages().render(MessageKey.GUI_CLASS_ITEM, Map.of("sinif", definition.displayName())),
                     lore,
                     current
             ));
+            // The pedestal under each icon is that class's own frame colour, so
+            // the three choices are told apart by colour before a word is read.
+            inventory.setItem(CLASS_BASE_SLOTS[position], GuiItems.pane(definition.frame()));
         }
+    }
+
+    private String synergySkillNames(PlayerClassDefinition definition) {
+        return definition.synergySkillIds().stream()
+                .map(skillId -> services.skills().settings().definitions().get(skillId))
+                .filter(java.util.Objects::nonNull)
+                .map(com.halilibrahim.halilibrahimmmo.skills.SkillDefinition::displayName)
+                .collect(java.util.stream.Collectors.joining(", "));
     }
 
     /** Answers "what am I now, and may I change yet?" before the player commits to a pick. */
@@ -133,6 +177,21 @@ public final class ClassIntroMenu implements GuiView {
             case "avci" -> MessageKey.GUI_CLASS_INTRO_LORE_AVCI;
             case "madenci" -> MessageKey.GUI_CLASS_INTRO_LORE_MADENCI;
             case "tabiat-varisi" -> MessageKey.GUI_CLASS_INTRO_LORE_TABIAT_VARISI;
+            default -> null;
+        };
+    }
+
+    /**
+     * One fully-authored line per class rather than a template fed the effect
+     * type's Turkish name - the prestige bonus is three fixed sentences, and
+     * naming a {@code ClassEffectType} in Java is exactly what this codebase
+     * does not do. A class added to configuration simply shows no line.
+     */
+    private MessageKey prestigeLoreKey(String classId) {
+        return switch (classId) {
+            case "avci" -> MessageKey.GUI_CLASS_INTRO_PRESTIGE_AVCI;
+            case "madenci" -> MessageKey.GUI_CLASS_INTRO_PRESTIGE_MADENCI;
+            case "tabiat-varisi" -> MessageKey.GUI_CLASS_INTRO_PRESTIGE_TABIAT_VARISI;
             default -> null;
         };
     }

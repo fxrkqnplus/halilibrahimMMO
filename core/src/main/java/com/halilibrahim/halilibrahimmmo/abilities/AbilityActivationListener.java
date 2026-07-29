@@ -9,8 +9,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -233,8 +235,36 @@ public final class AbilityActivationListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         abilities.clearActivationFeedback(event.getPlayer());
+        // A pickaxe Madenci Refleksleri lent three Efficiency levels to must not
+        // leave the server still carrying them.
+        abilities.restoreEfficiency(event.getPlayer());
         lastActivationAttempt.remove(event.getPlayer().getUniqueId());
         pendingActivations.remove(event.getPlayer().getUniqueId());
+    }
+
+    /**
+     * The other half of the same guarantee: a pickaxe that <em>did</em> get away
+     * still enchanted - because the server stopped mid-ability, or because it
+     * was stashed in a chest and only came back later - is put right the moment
+     * it is next carried onto the server. The original level rides on the item,
+     * so whoever is holding it is enough.
+     */
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        abilities.restoreEfficiency(event.getPlayer());
+    }
+
+    /**
+     * Kan Yemini's soul cue. Lives here rather than in {@code SkillListener}
+     * because it is ability feedback, not skill progression - and unlike skill
+     * XP it must fire whether or not the kill was worth anything.
+     */
+    @EventHandler
+    public void onCreatureDeath(EntityDeathEvent event) {
+        Player killer = event.getEntity().getKiller();
+        if (killer != null && !(event.getEntity() instanceof Player)) {
+            abilities.handleCreatureDeath(killer, event.getEntity().getLocation());
+        }
     }
 
     private record PendingActivation(String abilityId, boolean deactivating, long expiresAtMillis) {

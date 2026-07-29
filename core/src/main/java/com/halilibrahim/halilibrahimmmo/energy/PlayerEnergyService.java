@@ -73,7 +73,7 @@ public final class PlayerEnergyService implements EnergyService {
         int maximum = maximumEnergy(player);
         energy.put(player.getUniqueId(), new EnergyState(maximum));
         lastShownAt.remove(player.getUniqueId());
-        show(player, maximum);
+        show(player, maximum, false);
     }
 
     @Override
@@ -90,7 +90,7 @@ public final class PlayerEnergyService implements EnergyService {
         if (!state.tryConsume(amount)) {
             return false;
         }
-        show(player, state.current());
+        show(player, state.current(), false);
         return true;
     }
 
@@ -102,7 +102,7 @@ public final class PlayerEnergyService implements EnergyService {
     @Override
     public void reconcile(Player player) {
         EnergyState state = energy.get(player.getUniqueId());
-        if (state != null && state.clamp(maximumEnergy(player))) show(player, state.current());
+        if (state != null && state.clamp(maximumEnergy(player))) show(player, state.current(), false);
     }
 
     private void regenerate(Player player) {
@@ -112,11 +112,23 @@ public final class PlayerEnergyService implements EnergyService {
         int maximum = maximumEnergy(player);
         EnergyState state = energy.computeIfAbsent(player.getUniqueId(), ignored -> new EnergyState(maximum));
         if (state.regenerate(maximum, settings.get().energyRegenerationPerSecond())) {
-            show(player, state.current());
+            // A refill only reads as a refill while it is still happening. Once
+            // the bar is full the ordinary status line is the honest one - and
+            // it is the moment the player is waiting for, so it must be
+            // distinguishable at a glance from the ticks before it.
+            show(player, state.current(), state.current() < maximum);
         }
     }
 
-    private void show(Player player, int current) {
+    /**
+     * @param regenerating whether to use the "filling up" line instead of the
+     *                     plain status one. Since an ability stops regeneration
+     *                     entirely, this line is the only place a player can
+     *                     watch the bar come back after one ends - which is
+     *                     precisely the wait that decides when they can go
+     *                     again.
+     */
+    private void show(Player player, int current, boolean regenerating) {
         if (abilityRunning.test(player)) {
             return;
         }
@@ -126,6 +138,14 @@ public final class PlayerEnergyService implements EnergyService {
             return;
         }
         lastShownAt.put(player.getUniqueId(), now);
+        if (regenerating) {
+            player.sendActionBar(messages.render(MessageKey.ENERGY_REGENERATING, Map.of(
+                    "mevcut", Integer.toString(current),
+                    "maksimum", Integer.toString(maximumEnergy(player)),
+                    "hiz", Integer.toString(settings.get().energyRegenerationPerSecond())
+            )));
+            return;
+        }
         player.sendActionBar(messages.render(MessageKey.ENERGY_STATUS, Map.of(
                 "mevcut", Integer.toString(current),
                 "maksimum", Integer.toString(maximumEnergy(player))
