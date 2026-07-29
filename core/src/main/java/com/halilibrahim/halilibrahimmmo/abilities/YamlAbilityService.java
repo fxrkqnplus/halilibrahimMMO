@@ -19,6 +19,8 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.configuration.ConfigurationSection;
@@ -79,6 +81,13 @@ public final class YamlAbilityService implements AbilityService {
     private static final int MAX_SURGED_CROPS = 256;
     /** How far an activation particle burst scatters around the caster, in blocks. */
     private static final double BURST_SPREAD = 0.6D;
+    /** How many frames every shaped activation animation runs for. */
+    private static final int ANIMATION_STEPS = 5;
+    /** Ticks between those frames - fast enough to read as one gesture. */
+    private static final long ANIMATION_INTERVAL_TICKS = 2L;
+    /** How far behind the main cue an ability's echo lands, and how much higher it is pitched. */
+    private static final long ECHO_DELAY_TICKS = 4L;
+    private static final float ECHO_PITCH_FACTOR = 1.3F;
     /**
      * How long a <em>sustained</em> ability stays up in Creative mode. Long
      * enough to be effectively "until switched off" for any realistic session,
@@ -110,6 +119,13 @@ public final class YamlAbilityService implements AbilityService {
     private final ConcurrentHashMap<UUID, ArmedAbility> activeEffects = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<CooldownKey, Long> cooldowns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, String> selectedAbility = new ConcurrentHashMap<>();
+    /**
+     * The last ability this player deliberately chose, which survives them
+     * unequipping it. {@code selectedAbility} answers "what is equipped now";
+     * this answers "what were they last on", which is what the switch cooldown
+     * has to compare against.
+     */
+    private final ConcurrentHashMap<UUID, String> lastSelectedAbility = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Long> lastSwitchMillis = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ScheduledTask> activationFeedbackTasks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Integer> glintedSlots = new ConcurrentHashMap<>();
@@ -144,6 +160,7 @@ public final class YamlAbilityService implements AbilityService {
         activeEffects.clear();
         cooldowns.clear();
         selectedAbility.clear();
+        lastSelectedAbility.clear();
         activationFeedbackTasks.values().forEach(ScheduledTask::cancel);
         activationFeedbackTasks.clear();
         glintedSlots.clear();
@@ -205,7 +222,7 @@ public final class YamlAbilityService implements AbilityService {
     }
 
     @Override
-    public void handleBlockBreak(BlockBreakEvent event) {
+    public void handleBlockBreak(BlockBreakEvent event, EnergyService energy) {
         // A block the player put down themselves is not terrain: no ability may
         // fire off it, exactly as it earns no skill/class XP or quest progress.
         clearRevealedOre(event.getBlock());
@@ -234,15 +251,30 @@ public final class YamlAbilityService implements AbilityService {
         }
         armed.remove(player.getUniqueId(), current);
         clearActivationFeedback(player);
-        switch (definition.effectType()) {
+        // Creative lifts every budget an ability answers to (§16.5), energy
+        // included, so a sweep there is never cut short by an empty bar.
+        EnergyDrain drain = isCreative(player)
+                ? EnergyDrain.none()
+                : new EnergyDrain(energy, definition.energyPerBlock());
+        int broken = switch (definition.effectType()) {
             case EXCAVATE -> breakSecondaryBlocks(player, event.getBlock(), excavationArea(event.getBlock(),
-                    candidate -> isEligibleBlock(definition, candidate)), current.limit());
+                    candidate -> isEligibleBlock(definition, candidate)), current.limit(), drain);
+            case BLAST_MINE -> {
+                List<Block> cube = cubeArea(event.getBlock(), current.limit(),
+                        candidate -> isEligibleBlock(definition, candidate));
+                yield breakSecondaryBlocks(player, event.getBlock(), cube, cube.size(), drain);
+            }
             case TREE_FELL, VEIN_MINE -> breakSecondaryBlocks(player, event.getBlock(),
                     connectedBlocks(event.getBlock(), block -> block.getType() == event.getBlock().getType(), current.limit()),
-                    current.limit());
+                    current.limit(), drain);
             default -> throw new IllegalStateException("Ability effect cannot be armed by a block break: " + definition.effectType());
-        }
+        };
         messages.send(player, MessageKey.ABILITY_TRIGGERED, Map.of("kabiliyet", definition.displayName()));
+        if (drain.exhausted()) {
+            messages.send(player, MessageKey.ABILITY_ENERGY_DEPLETED, Map.of(
+                    "kabiliyet", definition.displayName(), "sayi", Integer.toString(broken)
+            ));
+        }
     }
 
     private void applyDropBuff(Player player, BlockBreakEvent event) {
@@ -283,11 +315,22 @@ public final class YamlAbilityService implements AbilityService {
             return;
         }
         AbilityDefinition definition = settings().definitions().get(active.abilityId());
-        if (definition == null || definition.effectType() != AbilityEffectType.DAMAGE_BUFF) {
+        if (definition == null) {
             return;
         }
-        event.setDamage(event.getDamage() * classModifiers.apply(player.getUniqueId())
-                .adjustedEffectValue(definition.id(), definition.damageMultiplier()));
+        double effectValue = classModifiers.apply(player.getUniqueId())
+                .adjustedEffectValue(definition.id(), definition.damageMultiplier());
+        switch (definition.effectType()) {
+            case DAMAGE_BUFF -> event.setDamage(event.getDamage() * effectValue);
+            // Healed from the damage the hit is about to deal, so a bigger swing
+            // returns more - and capped at the player's own maximum so it can
+            // never overheal. Scheduled on the victim's own region via the
+            // attacker's scheduler, since the damage event resolves there.
+            case LIFE_STEAL -> healFromDamage(player, event.getDamage() * effectValue);
+            default -> {
+                return;
+            }
+        }
         if (definition.mode() != AbilityActivationMode.ENERJI || isCreative(player)) {
             return;
         }
@@ -295,6 +338,21 @@ public final class YamlAbilityService implements AbilityService {
             damageBuffs.remove(player.getUniqueId(), active);
             clearActivationFeedback(player);
         }
+    }
+
+    /** {@link AbilityEffectType#LIFE_STEAL}'s payout, clamped to the attacker's own maximum health. */
+    private void healFromDamage(Player player, double amount) {
+        if (amount <= 0) {
+            return;
+        }
+        AttributeInstance maximum = player.getAttribute(Attribute.MAX_HEALTH);
+        double cap = maximum == null ? 20.0D : maximum.getValue();
+        double healed = Math.min(cap, player.getHealth() + amount);
+        if (healed <= player.getHealth()) {
+            return;
+        }
+        player.setHealth(healed);
+        player.getWorld().spawnParticle(Particle.HEART, player.getLocation().add(0, 1.2D, 0), 3, 0.3D, 0.3D, 0.3D, 0.0D);
     }
 
     @Override
@@ -311,7 +369,25 @@ public final class YamlAbilityService implements AbilityService {
     public void fellTree(BlockBreakEvent event, int limit) {
         Block origin = event.getBlock();
         breakSecondaryBlocks(event.getPlayer(), origin,
-                connectedBlocks(origin, block -> block.getType() == origin.getType(), limit), limit);
+                connectedBlocks(origin, block -> block.getType() == origin.getType(), limit), limit, EnergyDrain.none());
+    }
+
+    /**
+     * Restricted to the skill's own configured materials rather than the broken
+     * block's exact type: a shovel sweep through mixed dirt, gravel and sand is
+     * one job to the player, and refusing every neighbour that is not literally
+     * the same block would make the milestone feel broken on the terrain it
+     * exists for.
+     */
+    @Override
+    public void excavate(BlockBreakEvent event, String skillId, int limit) {
+        SkillDefinition skill = skills.settings().definitions().get(skillId);
+        if (skill == null) {
+            return;
+        }
+        Block origin = event.getBlock();
+        breakSecondaryBlocks(event.getPlayer(), origin,
+                excavationArea(origin, candidate -> skill.materials().contains(candidate.getType())), limit, EnergyDrain.none());
     }
 
     @Override
@@ -322,10 +398,13 @@ public final class YamlAbilityService implements AbilityService {
             return;
         }
         UUID playerId = player.getUniqueId();
-        String currentlySelected = selectedAbility.get(playerId);
+        // Deliberately the *last* ability chosen rather than the currently
+        // equipped one: unequipping must not be a free way around the switch
+        // cooldown, and it would be if the check could only see an empty slot.
+        String previouslySelected = lastSelectedAbility.get(playerId);
         // Creative is for trying things out: making a builder or an admin wait
         // two minutes to look at a different ability serves nobody.
-        if (currentlySelected != null && !currentlySelected.equals(definition.id()) && !isCreative(player)) {
+        if (previouslySelected != null && !previouslySelected.equals(definition.id()) && !isCreative(player)) {
             long now = System.currentTimeMillis();
             long readyAt = lastSwitchMillis.getOrDefault(playerId, 0L) + settings().selectionCooldownMillis();
             if (readyAt > now) {
@@ -336,9 +415,42 @@ public final class YamlAbilityService implements AbilityService {
             }
         }
         selectedAbility.put(playerId, definition.id());
+        lastSelectedAbility.put(playerId, definition.id());
         lastSwitchMillis.put(playerId, System.currentTimeMillis());
         messages.send(player, MessageKey.ABILITY_SELECTED, Map.of("kabiliyet", definition.displayName()));
         feedback.celebrateAbilitySelected(player);
+    }
+
+    /**
+     * The player taking their own ability off, from the ability screen.
+     *
+     * <p>Everything the selection left running ends with it, exactly as on a
+     * class change - but unlike a class change this deliberately keeps the
+     * switch-cooldown bookkeeping, so unequipping and re-equipping is not a way
+     * around the two-minute wait between different abilities. Per-ability
+     * cooldowns are kept for the same reason they are on a class change.</p>
+     *
+     * @return {@code false} when nothing was equipped, so the caller can say so
+     */
+    @Override
+    public boolean unequip(Player player) {
+        UUID playerId = player.getUniqueId();
+        if (selectedAbility.remove(playerId) == null) {
+            return false;
+        }
+        ArmedAbility instant = activeEffects.remove(playerId);
+        armed.remove(playerId);
+        damageBuffs.remove(playerId);
+        dropBuffs.remove(playerId);
+        clearRevealedOres(playerId);
+        if (instant != null) {
+            AbilityDefinition definition = settings().definitions().get(instant.abilityId());
+            if (definition != null) {
+                clearInstantEffect(player, definition);
+            }
+        }
+        clearActivationFeedback(player);
+        return true;
     }
 
     /**
@@ -352,6 +464,11 @@ public final class YamlAbilityService implements AbilityService {
     @Override
     public void clearSelection(UUID playerId) {
         selectedAbility.remove(playerId);
+        // A class change is a clean slate: the ability they were last on
+        // belongs to a class they no longer play, so it must not hold the new
+        // class's first choice behind a switch cooldown.
+        lastSelectedAbility.remove(playerId);
+        lastSwitchMillis.remove(playerId);
         ArmedAbility instant = activeEffects.remove(playerId);
         armed.remove(playerId);
         damageBuffs.remove(playerId);
@@ -380,6 +497,12 @@ public final class YamlAbilityService implements AbilityService {
     @Override
     public Optional<String> selected(UUID playerId) {
         return Optional.ofNullable(selectedAbility.get(playerId));
+    }
+
+    @Override
+    public long cooldownRemainingMillis(UUID playerId, String abilityId) {
+        long readyAt = cooldowns.getOrDefault(new CooldownKey(playerId, abilityId), 0L);
+        return Math.max(0L, readyAt - System.currentTimeMillis());
     }
 
     @Override
@@ -627,7 +750,7 @@ public final class YamlAbilityService implements AbilityService {
         ArmedAbility active = new ArmedAbility(definition.id(), now + activeMillis, limit);
         String duration = DurationFormatter.ofMillis(messages, activeMillis);
         switch (definition.effectType()) {
-            case EXCAVATE, TREE_FELL, VEIN_MINE -> {
+            case EXCAVATE, TREE_FELL, VEIN_MINE, BLAST_MINE -> {
                 armed.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ARMED, Map.of(
                         "kabiliyet", definition.displayName(), "sure", duration
@@ -637,6 +760,17 @@ public final class YamlAbilityService implements AbilityService {
                 damageBuffs.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ACTIVE, Map.of(
                         "kabiliyet", definition.displayName(), "sure", duration
+                ));
+            }
+            // Shares damageBuffs with DAMAGE_BUFF rather than owning a fifth
+            // state map: both are "buffed while attacking", only one ability can
+            // be selected at a time, and handleEntityDamage already has the
+            // definition in hand to tell them apart.
+            case LIFE_STEAL -> {
+                damageBuffs.put(player.getUniqueId(), active);
+                messages.send(player, MessageKey.ABILITY_ACTIVE_LIFE_STEAL, Map.of(
+                        "kabiliyet", definition.displayName(), "sure", duration,
+                        "yuzde", Integer.toString((int) Math.round(definition.damageMultiplier() * 100))
                 ));
             }
             case EXTRA_DROP_CHANCE -> {
@@ -693,7 +827,55 @@ public final class YamlAbilityService implements AbilityService {
         } else {
             feedback.celebrateAbilityActivated(player);
         }
-        spawnBurst(player.getLocation().add(0, 1, 0), visual);
+        // A second cue a few ticks behind the first is what turns one sample
+        // into a moment: the ear reads the pair as a single, larger event.
+        visual.echoSound().ifPresent(echo -> player.getScheduler().runDelayed(plugin, task ->
+                player.getWorld().playSound(player.getLocation(), echo, visual.volume(), visual.pitch() * ECHO_PITCH_FACTOR),
+                null, ECHO_DELAY_TICKS));
+        playShape(player, visual);
+    }
+
+    /**
+     * The activation's particle choreography. Every shape is a short, bounded
+     * animation that cancels itself - an ability's flourish can never outlive
+     * the activation that started it, however long the ability itself runs.
+     */
+    private void playShape(Player player, AbilityVisual visual) {
+        if (visual.particle().isEmpty() || visual.particleCount() <= 0) {
+            return;
+        }
+        switch (visual.shape()) {
+            case PATLAMA -> spawnBurst(player.getLocation().add(0, 1, 0), visual);
+            case HALKA -> animate(player, visual, ANIMATION_STEPS, (location, step) ->
+                    spawnRing(location, visual, 0.8D + step * 0.7D, 0.15D));
+            case SARMAL -> animate(player, visual, ANIMATION_STEPS, (location, step) ->
+                    spawnHelix(location, visual, step));
+            case KUBBE -> animate(player, visual, ANIMATION_STEPS, (location, step) ->
+                    spawnDome(location, visual, 0.6D + step * 0.5D));
+        }
+    }
+
+    /**
+     * Runs {@code frame} once per {@link #ANIMATION_INTERVAL_TICKS} for
+     * {@code steps} steps on the player's own region scheduler, re-reading their
+     * location each time so the effect follows them, then stops. Written as a
+     * self-cancelling counter rather than a stored task because these live for
+     * well under a second and nothing else ever needs to cancel one.
+     */
+    private void animate(Player player, AbilityVisual visual, int steps, AnimationFrame frame) {
+        int[] step = {0};
+        player.getScheduler().runAtFixedRate(plugin, task -> {
+            if (step[0] >= steps || !player.isOnline()) {
+                task.cancel();
+                return;
+            }
+            frame.render(player.getLocation(), step[0]++);
+        }, null, 1L, ANIMATION_INTERVAL_TICKS);
+    }
+
+    @FunctionalInterface
+    private interface AnimationFrame {
+        void render(Location center, int step);
     }
 
     /** Tinted for {@link Particle#DUST}, which is the only particle whose colour is caller-controlled. */
@@ -708,6 +890,43 @@ public final class YamlAbilityService implements AbilityService {
             return;
         }
         center.getWorld().spawnParticle(particle, center, visual.particleCount(), BURST_SPREAD, BURST_SPREAD, BURST_SPREAD, 0.05D);
+    }
+
+    /** One particle at a time around a circle, so the ring reads as a ring rather than as a cloud. */
+    private void spawnRing(Location center, AbilityVisual visual, double radius, double height) {
+        int points = Math.max(8, Math.min(visual.particleCount(), 32));
+        for (int i = 0; i < points; i++) {
+            double angle = 2 * Math.PI * i / points;
+            spawnSingle(center.clone().add(Math.cos(angle) * radius, height, Math.sin(angle) * radius), visual);
+        }
+    }
+
+    private void spawnHelix(Location center, AbilityVisual visual, int step) {
+        int points = Math.max(3, Math.min(visual.particleCount() / 6, 8));
+        for (int i = 0; i < points; i++) {
+            double angle = 2 * Math.PI * i / points + step * 0.9D;
+            double height = 0.2D + step * 0.4D;
+            spawnSingle(center.clone().add(Math.cos(angle) * 0.9D, height, Math.sin(angle) * 0.9D), visual);
+        }
+    }
+
+    private void spawnDome(Location center, AbilityVisual visual, double radius) {
+        int points = Math.max(8, Math.min(visual.particleCount(), 28));
+        for (int i = 0; i < points; i++) {
+            double angle = 2 * Math.PI * i / points;
+            double lift = Math.sin(Math.PI * i / points) * radius;
+            spawnSingle(center.clone().add(Math.cos(angle) * radius, 0.4D + lift, Math.sin(angle) * radius), visual);
+        }
+    }
+
+    private void spawnSingle(Location at, AbilityVisual visual) {
+        Particle particle = visual.particle().orElseThrow();
+        if (particle == Particle.DUST) {
+            at.getWorld().spawnParticle(particle, at, 1, 0, 0, 0, 0.0D,
+                    new Particle.DustOptions(visual.color().effectColor(), 1.4F));
+            return;
+        }
+        at.getWorld().spawnParticle(particle, at, 1, 0, 0, 0, 0.0D);
     }
 
     private void applyInstantEffect(Player player, AbilityDefinition definition, long activeMillis, ClassModifiers modifiers) {
@@ -1019,6 +1238,28 @@ public final class YamlAbilityService implements AbilityService {
         return skill != null && skill.materials().contains(block.getType());
     }
 
+    /**
+     * Every accepted block in the solid cube of half-edge {@code radius} around
+     * {@code origin} - {@link AbilityEffectType#BLAST_MINE}'s shape. Unlike
+     * {@code connectedBlocks} this does not require the blocks to touch each
+     * other, which is the point: a blast takes out the stone between two seams
+     * as readily as the seams themselves.
+     */
+    private List<Block> cubeArea(Block origin, int radius, Predicate<Block> accepted) {
+        List<Block> blocks = new ArrayList<>();
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    Block candidate = origin.getRelative(x, y, z);
+                    if (accepted.test(candidate)) {
+                        blocks.add(candidate);
+                    }
+                }
+            }
+        }
+        return blocks;
+    }
+
     private List<Block> excavationArea(Block origin, Predicate<Block> accepted) {
         List<Block> blocks = new ArrayList<>(9);
         for (int x = -1; x <= 1; x++) {
@@ -1053,12 +1294,36 @@ public final class YamlAbilityService implements AbilityService {
         return found;
     }
 
-    private void breakSecondaryBlocks(Player player, Block origin, List<Block> candidates, int limit) {
+    /**
+     * Breaks every eligible candidate around {@code origin}, and is the single
+     * place two rules that apply to <em>every</em> sweep live.
+     *
+     * <p><strong>The tool takes one point of damage per block actually
+     * broken.</strong> {@link Block#breakNaturally(ItemStack, boolean)} uses the
+     * item only to decide what drops - it never touches durability - so without
+     * this a sweep was strictly cheaper than breaking the same blocks by hand.
+     * Charging exactly what the manual work would have cost is what keeps
+     * felling a whole tree a real decision, and {@code damage(...)} still
+     * honours Unbreaking and still fires the item-break handling.</p>
+     *
+     * <p><strong>{@code drain} stops the sweep the moment the player's energy
+     * runs out</strong>, so an ability's reach is bounded by the energy bar
+     * rather than by its configured block limit alone. A no-op drain (Creative,
+     * or an ability with no per-block cost) leaves the older behaviour
+     * untouched.</p>
+     *
+     * @return how many blocks were actually broken
+     */
+    private int breakSecondaryBlocks(Player player, Block origin, List<Block> candidates, int limit, EnergyDrain drain) {
         int processed = 0;
+        int broken = 0;
         for (Block candidate : candidates) {
             if (candidate.equals(origin) || processed++ >= limit || candidate.getType().isAir()
                     || placedBlocks.isPlayerPlaced(candidate)) {
                 continue;
+            }
+            if (!drain.tryConsume(player)) {
+                break;
             }
             Set<Block> marked = secondaryBreaks.get();
             marked.add(candidate);
@@ -1067,10 +1332,63 @@ public final class YamlAbilityService implements AbilityService {
                 Bukkit.getPluginManager().callEvent(secondary);
                 if (!secondary.isCancelled()) {
                     candidate.breakNaturally(player.getInventory().getItemInMainHand(), true);
+                    broken++;
                 }
             } finally {
                 marked.remove(candidate);
             }
+        }
+        damageTool(player, broken);
+        return broken;
+    }
+
+    private void damageTool(Player player, int amount) {
+        if (amount <= 0 || isCreative(player)) {
+            return;
+        }
+        ItemStack tool = player.getInventory().getItemInMainHand();
+        if (tool.getType().isAir()) {
+            return;
+        }
+        // The returned stack is what survives - an item that broke comes back
+        // empty - so it has to be written back rather than assumed to be the
+        // same object the inventory is holding.
+        player.getInventory().setItemInMainHand(tool.damage(amount, player));
+    }
+
+    /**
+     * Per-block energy budget for one sweep. Constructed once per sweep so the
+     * "did we run out?" answer survives for the caller's message, rather than
+     * being recomputed from a bar that is already empty.
+     */
+    private static final class EnergyDrain {
+
+        private final EnergyService energy;
+        private final int perBlock;
+        private boolean exhausted;
+
+        private EnergyDrain(EnergyService energy, int perBlock) {
+            this.energy = energy;
+            this.perBlock = perBlock;
+        }
+
+        static EnergyDrain none() {
+            return new EnergyDrain(null, 0);
+        }
+
+        boolean tryConsume(Player player) {
+            if (energy == null || perBlock <= 0) {
+                return true;
+            }
+            if (energy.tryConsume(player, perBlock)) {
+                return true;
+            }
+            exhausted = true;
+            return false;
+        }
+
+        boolean exhausted() {
+            return exhausted;
         }
     }
 
@@ -1116,10 +1434,16 @@ public final class YamlAbilityService implements AbilityService {
             AbilityToolTag tool = AbilityToolTag.valueOf(section.getString("arac.tur", "").toUpperCase(Locale.ROOT));
             AbilityActivationMode mode = AbilityActivationMode.valueOf(section.getString("sure-modu", "SURE").toUpperCase(Locale.ROOT));
             int energyPerHit = section.getInt("enerji-vurus-basi", 0);
+            int energyPerBlock = section.getInt("enerji-blok-basi", 0);
             AbilityVisual visual = parseVisual(section.getConfigurationSection("gorsel"), id);
             double openAirRatio = section.getDouble("etki.acik-alan-orani", -1.0D);
-            if (requiredLevel < 1 || energyCost < 0 || cooldownMillis < 0 || activeMillis <= 0) {
+            if (requiredLevel < 1 || energyCost < 0 || cooldownMillis < 0 || activeMillis <= 0 || energyPerBlock < 0) {
                 throw new IllegalArgumentException("Invalid ability settings: " + id);
+            }
+            boolean sweep = effect == AbilityEffectType.EXCAVATE || effect == AbilityEffectType.TREE_FELL
+                    || effect == AbilityEffectType.VEIN_MINE || effect == AbilityEffectType.BLAST_MINE;
+            if (energyPerBlock > 0 && !sweep) {
+                throw new IllegalArgumentException("enerji-blok-basi only applies to a block-sweep ability: " + id);
             }
             if (mode == AbilityActivationMode.ENERJI && (effect != AbilityEffectType.DAMAGE_BUFF || energyPerHit <= 0)) {
                 throw new IllegalArgumentException("ENERJI mode requires a DAMAGE_BUFF effect and a positive enerji-vurus-basi: " + id);
@@ -1130,6 +1454,17 @@ public final class YamlAbilityService implements AbilityService {
                 }
                 case DAMAGE_BUFF -> {
                     if (multiplier < 1.0D) throw new IllegalArgumentException("Damage buff multiplier must be at least 1.0: " + id);
+                }
+                case LIFE_STEAL -> {
+                    // A fraction of the damage dealt, so unlike DAMAGE_BUFF it
+                    // is a ratio and must stay inside (0, 1].
+                    double ratio = section.getDouble("etki.can-orani", -1.0D);
+                    if (ratio <= 0 || ratio > 1.0D) throw new IllegalArgumentException("Life steal can-orani must be in (0, 1]: " + id);
+                    multiplier = ratio;
+                }
+                case BLAST_MINE -> {
+                    if (radius < 1 || radius > 2) throw new IllegalArgumentException("Blast mine yaricap must be 1 or 2: " + id);
+                    limit = radius;
                 }
                 case EXTRA_DROP_CHANCE -> {
                     if (chance <= 0 || chance > 1.0D) throw new IllegalArgumentException("Extra-drop chance must be in (0, 1]: " + id);
@@ -1157,7 +1492,7 @@ public final class YamlAbilityService implements AbilityService {
                 }
             }
             definitions.put(id, new AbilityDefinition(id, displayName, description, icon, skillId, requiredLevel, energyCost,
-                    cooldownMillis, activeMillis, effect, limit, multiplier, tool, classId, mode, energyPerHit, visual));
+                    cooldownMillis, activeMillis, effect, limit, multiplier, tool, classId, mode, energyPerHit, energyPerBlock, visual));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("abilities.yml must define at least one ability.");
@@ -1177,6 +1512,7 @@ public final class YamlAbilityService implements AbilityService {
         }
         AbilityColor color = AbilityColor.valueOf(section.getString("renk", "BEYAZ").toUpperCase(Locale.ROOT));
         String soundName = section.getString("ses", "");
+        String echoName = section.getString("yanki-ses", "");
         String particleName = section.getString("partikul", "");
         float volume = (float) section.getDouble("ses-seviyesi", 1.0D);
         float pitch = (float) section.getDouble("ton", 1.0D);
@@ -1184,13 +1520,17 @@ public final class YamlAbilityService implements AbilityService {
         if (volume <= 0 || pitch <= 0 || particleCount < 0) {
             throw new IllegalArgumentException("Ability sound volume/pitch must be positive and particle count non-negative: " + abilityId);
         }
+        AbilityVisualShape shape = AbilityVisualShape.valueOf(section.getString("sekil", "PATLAMA").toUpperCase(Locale.ROOT));
         Optional<Sound> sound = soundName.isBlank()
                 ? Optional.empty()
                 : Optional.of(Sound.valueOf(soundName.toUpperCase(Locale.ROOT)));
+        Optional<Sound> echoSound = echoName.isBlank()
+                ? Optional.empty()
+                : Optional.of(Sound.valueOf(echoName.toUpperCase(Locale.ROOT)));
         Optional<Particle> particle = particleName.isBlank()
                 ? Optional.empty()
                 : Optional.of(Particle.valueOf(particleName.toUpperCase(Locale.ROOT)));
-        return new AbilityVisual(color, sound, volume, pitch, particle, particleCount);
+        return new AbilityVisual(color, sound, volume, pitch, particle, particleCount, shape, echoSound);
     }
 
     private ConfigurationSection requireSection(ConfigurationSection parent, String path) {

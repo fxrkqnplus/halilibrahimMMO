@@ -91,6 +91,21 @@ public final class CachedLeaderboardService implements LeaderboardService {
         return resolve(skillCache, skillId, () -> repository.topSkill(skillId, settings().entryLimit()));
     }
 
+    @Override
+    public CompletableFuture<Integer> powerRank(int prestige, long power) {
+        return repository.rankOfPower(prestige, power);
+    }
+
+    @Override
+    public CompletableFuture<Integer> wealthRank(long wealth) {
+        return repository.rankOfWealth(wealth);
+    }
+
+    @Override
+    public CompletableFuture<Integer> skillRank(String skillId, int level, long experience) {
+        return repository.rankOfSkill(skillId, level, experience);
+    }
+
     private <K> CompletableFuture<List<LeaderboardEntry>> resolve(
             Map<K, CachedBoard> cache, K key, Supplier<CompletableFuture<List<LeaderboardEntry>>> loader
     ) {

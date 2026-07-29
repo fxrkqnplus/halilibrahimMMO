@@ -25,8 +25,10 @@ okunmalıdır. (Bu dosya depoya dâhil değildir, yerel çalışma kopyasında d
 
 Neredeyse her komut yalnızca ilgili GUI ekranını açan bir kısayoldur; sohbete
 liste basan, sohbetten değer değiştiren hiçbir komut yoktur. Tek istisna
-**`/ev` ve `/takas`**: biri eve verilecek ismi, diğeri takas yapılacak
-oyuncunun adını ister — ikisi de bir menünün soramayacağı serbest metindir.
+**`/ev`, `/takas` ve `/profil <oyuncu>`**: biri eve verilecek ismi, diğerleri
+bir oyuncu adını ister — üçü de bir menünün soramayacağı serbest metindir.
+(`/harita` da bir ekran açmaz, ama argüman da almaz: tek yaptığı adresi
+söylemektir.)
 
 Komutlar **gerçek Türkçe harflerle** yazılır. Türkçe karakter içeren her
 komutun eski ASCII yazımı da **takma ad (alias)** olarak çalışmaya devam eder,
@@ -37,7 +39,8 @@ da her ekrana ulaşabilir.
 |---|---|---|
 | `/menü` | `/menu` | Ana menü (dört kategori + kişisel başlık + Eklenti Hakkında) |
 | `/mmo` | — | MMO sistemini ilk kez aktifleştirir, ardından sınıf tanıtım ekranını açar |
-| `/profil` | — | Profil ekranı (Güç, prestij, sınıf) |
+| `/profil` | — | Kendi profil ekranınız (Güç, prestij, sınıf) |
+| `/profil <oyuncu>` | — | **Başka bir oyuncunun** tam profili + takas daveti düğmesi |
 | `/sınıf` | `/sinif` | Sınıf ekranı: sınıf simgeleri + seçili sınıfın yetenek ağacı |
 | `/kabiliyet` | — | Kabiliyet menüsü (seçim yapılır, etkinleştirme oyun içindedir) |
 | `/görev` | `/gorev` | Görev panosu (günlük / haftalık / kalıcı / tamamlananlar) |
@@ -52,6 +55,7 @@ da her ekrana ulaşabilir.
 | `/kazıcılık`, `/avcılık`, `/tarımcılık`, `/hayvancılık` | `/kazicilik`, `/avcilik`, `/tarimcilik`, `/hayvancilik` | O becerinin detay ekranı |
 | `/ev` | `/home` | Evine ışınlanır (`/ev ayarla <isim>`, `/ev sil`) — 5 dakikada bir |
 | `/rtp` | `/rastgele` | Haritada rastgele, güvenli bir noktaya ışınlanır — 30 dakikada bir |
+| `/harita` | `/map` | Canlı oyun içi haritanın adresini verir (tıklanabilir) |
 | `/takas <oyuncu>` | `/trade` | Takas isteği (`/takas kabul`, `/takas ret`, `/takas iptal`) |
 | `/panel` | — | Sağdaki bilgi panelini gizler/gösterir |
 | `/haliladmin` | — | Yönetici paneli (`halilibrahimmmo.admin` izni gerekir) |
@@ -101,12 +105,19 @@ göre** XP verir.
 
 | Beceri | Simge | Nasıl kazanılır | En az → en çok XP |
 |---|---|---|---|
-| **Kazıcılık** (`/kazıcılık`) | Demir kürek | Toprak, kum, çakıl, kil gibi yumuşak blokları kazmak | 6 (toprak) → 18 (kil) |
-| **Odunculuk** (`/odunculuk`) | Demir balta | Kütük kesmek | 9 (meşe) → 21 (nether sapları) |
+| **Kazıcılık** (`/kazıcılık`) | Demir kürek | Toprak, kum, çakıl, kil gibi yumuşak blokları kazmak | 30 (toprak) → 90 (kil) |
+| **Odunculuk** (`/odunculuk`) | Demir balta | Kütük kesmek | 45 (meşe) → 105 (nether sapları) |
 | **Madencilik** (`/madencilik`) | Demir kazma | Cevher kırmak | 12 (kömür) → 300 (kadim kalıntı) |
 | **Avcılık** (`/avcılık`) | Demir kılıç | Yaratık öldürmek | 15 (zararsız hayvanlar) → 2400 (Ejderha) |
-| **Tarımcılık** (`/tarımcılık`) | Buğday | Tarlada yapılan her iş (aşağıda) | 3 (çapalama) → 30 (köylü ticareti) |
-| **Hayvancılık** (`/hayvancılık`) | Kayış | Hayvan yetiştirmenin her adımı (aşağıda) | 3 (süt sağma) → 45 (evcilleştirme) |
+| **Tarımcılık** (`/tarımcılık`) | Buğday | Tarlada yapılan her iş (aşağıda) | 15 (çapalama) → 150 (köylü ticareti) |
+| **Hayvancılık** (`/hayvancılık`) | Kayış | Hayvan yetiştirmenin her adımı (aşağıda) | 15 (süt sağma) → 225 (evcilleştirme) |
+
+**Dört becerinin XP'si beş katına çıkarıldı.** Kazıcılık, odunculuk, tarımcılık
+ve hayvancılık, tek bir eylemin çok az XP vermesi yüzünden diğer ikisine göre
+belirgin şekilde yavaş seviye atlıyordu; bu dördünün bütün blok ve eylem
+değerleri 5 ile çarpıldı. Madencilik ve avcılık kasıtlı olarak dokunulmadan
+bırakıldı — onlar zaten değerli cevher ve zorlu yaratıklardan büyük ödüller
+alıyor. **Görev ödülleri bu artışın dışındadır**; onların kendi dengesi vardır.
 
 Her becerinin kendine ait bir simgesi vardır ve bu simge her yerde aynıdır:
 `/beceri` listesinde, o becerinin kendi detay ekranında ve liderlik
@@ -126,16 +137,16 @@ tek beceridir:
 
 | Nasıl | XP |
 |---|---|
-| Toprağa çapa ile vurup tarla açmak | 3 |
-| Ekinlere kemik tozu kullanmak | 6 |
-| Saman balyası kırmak (yalnızca köylerdeki doğal balyalar) | 6 |
-| Olgunlaşmış ekin biçmek (buğday, havuç, patates, pancar, böğürtlen) | 9 |
-| Ocakta patates veya deniz yosunu pişirmek | 9 |
-| Ekmek üretmek | 12 |
-| Karpuz, balkabağı veya kakao kesmek | 12 |
-| Nether mantarı toplamak | 15 |
-| Meşale çiçeği / testi bitkisi biçmek | 18 |
-| Köylülerle ticaret yapmak | 30 |
+| Toprağa çapa ile vurup tarla açmak | 15 |
+| Ekinlere kemik tozu kullanmak | 30 |
+| Saman balyası kırmak (yalnızca köylerdeki doğal balyalar) | 30 |
+| Olgunlaşmış ekin biçmek (buğday, havuç, patates, pancar, böğürtlen) | 45 |
+| Ocakta patates veya deniz yosunu pişirmek | 45 |
+| Ekmek üretmek | 60 |
+| Karpuz, balkabağı veya kakao kesmek | 60 |
+| Nether mantarı toplamak | 75 |
+| Meşale çiçeği / testi bitkisi biçmek | 90 |
+| Köylülerle ticaret yapmak | 150 |
 
 ### Hayvancılık
 
@@ -145,13 +156,13 @@ tamamen şu eylemlerden beslenir:
 
 | Nasıl | XP |
 |---|---|
-| Kova ile inek/mooshroom/keçi sağmak | 3 |
-| Kayışla inek, domuz veya koyun taşımak (her 20 saniyede bir) | 6 |
-| Koyun kırpmak | 9 |
-| Ocakta hayvan eti pişirmek (biftek, pirzola, kuzu, tavşan, tavuk) | 12 |
-| İki hayvanı çiftleştirip yavru elde etmek | 24 |
-| Pasta üretmek | 30 |
-| Kurt, at, eşek, katır, lama, kedi, papağan evcilleştirmek | 45 |
+| Kova ile inek/mooshroom/keçi sağmak | 15 |
+| Kayışla inek, domuz veya koyun taşımak (her 20 saniyede bir) | 30 |
+| Koyun kırpmak | 45 |
+| Ocakta hayvan eti pişirmek (biftek, pirzola, kuzu, tavşan, tavuk) | 60 |
+| İki hayvanı çiftleştirip yavru elde etmek | 120 |
+| Pasta üretmek | 150 |
+| Kurt, at, eşek, katır, lama, kedi, papağan evcilleştirmek | 225 |
 
 Kayışla taşıma ödülü **sürünün büyüklüğünden bağımsızdır**: on ineği götürmek
 bir ineği götürmekle aynı iştir, hayvan başına ödemek yalnızca sürü
@@ -163,16 +174,31 @@ Bir beceri 25/50/75/100. seviyeye ulaştığında **kalıcı** bir bonus kazand�
 Kademeler zayıftan güçlüye sıralanmıştır: 25. seviye basit bir giriş bonusu,
 becerinin asıl güçlü bonusu her zaman 75. ve 100. seviyelerde.
 
+**Her beceri kendi işine yarayan bir şey kazandırır.** Ekstra can artık yalnızca
+avcılıkta vardır — dövüşün içinde ayakta kalmak avcılığın kendi konusudur.
+Diğer beş beceri, o beceriyi oynarken hissedeceğiniz bir şey verir.
+
 | Beceri | 25 | 50 | 75 | 100 |
 |---|---|---|---|---|
-| Kazıcılık | +2 can | +10 enerji | +20 enerji | +30 enerji |
-| Odunculuk | **Ağaç devirme** | +10 enerji | Hız I | Hız II |
-| Madencilik | +2 can | +10 enerji | Acele I | Acele II |
-| Avcılık | +2 can | +4 can | Yaratıklara +%10 hasar | Yaratıklara +%20 hasar |
-| Tarımcılık | +2 can | +12 enerji | +6 can | +30 enerji |
-| Hayvancılık | **Yem iadesi** | +4 can | +6 can | +25 enerji |
+| Kazıcılık | %10 çift düşme | +15 enerji | **Geniş kazı** | %30 çift düşme |
+| Odunculuk | **Ağaç devirme (48)** | %12 çift düşme | **Ağaç devirme (96)** | %30 çift düşme |
+| Madencilik | %8 çift düşme | Acele I | %20 çift düşme | Acele II |
+| Avcılık | +1 kalp | Yaratıklara +%5 hasar | +3 kalp | Yaratıklara +%20 hasar |
+| Tarımcılık | %8 çift düşme | **%50 otomatik ekim** | %20 çift düşme | **%100 otomatik ekim** |
+| Hayvancılık | **%15 yem iadesi** | **%10 ikiz doğum** | %45 yem iadesi | %30 ikiz doğum |
 
-İki kilometre taşı bir istatistik değil, **açılan bir özelliktir**:
+**Can, kalp olarak yazılır.** Bir kalp iki can puanıdır; ekranda gördüğünüz sayı
+doğrudan HUD'unuzdaki kalp sayısıdır. (Yapılandırma dosyaları hâlâ can puanı
+kullanır, çeviriyi eklenti yapar.)
+
+**Çift düşme yalnızca o becerinin kendi bloklarında çalışır.** Maksimum
+odunculuk kütükleri ikiye katlar, elmas cevherini değil; her beceri kendi
+listesini besler.
+
+Aynı özelliğin iki kademesi (ağaç devirme 48/96, ikiz doğum %10/%30) **toplanmaz,
+yükseği geçerlidir** — bunlar bir yeteneğin iki gücüdür, iki ayrı bonus değil.
+
+Bazı kilometre taşları bir istatistik değil, **açılan bir özelliktir**:
 
 - **Ağaç devirme** (odunculuk 25) — bir ağacın toprakla temas eden **kök**
   kütüğünü kestiğinizde ağacın tamamı devrilir; bağlı bütün kütükler (en
@@ -197,10 +223,22 @@ becerinin asıl güçlü bonusu her zaman 75. ve 100. seviyelerde.
   kayıt siliniyor: büyüttüğünüz ağaç, vahşi bir ağaçtan hiçbir şekilde ayırt
   edilmiyor. (Aynısı mantar ve bambu için de geçerlidir.) Ağaç büyütmek zaten
   gerçek bir fidan, gerçek zaman ve gerçek alan harcar; kısır döngü değildir.
-- **Yem iadesi** (hayvancılık 25) — bir yavru doğduktan sonra %15 ihtimalle
-  çiftleştirme yeminin **iki adedi birden** (iki ebeveyn için harcadığınız
-  kadarı) elinize geri döner. Zar yavru doğduktan *sonra* atılır, yani
-  şansınız tutmasa da zaten harcayacağınızdan fazlasını kaybetmezsiniz.
+- **Geniş kazı** (kazıcılık 75) — kazıcılığa ait bir bloğu kırdığınızda
+  çevresindeki 3x3 alandaki uygun bloklar da (en fazla 8) birden düşer. Kürek
+  işinin tamamı bu tek özellikte toplanır.
+- **Otomatik ekim** (tarımcılık 50 ve 100) — hasat ettiğiniz **tam olgun** ekin,
+  ihtimale göre kendini yerine yeniden eker (50. seviyede yarı yarıya, 100.
+  seviyede her zaman). Tohum harcamaz: elle yeniden ekmek zaten tohum bakımından
+  nötrdür, kilometre taşının bütün amacı o tıklamayı ortadan kaldırmaktır.
+  Olmamış bir ekin bu yola hiç ulaşmaz, dolayısıyla kır-ek döngüsü kurulamaz.
+- **Yem iadesi** (hayvancılık 25/75) — bir yavru doğduktan sonra belirli bir
+  ihtimalle çiftleştirme yeminin **iki adedi birden** (iki ebeveyn için
+  harcadığınız kadarı) elinize geri döner. Zar yavru doğduktan *sonra* atılır,
+  yani şansınız tutmasa da zaten harcayacağınızdan fazlasını kaybetmezsiniz.
+- **İkiz doğum** (hayvancılık 50/100) — bir çiftleştirme belirli bir ihtimalle
+  **ikinci bir yavru** daha verir. İkiz, doğan yavrunun tıpatıp aynısı olarak
+  gelir (mooshroom mooshroom kalır) ve hiçbir büyüme avantajı taşımaz: fazladan
+  bir hayvandır, büyüme süresinin kısayolu değil.
 
 Bu bonuslar **ölünce kaybolmaz** — yeniden doğduğunuzda otomatik olarak geri
 yüklenir. Yalnızca prestij ile o beceri sıfırlandığında düşerler. Her becerinin
@@ -219,15 +257,18 @@ dolayısıyla sınıfınıza uygun oynamak hem beceriyi hem sınıfı birlikte b
 
 | Sınıf | Sinerji becerileri | Simge | Kabiliyet sayısı |
 |---|---|---|---|
-| **Amansız Savaşçı** (`avci`) | Avcılık | Elmas kılıç | 3 |
-| **Mağara Adamı** (`madenci`) | Madencilik | Elmas kazma | 3 |
+| **Amansız Savaşçı** (`avci`) | Avcılık | Elmas kılıç | 4 |
+| **Mağara Adamı** (`madenci`) | Madencilik | Elmas kazma | 4 |
 | **Tabiat Vârisi** (`tabiat-varisi`) | Odunculuk, Kazıcılık, Tarımcılık, Hayvancılık | Demir balta | 4 |
+
+**Her sınıfın tam olarak dört kabiliyeti vardır** ve hepsi aynı basamaklarda
+açılır: **sınıf seviyesi 10 → 20 → 35 → 50**. Basamak yükseldikçe kabiliyet
+güçlenir ve bekleme süresi uzar; 50. seviyedeki kabiliyet sınıfın "son sözü"dür
+— en güçlü etki, en uzun bekleme (10 dakika).
 
 **Tabiat Vârisi** tek başına dört beceriyi birden besler — toprağın, ormanın,
 tarlanın ve sürünün vârisidir. Kabiliyetleri de tam olarak bu dört becerinin
-her birine bir tane düşer ve **en zayıftan en güçlüye** doğru açılır (5 → 15 →
-25 → 40), böylece sınıf seviyesi yükseldikçe elindeki araç da gözle görülür
-şekilde güçlenir. Amansız Savaşçı ve Mağara Adamı ise dar ama derin
+her birine bir tane düşer. Amansız Savaşçı ve Mağara Adamı ise dar ama derin
 uzmanlardır.
 
 Her sınıf ayrıca prestij yaptıkça büyüyen, kendine özgü kalıcı bir bonus
@@ -296,27 +337,43 @@ değiştirmek bir beklemeyi sıfırlamanın yolu değildir.
 ## Kabiliyetler
 
 Her kabiliyet tam olarak bir sınıfa aittir; o sınıf seçili değilken
-kullanılamaz. Açılma koşulu **sınıf seviyesidir** (beceri seviyesi değil).
+kullanılamaz. Açılma koşulu **sınıf seviyesidir** (beceri seviyesi değil), ve
+her sınıfta **dört kabiliyet** aynı dört basamakta açılır: **10 → 20 → 35 →
+50**. Sıra ilerledikçe etki büyür, bekleme süresi uzar.
 
 | Sınıf | Kabiliyet | Sv. | Enerji | Bekleme | Etki |
 |---|---|---|---|---|---|
-| Tabiat Vârisi | Toprak Sezgisi | 5 | 20 | 1 dk 30 sn | Kırdığın bloklardan %50 ihtimalle ekstra düşme |
-| Tabiat Vârisi | Filiz Patlaması | 15 | 25 | 3 dk | 6 blok yarıçapındaki tüm ekinleri anında olgunlaştırır |
-| Tabiat Vârisi | Sürü Çağrısı | 25 | 30 | 3 dk | 8 blok yarıçapındaki tüm yetişkin hayvanları yem harcamadan çiftleşme moduna sokar |
-| Tabiat Vârisi | Ağaç Kırıcı | 40 | 25 | 1 dk 15 sn | Bağlı tüm kütükleri (en fazla 32) birden keser |
-| Amansız Savaşçı | Gece Görüşü | 5 | 15 | 2 dk | 60 saniye karanlıkta net görüş |
-| Amansız Savaşçı | Avcı Odağı | 10 | 25 | 1 dk 30 sn | PvE hasarı %50 artar (enerji tüketir) |
-| Amansız Savaşçı | Yıkıcı Darbe | 30 | 30 | 30 sn | Ayağının altında şok dalgası, 4 blok yarıçapı |
-| Mağara Adamı | Cevher Sezgisi | 5 | 25 | 1 dk 30 sn | Kırdığın bloklardan %40 ihtimalle ekstra düşme |
-| Mağara Adamı | Damar Kırıcı | 20 | 30 | 1 dk 40 sn | Bağlı aynı cevher damarını (16 blok) birden kazar |
-| Mağara Adamı | Maden Feneri | 35 | 30 | 7 dk 30 sn | 36 blok yarıçapındaki cevherleri 30 sn parlatır |
+| Tabiat Vârisi | Toprak Sezgisi | 10 | 20 | 1 dk 30 sn | Kırdığın bloklardan %35 ihtimalle ekstra düşme |
+| Tabiat Vârisi | Filiz Patlaması | 20 | 25 | 2 dk 30 sn | 7 blok yarıçapındaki tüm ekinleri anında olgunlaştırır |
+| Tabiat Vârisi | Sürü Çağrısı | 35 | 30 | 4 dk | 10 blok yarıçapındaki tüm yetişkin hayvanları yem harcamadan çiftleşme moduna sokar |
+| Tabiat Vârisi | **Ağaç Kırıcı** | 50 | 10 + kütük başına 5 | **10 dk** | Bağlı tüm kütükleri (en fazla 64) birden keser |
+| Amansız Savaşçı | Gece Görüşü | 10 | 15 | 1 dk 30 sn | 90 saniye karanlıkta net görüş |
+| Amansız Savaşçı | Avcı Odağı | 20 | 25 | 2 dk 30 sn | PvE hasarı %50 artar (vuruş başına enerji tüketir) |
+| Amansız Savaşçı | Yıkıcı Darbe | 35 | 30 | 4 dk | Ayağının altında şok dalgası, 5 blok yarıçapı, 11 ham hasar |
+| Amansız Savaşçı | **Kan Yemini** | 50 | 40 | **10 dk** | 45 saniye boyunca yaratıklara verdiğin hasarın %35'i cana döner |
+| Mağara Adamı | Cevher Sezgisi | 10 | 25 | 1 dk 30 sn | Kırdığın bloklardan %30 ihtimalle ekstra düşme |
+| Mağara Adamı | Damar Kırıcı | 20 | 10 + blok başına 4 | 2 dk 30 sn | Bağlı aynı cevher damarını (en fazla 24 blok) birden kazar |
+| Mağara Adamı | Maden Feneri | 35 | 30 | 5 dk | 36 blok yarıçapındaki cevherleri 40 sn parlatır |
+| Mağara Adamı | **Kaya Patlaması** | 50 | 15 + blok başına 3 | **10 dk** | Kırdığın cevherin çevresindeki 3x3x3 küpteki bütün cevherler birden düşer |
+
+**50. seviyedeki kabiliyet sınıfın son sözüdür**: en güçlü etki, en uzun
+bekleme. On dakikada bir kullanılan bir şeyin gerçekten bir şey yapması
+gerekiyordu.
 
 ### Nasıl kullanılır
 
-1. `/kabiliyet` menüsünden bir kabiliyet seçin. Her kabiliyetin konusuna uygun
-   kendi simgesi vardır; **seçili olan büyülü (parlayan)** görünür, seçildiğinde
-   kısa bir ses efekti çalar ve sohbete onay mesajı gelir. Menü, sınıfınızın
-   kendi renginde çerçevelenir.
+1. `/kabiliyet` menüsünden bir kabiliyet **kuşanın**. Ekran dört kabiliyeti
+   **eşit aralıklı dört kaide** hâlinde gösterir ve her kaidenin altında o
+   kademenin numarası ile gerekli seviye yazar (ulaştığınız kademeler yeşil).
+   Böylece ekran bir liste değil, sınıfınızın ilerleme çizgisidir. Her
+   kabiliyetin konusuna uygun kendi simgesi vardır; **kuşanılı olan büyülü
+   (parlayan)** görünür, seçildiğinde kısa bir ses efekti çalar ve sohbete onay
+   mesajı gelir. Menü, sınıfınızın kendi renginde çerçevelenir.
+
+   Aynı ekranın altında **"Kabiliyeti Çıkar"** düğmesi vardır: kuşandığınız
+   kabiliyeti bırakır ve o an çalışan etkisini sonlandırır. Bekleme süreleri
+   sıfırlanmaz — ne kabiliyetin kendi bekleme süresi, ne de farklı bir
+   kabiliyete geçmek için beklenen süre. Çıkarıp takmak bir kısayol değildir.
 2. Kabiliyetin istediği aleti (kazma / balta / kürek / kılıç, kabiliyete göre
    değişir) elinize alın.
 3. **Çift sağ tıklayın.** İlk sağ tıklamada ekranın altında
@@ -354,9 +411,11 @@ sağ tıklayın; orada hiçbir şey yerleştirilmediği için kabiliyet normal �
 **Boş elle** bir bloğa tıklamak da her zaman çalışır.
 
 **Zaten çalışan bir kabiliyete tekrar tıklamak** (yaratıcı mod dışında)
-hiçbir mesaj üretmez. Eskiden önce "tekrar sağ tıkla" yazar, sonra ikinci
-tıklamada "beklemelisin" diye reddederdi; oysa eylem çubuğundaki geri sayım
-kabiliyetin çalıştığını zaten söylüyor.
+hiçbir mesaj üretmez; eylem çubuğundaki geri sayım kabiliyetin çalıştığını
+zaten söylüyor. **Bekleme süresi dolmamış bir kabiliyete tıklamak da onay
+istemi çıkarmaz**: doğrudan eylem çubuğunda kalan süre yazar, sohbete hiçbir
+şey gitmez. İkisinde de eskiden önce "tekrar sağ tıkla" yazıp sonra ikinci
+tıklamayı reddediyordu — yani sizden bir reddi onaylamanız isteniyordu.
 
 **Yaratıcı (Creative) modda hiçbir sınır yoktur:** kabiliyet değiştirme
 beklemesi, kabiliyet bekleme süresi, enerji maliyeti ve süre sınırı
@@ -377,13 +436,32 @@ Etkin bir kabiliyet varken eylem çubuğunda kabiliyetin adı, kalan süresi ve
 **mevcut/maksimum enerjiniz** (ör. `Enerji 70/100`) sürekli gösterilir.
 
 Her kabiliyetin `abilities.yml` içinde kendine ait bir rengi, etkinleştirme
-sesi ve partikül efekti vardır. Farklı bir kabiliyete geçmek kısa bir bekleme
-süresine tabidir (varsayılan 2 dakika); aynı kabiliyeti yeniden seçmek
-serbesttir. Henüz açılmamış kabiliyetler menüde kilitli gösterilir.
+sesi, **yankı sesi** (dört tick sonra biraz daha tiz çalan ikinci vuruş) ve
+partikül gösterisi vardır. Gösterinin **şekli** partikül türünden ayrı bir
+ayardır: `PATLAMA` (saçılma), `HALKA` (genişleyen halkalar), `SARMAL` (yukarı
+sarılan helis) ya da `KUBBE` (baş üstünde kubbe). Aynı partikül sarmalda kılıç
+savurması, halkada şok dalgası okunur — iki kabiliyet aynı partikülü paylaşsa
+bile birbirine benzemez.
+
+Farklı bir kabiliyete geçmek kısa bir bekleme süresine tabidir (varsayılan
+2 dakika); aynı kabiliyeti yeniden seçmek serbesttir. Henüz açılmamış
+kabiliyetler menüde kilitli gösterilir.
+
+**Kaya Patlaması** (Mağara Adamı 50) kurulu bir kabiliyettir: kurduktan sonra
+kırdığınız ilk uygun cevherin çevresindeki **3x3x3 küpteki** bütün cevherler
+birden düşer. Damar Kırıcı yalnızca aynı türden bağlı blokları alır; Kaya
+Patlaması aradaki taşa bakmadan küpün içindeki her cevheri alır — madencilik
+hattının en ağır aleti budur.
+
+**Kan Yemini** (Amansız Savaşçı 50) 45 saniye boyunca bir yaratığa verdiğiniz
+hasarın %35'ini cana çevirir. Avcı Odağı bir vuruşun ne kadar sert olduğunu
+değiştirir, Kan Yemini ise bir avın ne kadar sürebileceğini — ikisinin
+birbirinden farkı budur. Canınızın üstüne çıkamaz ve yalnızca yaratıklara karşı
+çalışır.
 
 **Maden Feneri** özel bir durumdur: yalnızca **geniş ve üstü kapalı bir
 madende** kullanılabilir (dar bir tünelde ya da açık arazide çalışmaz).
-Çalıştığında 36 blok yarıçapındaki cevherler 30 saniye boyunca duvarların
+Çalıştığında 36 blok yarıçapındaki cevherler 40 saniye boyunca duvarların
 ardından bile parlar; işaretlenmiş bir cevheri kırdığınızda parıltısı anında
 söner. Tarama **size en yakın cevherlerden başlayarak dışa doğru** genişler,
 dolayısıyla gözünüzün önündeki açıkta duran kömür/demir damarı da en az
@@ -396,12 +474,12 @@ tüketir, enerjiniz biterse ya da en fazla 30 saniye sonra kendiliğinden sona
 erer — ve yalnızca yaratıklara (PvE) karşı geçerlidir, PvP'de hiçbir etkisi
 yoktur.
 
-**Filiz Patlaması** çevrenizdeki 6 blok yarıçapındaki bütün olmamış ekinleri
+**Filiz Patlaması** çevrenizdeki 7 blok yarıçapındaki bütün olmamış ekinleri
 tek seferde hasada hazır hâle getirir — bir kova kemik tozu gibi, ama hiç
 kemik tozu harcamadan. Zaten olgunlaşmış ekinlere dokunmaz, dolayısıyla size
 kaç bitkinin gerçekten büyüdüğünü söyler.
 
-**Sürü Çağrısı** çevrenizdeki 8 blok yarıçapındaki bütün **yetişkin**
+**Sürü Çağrısı** çevrenizdeki 10 blok yarıçapındaki bütün **yetişkin**
 hayvanları tek bir yem harcamadan çiftleşme moduna sokar. Yavrular ve zaten
 çiftleşme modundaki hayvanlar atlanır, dolayısıyla aynı sürüye tekrar
 kullanmak bir işe yaramaz.
@@ -410,13 +488,34 @@ Kabiliyetin kendisi **2 saniye** sürer (hem normal hem yaratıcı modda) ve
 kendiliğinden kapanır: çağrı gittikten sonra açık kalmasının bir işlevi yok.
 Hayvanların çiftleşme penceresi bundan bağımsızdır — vanilla'daki normal
 süresi neyse odur, yani sürünün eşleşmeye vakti olur. Bekleme süresi
-**3 dakikadır**.
+**4 dakikadır**.
 
 ### Enerji
 
-Enerji, tüm kabiliyetlerin paylaştığı, kaydedilmeyen bir havuzdur (varsayılan
-maksimum 100; sınıf ve kilometre taşı bonuslarıyla artar). Saniyede 6 puan
-dolar. Eylem çubuğunda her zaman `mevcut/maksimum` biçiminde görünür.
+Enerji, kaydedilmeyen, oyuncu başına bir havuzdur (varsayılan maksimum 100;
+sınıf ve kilometre taşı bonuslarıyla artar). Üç kuralı vardır ve üçü birlikte
+enerjinin ne işe yaradığını belirler:
+
+1. **Enerjiyi yalnızca kabiliyetler harcar.** Başka hiçbir şey — koşmak,
+   savaşmak, blok kırmak — enerjiye dokunmaz.
+2. **Bir kabiliyet açıkken enerji hiç yenilenmez.** Kabiliyet bittikten sonra
+   saniyede 3 puan dolmaya başlar (boş bardan doluya yaklaşık 33 saniye).
+3. **Süpürme kabiliyetleri blok başına ödeme yapar.** Ağaç Kırıcı düşen her
+   kütük için 5, Damar Kırıcı her blok için 4, Kaya Patlaması her blok için 3
+   enerji harcar. Enerjiniz biterse süpürme **orada durur** ve size kaç blokta
+   durduğu söylenir.
+
+Yani "bir seferde kaç kütük devirirsin" sorusunun cevabı blok sınırı değil,
+**enerji barınızdır**. 100 enerjilik bir barla Ağaç Kırıcı yaklaşık 18 kütük
+alır; maksimum enerji bonuslarınız arttıkça bu sayı da artar.
+
+**Süpürme aleti yer.** Düşen her blok için elinizdeki alet 1 dayanıklılık
+kaybeder — o blokları elle kırsaydınız ödeyeceğiniz bedelin aynısı. Aynı kural
+kilometre taşıyla açılan ağaç devirme ve geniş kazı için de geçerlidir.
+Dayanıklılık büyüsü (Unbreaking) normal şekilde çalışır.
+
+Eylem çubuğunda enerji her zaman `mevcut/maksimum` biçiminde görünür; bir
+kabiliyet çalışırken kabiliyetin kendi geri sayımının yanında okunur.
 
 ---
 
@@ -469,12 +568,95 @@ yeniden başladığında panel varsayılan olarak görünür duruma döner.
 
 ---
 
+## Başka bir oyuncunun profili (`/profil <isim>`)
+
+`/profil` kendi özetinizi açar; `/profil <isim>` **başka bir oyuncunun tam
+kaydını** açar. Oyuncu çevrimdışıysa da çalışır — ekranda gördüğünüz hemen her
+şey kalıcı olarak saklanır.
+
+Ekranda ne var:
+
+- Oyuncunun **kendi kafası**, prestij sayısı ve sınıfı.
+- **Güç ve sıralaması**, **Zenginlik ve sıralaması**.
+- **Sınıf ve sınıf seviyesi** (XP'siyle birlikte).
+- **Altı becerinin seviyesi ve her birinin sıralaması.**
+- **Odak ağacı** — o oyuncunun gerçekten puan harcadığı yetenekler ve rankları.
+  Hiç harcamamışsa tek satır yazar, boş bir tablo göstermez.
+- **Sınıfının dört kabiliyeti**, açık olanlar yeşil, kilitli olanlar gerekli
+  seviyesiyle birlikte gri.
+- **Açtığı unvanlar ve kozmetikler**, sayaçlarıyla.
+
+**Her sayının yanında sırası var, çünkü bir sayının anlamı ancak diğerlerine
+göre vardır.** "Güç 312" tek başına, hiç kimsenin Güç'ünü görmemiş birine
+hiçbir şey söylemez; "Güç 312 — #4" ise bir oyuncuyu aramaya değer kılan şeyin
+ta kendisidir.
+
+### Takas daveti
+
+Ekranın altında bir **takas düğmesi** vardır ve yalnızca **gerçekten
+çalışacaksa** düğmedir: iki tarafın da takası açmış olması, karşı tarafın
+çevrimiçi olması ve baktığınız kişinin siz olmamanız gerekir. Diğer
+durumlarda gri bir açıklama görürsünüz — ekran reddedeceği bir tıklamaya davet
+etmemeli.
+
+Tıkladığınızda karşı tarafa takas daveti gider; **iki tarafa da sohbette
+bilgi** düşer ve **iki tarafa da farklı bir ses efekti** çalar (gönderene kısa
+bir onay, alana dikkat çekici bir çan). Karşı taraf `/takas kabul` ya da
+`/takas ret` ile yanıtlar; davet 1 dakika içinde yanıtlanmazsa düşer.
+
+---
+
+## TAB listesi
+
+TAB tuşunu basılı tuttuğunuzda görünen ekran eklenti tarafından yönetilir:
+
+- Üstte **sunucu adı**, tanıtım satırı ve **çevrimiçi / maksimum** oyuncu
+  sayısı.
+- Altta **canlı TPS**, **kendi ping'iniz**, sunucu adresi **`oyna.fxrkqn.org`**
+  ve `/harita` hatırlatması.
+- Listedeki her oyuncunun adının önünde, varsa **kuşandığı unvan kendi
+  renginde** görünür — sohbette ve sağdaki panelde gördüğünüz etiketin aynısı.
+  Adın yanında o oyuncunun **Güç**'ü yazar.
+
+TPS'in rengi sunucunun durumunu söyler: **19 ve üstü yeşil**, 15-19 arası
+sarı, 15'in altı kırmızı. Liste birkaç saniyede bir kendiliğinden tazelenir.
+`sunucu.yml` üzerinden tamamen kapatılabilir.
+
+---
+
+## Uyku ve gece
+
+**Gece tek bir oyuncunun uyuması sabahı getirir.** Yatakta vanilla'nın "geceyi
+uyudu" saydığı kadar kaldığınızda saat sabaha alınır, yağmur/fırtına dinilir ve
+o dünyadaki herkese kısa bir duyuru ile çan sesi gider. Yalnızca normal dünyada
+çalışır (Nether ve End'de zaten gece yoktur).
+
+Bu bir dünya ayarı (`playersSleepingPercentage`) değildir — eklenti kendi işini
+yapar, dolayısıyla `sunucu.yml`'den kapatılabilir ve eklenti kaldırıldığında
+dünyanızda hiçbir kalıntı bırakmaz.
+
+---
+
+## Canlı harita (`/harita`)
+
+`/harita` (ya da `/map`) sunucunun canlı oyun içi harita adresini verir:
+**https://harita.fxrkqn.org:8100**. Sohbetteki bağlantıya tıklayarak doğrudan
+açabilirsiniz.
+
+---
+
 ## Prestij
 
 Prestij yapabilmek için üç şart birden sağlanmalıdır: altı becerinin de en
 az 25. seviyede olması, seçili sınıfın kendi sınıf seviyesinin maksimuma
 (varsayılan 50) ulaşmış olması, ve o sınıfın sinerji becerilerinin
-**hepsinin** kendi maksimum seviyesine (100) ulaşmış olması. `/prestij` bu
+**hepsinin** o sınıfın istediği seviyeye ulaşmış olması.
+
+**Bu son şart sınıf başına ayarlanır.** Amansız Savaşçı ve Mağara Adamı tek bir
+beceri beslediği için o beceriyi 100'e çıkarmaları istenir. **Tabiat Vârisi
+dört beceri birden beslediğinden dördünün de 100 olmasını beklemek onu
+diğerlerinden kat kat zor yapıyordu**; ondan **odunculuk, kazıcılık, tarımcılık
+ve hayvancılığın her birinde en az 30. seviye** istenir. `/prestij` bu
 şartları ayrı ayrı ✔/✘ olarak listeler — sinerji becerilerinin her biri
 kendi satırında görünür, böylece dört beceriyi birden besleyen Tabiat Vârisi
 oynarken hangisinin sizi geciktirdiğini tek bakışta görürsünüz — ve onay
@@ -494,14 +676,19 @@ sayısı 10'dur.
 
 ## Görevler
 
-Toplam **65 görev** vardır: 36 kalıcı, 16 günlük, 13 haftalık. `/görev`,
+Toplam **85 görev** vardır: 43 kalıcı, 23 günlük, 19 haftalık. `/görev`,
 solunda dört sekme bulunan bir görev panosu açar. Aynı anda tek bir bölüm
 gösterilir, o bölüme de 42 slot ayrılmıştır:
 
-- **Günlük Görevler** — 16 görevlik havuzdan her gün rastgele atanan 3 görev.
-- **Haftalık Görevler** — 13 görevlik havuzdan her hafta rastgele atanan 2 görev.
-- **Kalıcı Görevler** — tek seferlik, hiç sıfırlanmayan, herkeste ortak 36 görev.
+- **Günlük Görevler** — 23 görevlik havuzdan her gün rastgele atanan 3 görev.
+- **Haftalık Görevler** — 19 görevlik havuzdan her hafta rastgele atanan 2 görev.
+- **Kalıcı Görevler** — tek seferlik, hiç sıfırlanmayan, herkeste ortak 43 görev.
 - **Tamamlanan Görevler** — bu dönemde bitirdikleriniz.
+
+**Her becerinin üç türde de görevi vardır.** Hayvancılık ve tarımcılık uzun
+süre yalnızca birkaç göreve sahipti; artık ikisinin de kalıcı, günlük ve
+haftalık hedefleri var (çiftleştirme, koyun kırpma, evcilleştirme, hasat,
+nether mantarı, bostan).
 
 Bir görevin üstüne geldiğinizde **ne yapmanız gerektiğini anlatan açıklaması**,
 mevcut ilerlemeniz ve **kazandıracağı XP ile hangi beceriye yazılacağı** yazar.
@@ -558,35 +745,53 @@ ve varsa "yeni kabiliyet açıldı" bildirimi.
 Beş görev türü vardır:
 
 - **Blok kırma** ve **yaratık öldürme** — klasik sayaçlar.
-- **Yapı bulma** — o yapının içinde durmanız yeterlidir. Köy (1 800 XP),
-  batık gemi, terk edilmiş maden, batık hazine, kadim kalıntılar, yağmacı
-  karakolu, nether kalesi, bastion kalıntısı, okyanus anıtı, deneme odaları,
-  kale, ormandaki konak (15 000 XP) ve **Kadim Şehir** (18 000 XP).
+- **Yapı bulma** — o yapının içinde durmanız yeterlidir. **Bilerek yalnızca
+  iki tane kaldı**: köy (1 800 XP) ve batık gemi. Aşağıya bakın.
 - **Eşya edinme** — hem yerden alınan hem de bir sandıktan çıkarılan eşyalar
-  sayılır. Müzik diski, isim etiketi, ölümsüzlük totemi, elytra ve en zoru
-  **ejderha yumurtası** (36 000 XP).
+  sayılır. Müzik diski, isim etiketi, ölümsüzlük totemi, elytra, yankı
+  parçası, deneme anahtarı ve en zoru **ejderha yumurtası** (36 000 XP).
 - **Belirli bir iş (`DEED`)** — sayaçla anlatılamayan, hikâyesi olan hedefler:
   bir ghast'ı **kendi ateş topuyla** öldürmek, piglinlerle takas yapmak,
   köylülerle ticaret, büyü masasında büyüleme, balık tutma, hayvan
-  evcilleştirme.
+  evcilleştirme, çiftleştirme, koyun kırpma, **gezgin tüccarı bulmak** ve
+  **doğal bir raylı sandığı açmak**.
 
 **Boyut şartı.** Bir görev `NORMAL`, `NETHER` ya da `THE_END` boyutuna
 kilitlenebilir; böylece "End'de 100 enderman öldür" gerçekten End'i şart
 koşar, gece bir ovada öldürdüğünüz enderman sayılmaz.
 
-**Bir yeri bulmak yarısıdır.** Kalıcı görevlerin bir kısmı, keşfettiğiniz
-yerde iş bitirmenizi ister:
+**Bir yere varmak tek başına görev değildir.** Neredeyse her keşif görevi,
+oraya vardıktan sonra yapılacak bir iş ister — bir sandık açmak, bir yaratık
+öldürmek, bir eşya çıkarmak:
 
 | Görev | Ne ister |
 |---|---|
-| Konağın Büyücüleri | Ormandaki konağı bul, 3 evoker öldür |
-| Yaşlı Muhafız | Okyanus anıtını bul, Elder Guardian'ı öldür |
-| Bastion'un Altını | Bastion kalıntısı bul, 10 altın bloğu kaz (Nether) |
-| Piglin Ticareti | Piglinlerle 8 kez takas yap |
-| Alev Avı / Kara Kemikler | Nether kalesinde 10 blaze ve 10 wither iskeleti öldür |
+| Terk Edilmiş Maden | Bir mineshaft bul, **2 doğal raylı sandık aç** |
+| Batık Hazine | Hazine haritasını takip et, sandıktan **Denizin Kalbi'ni** çıkar |
+| Yağmacı Karakolu | Karakolu bul, 8 yağmacı öldür |
+| Ormandaki Konak | Konağı bul, 8 intikamcı öldür |
+| Konağın Büyücüleri | Aynı konakta 3 evoker öldür |
+| Nether Kalesi | Kaleyi bul, 12 alev çubuğu topla |
+| Alev Avı / Kara Kemikler | Aynı kalede 10 blaze ve 10 wither iskeleti öldür |
+| Bastion Kalıntısı | Bastion bul, 5 piglin vahşisi öldür |
+| Bastion'un Altını | Aynı bastion'dan 10 altın bloğu kaz |
+| Okyanus Anıtı | Anıtı bul, 64 prizmarin blok sök |
+| Yaşlı Muhafız | Aynı anıtta Elder Guardian'ı öldür |
+| Kadim Kalıntılar | Kalıntıları bul, fırçayla **`relic` plağını** çıkar |
+| Kadim Şehir | Şehri bul, 4 yankı parçası al (18 000 XP) |
+| Deneme Odaları | Odaları bul, 4 deneme anahtarı kazan |
+| Son Kapı | Kaleyi bul, 20 gümüş balığı ez |
 | Kendi Ateşiyle | Bir ghast'ı geri yolladığın ateş topuyla öldür |
 | End'in Sakinleri | End'de toplam 100 enderman öldür |
 | Derinin Bekçisi | Warden'ı uyandır ve öldür (45 000 XP) |
+
+Geriye kalan üç "sadece bul" görevi bilerek bırakıldı: **köy**, **batık gemi**
+ve **gezgin tüccar**. Üçü de oyunun ilk saatlerinde size yön veren, zorluğu
+zaten keşfin kendisinde olan görevlerdir.
+
+**Raylı sandık görevleri evde kurulamaz.** Bir görev yalnızca **dünyanın
+oluşturduğu** raylı sandıklarda ilerler; kendi koyduğunuz bir sandık vagonunun
+ganimet tablosu olmadığı için hiç sayılmaz.
 
 XP'ler kasıtlı olarak zorlukla ölçeklenir: bir köy bulmak (1 800) ile Warden'ı
 öldürmek (45 000) arasında yirmi beş katlık bir fark vardır.
@@ -872,6 +1077,26 @@ duyurulur. Görev tamamlama, koleksiyon tamamlama, sınıf değiştirme ve prest
 kısa bir cübuk ve ekran başlığı gösterir (`feedback.yml` her şeyin ne kadar
 süre görünür kalacağını ve hangi ses efektinin çalacağını denetler).
 
+**Sessiz kalan anlar kalmadı.** Aşağıdakilerin hepsinin artık kendi ses efekti
+ve çoğunun kendi parçacık efekti vardır:
+
+| An | Ne olur |
+|---|---|
+| Yetenek ağacında puan harcamak | Büyü masası sesi + büyü parçacıkları |
+| `/ev ayarla` | Yeniden doğuş çıpası sesi + köylü parçacıkları |
+| Eve ışınlanmak | Enderman ışınlanma sesi + portal parçacıkları |
+| Takas daveti göndermek / almak | İki tarafa **farklı** cue (kısa onay / çan) |
+| Kabiliyet kuşanmak / çıkarmak | Kısa tık / şalter sesi |
+| Görev tamamlamak | Başarı sesi + totem parçacıkları |
+| `/rtp` ile inmek | Işınlanma sesi + ters portal parçacıkları |
+| Bir dünya bossunun ölmesi | Herkese zafer sesi; **cesedin başında** patlama, totem ve ışık huzmesi — *nerede* olduğunu savaşa gidenlere söylemek için |
+| Tek kişi geceyi uyuması | O dünyadaki herkese çan sesi + duyuru |
+
+Kabiliyetlerin kendi gösterileri de `abilities.yml`'de ayrıntılıdır: her
+kabiliyetin rengi, ana sesi, dört tick sonra çalan **yankı sesi** ve partikül
+**şekli** (saçılma / genişleyen halkalar / yukarı sarılan helis / kubbe) ayrı
+ayrı ayarlanır.
+
 ## Envanter menüsü
 
 `/menü`, çerçeveli bir merkez menü açar: en üstte kendi kafanı taşıyan,
@@ -918,6 +1143,26 @@ kabiliyetini kuşanmasından çıkarır). Bir seviye atlamaya yol açan her müd
 oyuncu çevrimiçiyse organik bir seviye atlamayla birebir aynı geri bildirimi
 (cübuk, ses, "yeni kabiliyet açıldı" ekran yazısı, panel güncellemesi)
 tetikler. Her yönetici müdahalesi Türkçe bir sunucu günlüğü kaydı bırakır.
+
+### Zenginlik ayarlama: paneldeki tek "sohbete yaz" alanı
+
+Oyuncu düzenleme ekranındaki **Zenginlik** satırına tıkladığınızda ekran
+kapanır ve panel sizden **sayıyı sohbete yazmanızı** ister. Yazdığınız satır
+sohbete düşmez, doğrudan panele gider; vazgeçmek için `iptal` yazın, 60 saniye
+içinde cevap vermezseniz soru kendiliğinden düşer.
+
+Bu, paneldeki **tek** serbest metin alanıdır ve bilerek öyledir: zenginlik
+totalleri rahatlıkla milyonlara çıkar, tıkla-arttır satırlarıyla 4 812 500
+yazmak bir düzeltme aracı değil bir işkencedir.
+
+İki şeyi bilerek yapar:
+
+- **Ekler değil, üzerine yazar.** Bir rollback'i düzelten personel sayının kaç
+  *olması gerektiğini* bilir, ne kadar ekleyeceğini değil.
+- **Eklentideki tek zenginlik düşürme yoludur.** Oyun içi hiçbir yol bu sayıyı
+  azaltmaz — puanın anlamı "dünyadan ne çıkardın"dır ve geri alınması onu
+  başka bir şeye çevirirdi. Ama yanlış kalmış bir totali düzeltmenin de bir
+  yolu olmalıydı. Çevrimdışı oyuncularda da çalışır.
 
 ## Gereksinimler
 
@@ -1010,7 +1255,7 @@ sunucuyu yeniden başlatmadan uygulanabilir.
 | `skills.yml` | Altı becerinin seviye eğrisi, blok/yaratık/eylem başına XP, kilometre taşları, simgeler |
 | `abilities.yml` | Enerji havuzu ve yenilenme hızı, her kabiliyetin süresi/beklemesi/maliyeti/etkisi/görseli |
 | `classes.yml` | Sınıf kataloğu, sinerji becerileri, yetenek ağaçları, iki puan havuzu, sınıf renkleri/çerçeveleri |
-| `quests.yml` | 65 görev: hedef türü, sayı, XP, eğittiği beceri, simge, açıklama ve panel için `kisa-ad` |
+| `quests.yml` | 85 görev: hedef türü, sayı, XP, eğittiği beceri, simge, açıklama ve panel için `kisa-ad` |
 | `collections.yml` | Koleksiyon kataloğu ve tamamlama bonusları |
 | `prestige.yml` | Prestij şartları ve maksimum prestij sayısı |
 | `leaderboards.yml` | Tablo başına gösterilecek oyuncu sayısı ve önbellek tazeleme aralığı |
@@ -1018,7 +1263,15 @@ sunucuyu yeniden başlatmadan uygulanabilir.
 | `feedback.yml` | Cübuk/başlık süreleri, isimli ses efektleri, boss doğuş sesi listesi |
 | `zenginlik.yml` | Zenginlik Puanı değerleri, kilometre taşları, sıralama duyurusu aralığı |
 | `bosslar.yml` | Boss doğuş aralığı ve mesafesi, beş nadirlik, arketipler ve isim havuzları |
+| `sunucu.yml` | Tek kişi uykusu ve TAB listesi davranış anahtarları (metinler `messages.yml`'de) |
 | `modlar.yml` | Zorunlu/yasaklı Fabric mod listesi ve doğrulama ayarları |
+
+`sunucu.yml` bilerek **yalnızca davranış anahtarı** taşır; TAB listesinin
+başlığı/alt bilgisi, sunucu adresi, uyku duyurusu ve harita adresi gibi
+oyuncunun gördüğü her metin `messages.yml`'nin `tab:`, `uyku:` ve `harita:`
+bölümlerindedir. Harita adresi orada **iki kez** geçer (tıklanan bağlantı ve
+okunan metin), çünkü MiniMessage'ın `click:open_url` etiketi yer tutucu kabul
+etmez — adresi değiştirirken ikisini birden değiştirin.
 
 ## PlaceholderAPI ve LuckPerms (isteğe bağlı)
 
@@ -1089,6 +1342,21 @@ karşı her gönderilen veritabanı göçünü ve temsili bir repository okuma/y
 örneklem setini çalıştırır — bu, çalışan bir Docker daemon'u gerektirir ve
 bilinçli olarak `build`/`test`/`check`'ten hariç tutulmuştur; bu yüzden ayrı
 ve açıkça çalıştırılmalıdır.
+
+Hızlı paket, yapılandırma dosyalarının kendisini de doğrular ve bunların bir
+kısmı **tasarım kararlarını zorlayan** testlerdir:
+
+- Her `MessageKey` sabiti ile `messages.yml` **birebir** eşleşmeli (iki yönde
+  de fazlalık olamaz) ve her `<simge:...>` gerçek bir ikon adı olmalı.
+- **Her sınıf tam olarak dört kabiliyete ve tam olarak 10/20/35/50
+  basamaklarına sahip olmalı.** Kabiliyet ekranı dört sabit kaide çizer;
+  beşinci bir kabiliyet hiç görünmez, üçüncüsü boşluk bırakır — ikisi de ancak
+  biri ekranı açtığında fark edilirdi.
+- Her kabiliyetin becerisi, kendi sınıfının beslediği becerilerden biri olmalı.
+- Her `QuestDeed` en az bir görev tarafından kullanılmalı (kimsenin
+  tetiklemediği bir dinleyici, bitirilemeyen bir görev demektir) ve her beceri
+  en az bir görev tarafından eğitilmeli.
+- Günlük/haftalık havuzlar, o dönem atanan görev sayısından küçük olamaz.
 
 ## Sunucuya özel ikon paketi
 

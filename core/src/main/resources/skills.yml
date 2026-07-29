@@ -8,15 +8,21 @@
 #  XP DEĞERLERİ HAKKINDA: her blok ve yaratık, oyun içindeki gerçek değerine
 #  ve zorluğuna göre ödüllendirilir. Kömür ile kadim kalıntı, ya da bir inek
 #  ile bir Warden arasında kasıtlı olarak çok büyük bir fark vardır:
-#    - Kazıcılık   : 6 XP (toprak) .. 18 XP (kil)
-#    - Odunculuk   : 9 XP (meşe) .. 21 XP (nether sapı)
+#    - Kazıcılık   : 30 XP (toprak) .. 90 XP (kil)
+#    - Odunculuk   : 45 XP (meşe) .. 105 XP (nether sapı)
 #    - Madencilik  : 12 XP (kömür) .. 300 XP (kadim kalıntı)
 #    - Avcılık     : 15 XP (inek/domuz gibi zararsız yaratıklar) .. 2400 XP (Ejderha)
-#    - Tarımcılık  : 6 XP (saman) .. 30 XP (köylü ticareti)
-#    - Hayvancılık : 3 XP (süt sağma) .. 45 XP (evcilleştirme)
+#    - Tarımcılık  : 30 XP (saman) .. 150 XP (köylü ticareti)
+#    - Hayvancılık : 15 XP (süt sağma) .. 225 XP (evcilleştirme)
 #  Avcılıkta listelenmemiş her yaratık "varsayilan" değerini alır; bu değer
 #  bilerek çok düşüktür, çünkü listelenmemiş yaratıklar neredeyse her zaman
 #  çiftlikte üretilebilen zararsız hayvanlardır.
+#
+#  DENGE NOTU: Kazıcılık, odunculuk, tarımcılık ve hayvancılık becerilerinin
+#  bütün blok/eylem XP değerleri, bu dört becerinin seviye atlaması diğer
+#  ikisine kıyasla belirgin şekilde yavaş kaldığı için 5 KATINA çıkarıldı.
+#  Madencilik ve avcılık kasıtlı olarak dokunulmadan bırakıldı; görev ödülleri
+#  de (quests.yml) bu artışın dışındadır - onlar kendi dengelerine sahiptir.
 #
 #  KAYNAK TÜRLERİ (kaynak.tur):
 #    BLOCK  : blok kırınca XP verir ("malzemeler" listesi zorunludur)
@@ -34,11 +40,23 @@
 #
 #  KİLOMETRE TAŞLARI (kilometre-taslari): 25/50/75/100. seviyelerde kazanılan
 #  kalıcı bonuslar. Kullanılabilir türler:
-#    MAX_HEALTH  PVE_DAMAGE_MULTIPLIER  MAX_ENERGY  HASTE  SPEED
+#    -- oyuncuya uygulanan istatistikler --
+#    MAX_HEALTH (deger = YARIM KALP puanı; 2 = 1 kalp), PVE_DAMAGE_MULTIPLIER,
+#    MAX_ENERGY, HASTE, SPEED
+#    -- açılan özellikler (oyuncuya hiçbir şey uygulanmaz, o an okunur) --
 #    TREE_FELLING (ağaç devirme - deger = en fazla kaç kütük düşeceği)
 #    BREED_REFUND (çiftleştirme yemi iadesi - deger = 0-1 arası ihtimal)
-#  Son iki tür bir "istatistik" değil, açılan bir ÖZELLİKTİR: oyuncuya hiçbir
-#  şey uygulanmaz, ilgili oyun anı geldiğinde okunur.
+#    BREED_TWIN   (ikiz doğum - deger = 0-1 arası ihtimal)
+#    DOUBLE_DROP  (bu becerinin KENDİ bloklarından iki kat düşme - 0-1 ihtimal)
+#    EXCAVATION   (bu becerinin bloklarında 3x3 geniş kazı - deger = ek blok sınırı)
+#    AUTO_REPLANT (olgun ekinin kendini yeniden ekmesi - 0-1 ihtimal)
+#
+#  TASARIM KURALI: kilometre taşları artık "herkese ekstra can" değildir.
+#  Her beceri KENDİ işine yarayan bir şey kazandırır (madencilikte Acele,
+#  odunculukta ağaç devirme, tarımda otomatik ekim, hayvancılıkta ikiz doğum
+#  gibi) ve kademeler zayıftan güçlüye sıralanır: 25. seviye küçük bir giriş
+#  bonusu, 100. seviye becerinin asıl ödülüdür. Ekstra can yalnızca avcılıkta
+#  vardır - orada dayanıklılık becerinin kendi konusudur.
 #
 #  ÖNEMLİ: Oyuncunun kendi yerleştirdiği bloklar hiç XP vermez ve üzerlerinde
 #  hiçbir kabiliyet çalışmaz - yalnızca dünyanın kendi oluşturduğu bloklar
@@ -154,64 +172,64 @@ beceriler:
   kazicilik:
     gorunen-ad: "Kazıcılık"
     simge: IRON_SHOVEL
-    # 25/50/75/100. seviyelerde kazanilan kalici, farklilastirilmis kilometre
-    # tasi bonuslari. Her beceride kademeler zayiftan gucluye siralanir: 25.
-    # seviye basit bir giris bonusu verir, becerinin asil guclu bonusu her
-    # zaman 75. ve 100. seviyelere saklanir.
+    # Kazicilik toprak/kum/cakil isidir: odulleri de kurekle yapilan isi
+    # hizlandirir. 75'te acilan genis kazi bu becerinin imza ozelligidir.
     kilometre-taslari:
-      25: { tur: MAX_HEALTH, deger: 2 }
-      50: { tur: MAX_ENERGY, deger: 10 }
-      75: { tur: MAX_ENERGY, deger: 20 }
-      100: { tur: MAX_ENERGY, deger: 30 }
+      25: { tur: DOUBLE_DROP, deger: 0.10 }
+      50: { tur: MAX_ENERGY, deger: 15 }
+      75: { tur: EXCAVATION, deger: 8 }
+      100: { tur: DOUBLE_DROP, deger: 0.30 }
     kaynak:
       tur: BLOCK
       malzemeler:
-        DIRT: { xp: 6, gorunen-ad: "Toprak" }
-        GRASS_BLOCK: { xp: 6, gorunen-ad: "Çimen Bloğu" }
-        COARSE_DIRT: { xp: 6, gorunen-ad: "Sert Toprak" }
-        SAND: { xp: 6, gorunen-ad: "Kum" }
-        ROOTED_DIRT: { xp: 9, gorunen-ad: "Köklü Toprak" }
-        PODZOL: { xp: 9, gorunen-ad: "Podzol" }
-        MYCELIUM: { xp: 9, gorunen-ad: "Misel" }
-        RED_SAND: { xp: 9, gorunen-ad: "Kızıl Kum" }
-        GRAVEL: { xp: 9, gorunen-ad: "Çakıl" }
-        SOUL_SAND: { xp: 15, gorunen-ad: "Ruh Kumu" }
-        SOUL_SOIL: { xp: 15, gorunen-ad: "Ruh Toprağı" }
-        CLAY: { xp: 18, gorunen-ad: "Kil" }
+        DIRT: { xp: 30, gorunen-ad: "Toprak" }
+        GRASS_BLOCK: { xp: 30, gorunen-ad: "Çimen Bloğu" }
+        COARSE_DIRT: { xp: 30, gorunen-ad: "Sert Toprak" }
+        SAND: { xp: 30, gorunen-ad: "Kum" }
+        ROOTED_DIRT: { xp: 45, gorunen-ad: "Köklü Toprak" }
+        PODZOL: { xp: 45, gorunen-ad: "Podzol" }
+        MYCELIUM: { xp: 45, gorunen-ad: "Misel" }
+        RED_SAND: { xp: 45, gorunen-ad: "Kızıl Kum" }
+        GRAVEL: { xp: 45, gorunen-ad: "Çakıl" }
+        SOUL_SAND: { xp: 75, gorunen-ad: "Ruh Kumu" }
+        SOUL_SOIL: { xp: 75, gorunen-ad: "Ruh Toprağı" }
+        CLAY: { xp: 90, gorunen-ad: "Kil" }
 
   odunculuk:
     gorunen-ad: "Odunculuk"
     simge: IRON_AXE
     # 25. seviyede acilan TREE_FELLING ozelligi: bir agacin toprakla temas
     # eden KOK kutugunu kestiginde agacin tamami devrilir (bagli tum kutukler
-    # birden duser). Govdenin ortasindan kesmek bunu tetiklemez.
+    # birden duser). Govdenin ortasindan kesmek bunu tetiklemez. 75'te ayni
+    # ozellik iki katina cikar - en yuksek kademe gecerlidir, toplanmaz.
     kilometre-taslari:
       25: { tur: TREE_FELLING, deger: 48 }
-      50: { tur: MAX_ENERGY, deger: 10 }
-      75: { tur: SPEED, deger: 0 }
-      100: { tur: SPEED, deger: 1 }
+      50: { tur: DOUBLE_DROP, deger: 0.12 }
+      75: { tur: TREE_FELLING, deger: 96 }
+      100: { tur: DOUBLE_DROP, deger: 0.30 }
     kaynak:
       tur: BLOCK
       malzemeler:
-        OAK_LOG: { xp: 9, gorunen-ad: "Meşe Kütüğü" }
-        SPRUCE_LOG: { xp: 9, gorunen-ad: "Ladin Kütüğü" }
-        BIRCH_LOG: { xp: 9, gorunen-ad: "Huş Kütüğü" }
-        JUNGLE_LOG: { xp: 12, gorunen-ad: "Orman Kütüğü" }
-        ACACIA_LOG: { xp: 12, gorunen-ad: "Akasya Kütüğü" }
-        DARK_OAK_LOG: { xp: 12, gorunen-ad: "Kara Meşe Kütüğü" }
-        MANGROVE_LOG: { xp: 12, gorunen-ad: "Mangrov Kütüğü" }
-        CHERRY_LOG: { xp: 15, gorunen-ad: "Kiraz Kütüğü" }
-        PALE_OAK_LOG: { xp: 15, gorunen-ad: "Solgun Meşe Kütüğü" }
-        CRIMSON_STEM: { xp: 21, gorunen-ad: "Kızıl Sap" }
-        WARPED_STEM: { xp: 21, gorunen-ad: "Çarpık Sap" }
+        OAK_LOG: { xp: 45, gorunen-ad: "Meşe Kütüğü" }
+        SPRUCE_LOG: { xp: 45, gorunen-ad: "Ladin Kütüğü" }
+        BIRCH_LOG: { xp: 45, gorunen-ad: "Huş Kütüğü" }
+        JUNGLE_LOG: { xp: 60, gorunen-ad: "Orman Kütüğü" }
+        ACACIA_LOG: { xp: 60, gorunen-ad: "Akasya Kütüğü" }
+        DARK_OAK_LOG: { xp: 60, gorunen-ad: "Kara Meşe Kütüğü" }
+        MANGROVE_LOG: { xp: 60, gorunen-ad: "Mangrov Kütüğü" }
+        CHERRY_LOG: { xp: 75, gorunen-ad: "Kiraz Kütüğü" }
+        PALE_OAK_LOG: { xp: 75, gorunen-ad: "Solgun Meşe Kütüğü" }
+        CRIMSON_STEM: { xp: 105, gorunen-ad: "Kızıl Sap" }
+        WARPED_STEM: { xp: 105, gorunen-ad: "Çarpık Sap" }
 
   madencilik:
     gorunen-ad: "Madencilik"
     simge: IRON_PICKAXE
+    # Madenciligin imzasi Acele: kazma hizi dogrudan bu becerinin konusudur.
     kilometre-taslari:
-      25: { tur: MAX_HEALTH, deger: 2 }
-      50: { tur: MAX_ENERGY, deger: 10 }
-      75: { tur: HASTE, deger: 0 }
+      25: { tur: DOUBLE_DROP, deger: 0.08 }
+      50: { tur: HASTE, deger: 0 }
+      75: { tur: DOUBLE_DROP, deger: 0.20 }
       100: { tur: HASTE, deger: 1 }
     kaynak:
       tur: BLOCK
@@ -241,10 +259,12 @@ beceriler:
   avcilik:
     gorunen-ad: "Avcılık"
     simge: IRON_SWORD
+    # Ekstra can YALNIZCA burada var: dovusun icinde ayakta kalmak avciligin
+    # kendi konusu. deger yarim-kalp puanidir, yani 2 = 1 kalp, 6 = 3 kalp.
     kilometre-taslari:
       25: { tur: MAX_HEALTH, deger: 2 }
-      50: { tur: MAX_HEALTH, deger: 4 }
-      75: { tur: PVE_DAMAGE_MULTIPLIER, deger: 0.10 }
+      50: { tur: PVE_DAMAGE_MULTIPLIER, deger: 0.05 }
+      75: { tur: MAX_HEALTH, deger: 6 }
       100: { tur: PVE_DAMAGE_MULTIPLIER, deger: 0.20 }
     kaynak:
       tur: MOB
@@ -299,11 +319,13 @@ beceriler:
     simge: WHEAT
     # Tarim hem blok hem eylem kaynagi olan tek beceridir: hasat bloklarindan
     # ve tarlanin etrafindaki islerden ayni anda XP kazanir.
+    # Tarimin imzasi otomatik ekim: 50'de hasadin yarisi kendini yeniden eker,
+    # 100'de tamami. En yuksek kademe gecerlidir, toplanmaz.
     kilometre-taslari:
-      25: { tur: MAX_HEALTH, deger: 2 }
-      50: { tur: MAX_ENERGY, deger: 12 }
-      75: { tur: MAX_HEALTH, deger: 6 }
-      100: { tur: MAX_ENERGY, deger: 30 }
+      25: { tur: DOUBLE_DROP, deger: 0.08 }
+      50: { tur: AUTO_REPLANT, deger: 0.50 }
+      75: { tur: DOUBLE_DROP, deger: 0.20 }
+      100: { tur: AUTO_REPLANT, deger: 1.0 }
     kaynak:
       tur: BLOCK
       # Ekinler yalnizca TAM OLGUNLASMIS halde XP verir; olmamis bir ekini
@@ -311,59 +333,60 @@ beceriler:
       # "oyuncunun yerlestirdigi blok sayilmaz" kuralina tabidir, yani sadece
       # koylerdeki dogal balyalar sayilir.
       malzemeler:
-        HAY_BLOCK: { xp: 6, gorunen-ad: "Saman Balyası" }
-        WHEAT: { xp: 9, gorunen-ad: "Buğday" }
-        CARROTS: { xp: 9, gorunen-ad: "Havuç" }
-        POTATOES: { xp: 9, gorunen-ad: "Patates" }
-        BEETROOTS: { xp: 9, gorunen-ad: "Pancar" }
-        SWEET_BERRY_BUSH: { xp: 9, gorunen-ad: "Tatlı Böğürtlen" }
-        MELON: { xp: 12, gorunen-ad: "Karpuz" }
-        PUMPKIN: { xp: 12, gorunen-ad: "Balkabağı" }
-        COCOA: { xp: 12, gorunen-ad: "Kakao" }
-        NETHER_WART: { xp: 15, gorunen-ad: "Nether Mantarı" }
-        TORCHFLOWER_CROP: { xp: 18, gorunen-ad: "Meşale Çiçeği" }
-        PITCHER_CROP: { xp: 18, gorunen-ad: "Testi Bitkisi" }
+        HAY_BLOCK: { xp: 30, gorunen-ad: "Saman Balyası" }
+        WHEAT: { xp: 45, gorunen-ad: "Buğday" }
+        CARROTS: { xp: 45, gorunen-ad: "Havuç" }
+        POTATOES: { xp: 45, gorunen-ad: "Patates" }
+        BEETROOTS: { xp: 45, gorunen-ad: "Pancar" }
+        SWEET_BERRY_BUSH: { xp: 45, gorunen-ad: "Tatlı Böğürtlen" }
+        MELON: { xp: 60, gorunen-ad: "Karpuz" }
+        PUMPKIN: { xp: 60, gorunen-ad: "Balkabağı" }
+        COCOA: { xp: 60, gorunen-ad: "Kakao" }
+        NETHER_WART: { xp: 75, gorunen-ad: "Nether Mantarı" }
+        TORCHFLOWER_CROP: { xp: 90, gorunen-ad: "Meşale Çiçeği" }
+        PITCHER_CROP: { xp: 90, gorunen-ad: "Testi Bitkisi" }
     eylemler:
-      capa-kullanimi: { xp: 3, gorunen-ad: "Çapalama" }
-      kemik-tozu: { xp: 6, gorunen-ad: "Kemik Tozu" }
+      capa-kullanimi: { xp: 15, gorunen-ad: "Çapalama" }
+      kemik-tozu: { xp: 30, gorunen-ad: "Kemik Tozu" }
       urun-pisirme:
-        xp: 9
+        xp: 45
         gorunen-ad: "Ürün Pişirme"
         malzemeler: [BAKED_POTATO, DRIED_KELP]
       ekmek-uretimi:
-        xp: 12
+        xp: 60
         gorunen-ad: "Ekmek Üretimi"
         malzemeler: [BREAD]
-      koylu-ticareti: { xp: 30, gorunen-ad: "Köylü Ticareti" }
+      koylu-ticareti: { xp: 150, gorunen-ad: "Köylü Ticareti" }
 
   hayvancilik:
     gorunen-ad: "Hayvancılık"
     simge: LEAD
     # 25. seviyede acilan BREED_REFUND ozelligi: bir yavru dogduktan sonra
     # %15 ihtimalle ciftlestirme yemi oyuncuya geri doner (iki ebeveyn icin
-    # harcanan iki adet birden).
+    # harcanan iki adet birden). 50'de ikiz dogum acilir; 75 ve 100 ayni iki
+    # ozelligin guclu kademeleridir.
     kilometre-taslari:
       25: { tur: BREED_REFUND, deger: 0.15 }
-      50: { tur: MAX_HEALTH, deger: 4 }
-      75: { tur: MAX_HEALTH, deger: 6 }
-      100: { tur: MAX_ENERGY, deger: 25 }
+      50: { tur: BREED_TWIN, deger: 0.10 }
+      75: { tur: BREED_REFUND, deger: 0.45 }
+      100: { tur: BREED_TWIN, deger: 0.30 }
     kaynak:
       # Hayvanciligin hicbir blok/yaratik kaynagi yoktur; tamamen asagidaki
       # eylemlerle kazanilir. Hayvan OLDURMEK avciliga yazilir, hayvanciliga
       # degil - bu beceri hayvani yasatmakla ilgilidir.
       tur: ACTION
     eylemler:
-      sut-sagma: { xp: 3, gorunen-ad: "Süt Sağma" }
+      sut-sagma: { xp: 15, gorunen-ad: "Süt Sağma" }
       # 20 saniyede bir, kayisla en az bir inek/domuz/koyun tasiyorsan.
-      hayvan-tasima: { xp: 6, gorunen-ad: "Hayvan Taşıma" }
-      koyun-kirpma: { xp: 9, gorunen-ad: "Koyun Kırpma" }
+      hayvan-tasima: { xp: 30, gorunen-ad: "Hayvan Taşıma" }
+      koyun-kirpma: { xp: 45, gorunen-ad: "Koyun Kırpma" }
       et-pisirme:
-        xp: 12
+        xp: 60
         gorunen-ad: "Et Pişirme"
         malzemeler: [COOKED_BEEF, COOKED_PORKCHOP, COOKED_MUTTON, COOKED_RABBIT, COOKED_CHICKEN]
-      hayvan-ciftlestirme: { xp: 24, gorunen-ad: "Çiftleştirme" }
+      hayvan-ciftlestirme: { xp: 120, gorunen-ad: "Çiftleştirme" }
       pasta-uretimi:
-        xp: 30
+        xp: 150
         gorunen-ad: "Pasta Üretimi"
         malzemeler: [CAKE]
-      hayvan-evcillestirme: { xp: 45, gorunen-ad: "Evcilleştirme" }
+      hayvan-evcillestirme: { xp: 225, gorunen-ad: "Evcilleştirme" }

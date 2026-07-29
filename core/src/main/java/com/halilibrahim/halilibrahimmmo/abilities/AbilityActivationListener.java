@@ -1,6 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.abilities;
 
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
+import com.halilibrahim.halilibrahimmmo.locale.DurationFormatter;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import org.bukkit.GameMode;
@@ -36,14 +37,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * budgeted, so the prompt and the toggle read as one interaction: click twice
  * to start it, click twice to stop it.</p>
  *
- * <p><strong>Three things never reach the confirm step at all.</strong> A right
+ * <p><strong>Four things never reach the confirm step at all.</strong> A right
  * click on a block that already does something of its own is ignored, a right
  * click that is really the held item being used - placing a block, emptying a
  * bucket, putting down a boat - is ignored (both via
  * {@link InteractableBlocks}), and outside Creative a click aimed at an ability
- * that is already running is ignored silently. All three were producing a
- * prompt, and the last went on to produce a cooldown refusal, for clicks the
- * player never meant as an activation.</p>
+ * that is already running, or still on cooldown, never prompts either: the
+ * second click could only ever be refused, so asking for it was asking the
+ * player to confirm a refusal. Running says nothing (the countdown is already
+ * on screen); on cooldown puts the remaining wait on the action bar.</p>
  *
  * <p>Switching or dropping the held item deliberately does nothing here. A tool
  * is only required to <em>start</em> an ability; once running it stays running
@@ -166,6 +168,21 @@ public final class AbilityActivationListener implements Listener {
         // every stray right click was otherwise prompting and then refusing.
         if (alreadyRunning && !creative) {
             return;
+        }
+        // Same reasoning one step further along: an ability still on cooldown
+        // cannot be activated by a second click either, so prompting for one
+        // was asking the player to confirm a refusal. The remaining wait goes
+        // on the action bar instead - the same surface the prompt used, so it
+        // costs no chat noise however often the click is repeated.
+        if (!creative && !alreadyRunning) {
+            long cooldownRemaining = abilities.cooldownRemainingMillis(player.getUniqueId(), definition.id());
+            if (cooldownRemaining > 0) {
+                player.sendActionBar(messages.render(MessageKey.ABILITY_COOLDOWN_ACTIONBAR, Map.of(
+                        "kabiliyet", definition.displayName(),
+                        "sure", DurationFormatter.ofMillis(messages, cooldownRemaining)
+                )));
+                return;
+            }
         }
         boolean deactivating = creative && alreadyRunning;
         if (!claimConfirmation(player, definition, deactivating)) {

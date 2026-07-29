@@ -80,6 +80,12 @@ sinif-ilerleme:
 # cerceve: o sinifa ait ekranlarin (kabiliyet listesi, yetenek agaci, beceri
 #          detayi) kenarlarini cerceveleyen cam panel - sinifin bossbar rengiyle
 #          ayni renkte olmasi tavsiye edilir.
+# prestij-sinerji-seviyesi: prestij yapabilmek icin bu sinifin sinerji
+#          becerilerinin HER BIRININ ulasmasi gereken seviye. Yazilmazsa
+#          skills.yml'deki maksimum seviye (100) kullanilir. Bir beceri besleyen
+#          siniftan o beceriyi 100'e cikarmasini istemek adil; ama Tabiat Varisi
+#          dort beceri besliyor - dordunu birden 100 yapmasini beklemek onu
+#          digerlerinden kat kat zor hale getiriyordu, bu yuzden 30 istenir.
 # simge: sinif secim ekranlarinda bu sinifi temsil eden esya. Her sinif kendi
 # temasina uygun bir esya kullanir; gecerli bir Bukkit Material adi olmalidir.
 # Her sinifin yetenek agacinda hem OZELLIK hem KABILIYET yetenekleri vardir;
@@ -102,6 +108,9 @@ siniflar:
       odak-ritmi: { gorunen-ad: "Odak Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: avci-odagi, deger-rank-basina: 0.05 } }
       odak-suresi: { gorunen-ad: "Odak Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: avci-odagi, deger-rank-basina: 0.10 } }
       yikim-gucu: { gorunen-ad: "Yıkım Gücü", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: yikici-darbe, deger-rank-basina: 0.08 } }
+      karanlik-goz: { gorunen-ad: "Karanlık Göz", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: gece-gorusu, deger-rank-basina: 0.15 } }
+      kan-suresi: { gorunen-ad: "Kan Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: kan-yemini, deger-rank-basina: 0.10 } }
+      kan-yemini-gucu: { gorunen-ad: "Kan Bağı", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: kan-yemini, deger-rank-basina: 0.08 } }
 
   madenci:
     gorunen-ad: "Mağara Adamı"
@@ -120,6 +129,8 @@ siniflar:
       damar-tasarrufu: { gorunen-ad: "Damar Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: damar-kirici, deger-rank-basina: 0.05 } }
       damar-uzmanligi: { gorunen-ad: "Damar Uzmanlığı", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: damar-kirici, deger-rank-basina: 1 } }
       fener-ritmi: { gorunen-ad: "Fener Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: maden-feneri, deger-rank-basina: 0.05 } }
+      patlama-tasarrufu: { gorunen-ad: "Patlama Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: kaya-patlamasi, deger-rank-basina: 0.05 } }
+      patlama-ritmi: { gorunen-ad: "Patlama Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: kaya-patlamasi, deger-rank-basina: 0.05 } }
 
   tabiat-varisi:
     gorunen-ad: "Tabiat Vârisi"
@@ -131,6 +142,8 @@ siniflar:
     simge: IRON_AXE
     cerceve: GREEN_STAINED_GLASS_PANE
     prestij-etkisi: { tur: MAX_HEALTH, deger-basina: 1 }
+    # Dort beceriyi birden besledigi icin her birinden 100 degil 30 istenir.
+    prestij-sinerji-seviyesi: 30
     yetenekler:
       # --- Özellik yetenekleri ---
       canlilik: { gorunen-ad: "Canlılık", maksimum-rank: 4, etki: { tur: MAX_HEALTH, deger-rank-basina: 2 } }

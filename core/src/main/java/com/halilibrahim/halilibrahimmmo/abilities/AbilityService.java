@@ -30,7 +30,13 @@ public interface AbilityService extends PluginService {
      */
     void deactivate(Player player);
 
-    void handleBlockBreak(BlockBreakEvent event);
+    /**
+     * Resolves whatever a block break means for the ability layer: expiring ore
+     * outlines, extra-drop buffs, and firing an armed sweep. {@code energy} is
+     * needed because a sweep ability now pays per block as it runs, and stops
+     * when the bar empties.
+     */
+    void handleBlockBreak(BlockBreakEvent event, EnergyService energy);
 
     /**
      * Applies the {@link AbilityEffectType#DAMAGE_BUFF} multiplier for a valid
@@ -56,6 +62,16 @@ public interface AbilityService extends PluginService {
     void fellTree(BlockBreakEvent event, int limit);
 
     /**
+     * Clears the 3x3 plane around the block just broken, restricted to blocks
+     * the same configured skill claims, up to {@code limit}. The
+     * {@code EXCAVATION} milestone's counterpart to {@link #fellTree}, sharing
+     * the same secondary-break bookkeeping for the same reason.
+     *
+     * @param skillId which skill's material set decides what an eligible neighbour is
+     */
+    void excavate(BlockBreakEvent event, String skillId, int limit);
+
+    /**
      * Marks {@code abilityId} as the player's menu-selected ability, ready to
      * be right-click activated with the matching {@link AbilityToolTag}. Does
      * not itself activate anything.
@@ -71,6 +87,16 @@ public interface AbilityService extends PluginService {
      */
     void clearSelection(UUID playerId);
 
+    /**
+     * The player taking their own ability off from the ability screen. Ends
+     * everything the selection left running, but - unlike {@link #clearSelection}
+     * - keeps the switch-cooldown bookkeeping, so unequipping is not a free way
+     * around the wait between two different abilities.
+     *
+     * @return {@code false} when nothing was equipped in the first place
+     */
+    boolean unequip(Player player);
+
     /** The player's currently menu-selected ability id, if any. In-memory only. */
     Optional<String> selected(UUID playerId);
 
@@ -79,6 +105,14 @@ public interface AbilityService extends PluginService {
      * used to drive action-bar countdown feedback. In-memory only.
      */
     Optional<ActiveAbilityStatus> activeStatus(UUID playerId);
+
+    /**
+     * How much of this ability's cooldown is left for this player, {@code 0}
+     * when it is ready. Read by the activation listener so a right click during
+     * a cooldown never reaches the two-click confirm prompt - prompting for
+     * something that will only be refused is worse than saying nothing.
+     */
+    long cooldownRemainingMillis(UUID playerId, String abilityId);
 
     /**
      * Clears a player's activation visual feedback (glint on their held item,

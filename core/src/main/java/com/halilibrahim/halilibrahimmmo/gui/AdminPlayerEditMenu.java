@@ -5,6 +5,7 @@ import com.halilibrahim.halilibrahimmmo.classes.ClassLevelProgress;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassProgress;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
+import com.halilibrahim.halilibrahimmmo.locale.NumberFormatter;
 import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
 import com.halilibrahim.halilibrahimmmo.skills.SkillAdminAwardResult;
 import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
@@ -38,6 +39,7 @@ public final class AdminPlayerEditMenu implements GuiView {
     private static final int FIRST_SKILL_XP_SLOT = 19;
     private static final int CLASS_LEVEL_SLOT = 30;
     private static final int CLASS_XP_SLOT = 31;
+    private static final int WEALTH_SLOT = 32;
     private static final int FORCE_CLASS_SLOT = 40;
     private static final int BACK_SLOT = 49;
 
@@ -123,6 +125,12 @@ public final class AdminPlayerEditMenu implements GuiView {
                     List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_CLASS_XP_LORE))));
         }
 
+        inventory.setItem(WEALTH_SLOT, GuiItems.of(Material.DIAMOND,
+                services.messages().render(MessageKey.GUI_ADMIN_EDIT_WEALTH_ITEM, Map.of(
+                        "zenginlik", NumberFormatter.compact(services.wealth().cached(targetId))
+                )),
+                List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_WEALTH_LORE))));
+
         inventory.setItem(FORCE_CLASS_SLOT, GuiItems.of(Material.ANVIL,
                 services.messages().render(MessageKey.GUI_ADMIN_EDIT_FORCE_CLASS_ITEM),
                 List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_FORCE_CLASS_LORE))));
@@ -136,6 +144,10 @@ public final class AdminPlayerEditMenu implements GuiView {
         }
         if (slot == FORCE_CLASS_SLOT) {
             GuiManager.open(player, new AdminClassPickerMenu(services, targetId, targetName));
+            return;
+        }
+        if (slot == WEALTH_SLOT) {
+            promptForWealth(player);
             return;
         }
         String levelSkillId = slotToSkillLevelId.get(slot);
@@ -224,6 +236,51 @@ public final class AdminPlayerEditMenu implements GuiView {
             services.logger().info("Yonetici " + player.getName() + ", " + targetName + " oyuncusunun " + currentClassId + " sinif XP'sine " + amount + " ekledi.");
             celebrateClassLevelUpIfNeeded(currentClassId, result);
             player.getScheduler().run(services.plugin(), task -> GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName)), null);
+        });
+    }
+
+    /**
+     * The one admin field a click-increment row cannot express.
+     *
+     * <p>Zenginlik totals routinely run into the millions, so stepping one at a
+     * time - or even five hundred at a time - is not a correction tool, it is a
+     * repetitive-strain injury. The panel asks for the number in chat instead
+     * ({@link ChatPromptService}), which keeps the admin surface GUI-driven
+     * without pretending a number can be clicked into existence.</p>
+     *
+     * <p>This is also the only path in the plugin that can <em>lower</em> a
+     * wealth total, and it is deliberately an overwrite rather than a delta:
+     * staff correcting a rollback know what the number should be, not what to
+     * add to reach it.</p>
+     */
+    private void promptForWealth(Player player) {
+        services.chatPrompts().await(player, MessageKey.ADMIN_WEALTH_PROMPT, reply -> {
+            long total;
+            try {
+                total = Long.parseLong(reply.replace(".", "").replace(",", "").trim());
+            } catch (NumberFormatException exception) {
+                services.messages().send(player, MessageKey.ADMIN_WEALTH_INVALID, Map.of("deger", reply));
+                GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName));
+                return;
+            }
+            if (total < 0) {
+                services.messages().send(player, MessageKey.ADMIN_WEALTH_INVALID, Map.of("deger", reply));
+                GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName));
+                return;
+            }
+            services.wealth().adminSetTotal(targetId, total).thenAccept(applied ->
+                    player.getScheduler().run(services.plugin(), task -> {
+                        services.logger().info("Yonetici " + player.getName() + ", " + targetName
+                                + " oyuncusunun zenginligini " + applied + " olarak ayarladi.");
+                        services.messages().send(player, MessageKey.ADMIN_WEALTH_SET, Map.of(
+                                "oyuncu", targetName, "zenginlik", Long.toString(applied)
+                        ));
+                        Player target = Bukkit.getPlayer(targetId);
+                        if (target != null) {
+                            services.sidebar().refresh(target);
+                        }
+                        GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName));
+                    }, null));
         });
     }
 

@@ -93,8 +93,12 @@ public final class ClassIntroMenu implements GuiView {
             services.abilities().definitions().stream()
                     .filter(ability -> ability.classId().equals(definition.id()))
                     .sorted((left, right) -> Integer.compare(left.requiredLevel(), right.requiredLevel()))
+                    // The unlock level belongs on this line now that every class
+                    // has four abilities on fixed rungs: the list doubles as
+                    // "how far in do I get this", which is most of what a player
+                    // is comparing when they pick a class.
                     .forEach(ability -> lore.add(services.messages().render(MessageKey.GUI_CLASS_INTRO_ABILITY_LINE,
-                            Map.of("kabiliyet", ability.displayName()))));
+                            Map.of("kabiliyet", ability.displayName(), "seviye", Integer.toString(ability.requiredLevel())))));
             if (current) {
                 lore.add(services.messages().render(MessageKey.GUI_CLASS_INTRO_CURRENT_MARKER));
             }

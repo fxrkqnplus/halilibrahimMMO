@@ -396,7 +396,12 @@ public final class YamlClassService implements ClassService {
             if (!prestigeTypeAllowed || prestigeEffectValue <= 0) {
                 throw new IllegalArgumentException("Class prestige effect must be a positive MAX_HEALTH/PVE_DAMAGE_MULTIPLIER/MAX_ENERGY value: " + id);
             }
-            definitions.put(id, new PlayerClassDefinition(id, displayName, Set.copyOf(synergySkillIds), barColor, icon, frame, Map.copyOf(nodes), prestigeEffectType, prestigeEffectValue));
+            int skillCap = skills.settings().curve().maximumLevel();
+            int prestigeSynergyLevel = section.getInt("prestij-sinerji-seviyesi", skillCap);
+            if (prestigeSynergyLevel < 1 || prestigeSynergyLevel > skillCap) {
+                throw new IllegalArgumentException("Class prestij-sinerji-seviyesi must be within the skill level range: " + id);
+            }
+            definitions.put(id, new PlayerClassDefinition(id, displayName, Set.copyOf(synergySkillIds), barColor, icon, frame, Map.copyOf(nodes), prestigeEffectType, prestigeEffectValue, prestigeSynergyLevel));
         }
         if (definitions.isEmpty()) throw new IllegalArgumentException("classes.yml must define classes.");
         return new ClassSettings(Math.multiplyExact(cooldownDays, 86_400_000L), talentPoints, classLevelCurve, synergyBonus, Map.copyOf(definitions));

@@ -43,6 +43,39 @@ sesler:
     ses: ENTITY_ITEM_BREAK
     ses-seviyesi: 0.6
     ton: 1.0
+  # Kabiliyet ekranindaki "Kabiliyeti Cikar" dugmesi.
+  kabiliyet-cikarildi:
+    ses: BLOCK_LEVER_CLICK
+    ses-seviyesi: 0.8
+    ton: 0.8
+  # Yetenek agacinda bir puan harcandigi an.
+  yetenek-acildi:
+    ses: BLOCK_ENCHANTMENT_TABLE_USE
+    ses-seviyesi: 1.0
+    ton: 1.4
+  # "/ev ayarla" ve "/ev" ile eve isinlanma.
+  ev-ayarlandi:
+    ses: BLOCK_RESPAWN_ANCHOR_SET_SPAWN
+    ses-seviyesi: 1.0
+    ton: 1.2
+  ev-isinlanma:
+    ses: ENTITY_ENDERMAN_TELEPORT
+    ses-seviyesi: 0.9
+    ton: 1.3
+  # Takas daveti: gonderen kisa bir onay duyar, alan daha dikkat cekici bir cue.
+  takas-istek-gonderildi:
+    ses: BLOCK_NOTE_BLOCK_HAT
+    ses-seviyesi: 0.8
+    ton: 1.5
+  takas-istek-alindi:
+    ses: BLOCK_NOTE_BLOCK_BELL
+    ses-seviyesi: 1.0
+    ton: 1.2
+  # Bir gorev tamamlandigi an.
+  gorev-tamamlandi:
+    ses: UI_TOAST_CHALLENGE_COMPLETE
+    ses-seviyesi: 1.0
+    ton: 1.2
   kabiliyet-acildi:
     ses: UI_TOAST_CHALLENGE_COMPLETE
     ses-seviyesi: 1.0

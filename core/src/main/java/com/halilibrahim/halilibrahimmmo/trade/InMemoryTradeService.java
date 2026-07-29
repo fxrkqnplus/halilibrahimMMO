@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.trade;
 
 import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
+import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
@@ -33,17 +34,20 @@ public final class InMemoryTradeService implements TradeService {
     private final ClassService classes;
     private final ActivationService activation;
     private final MessageService messages;
+    private final FeedbackService feedback;
     private final AtomicReference<TradeScreenRenderer> renderer = new AtomicReference<>();
     private final ConcurrentHashMap<UUID, TradeSession> sessions = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, PendingRequest> pendingRequests = new ConcurrentHashMap<>();
 
     public InMemoryTradeService(
-            ProfileService profiles, ClassService classes, ActivationService activation, MessageService messages
+            ProfileService profiles, ClassService classes, ActivationService activation,
+            MessageService messages, FeedbackService feedback
     ) {
         this.profiles = profiles;
         this.classes = classes;
         this.activation = activation;
         this.messages = messages;
+        this.feedback = feedback;
     }
 
     /** Wired once by the plugin bootstrap, after the GUI layer exists. */
@@ -121,6 +125,10 @@ public final class InMemoryTradeService implements TradeService {
                 sender.getUniqueId(), sender.getName(), System.currentTimeMillis() + REQUEST_TIMEOUT_MILLIS
         ));
         messages.send(target, MessageKey.TRADE_REQUEST_RECEIVED, Map.of("oyuncu", sender.getName()));
+        // Both ends get a cue, and deliberately different ones: the sender only
+        // needs to know it left, the receiver has something to answer.
+        feedback.celebrateTradeRequestSent(sender);
+        feedback.celebrateTradeRequestReceived(target);
         return TradeRequestResult.SENT;
     }
 

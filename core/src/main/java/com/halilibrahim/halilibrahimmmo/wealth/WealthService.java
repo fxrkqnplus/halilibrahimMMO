@@ -49,5 +49,17 @@ public interface WealthService extends PluginService {
     /** Convenience for quest completion, which is how discovering somewhere valuable pays out. */
     CompletableFuture<Optional<WealthAward>> awardQuest(UUID playerId, String questId);
 
+    /**
+     * Internal, admin-only: overwrites a player's lifetime total outright.
+     *
+     * <p>The only path in the plugin that may lower this number. Gameplay never
+     * subtracts - the score means "what you took out of the world", and taking
+     * it back would make it mean something else - but staff still need a way to
+     * correct a total that a bug or a rollback left wrong. Works for offline
+     * players, and rides the same per-player serial chain awards use, so it can
+     * never interleave with one.</p>
+     */
+    CompletableFuture<Long> adminSetTotal(UUID playerId, long total);
+
     void evict(UUID playerId);
 }

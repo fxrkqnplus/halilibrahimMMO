@@ -5,15 +5,22 @@ import io.papermc.paper.event.player.PlayerTradeEvent;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Ghast;
 import org.bukkit.entity.Fireball;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.WanderingTrader;
+import org.bukkit.entity.minecart.StorageMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
+import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTameEvent;
 import org.bukkit.event.entity.PiglinBarterEvent;
 import org.bukkit.event.player.PlayerFishEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerShearEntityEvent;
+import org.bukkit.inventory.EquipmentSlot;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -75,6 +82,53 @@ public final class QuestDeedListener implements Listener {
     public void onTame(EntityTameEvent event) {
         if (event.getOwner() instanceof Player player) {
             award(player, QuestDeed.EVCILLESTIRME);
+        }
+    }
+
+    /**
+     * The two husbandry deeds. Both events are already handled in
+     * {@code HusbandryListener} for skill XP, and are handled again here rather
+     * than routed through it: that listener answers "what did this earn", this
+     * one answers "did a quest ask for it", and keeping the two apart is what
+     * lets either change without disturbing the other.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onBreed(EntityBreedEvent event) {
+        if (event.getBreeder() instanceof Player player) {
+            award(player, QuestDeed.CIFTLESTIRME);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onShear(PlayerShearEntityEvent event) {
+        if (event.getEntity().getType() == EntityType.SHEEP) {
+            award(event.getPlayer(), QuestDeed.KOYUN_KIRPMA);
+        }
+    }
+
+    /**
+     * The two "you found it" deeds, both hung off the same right click.
+     *
+     * <p>A wandering trader is not a structure, so no discovery sweep can see
+     * one - meeting it has to be an interaction, and right-clicking is the
+     * interaction a player already performs on finding one.</p>
+     *
+     * <p>A chest minecart only counts while it still carries the loot table the
+     * world gave it. That is what separates a mineshaft's cart from one a
+     * player crafted, parked and re-opened, without needing to know where the
+     * cart is or how it got there.</p>
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onEntityRightClick(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+        if (event.getRightClicked() instanceof WanderingTrader) {
+            award(event.getPlayer(), QuestDeed.GEZGIN_TUCCAR);
+            return;
+        }
+        if (event.getRightClicked() instanceof StorageMinecart cart && cart.hasLootTable()) {
+            award(event.getPlayer(), QuestDeed.MADEN_SANDIGI);
         }
     }
 

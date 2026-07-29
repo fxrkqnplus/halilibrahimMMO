@@ -95,5 +95,21 @@ public interface SkillService extends PluginService {
     /** Synchronous, in-memory only - the same milestone bonuses {@link #applyMilestoneEffects} applies, for consumers that need the raw numbers (energy cap, PvE damage). */
     SkillMilestoneModifiers milestoneModifiers(UUID playerId);
 
+    /**
+     * Synchronous, in-memory only: the strength one <em>specific</em> skill has
+     * reached for one milestone effect type, or {@code 0} if it grants none.
+     *
+     * <p>The cross-skill {@link #milestoneModifiers(UUID)} aggregate cannot
+     * answer this. Milestone features that act on "this skill's own blocks"
+     * ({@code DOUBLE_DROP}, {@code EXCAVATION}, {@code AUTO_REPLANT}) are
+     * granted by several skills at different strengths, and summing or maxing
+     * them together would let progress in one skill act on another's
+     * blocks.</p>
+     */
+    double milestoneValue(UUID playerId, String skillId, SkillMilestoneEffectType type);
+
+    /** The configured {@link SkillSource#BLOCK} skill that claims {@code material}, if any. */
+    Optional<String> blockSkillId(Material material);
+
     void evict(UUID playerId);
 }

@@ -22,26 +22,33 @@ public final class PlayerEnergyService implements EnergyService {
     private final MessageService messages;
     private final Supplier<AbilitySettings> settings;
     private final ToIntFunction<Player> maximumEnergyBonus;
-    private final Predicate<Player> actionBarSuppressed;
+    private final Predicate<Player> abilityRunning;
     private final ConcurrentHashMap<UUID, EnergyState> energy = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Long> lastShownAt = new ConcurrentHashMap<>();
     private ScheduledTask regenerationTask;
 
     /**
-     * @param actionBarSuppressed returns {@code true} while an ability activation
-     *                            countdown is showing on this player's action bar -
-     *                            energy status yields to it rather than flickering
-     *                            between the two on the same line.
+     * @param abilityRunning returns {@code true} while this player has an
+     *                       ability armed or active. Two things hang off it, and
+     *                       they are deliberately the same condition rather than
+     *                       two switches: the energy status line yields to the
+     *                       ability's own action-bar countdown instead of the two
+     *                       flickering on one line, and <strong>regeneration
+     *                       stops entirely</strong>. Energy is a budget an ability
+     *                       spends, so refilling it mid-ability would mean an
+     *                       ability that drains per block could never actually run
+     *                       out - which is the whole thing the drain exists to
+     *                       decide.
      */
     public PlayerEnergyService(
             JavaPlugin plugin, MessageService messages, Supplier<AbilitySettings> settings,
-            ToIntFunction<Player> maximumEnergyBonus, Predicate<Player> actionBarSuppressed
+            ToIntFunction<Player> maximumEnergyBonus, Predicate<Player> abilityRunning
     ) {
         this.plugin = plugin;
         this.messages = messages;
         this.settings = settings;
         this.maximumEnergyBonus = maximumEnergyBonus;
-        this.actionBarSuppressed = actionBarSuppressed;
+        this.abilityRunning = abilityRunning;
     }
 
     @Override
@@ -99,6 +106,9 @@ public final class PlayerEnergyService implements EnergyService {
     }
 
     private void regenerate(Player player) {
+        if (abilityRunning.test(player)) {
+            return;
+        }
         int maximum = maximumEnergy(player);
         EnergyState state = energy.computeIfAbsent(player.getUniqueId(), ignored -> new EnergyState(maximum));
         if (state.regenerate(maximum, settings.get().energyRegenerationPerSecond())) {
@@ -107,7 +117,7 @@ public final class PlayerEnergyService implements EnergyService {
     }
 
     private void show(Player player, int current) {
-        if (actionBarSuppressed.test(player)) {
+        if (abilityRunning.test(player)) {
             return;
         }
         long now = System.currentTimeMillis();

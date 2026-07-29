@@ -1,21 +1,31 @@
 package com.halilibrahim.halilibrahimmmo.skills;
 
 /**
- * Bounded set of effect types a skill's 25/50/75/100 milestone tier can grant
- * (Phase 12 - each skill is differentiated instead of sharing one flat
- * MAX_HEALTH formula). Deliberately a separate enum from
- * {@code classes.ClassEffectType} - that enum also carries ability-scoped
- * members (energy cost/cooldown/limit reductions) that make no sense for a
- * skill milestone, which has no associated ability id.
+ * Bounded set of effect types a skill's 25/50/75/100 milestone tier can grant.
+ * Deliberately a separate enum from {@code classes.ClassEffectType} - that enum
+ * also carries ability-scoped members (energy cost/cooldown/limit reductions)
+ * that make no sense for a skill milestone, which has no associated ability id.
  *
- * <p>{@link #TREE_FELLING} and {@link #BREED_REFUND} are Phase 15's two
- * <em>unlocked feature</em> milestones: unlike the five stat boosts above them
- * they are never applied to the player, they are queried at the moment the
- * relevant gameplay event fires (see
- * {@link SkillMilestoneModifiers#treeFellingLimit()} /
- * {@link SkillMilestoneModifiers#breedRefundChance()}). Reusing the milestone
- * mechanism instead of inventing a bespoke per-skill config block keeps "what
- * does level 25 give me" one uniform question across all six skills.</p>
+ * <p><strong>Members fall into three groups, and which group a member is in
+ * decides how it is read back.</strong></p>
+ *
+ * <ol>
+ *   <li><em>Player stats</em> ({@link #MAX_HEALTH}, {@link #PVE_DAMAGE_MULTIPLIER},
+ *   {@link #MAX_ENERGY}, {@link #HASTE}, {@link #SPEED}) are applied to the
+ *   player and summed across every skill, through
+ *   {@link SkillService#milestoneModifiers(java.util.UUID)}.</li>
+ *   <li><em>Single-skill features</em> ({@link #TREE_FELLING},
+ *   {@link #BREED_REFUND}, {@link #BREED_TWIN}) are never applied to anything;
+ *   the one gameplay path that cares reads them off the same aggregate, which
+ *   is safe precisely because exactly one skill declares each.</li>
+ *   <li><em>Per-skill features</em> ({@link #DOUBLE_DROP}, {@link #EXCAVATION},
+ *   {@link #AUTO_REPLANT}) are scoped to the blocks of the skill that granted
+ *   them, and are therefore read through
+ *   {@link SkillService#milestoneValue(java.util.UUID, String, SkillMilestoneEffectType)}
+ *   instead. Several skills grant {@code DOUBLE_DROP} at different strengths,
+ *   so folding them into one number would let a maxed odunculuk double a
+ *   diamond ore.</li>
+ * </ol>
  */
 public enum SkillMilestoneEffectType {
     MAX_HEALTH,
@@ -26,5 +36,13 @@ public enum SkillMilestoneEffectType {
     /** Unlocks whole-tree felling when a tree's root log is broken; {@code value} is the maximum log count. */
     TREE_FELLING,
     /** Unlocks the chance of getting the breeding food back after a baby is born; {@code value} is a 0-1 chance. */
-    BREED_REFUND
+    BREED_REFUND,
+    /** Chance for one breeding to produce a second baby; {@code value} is a 0-1 chance. */
+    BREED_TWIN,
+    /** Chance for one of <em>this skill's own</em> blocks to drop twice; {@code value} is a 0-1 chance. */
+    DOUBLE_DROP,
+    /** Breaking one of this skill's own blocks also clears the 3x3 around it; {@code value} is the maximum extra blocks. */
+    EXCAVATION,
+    /** Chance for a fully-grown crop this skill owns to replant itself; {@code value} is a 0-1 chance. */
+    AUTO_REPLANT
 }

@@ -32,11 +32,21 @@ import java.util.Set;
  * to the player's own class - their ability list and their talent tree - so
  * those screens are visibly *theirs* the moment they open, in the same colour
  * as the class's XP bar.</p>
+ *
+ * <p>{@code prestigeSynergyLevel} is the level <em>every</em> one of this
+ * class's synergy skills must reach before its player may prestige
+ * ({@code prestij-sinerji-seviyesi} in {@code classes.yml}, defaulting to the
+ * skill cap). It is per class rather than one global number because the
+ * classes are not shaped alike: a class powering one skill can fairly be asked
+ * to take that skill to 100, but Tabiat Vârisi powers four, and asking for
+ * four maxed skills made it strictly the hardest class to prestige by a wide
+ * margin.</p>
  */
 public record PlayerClassDefinition(
         String id, String displayName, Set<String> synergySkillIds, ClassBarColor barColor, Material icon,
         Material frame, Map<String, TalentNodeDefinition> talents,
-        ClassEffectType prestigeEffectType, double prestigeEffectValuePerRank
+        ClassEffectType prestigeEffectType, double prestigeEffectValuePerRank,
+        int prestigeSynergyLevel
 ) {
     public boolean hasSynergyWith(String skillId) {
         return synergySkillIds.contains(skillId);

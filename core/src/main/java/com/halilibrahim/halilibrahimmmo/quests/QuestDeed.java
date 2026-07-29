@@ -31,7 +31,22 @@ public enum QuestDeed {
     /** Reeling in a fish (treasure and junk count too - it is the catch that matters). */
     BALIK_TUTMA("balik-tutma"),
     /** Taming any tameable creature. */
-    EVCILLESTIRME("evcillestirme");
+    EVCILLESTIRME("evcillestirme"),
+    /**
+     * Meeting a wandering trader - right-clicking one, which is the only way a
+     * player can be said to have found one rather than walked past it.
+     */
+    GEZGIN_TUCCAR("gezgin-tuccar"),
+    /**
+     * Opening a chest minecart the world generated, i.e. a mineshaft's.
+     * Recognised by it still carrying its loot table: a cart a player placed
+     * has none, so this cannot be set up at home.
+     */
+    MADEN_SANDIGI("maden-sandigi"),
+    /** Two animals producing a baby, with this player as the breeder. */
+    CIFTLESTIRME("ciftlestirme"),
+    /** Shearing a sheep. */
+    KOYUN_KIRPMA("koyun-kirpma");
 
     private static final Map<String, QuestDeed> BY_ID = Stream.of(values())
             .collect(Collectors.toUnmodifiableMap(QuestDeed::id, Function.identity()));

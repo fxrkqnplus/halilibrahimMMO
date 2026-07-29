@@ -218,6 +218,7 @@ public final class CachedSkillService implements SkillService {
         int speedAmplifier = -1;
         int treeFellingLimit = 0;
         double breedRefundChance = 0;
+        double breedTwinChance = 0;
         for (SkillDefinition definition : settings().definitions().values()) {
             int level = cached(playerId, definition.id()).map(progress -> progress.level()).orElse(1);
             for (Map.Entry<Integer, SkillMilestoneEffect> entry : definition.milestones().entrySet()) {
@@ -233,13 +234,57 @@ public final class CachedSkillService implements SkillService {
                     case SPEED -> speedAmplifier = Math.max(speedAmplifier, (int) effect.value());
                     case TREE_FELLING -> treeFellingLimit = Math.max(treeFellingLimit, (int) effect.value());
                     case BREED_REFUND -> breedRefundChance = Math.max(breedRefundChance, effect.value());
+                    case BREED_TWIN -> breedTwinChance = Math.max(breedTwinChance, effect.value());
+                    case DOUBLE_DROP, EXCAVATION, AUTO_REPLANT -> {
+                        // Scoped to the granting skill's own blocks, so they are
+                        // deliberately absent from this cross-skill aggregate -
+                        // see milestoneValue(...).
+                    }
                 }
             }
         }
         return new SkillMilestoneModifiers(
                 maxHealthBonus, pveDamageBonus, maxEnergyBonus, hasteAmplifier, speedAmplifier,
-                treeFellingLimit, breedRefundChance
+                treeFellingLimit, breedRefundChance, breedTwinChance
         );
+    }
+
+    /**
+     * The highest reached tier's value for one specific skill and effect type,
+     * or {@code 0} when nothing that skill grants matches. Highest-wins rather
+     * than summed: two tiers of the same feature describe one capability at
+     * two strengths, exactly as {@code TREE_FELLING} already behaves.
+     */
+    @Override
+    public double milestoneValue(UUID playerId, String skillId, SkillMilestoneEffectType type) {
+        SkillDefinition definition = settings().definitions().get(skillId);
+        if (definition == null) {
+            return 0;
+        }
+        int level = cached(playerId, skillId).map(progress -> progress.level()).orElse(1);
+        double best = 0;
+        for (Map.Entry<Integer, SkillMilestoneEffect> entry : definition.milestones().entrySet()) {
+            if (level >= entry.getKey() && entry.getValue().type() == type) {
+                best = Math.max(best, entry.getValue().value());
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Which configured {@link SkillSource#BLOCK} skill claims {@code material},
+     * if any. Milestone features that act on "this skill's own blocks" need to
+     * answer that question from a bare {@code BlockBreakEvent}, and the reward
+     * maps already are the single source of truth for it.
+     */
+    @Override
+    public Optional<String> blockSkillId(Material material) {
+        for (SkillDefinition definition : settings().definitions().values()) {
+            if (definition.materialRewards().containsKey(material)) {
+                return Optional.of(definition.id());
+            }
+        }
+        return Optional.empty();
     }
 
     @Override

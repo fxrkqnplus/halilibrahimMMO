@@ -7,6 +7,7 @@ import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -166,6 +167,50 @@ public final class BossBarFeedbackService implements FeedbackService {
         playSound(player, "kabiliyet-bitis");
     }
 
+    @Override
+    public void celebrateAbilityUnequipped(Player player) {
+        playSound(player, "kabiliyet-cikarildi");
+    }
+
+    @Override
+    public void celebrateTalentUnlocked(Player player) {
+        playSound(player, "yetenek-acildi");
+        sparkle(player, Particle.ENCHANT, 30, 1.0D);
+    }
+
+    @Override
+    public void celebrateHomeSet(Player player) {
+        playSound(player, "ev-ayarlandi");
+        sparkle(player, Particle.HAPPY_VILLAGER, 24, 0.8D);
+    }
+
+    @Override
+    public void celebrateHomeTeleport(Player player) {
+        playSound(player, "ev-isinlanma");
+        sparkle(player, Particle.PORTAL, 40, 1.0D);
+    }
+
+    @Override
+    public void celebrateTradeRequestSent(Player player) {
+        playSound(player, "takas-istek-gonderildi");
+    }
+
+    @Override
+    public void celebrateTradeRequestReceived(Player player) {
+        playSound(player, "takas-istek-alindi");
+        sparkle(player, Particle.END_ROD, 20, 0.6D);
+    }
+
+    /**
+     * A small local burst around the player. Deliberately spawned in the world
+     * rather than sent only to them: these are moments a bystander benefits
+     * from noticing (somebody just arrived home, somebody just spent a point),
+     * and none of them is frequent enough to become clutter.
+     */
+    private void sparkle(Player player, Particle particle, int count, double spread) {
+        player.getWorld().spawnParticle(particle, player.getLocation().add(0, 1, 0), count, spread, spread, spread, 0.02D);
+    }
+
     private record SoundCue(Sound sound, float volume, float pitch) {
     }
 
@@ -247,6 +292,8 @@ public final class BossBarFeedbackService implements FeedbackService {
     public void celebrateQuestCompleted(Player player, String questDisplayName) {
         show(player, MessageKey.FEEDBACK_QUEST_BOSSBAR, MessageKey.FEEDBACK_QUEST_TITLE, MessageKey.FEEDBACK_QUEST_SUBTITLE,
                 Map.of("gorev", questDisplayName), BossBar.Color.BLUE);
+        playSound(player, "gorev-tamamlandi");
+        sparkle(player, Particle.TOTEM_OF_UNDYING, 40, 0.9D);
     }
 
     @Override
@@ -317,6 +364,7 @@ public final class BossBarFeedbackService implements FeedbackService {
         show(player, MessageKey.FEEDBACK_RANDOM_TELEPORT_BOSSBAR, MessageKey.FEEDBACK_RANDOM_TELEPORT_TITLE,
                 MessageKey.FEEDBACK_RANDOM_TELEPORT_SUBTITLE, Map.of("x", x, "y", y, "z", z), BossBar.Color.GREEN);
         playSound(player, "rastgele-isinlanma");
+        sparkle(player, Particle.REVERSE_PORTAL, 60, 1.0D);
     }
 
     private void show(

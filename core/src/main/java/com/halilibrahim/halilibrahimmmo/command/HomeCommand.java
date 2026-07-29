@@ -1,5 +1,6 @@
 package com.halilibrahim.halilibrahimmmo.command;
 
+import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.home.HomeActionResult;
 import com.halilibrahim.halilibrahimmmo.home.HomeService;
 import com.halilibrahim.halilibrahimmmo.locale.DurationFormatter;
@@ -40,12 +41,14 @@ public final class HomeCommand implements BasicCommand {
     private final HomeService homes;
     private final MessageService messages;
     private final SidebarService sidebar;
+    private final FeedbackService feedback;
 
-    public HomeCommand(JavaPlugin plugin, HomeService homes, MessageService messages, SidebarService sidebar) {
+    public HomeCommand(JavaPlugin plugin, HomeService homes, MessageService messages, SidebarService sidebar, FeedbackService feedback) {
         this.plugin = plugin;
         this.homes = homes;
         this.messages = messages;
         this.sidebar = sidebar;
+        this.feedback = feedback;
     }
 
     @Override
@@ -85,8 +88,10 @@ public final class HomeCommand implements BasicCommand {
 
     private void reportTeleport(Player player, HomeActionResult result) {
         switch (result) {
-            case SUCCESS -> homes.cached(player.getUniqueId()).ifPresent(home ->
-                    messages.send(player, MessageKey.HOME_TELEPORTED, Map.of("ev", home.name())));
+            case SUCCESS -> homes.cached(player.getUniqueId()).ifPresent(home -> {
+                messages.send(player, MessageKey.HOME_TELEPORTED, Map.of("ev", home.name()));
+                feedback.celebrateHomeTeleport(player);
+            });
             case LOCKED -> sendLocked(player);
             case NOT_SET -> messages.send(player, MessageKey.HOME_NOT_SET);
             case FORBIDDEN_WORLD -> messages.send(player, MessageKey.HOME_FORBIDDEN_WORLD);
@@ -100,7 +105,10 @@ public final class HomeCommand implements BasicCommand {
 
     private void reportSet(Player player, String name, HomeActionResult result) {
         switch (result) {
-            case SUCCESS -> messages.send(player, MessageKey.HOME_SET, Map.of("ev", name));
+            case SUCCESS -> {
+                messages.send(player, MessageKey.HOME_SET, Map.of("ev", name));
+                feedback.celebrateHomeSet(player);
+            }
             case LOCKED -> sendLocked(player);
             case FORBIDDEN_WORLD -> messages.send(player, MessageKey.HOME_FORBIDDEN_WORLD);
             case INVALID_NAME -> messages.send(player, MessageKey.HOME_INVALID_NAME);

@@ -68,18 +68,32 @@ public final class SkillMilestoneInfoMenu implements GuiView {
             case SPEED -> Material.SUGAR;
             case TREE_FELLING -> Material.IRON_AXE;
             case BREED_REFUND -> Material.WHEAT;
+            case BREED_TWIN -> Material.EGG;
+            case DOUBLE_DROP -> Material.HOPPER;
+            case EXCAVATION -> Material.IRON_SHOVEL;
+            case AUTO_REPLANT -> Material.WHEAT_SEEDS;
         };
     }
 
+    /**
+     * Health is shown in hearts, not in the raw half-heart points the config
+     * stores: "+2 can" reads as two hearts to a player and is one, and every
+     * other number on this screen is already in the unit the player sees on
+     * their own HUD.
+     */
     private Component effectLore(SkillMilestoneEffect effect) {
         return switch (effect.type()) {
-            case MAX_HEALTH -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_HEALTH, Map.of("can", formatNumber(effect.value())));
+            case MAX_HEALTH -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_HEALTH, Map.of("kalp", formatNumber(effect.value() / 2)));
             case PVE_DAMAGE_MULTIPLIER -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_DAMAGE, Map.of("yuzde", formatNumber(effect.value() * 100)));
             case MAX_ENERGY -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_ENERGY, Map.of("enerji", formatNumber(effect.value())));
             case HASTE -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_HASTE, Map.of("kademe", Integer.toString((int) effect.value() + 1)));
             case SPEED -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_SPEED, Map.of("kademe", Integer.toString((int) effect.value() + 1)));
             case TREE_FELLING -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_TREE_FELLING, Map.of("deger", formatNumber(effect.value())));
             case BREED_REFUND -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_BREED_REFUND, Map.of("yuzde", formatNumber(effect.value() * 100)));
+            case BREED_TWIN -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_BREED_TWIN, Map.of("yuzde", formatNumber(effect.value() * 100)));
+            case DOUBLE_DROP -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_DOUBLE_DROP, Map.of("yuzde", formatNumber(effect.value() * 100)));
+            case EXCAVATION -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_EXCAVATION, Map.of("deger", formatNumber(effect.value())));
+            case AUTO_REPLANT -> services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_LORE_AUTO_REPLANT, Map.of("yuzde", formatNumber(effect.value() * 100)));
         };
     }
 

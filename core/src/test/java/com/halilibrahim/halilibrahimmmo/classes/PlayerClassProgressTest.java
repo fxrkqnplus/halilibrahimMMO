@@ -67,7 +67,8 @@ final class PlayerClassProgressTest {
     }
 
     private static PlayerClassDefinition definition(String id, Map<String, TalentNodeDefinition> talents) {
-        return new PlayerClassDefinition(id, id, Set.of(), ClassBarColor.YESIL, null, null, talents, ClassEffectType.MAX_HEALTH, 1);
+        return new PlayerClassDefinition(id, id, Set.of(), ClassBarColor.YESIL, null, null, talents,
+                ClassEffectType.MAX_HEALTH, 1, 100);
     }
 
     private static TalentNodeDefinition talent(String id, ClassEffectType type, String abilityId) {

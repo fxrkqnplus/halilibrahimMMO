@@ -103,4 +103,26 @@ public interface FeedbackService extends PluginService {
 
     /** Plays the ability-activation-end sound cue only. */
     void celebrateAbilityEnded(Player player);
+
+    /** Plays the cue for taking an equipped ability back off - the chat line is sent by the caller. */
+    void celebrateAbilityUnequipped(Player player);
+
+    /**
+     * The cues for the moments a player <em>does</em> something the plugin
+     * cares about but that had no sound of its own until now: spending a talent
+     * point, setting or travelling to a home, and either end of a trade
+     * request. Each is sound plus a small local particle flourish - never a
+     * broadcast, because all of them concern one or two people.
+     */
+    void celebrateTalentUnlocked(Player player);
+
+    void celebrateHomeSet(Player player);
+
+    void celebrateHomeTeleport(Player player);
+
+    /** Played to the player who sent a trade request. */
+    void celebrateTradeRequestSent(Player player);
+
+    /** Played to the player a trade request arrived for - deliberately the more attention-grabbing of the two. */
+    void celebrateTradeRequestReceived(Player player);
 }
