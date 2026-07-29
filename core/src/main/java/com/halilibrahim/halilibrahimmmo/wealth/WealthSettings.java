@@ -12,6 +12,11 @@ import java.util.Map;
  * <p>{@code milestones} is kept sorted ascending; every value in it is a total
  * a player can cross exactly once, which is what makes crossing one worth
  * announcing to the whole server.</p>
+ *
+ * <p>{@code rankAnnouncementIntervalMillis} is how often the leaderboard is
+ * re-read for the rank-change announcements. It is a long interval by design:
+ * every one of those announcements is a broadcast to the entire server, and a
+ * short one would turn the standings into a running commentary nobody can mute.</p>
  */
 public record WealthSettings(
         Map<Material, Long> blockValues,
@@ -19,7 +24,8 @@ public record WealthSettings(
         long defaultEntityValue,
         Map<String, Long> questValues,
         long defaultQuestValue,
-        List<Long> milestones
+        List<Long> milestones,
+        long rankAnnouncementIntervalMillis
 ) {
 
     public long blockValue(Material material) {

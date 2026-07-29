@@ -36,12 +36,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * budgeted, so the prompt and the toggle read as one interaction: click twice
  * to start it, click twice to stop it.</p>
  *
- * <p><strong>Two things never reach the confirm step at all.</strong> A right
- * click on a block that already does something of its own is ignored (see
+ * <p><strong>Three things never reach the confirm step at all.</strong> A right
+ * click on a block that already does something of its own is ignored, a right
+ * click that is really the held item being used - placing a block, emptying a
+ * bucket, putting down a boat - is ignored (both via
  * {@link InteractableBlocks}), and outside Creative a click aimed at an ability
- * that is already running is ignored silently - both were producing a prompt,
- * and the second went on to produce a cooldown refusal, for clicks the player
- * never meant as an activation.</p>
+ * that is already running is ignored silently. All three were producing a
+ * prompt, and the last went on to produce a cooldown refusal, for clicks the
+ * player never meant as an activation.</p>
  *
  * <p>Switching or dropping the held item deliberately does nothing here. A tool
  * is only required to <em>start</em> an ability; once running it stays running
@@ -83,17 +85,39 @@ public final class AbilityActivationListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) {
             return;
         }
-        // A door, a lever, a furnace - anything that already answers a right
-        // click with something of its own - must not also start an ability.
-        // Sneaking suppresses the block's own behaviour in vanilla, so it is
-        // also how a player deliberately activates an ability while standing
-        // at one.
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK && !event.getPlayer().isSneaking()
-                && event.getClickedBlock() != null
-                && InteractableBlocks.isInteractable(event.getClickedBlock().getType())) {
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK && isBlockInteraction(event)) {
             return;
         }
         tryActivate(event.getPlayer());
+    }
+
+    /**
+     * The two ways a right click on a block is about the world rather than
+     * about an ability.
+     *
+     * <p><strong>The block already does something.</strong> A door, a lever, a
+     * furnace - see {@link InteractableBlocks#isInteractable}. Sneaking is the
+     * escape hatch here, because vanilla already suppresses the block's own
+     * behaviour while sneaking, so the gesture a player knows for "ignore this
+     * block" is the one that gets their ability at a door.</p>
+     *
+     * <p><strong>The held item is being used.</strong> Placing a block is the
+     * single most common right click in the game, and for an ability whose tool
+     * is {@code ANY} there is nothing else to rule it out - laying a wall was
+     * spending Sürü Çağrısı once every couple of blocks. Sneaking deliberately
+     * does <em>not</em> lift this one: sneaking is how a block gets placed
+     * against a chest, so honouring it would reopen the hole exactly where it
+     * hurts. Right-clicking open air still activates normally, since nothing is
+     * placed there.</p>
+     */
+    private boolean isBlockInteraction(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        if (InteractableBlocks.isUseItem(player.getInventory().getItemInMainHand().getType())) {
+            return true;
+        }
+        return !player.isSneaking()
+                && event.getClickedBlock() != null
+                && InteractableBlocks.isInteractable(event.getClickedBlock().getType());
     }
 
     /**

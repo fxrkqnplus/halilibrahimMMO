@@ -72,6 +72,7 @@ public final class BossListener implements Listener {
         if (tier == null || name.isEmpty()) {
             return;
         }
+        bosses.retire(entity.getUniqueId());
         event.setDroppedExp(tier.vanillaExperience());
         rollLoot(event, tier);
         bosses.headOf(entity).ifPresent(head -> event.getDrops().add(headItem(head, rarity.get(), name)));

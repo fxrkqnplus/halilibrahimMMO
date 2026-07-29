@@ -4,6 +4,8 @@ import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -29,15 +31,19 @@ import org.bukkit.util.Vector;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * YAML-backed world boss spawner and behaviour loop.
@@ -53,8 +59,16 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class YamlBossService implements BossService {
 
     private static final String FILE_NAME = "bosslar.yml";
-    /** How often each living boss re-evaluates whether to heal, blink or run. */
-    private static final long BEHAVIOUR_PERIOD_TICKS = 40L;
+    /**
+     * How often each living boss re-evaluates whether to heal, blink or run,
+     * and repaints its health bar. Half a second is chosen by the bar rather
+     * than by the behaviour: a health bar that lags a fight by two seconds
+     * reads as broken, while every behaviour decision is independently gated on
+     * its own millisecond interval and does not care how often it is asked.
+     */
+    private static final long BEHAVIOUR_PERIOD_TICKS = 10L;
+    /** How close a player must be to see a boss's health bar. */
+    private static final double BAR_VIEW_RADIUS = 96.0D;
     private static final double FLEE_HEALTH_RATIO = 0.25D;
     private static final double HEAL_HEALTH_RATIO = 0.50D;
     private static final long HEAL_INTERVAL_MILLIS = 30_000L;
@@ -91,6 +105,9 @@ public final class YamlBossService implements BossService {
         long periodTicks = Math.max(20L, settings().spawnIntervalMillis() / 50L);
         spawnTask = plugin.getServer().getGlobalRegionScheduler()
                 .runAtFixedRate(plugin, task -> spawnNow(), periodTicks, periodTicks);
+        // The scheduled spawn deliberately ignores its own future: nobody is
+        // waiting on it, and a cycle that finds nowhere to stand simply waits
+        // for the next one. Only the admin panel cares about the answer.
     }
 
     @Override
@@ -99,6 +116,10 @@ public final class YamlBossService implements BossService {
             spawnTask.cancel();
             spawnTask = null;
         }
+        // Boss bars are shown to players, not owned by the entity, so they have
+        // to be taken down explicitly - a reload would otherwise leave a frozen
+        // bar on every screen that had one open.
+        Set.copyOf(activeBosses.keySet()).forEach(this::retire);
         activeBosses.clear();
     }
 
@@ -156,73 +177,172 @@ public final class YamlBossService implements BossService {
     }
 
     @Override
-    public Optional<String> spawnNow() {
+    public CompletableFuture<Optional<String>> spawnNow() {
         List<Player> candidates = Bukkit.getOnlinePlayers().stream()
                 .filter(player -> player.getWorld().getEnvironment() == World.Environment.NORMAL)
                 .map(player -> (Player) player)
                 .toList();
         if (candidates.isEmpty()) {
-            return Optional.empty();
+            return CompletableFuture.completedFuture(Optional.empty());
         }
         Player anchor = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
         BossArchetype archetype = pickArchetype();
         BossRarity rarity = pickRarity();
         String name = archetype.names().get(ThreadLocalRandom.current().nextInt(archetype.names().size()));
-        // The anchor's own region owns the chunks around them, so the search and
-        // the spawn both have to happen from there.
-        anchor.getScheduler().run(plugin, task -> spawnNear(anchor, archetype, rarity, name), null);
-        return Optional.of(name);
+        CompletableFuture<Optional<String>> result = new CompletableFuture<>();
+        findSpawn(anchor, 1, result, location ->
+                anchor.getScheduler().run(plugin, task -> {
+                    // Spawning has to happen from a region that owns the chunk;
+                    // the anchor's own region is the one that just loaded it.
+                    boolean spawned = spawnAt(location, archetype, rarity, name);
+                    result.complete(spawned ? Optional.of(name) : Optional.empty());
+                }, () -> result.complete(Optional.empty())));
+        return result;
     }
 
-    private void spawnNear(Player anchor, BossArchetype archetype, BossRarity rarity, String name) {
-        Location location = findSpawn(anchor);
-        if (location == null) {
-            return;
-        }
+    private boolean spawnAt(Location location, BossArchetype archetype, BossRarity rarity, String name) {
         BossRaritySettings tier = settings().rarities().get(rarity);
-        if (!(location.getWorld().spawnEntity(location, archetype.entityType()) instanceof Mob mob)) {
-            return;
+        if (tier == null || !(location.getWorld().spawnEntity(location, archetype.entityType()) instanceof Mob mob)) {
+            return false;
         }
         applyStats(mob, archetype, rarity, tier, name);
-        activeBosses.put(mob.getUniqueId(), new BossState(rarity));
-        mob.getScheduler().runAtFixedRate(plugin, task -> behave(mob), () -> activeBosses.remove(mob.getUniqueId()),
+        BossState state = new BossState(rarity, name, createBossBar(mob, rarity, name));
+        activeBosses.put(mob.getUniqueId(), state);
+        mob.getScheduler().runAtFixedRate(plugin, task -> behave(mob), () -> retire(mob.getUniqueId()),
                 BEHAVIOUR_PERIOD_TICKS, BEHAVIOUR_PERIOD_TICKS);
         messages.broadcast(rarity.spawnBroadcastKey(), Map.of(
                 "isim", name,
                 "x", Integer.toString(location.getBlockX()),
-                "z", Integer.toString(location.getBlockZ())
+                "y", Integer.toString(location.getBlockY()),
+                "z", Integer.toString(location.getBlockZ()),
+                "dunya", location.getWorld().getName()
         ));
         Bukkit.getOnlinePlayers().forEach(online ->
                 online.getScheduler().run(plugin, task -> feedback.celebrateBossSpawned(online), null));
+        return true;
     }
 
     /**
-     * Standing room within the configured ring around {@code anchor}. Only
-     * already-loaded chunks are considered - a boss is announced with its
-     * coordinates, and generating terrain nobody has visited just to put one
-     * there would stall the region for everyone nearby.
+     * Walks candidate points in the configured ring around {@code anchor} until
+     * one has standing room, then hands it to {@code onFound}.
+     *
+     * <p><strong>Each candidate's chunk is loaded asynchronously first.</strong>
+     * The previous version simply skipped any candidate that was not already
+     * loaded - and at 120 to 320 blocks out, almost nothing is: a boss summoned
+     * from the admin panel would burn all twelve attempts on unloaded chunks and
+     * vanish without a single message, which is exactly the "nothing happens"
+     * the panel was reporting. Asking for the highest block in an unloaded chunk
+     * synchronously is not the alternative - that generates terrain on the spot
+     * and stalls the region - so the chunk is loaded through
+     * {@link World#getChunkAtAsync(int, int)} the same way {@code /rtp} already
+     * loads its landing spot.</p>
      */
-    private Location findSpawn(Player anchor) {
+    private void findSpawn(Player anchor, int attempt, CompletableFuture<Optional<String>> result, Consumer<Location> onFound) {
+        if (attempt > SPAWN_ATTEMPTS) {
+            result.complete(Optional.empty());
+            return;
+        }
         World world = anchor.getWorld();
         BossSettings current = settings();
-        for (int attempt = 0; attempt < SPAWN_ATTEMPTS; attempt++) {
-            int x = anchor.getLocation().getBlockX() + signedOffset(current);
-            int z = anchor.getLocation().getBlockZ() + signedOffset(current);
-            if (!world.isChunkLoaded(x >> 4, z >> 4)) {
-                continue;
+        int x = anchor.getLocation().getBlockX() + signedOffset(current);
+        int z = anchor.getLocation().getBlockZ() + signedOffset(current);
+        world.getChunkAtAsync(x >> 4, z >> 4).thenAccept(chunk -> {
+            Location standing = standingRoomAt(world, x, z);
+            if (standing == null) {
+                findSpawn(anchor, attempt + 1, result, onFound);
+                return;
             }
-            int y = world.getHighestBlockYAt(x, z);
-            if (y <= world.getMinHeight()) {
-                continue;
-            }
-            if (!world.getBlockAt(x, y, z).getType().isSolid()
-                    || !world.getBlockAt(x, y + 1, z).getType().isAir()
-                    || !world.getBlockAt(x, y + 2, z).getType().isAir()) {
-                continue;
-            }
-            return new Location(world, x + 0.5D, y + 1.0D, z + 0.5D);
+            onFound.accept(standing);
+        });
+    }
+
+    /** The open spot on top of the highest block at {@code (x, z)}, or {@code null} if a boss cannot stand there. */
+    private Location standingRoomAt(World world, int x, int z) {
+        int y = world.getHighestBlockYAt(x, z);
+        if (y <= world.getMinHeight()) {
+            return null;
         }
-        return null;
+        if (!world.getBlockAt(x, y, z).getType().isSolid()
+                || !world.getBlockAt(x, y + 1, z).getType().isAir()
+                || !world.getBlockAt(x, y + 2, z).getType().isAir()) {
+            return null;
+        }
+        return new Location(world, x + 0.5D, y + 1.0D, z + 0.5D);
+    }
+
+    /**
+     * The health bar at the top of the screen, carrying the boss's name, its
+     * remaining health and its rarity.
+     *
+     * <p>Viewers are whoever is within {@link #BAR_VIEW_RADIUS} of the boss,
+     * recomputed on every behaviour tick - a server-wide bar would leave every
+     * player who never went to the fight staring at a stranger's health for as
+     * long as it lasted, and a bar attached at spawn only would never reach the
+     * people who travelled to the announced coordinates.</p>
+     */
+    private BossBar createBossBar(Mob mob, BossRarity rarity, String name) {
+        return BossBar.bossBar(barText(mob, rarity, name), 1f, rarity.barColor(), BossBar.Overlay.NOTCHED_10);
+    }
+
+    private Component barText(Mob mob, BossRarity rarity, String name) {
+        AttributeInstance maximum = mob.getAttribute(Attribute.MAX_HEALTH);
+        long maximumHealth = maximum == null ? Math.round(mob.getHealth()) : Math.round(maximum.getValue());
+        return messages.render(rarity.bossBarKey(), Map.of(
+                "isim", name,
+                "can", Long.toString(Math.max(0L, Math.round(mob.getHealth()))),
+                "maksimum", Long.toString(Math.max(1L, maximumHealth))
+        ));
+    }
+
+    /**
+     * Repaints one boss's bar and hands it to whoever is now close enough to
+     * care. Only ever called from the boss's own entity scheduler, like every
+     * other read of its health and position - which on Paper is the main
+     * thread, so showing and hiding the bar directly here is the same
+     * already-established call shape {@code BossBarFeedbackService} uses for
+     * every XP bar.
+     */
+    private void updateBossBar(Mob mob, BossState state) {
+        BossBar bar = state.bossBar();
+        AttributeInstance maximum = mob.getAttribute(Attribute.MAX_HEALTH);
+        double maximumHealth = maximum == null ? mob.getHealth() : maximum.getValue();
+        bar.progress((float) Math.max(0.0D, Math.min(1.0D, maximumHealth <= 0 ? 0 : mob.getHealth() / maximumHealth)));
+        bar.name(barText(mob, state.rarity(), state.name()));
+        Set<UUID> nearby = new HashSet<>();
+        for (Player player : mob.getWorld().getPlayers()) {
+            if (player.getLocation().distanceSquared(mob.getLocation()) <= BAR_VIEW_RADIUS * BAR_VIEW_RADIUS) {
+                nearby.add(player.getUniqueId());
+                if (state.viewers().add(player.getUniqueId())) {
+                    player.showBossBar(bar);
+                }
+            }
+        }
+        state.viewers().removeIf(viewerId -> {
+            if (nearby.contains(viewerId)) {
+                return false;
+            }
+            Player viewer = Bukkit.getPlayer(viewerId);
+            if (viewer != null) {
+                viewer.hideBossBar(bar);
+            }
+            return true;
+        });
+    }
+
+    /** Drops a boss's bar from every screen still showing it, then forgets the boss. */
+    @Override
+    public void retire(UUID bossId) {
+        BossState state = activeBosses.remove(bossId);
+        if (state == null) {
+            return;
+        }
+        state.viewers().forEach(viewerId -> {
+            Player viewer = Bukkit.getPlayer(viewerId);
+            if (viewer != null) {
+                viewer.hideBossBar(state.bossBar());
+            }
+        });
+        state.viewers().clear();
     }
 
     private int signedOffset(BossSettings current) {
@@ -325,9 +445,14 @@ public final class YamlBossService implements BossService {
      */
     private void behave(Mob mob) {
         BossState state = activeBosses.get(mob.getUniqueId());
-        if (state == null || mob.isDead()) {
+        if (state == null) {
             return;
         }
+        if (mob.isDead()) {
+            retire(mob.getUniqueId());
+            return;
+        }
+        updateBossBar(mob, state);
         BossRaritySettings tier = settings().rarities().get(state.rarity());
         if (tier == null) {
             return;
@@ -526,16 +651,33 @@ public final class YamlBossService implements BossService {
     private static final class BossState {
 
         private final BossRarity rarity;
+        private final BossBar bossBar;
+        private final String name;
+        private final Set<UUID> viewers = ConcurrentHashMap.newKeySet();
         private volatile long lastHealMillis;
         private volatile long lastTeleportMillis;
         private volatile boolean fled;
 
-        private BossState(BossRarity rarity) {
+        private BossState(BossRarity rarity, String name, BossBar bossBar) {
             this.rarity = rarity;
+            this.name = name;
+            this.bossBar = bossBar;
         }
 
         BossRarity rarity() {
             return rarity;
+        }
+
+        BossBar bossBar() {
+            return bossBar;
+        }
+
+        String name() {
+            return name;
+        }
+
+        Set<UUID> viewers() {
+            return viewers;
         }
 
         long lastHealMillis() {

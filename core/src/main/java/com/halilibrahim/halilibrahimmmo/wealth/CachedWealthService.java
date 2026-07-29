@@ -178,8 +178,13 @@ public final class CachedWealthService implements WealthService {
             requirePositive(milestone, "kilometre-taslari");
         }
         Collections.sort(milestones);
+        long rankAnnouncementMinutes = yaml.getLong("siralama-duyuru-araligi-dakika", 25);
+        if (rankAnnouncementMinutes < 1) {
+            throw new IllegalArgumentException("siralama-duyuru-araligi-dakika must be positive.");
+        }
         return new WealthSettings(Map.copyOf(blockValues), Map.copyOf(entityValues), defaultEntityValue,
-                Map.copyOf(questValues), defaultQuestValue, List.copyOf(milestones));
+                Map.copyOf(questValues), defaultQuestValue, List.copyOf(milestones),
+                rankAnnouncementMinutes * 60_000L);
     }
 
     private long requirePositive(long value, String context) {

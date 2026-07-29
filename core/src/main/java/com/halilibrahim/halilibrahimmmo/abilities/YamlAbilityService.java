@@ -88,6 +88,12 @@ public final class YamlAbilityService implements AbilityService {
      * duration even here - see that method for why.
      */
     private static final long CREATIVE_DURATION_MILLIS = 6L * 60L * 60L * 1_000L;
+    /**
+     * How long LOVE_CALL leaves an animal in love mode - vanilla's own breeding
+     * window, not the ability's duration. See {@code callHerd} for why the two
+     * are deliberately independent.
+     */
+    private static final int LOVE_MODE_TICKS = 600;
 
     private final JavaPlugin plugin;
     private final SkillService skills;
@@ -656,7 +662,7 @@ public final class YamlAbilityService implements AbilityService {
                 ));
             }
             case LOVE_CALL -> {
-                int called = callHerd(player, limit, activeMillis);
+                int called = callHerd(player, limit);
                 activeEffects.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ACTIVE_LOVE_CALL, Map.of(
                         "kabiliyet", definition.displayName(), "sayi", Integer.toString(called)
@@ -917,21 +923,28 @@ public final class YamlAbilityService implements AbilityService {
 
     /**
      * {@link AbilityEffectType#LOVE_CALL}: puts every breedable adult animal
-     * within {@code radius} into love mode for the ability's duration, so a
-     * whole herd pairs up at once without spending a single item on them.
-     * Babies and animals already in love are skipped, which is also what keeps
-     * re-casting it on the same herd from doing anything.
+     * within {@code radius} into love mode, so a whole herd pairs up at once
+     * without spending a single item on them. Babies and animals already in
+     * love are skipped, which is also what keeps re-casting it on the same herd
+     * from doing anything.
+     *
+     * <p>The animals' love window is {@link #LOVE_MODE_TICKS}, deliberately
+     * <em>not</em> the ability's own duration. The two answer different
+     * questions: the ability is over the instant the call goes out (which is
+     * why it is configured at two seconds), while the herd still needs vanilla's
+     * usual half-minute to find each other and pair up. Tying the two together
+     * meant shortening the ability also quietly stopped it working.</p>
+     *
      *
      * @return how many animals answered, for the player's feedback message.
      */
-    private int callHerd(Player player, int radius, long activeMillis) {
-        int loveTicks = (int) Math.max(1L, activeMillis / 50L);
+    private int callHerd(Player player, int radius) {
         int called = 0;
         for (Entity nearby : player.getNearbyEntities(radius, radius, radius)) {
             if (!(nearby instanceof Animals animal) || !animal.isAdult() || animal.isLoveMode()) {
                 continue;
             }
-            animal.setLoveModeTicks(loveTicks);
+            animal.setLoveModeTicks(LOVE_MODE_TICKS);
             animal.getWorld().spawnParticle(Particle.HEART, animal.getLocation().add(0, 1, 0), 3, 0.3D, 0.3D, 0.3D, 0.0D);
             called++;
         }

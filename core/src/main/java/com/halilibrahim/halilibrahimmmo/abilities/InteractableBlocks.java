@@ -44,8 +44,57 @@ public final class InteractableBlocks {
             Material.DRAGON_EGG, Material.SWEET_BERRY_BUSH, Material.CAVE_VINES, Material.CAVE_VINES_PLANT
     );
 
+    /**
+     * Non-block items whose right click already does something of its own.
+     * Bounded and hand-written for the same reason {@link #SINGLES} is: a new
+     * Minecraft item changes what this plugin does only when someone decides
+     * it should.
+     */
+    private static final Set<Material> USE_ITEMS = Set.of(
+            Material.BUCKET, Material.WATER_BUCKET, Material.LAVA_BUCKET, Material.POWDER_SNOW_BUCKET,
+            Material.MILK_BUCKET, Material.COD_BUCKET, Material.SALMON_BUCKET, Material.TROPICAL_FISH_BUCKET,
+            Material.PUFFERFISH_BUCKET, Material.AXOLOTL_BUCKET, Material.TADPOLE_BUCKET,
+            Material.FLINT_AND_STEEL, Material.FIRE_CHARGE, Material.ENDER_EYE, Material.BONE_MEAL,
+            Material.ARMOR_STAND, Material.ITEM_FRAME, Material.GLOW_ITEM_FRAME, Material.PAINTING,
+            Material.LEAD, Material.NAME_TAG, Material.FIREWORK_ROCKET, Material.END_CRYSTAL,
+            Material.MINECART, Material.CHEST_MINECART, Material.FURNACE_MINECART, Material.HOPPER_MINECART,
+            Material.TNT_MINECART, Material.COMMAND_BLOCK_MINECART, Material.GLOW_INK_SAC, Material.INK_SAC,
+            Material.HONEYCOMB, Material.SHEARS
+    );
+
     private InteractableBlocks() {
         throw new UnsupportedOperationException("InteractableBlocks is a static utility class");
+    }
+
+    /**
+     * Whether a right click holding {@code material} is the player trying to
+     * <em>use the item</em> rather than trigger an ability.
+     *
+     * <p>Every block is a placement attempt, which is by far the most common
+     * right click anyone performs - and the ability that suffers most is the one
+     * whose tool is {@code ANY}, because there is no held item that rules it
+     * out. Building a wall was spending Sürü Çağrısı's energy and starting its
+     * cooldown once per two blocks laid.</p>
+     *
+     * <p>Unlike {@link #isInteractable}, sneaking is <strong>not</strong> an
+     * escape hatch here: sneaking is exactly the gesture used to place a block
+     * against a chest or a door, so honouring it would reopen the hole at the
+     * one moment it is most likely to be hit. An ability held in a hand full of
+     * blocks is still started by right-clicking open air, which places
+     * nothing.</p>
+     */
+    public static boolean isUseItem(Material material) {
+        if (material.isAir()) {
+            // An empty hand places nothing and uses nothing; it is also the only
+            // way to start a tool-agnostic ability while standing at a block.
+            return false;
+        }
+        String name = material.name();
+        return USE_ITEMS.contains(material)
+                || name.endsWith("_SPAWN_EGG")
+                || name.endsWith("_BOAT")
+                || name.endsWith("_RAFT")
+                || material.isBlock();
     }
 
     public static boolean isInteractable(Material material) {
