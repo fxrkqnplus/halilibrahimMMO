@@ -4,49 +4,22 @@ Türk Minecraft topluluğu için geliştirilmiş, özgün bir MMORPG ilerleme ek
 (Paper 26.2 / Minecraft 26.2). Ekonomi yoktur — tüm ilerleme seviye, beceri XP'si,
 prestij, görevler, koleksiyonlar ve başarılar üzerinden işler.
 
-Bu, çok fazlı, ticari kalitede bir yapıdır. Tüm mimari kararların kaydı için
-[`PROJECT_MEMORY.md`](PROJECT_MEMORY.md) dosyasına bakın; her fazdan sonra güncel
-tutulur ve bu proje üzerinde yeni bir işe başlamadan önce okunmalıdır.
+Bu dosya **iki bölümden** oluşur:
 
-## Gereksinimler
+- **[Bölüm 1 — Oyuncu Rehberi](#bölüm-1--oyuncu-rehberi)**: sunucuya giren bir
+  oyuncunun bilmesi gereken her şey. Komutlar, beceriler, sınıflar,
+  kabiliyetler, görevler, zenginlik, bosslar, ev/takas, unvanlar.
+- **[Bölüm 2 — Teknik Bölüm](#bölüm-2--teknik-bölüm)**: sunucu yöneticisi ve
+  geliştirici için. Kurulum, derleme, veritabanı, yapılandırma dosyaları,
+  entegrasyonlar, test.
 
-- Java 26 (Oracle JDK veya OpenJDK)
-- Paper 26.2 (Build 60 veya üzeri)
-- Gradle Wrapper (repo ile birlikte gelir, ayrıca yerel Gradle kurulumu gerekmez)
-
-## Proje yapısı
-
-- [`api/`](api) — Herkese açık geliştirici API'si. Saf arayüzler + bir
-  `ServicesManager` tabanlı erişimci. Diğer eklentiler yalnızca bu modüle bağımlı olur.
-- [`core/`](core) — Eklentinin tam uygulaması (`HalilIbrahimMMOPlugin` ve her bir
-  iç sistem). `api` modülüne bağımlıdır.
-
-## Derleme
-
-```powershell
-./gradlew build
-```
-
-Dağıtıma hazır, birleştirilmiş (shaded) jar dosyası
-`core/build/libs/HalilIbrahimMMO-<surum>-all.jar` yolunda oluşturulur.
-
-## Yerel test sunucusu çalıştırma
-
-```powershell
-./gradlew runServer
-```
-
-Bu komut `run/` klasörüne bir Paper 26.2 test sunucusu indirir ve eklenti kurulu
-olarak başlatır.
-
-## Veritabanı
-
-SQLite, sıfır yapılandırma gerektiren varsayılan seçenektir. MySQL, MariaDB ve
-PostgreSQL, `config.yml` (`veritabani.tur`) üzerinden desteklenir. Tüm JDBC
-sürücüleri ve HikariCP, Paper'ın `PluginLoader` mekanizması üzerinden çalışma
-zamanında çözümlenir — eklenti jar'ına hiçbir şey gömülmez (shade edilmez).
+Tüm mimari kararların iç kaydı için `PROJECT_MEMORY.md` dosyasına bakın; her
+fazdan sonra güncel tutulur ve bu proje üzerinde yeni bir işe başlamadan önce
+okunmalıdır. (Bu dosya depoya dâhil değildir, yerel çalışma kopyasında durur.)
 
 ---
+
+# Bölüm 1 — Oyuncu Rehberi
 
 ## Her şey menüden: komut listesi
 
@@ -116,9 +89,6 @@ seviyelere rağmen Güç'ü asla düşürmez.
   dolayısıyla ekip-sökerek XP çevirmek mümkün değildir. Saman balyaları ekin
   değildir: yalnızca **köylerdeki doğal balyalar** sayılır, kendi koyduğunuz
   balya sayılmaz.
-
-Her Gradle komutu için Java 26 kullanın; çalışma alanında kurulu JDK
-`C:\Program Files\Java\jdk-26.0.1` konumundadır.
 
 ---
 
@@ -219,6 +189,14 @@ becerinin asıl güçlü bonusu her zaman 75. ve 100. seviyelerde.
   değmemelidir. Ormanın ortasındaki bir evi güvende tutan da bu üçüncü şarttır.
   Aynı denetim **Ağaç Kırıcı kabiliyeti** için de geçerlidir; bina üzerinde
   kullanıldığında kabiliyet harcanmaz, kurulu kalır ve sizi uyarır.
+
+  **Kendi diktiğiniz ağaçlarda da çalışır.** Fidan siz koyduğunuz için
+  "oyuncunun koyduğu blok" olarak kaydediliyor, ve fidan büyüdüğünde kök kütük
+  tam o noktada duruyordu — yani ektiğiniz her ağaç, gövdesinin geri kalanı XP
+  verse bile devrilmeyi reddediyordu. Artık bir fidan ağaca dönüştüğü anda o
+  kayıt siliniyor: büyüttüğünüz ağaç, vahşi bir ağaçtan hiçbir şekilde ayırt
+  edilmiyor. (Aynısı mantar ve bambu için de geçerlidir.) Ağaç büyütmek zaten
+  gerçek bir fidan, gerçek zaman ve gerçek alan harcar; kısır döngü değildir.
 - **Yem iadesi** (hayvancılık 25) — bir yavru doğduktan sonra %15 ihtimalle
   çiftleştirme yeminin **iki adedi birden** (iki ebeveyn için harcadığınız
   kadarı) elinize geri döner. Zar yavru doğduktan *sonra* atılır, yani
@@ -324,7 +302,7 @@ kullanılamaz. Açılma koşulu **sınıf seviyesidir** (beceri seviyesi değil)
 |---|---|---|---|---|---|
 | Tabiat Vârisi | Toprak Sezgisi | 5 | 20 | 1 dk 30 sn | Kırdığın bloklardan %50 ihtimalle ekstra düşme |
 | Tabiat Vârisi | Filiz Patlaması | 15 | 25 | 3 dk | 6 blok yarıçapındaki tüm ekinleri anında olgunlaştırır |
-| Tabiat Vârisi | Sürü Çağrısı | 25 | 30 | 4 dk | 8 blok yarıçapındaki tüm yetişkin hayvanları yem harcamadan çiftleşme moduna sokar |
+| Tabiat Vârisi | Sürü Çağrısı | 25 | 30 | 3 dk | 8 blok yarıçapındaki tüm yetişkin hayvanları yem harcamadan çiftleşme moduna sokar |
 | Tabiat Vârisi | Ağaç Kırıcı | 40 | 25 | 1 dk 15 sn | Bağlı tüm kütükleri (en fazla 32) birden keser |
 | Amansız Savaşçı | Gece Görüşü | 5 | 15 | 2 dk | 60 saniye karanlıkta net görüş |
 | Amansız Savaşçı | Avcı Odağı | 10 | 25 | 1 dk 30 sn | PvE hasarı %50 artar (enerji tüketir) |
@@ -360,6 +338,20 @@ Gerçekten o kapının önünde kabiliyetinizi kullanmak istiyorsanız **shift
 basılı tutup sağ tıklayın**: Minecraft zaten shift'liyken bloğun kendi
 davranışını bastırır, yani sandığa blok koyarken kullandığınız hareketin
 aynısı burada da işe yarar.
+
+**Blok koymak da kabiliyeti tetiklemez.** Elinizde bir blok varken bir bloğa
+sağ tıklamak "blok koyuyorum" demektir, "kabiliyetimi aç" değil — aynısı kova,
+kayık, vagon, hayvan yumurtası, kemik tozu, çakmak taşı, kayış, tablo ve
+zırh askısı gibi kendi işlevi olan eşyalar için de geçerlidir. Bu özellikle
+**aleti "herhangi bir şey" olan kabiliyetler** için önemliydi (ör. Sürü
+Çağrısı): eldeki eşya onları elemediği için bir duvar örmek kabiliyeti iki
+blokta bir harcıyordu.
+
+Burada shift **kaçış yolu değildir**, çünkü sandığa ya da kapıya blok dayamanın
+yolu zaten shift'tir — onu muaf tutmak açığı tam da en çok vurduğu yerde geri
+getirirdi. Elinizde blok varken kabiliyetinizi açmak isterseniz **boş havaya**
+sağ tıklayın; orada hiçbir şey yerleştirilmediği için kabiliyet normal çalışır.
+**Boş elle** bir bloğa tıklamak da her zaman çalışır.
 
 **Zaten çalışan bir kabiliyete tekrar tıklamak** (yaratıcı mod dışında)
 hiçbir mesaj üretmez. Eskiden önce "tekrar sağ tıkla" yazar, sonra ikinci
@@ -414,6 +406,12 @@ hayvanları tek bir yem harcamadan çiftleşme moduna sokar. Yavrular ve zaten
 çiftleşme modundaki hayvanlar atlanır, dolayısıyla aynı sürüye tekrar
 kullanmak bir işe yaramaz.
 
+Kabiliyetin kendisi **2 saniye** sürer (hem normal hem yaratıcı modda) ve
+kendiliğinden kapanır: çağrı gittikten sonra açık kalmasının bir işlevi yok.
+Hayvanların çiftleşme penceresi bundan bağımsızdır — vanilla'daki normal
+süresi neyse odur, yani sürünün eşleşmeye vakti olur. Bekleme süresi
+**3 dakikadır**.
+
 ### Enerji
 
 Enerji, tüm kabiliyetlerin paylaştığı, kaydedilmeyen bir havuzdur (varsayılan
@@ -428,29 +426,40 @@ Ekranın sağında kalıcı, renklendirilmiş bir bilgi paneli. Yukarıdan aşa�
 
 1. **Oyuncu adı** — varsa kuşanılan unvan kendi rengiyle isimden önce
    ("Oyuncu: [Unvan] Ad").
-2. **Güç ve prestij** — tek satırda, altın ve açık mor.
-3. **Zenginlik** — mavi renkte toplam Zenginlik Puanınız.
-4. **Sınıf ve sınıf seviyesi** — tek satırda, XP ilerlemesiyle birlikte.
-5. **Kabiliyet** — çalışan bir kabiliyet varsa adı ve kalan süresi, yoksa
+2. **Güç, prestij ve zenginlik** — üçü tek satırda: altın Güç, açık mor
+   prestij, mavi Zenginlik Puanı.
+3. **Sınıf ve sınıf seviyesi** — tek satırda, XP ilerlemesiyle birlikte.
+4. **Kabiliyet** — çalışan bir kabiliyet varsa adı ve kalan süresi, yoksa
    seçili olan, o da yoksa "Kabiliyet seçilmedi".
-6. **Ev / Takas durumu** — ikisinden biri açıldıktan sonra görünür; evinizin
+5. **Ev / Takas durumu** — ikisinden biri açıldıktan sonra görünür; evinizin
    adını (ya da "Ayarlanmadı") ve takasın açık olup olmadığını gösterir.
    **Bir takas sürerken** hemen altında "Takas açık: <oyuncu>" satırı çıkar.
-7. **Başlangıç Görevleri** — yalnızca tamamlanmamış olanlar varken; hepsi
+6. **Başlangıç Görevleri** — yalnızca tamamlanmamış olanlar varken; hepsi
    bitince bu bölüm tamamen kaybolur.
-8. **Günlük**, **Haftalık** ve **Kalıcı Görevler** — her biri kendi başlığı
-   altında ayrı bir bölüm. Tamamlanmamış görevler ilerlemeleri ve XP
-   ödülleriyle sarı; **tamamlanmış görevler yeşil** listelenir. Görevler
-   panelde **kısa adlarıyla** yazılır (bkz. Görevler bölümü).
-9. En altta `/panel` hatırlatması.
+7. **Görevler** — tek başlık altında, türü satırın **kendi renginden**
+   okunur: **günlük sarı**, **haftalık altın**, **kalıcı camgöbeği**.
+   Tamamlanmamış görevler ilerlemeleri ve XP ödülleriyle, tamamlananlar
+   ✔ işaretiyle listelenir. Görevler panelde **kısa adlarıyla** yazılır
+   ("40 kütük kır", "8 enderman öldür" — bkz. Görevler bölümü).
+8. En altta `/panel` hatırlatması.
 
-Bölümler arasında ince ayırıcı çizgiler vardır. **Minecraft bu panelde en
-fazla 15 satır gösterir**; eklenti fazlasını kendisi kırpar (en alttaki
-`/panel` satırı her zaman korunur), bu yüzden satırlar bilinçli olarak
-birleştirilmiştir — örneğin sınıfınızın açık kabiliyetleri artık tek tek
-listelenmez, tam listeyi `/kabiliyet` ekranı gösterir. **Panelde hangi
-görevlerin görüneceğine siz karar verebilirsiniz**: bkz. "Görevleri panele
-sabitleme".
+**Zenginlik Puanı kısaltılarak yazılır**: 12 600 yerine `12.6K`, 1 050 000
+yerine `1.05M`. Sekiz haneli bir sayıyı panelde rakam rakam saymak zorunda
+kalmazsınız. Aynı kısaltma liderlik tablosunda ve sıralama duyurularında da
+kullanılır.
+
+**Minecraft bu panelde en fazla 15 satır gösterir** ve fazlasını sessizce
+atar, bu yüzden kırpmayı eklentinin kendisi yapar. Satırlar bu tavana göre
+bilinçli olarak birleştirilmiştir: Güç/prestij/zenginlik tek satır, sınıf ve
+sınıf seviyesi tek satır, üç görev türü tek başlık. (Sınıfınızın açık
+kabiliyetleri de bu yüzden tek tek listelenmez; tam listeyi `/kabiliyet`
+ekranı gösterir.)
+
+Panel yine de taşarsa **önce süsleme atılır** — ayırıcı çizgiler ve en alttaki
+`/panel` satırı — çünkü onlar bilgi taşımaz. Bir görev satırı, ancak başka
+hiçbir şey atılamıyorsa gider. Yani her kategoriden üç görev sabitlediğinizde
+dokuzunun da görünmesi beklenir. **Panelde hangi görevlerin görüneceğine siz
+karar verirsiniz**: bkz. "Görevleri panele sabitleme".
 
 Panel, sunucuda gerçekleşen her değişikliği (beceri/sınıf XP kazanımı, unvan
 değişikliği, yönetici müdahalesi dahil) yaklaşık 2 saniye içinde
@@ -516,9 +525,12 @@ sabitlendi" yazar.
   panele *eklenemez*, çünkü atanmamış bir görev zaten hiç ilerlemez — hiç
   hareket etmeyen bir satır olurdu.
 
-Panelde görevler **kısa adlarıyla** yazılır (`quests.yml` içindeki `kisa-ad`).
-Scoreboard satırları alt satıra kaymaz, kesilir; menüde okunan uzun başlıklar
-panelde kelimenin ortasından kopuyordu.
+Panelde görevler **kısa adlarıyla** yazılır (`quests.yml` içindeki `kisa-ad`)
+ve bu kısa adlar birer **emir cümlesidir**: "40 kütük kır", "50 cevher kaz",
+"8 enderman öldür", "Bir köy keşfet". Çıplak bir isim ("40 Kütük") görevin
+neyi saydığını söylüyordu ama ne yapmanız gerektiğini hiç söylemiyordu.
+Scoreboard satırları alt satıra kaymaz, kesilir; bu yüzden kısa adlar en fazla
+24 karakterdir.
 
 ### Görev ödülleri hangi beceriye yazılır?
 
@@ -617,17 +629,63 @@ Zenginlik puanınız panelde mavi renkte, `/liderlik` içinde kendi tablosunda
 (Varlıklı 50 bin → Zengin 250 bin → Servet Sahibi 1 milyon → Hazine Kralı
 5 milyon → Efsanevi Zengin 25 milyon).
 
-Bütün değerler `zenginlik.yml` üzerinden değiştirilebilir.
+**Büyük sayılar kısaltılarak yazılır**: `12.6K`, `712.2K`, `1.2M`, `1.05M`.
+Zenginlik puanları normal oynayışta yedi-sekiz haneye çıkıyor ve `12600000`
+gibi bir sayı okunmaz, sayılır.
+
+### Sıralama duyuruları
+
+Zenginlik liderlik tablosu **belirli aralıklarla** (varsayılan 25 dakika)
+yeniden okunur ve bir önceki okumayla karşılaştırılır. Bir sıra değişmişse
+sohbete **turda en fazla bir** duyuru düşer:
+
+- **Birini geçtiyseniz** iki isim de anılır: *"Vesen aman tanımıyor! Kaan,
+  Vesen adlı oyuncunun gölgesinde kalarak 3. sıraya düştü."*
+- **Birkaç basamak birden tırmandıysanız** yükselişin kendisi anlatılır:
+  *"Vesen önünde engel tanımıyor! Yükselişlerinin ardı arkası kesilmeyerek
+  zenginlikte 2. sıraya ulaştı."*
+
+Her iki şekil için de **15 farklı metin** vardır ve her seferinde rastgele biri
+seçilir; zamanlayıcıyla tekrarlanan tek bir sabit cümle bir süre sonra haber
+olmaktan çıkar. Aralık ve metinlerin tamamı yapılandırılabilir. Turda yalnızca
+**en dikkat çekici tek değişiklik** duyurulur (en çok basamak tırmanan; eşitlik
+varsa en yükseğe varan), çünkü yirmi beş dakikada birkaç kişi kıpırdar ve
+hepsini birden yazmak tabloyu duvar yazısına çevirir.
+
+Duyurular yalnızca **tablonun görünür kısmı** (varsayılan ilk 10) için
+çalışır; kimsenin göremediği bir sıra değişikliği duyurulmaya da değmez.
+
+Bütün değerler, kilometre taşları, duyuru aralığı ve duyuru metinleri
+`zenginlik.yml` ve `messages.yml` üzerinden değiştirilebilir.
 
 ---
 
 ## Dünya bossları
 
 **Her 30 dakikada bir**, çevrimiçi bir oyuncunun 120–320 blok uzağında,
-haritada isimli bir dünya bossu belirir ve **koordinatlarıyla birlikte tüm
-sunucuya duyurulur**. Kimsenin ulaşamayacağı bir boss kimsenin dövüşmediği bir
-bosstur; bu mesafe hem gerçekten yola çıkmayı gerektirir hem de bir sonraki
+haritada isimli bir dünya bossu belirir ve **X/Y/Z koordinatlarıyla birlikte
+tüm sunucuya duyurulur**. Kimsenin ulaşamayacağı bir boss kimsenin dövüşmediği
+bir bosstur; bu mesafe hem gerçekten yola çıkmayı gerektirir hem de bir sonraki
 boss gelmeden varılabilir. `/haliladmin` panelinden beklemeden de çağrılabilir.
+
+Bir boss belirdiğinde **her seferinde farklı bir ses efekti** çalar (ejderha
+kükremesi, wither doğuşu, Warden çığlığı, ravager, elder guardian laneti,
+illusioner, çan yankısı, ejderha kanadı — sekiz cue arasından rastgele).
+Yarım saatte bir duyulan bir olay için tek sabit ses, haritadaki en dramatik
+anı bir bildirim zilinden ibaret bırakırdı.
+
+### Boss can çubuğu
+
+Bir bossa **96 blok** mesafeye yaklaştığınızda ekranın üstünde o bossa ait bir
+can çubuğu belirir. Çubukta bossun **ismi**, **anlık/maksimum canı** ve
+parantez içinde **nadirliği** yazar; çubuğun rengi de nadirliğin kendi
+rengidir (sıradan beyaz, nadir yeşil, epik mor, efsanevi sarı, mistik pembe).
+Çubuk yarım saniyede bir güncellenir, uzaklaştığınızda kaybolur, boss
+öldüğünde herkesin ekranından kalkar.
+
+Savaşa hiç gitmeyen birinin ekranında bir yabancının canının durmaması için
+çubuk sunucu geneline gösterilmez; duyurulan koordinata gidenlerin de
+çubuksuz kalmaması için izleyici listesi sürekli yeniden hesaplanır.
 
 **Beş nadirlik** vardır ve hangisinin çıkacağı ağırlıklara göre belirlenir
 (sıradan 49, nadir 30, epik 20, efsanevi 10, mistik 1 pay):
@@ -699,6 +757,11 @@ Prestijin de sayılmasının sebebi basit: prestij sınıf seviyenizi 1'e
 sıfırlar, dolayısıyla yalnızca seviyeye bakan bir kural bu özelliği tam da en
 çok emek vermiş oyunculardan her prestijde geri alırdı.
 
+Eşiği geçtiğiniz **seviye atlamasında sohbetinize "Yeni özellik açıldı: /ev"**
+mesajı gelir ve komutun nasıl kullanılacağını söyler. Eskiden bunu yalnızca
+paneldeki durum satırının "Kilitli"den "Açık"a dönmesinden anlayabilirdiniz;
+kimse savaşın ortasında oraya bakmıyor.
+
 | Komut | Ne yapar |
 |---|---|
 | `/ev ayarla <isim>` | Bulunduğunuz noktayı, verdiğiniz isimle eviniz yapar |
@@ -723,7 +786,8 @@ o boyutların oyunda var oluş sebebini silerdi.
 Sınıf seviyeniz **20**'ye ulaştığında (ya da bir kez prestij yaptıysanız)
 **sunucudaki herhangi bir oyuncuyla, aranızda ne kadar mesafe olursa olsun**
 takas yapabilirsiniz. Karşı tarafın da en az **15.** sınıf seviyesinde olması
-veya bir kez prestij yapmış olması gerekir.
+veya bir kez prestij yapmış olması gerekir. Tıpkı `/ev` gibi, eşiği geçtiğiniz
+seviye atlamasında sohbetinize **"Yeni özellik açıldı: /takas"** mesajı gelir.
 
 1. `/takas <oyuncu>` ile istek gönderin. Karşı tarafın yanıtlamak için
    1 dakikası vardır.
@@ -753,10 +817,20 @@ XP'sini kazandırır (sınıf seçili değilse ödül verilmez).
 
 `/liderlik`; Güç (önce prestij, sonra toplam beceri seviyesi sırasına göre),
 prestij, tamamlanan görev sayısı, edinilen koleksiyon ögesi sayısı,
-**Zenginlik Puanı** (elmas simgesiyle) ve her yapılandırılmış beceri için en
-üst sıradaki oyuncuları gösteren tablolara açılır. Aynı tablolara `/menü`'nün Topluluk kategorisinden de göz atılabilir.
-Sonuçlar her açılışta veritabanını sorgulamak yerine kısa, yapılandırılabilir
-bir süre için önbelleğe alınır (`leaderboards.yml`).
+**Zenginlik Puanı** ve **her becerinin kendi tablosu** olmak üzere on bir
+tabloya açılır. Aynı tablolara `/menü`'nün Topluluk kategorisinden de
+ulaşılabilir. Sonuçlar her açılışta veritabanını sorgulamak yerine kısa,
+yapılandırılabilir bir süre için önbelleğe alınır (`leaderboards.yml`).
+
+**Her tablonun ne ölçtüğünü söyleyen kendi simgesi vardır**: Güç netherite
+külçesi, prestij nether yıldızı, görevler harita, koleksiyon ender sandığı,
+zenginlik elmas — beceri tabloları ise o becerinin `/beceri` listesinde
+gördüğünüz **kendi simgesini** taşır. Her tablonun üstüne geldiğinizde tam
+olarak neyi sıraladığı yazar.
+
+Bir tabloyu açtığınızda **ilk üç sıra podyum olarak** görünür (altın, demir ve
+bakır blok) ve **kendi satırınız yeşil renkte işaretlenir** — herkesin ilk
+baktığı satır zaten kendisininkidir.
 
 ## Unvanlar ve kozmetikler
 
@@ -770,6 +844,19 @@ kataloglara `/menü`'den de göz atılabilir. Kuşanılan bir unvan, sohbette
 adınızın önünde **kendi yapılandırılmış rengi ve kalınlığıyla** görünür.
 Kuşanılan bir kozmetik, katıldığınızda ve her seviye atladığınızda kısa bir
 parçacık efekti oynatır.
+
+**Her iki ekran da birebir aynı düzendedir**: üstte kendi kafanızı taşıyan ve
+kaç tanesini açtığınızı gösteren bir başlık (ör. "Açılan unvan: 7/19"), altında
+katalog, en altta geri düğmesi. Aynı sistemin iki örneği oldukları için
+aralarında gezinirken düzeni yeniden öğrenmeniz gerekmez.
+
+**Henüz açmadığınız bir ünvanın ya da kozmetiğin adı gösterilmez.** Yerinde
+gri bir yer tutucu durur ve üstüne geldiğinizde yalnızca **onu neyin açacağı**
+yazar — "Gereken: 50. prestij", "Gereken: madencilik becerisinde 50. seviye",
+"Gereken: 250K zenginlik puanı" gibi. Bir ünvan kazanılıp kuşanılan bir
+şeydir; bütün listeyi hiçbirini kazanmadan menüden okumak sürprizi bedavaya
+harcar. Ama açıklamasız bir boşluk da hedef değil sadece boşluktur, o yüzden
+şart her zaman yazar.
 
 ## Görsel geri bildirim
 
@@ -804,6 +891,13 @@ ekranın kime ait olduğu tek bir yazı okumadan anlaşılır.
 sürüm bilgisini ve emeği geçenleri listeler: **Furkan Okan (fxrkqnplus)** ve
 **Claude (Anthropic)**.
 
+---
+
+# Bölüm 2 — Teknik Bölüm
+
+Buradan aşağısı sunucu yöneticisi ve geliştirici içindir: yönetici paneli,
+kurulum, derleme, veritabanı, yapılandırma dosyaları, entegrasyonlar ve test.
+
 ## Yönetici paneli
 
 `/haliladmin` (`halilibrahimmmo.admin` izni gerektirir, varsayılan op) tamamen
@@ -814,7 +908,8 @@ bir başlık, altında ne yaptığını açıklayan birer satırla her işlem. S
 işlemler: `config.yml`/`messages.yml`/tüm oyun verisi dosyalarını yeniden
 yükleme, mevcut oturum için ayrıntılı hata ayıklama kaydını açıp kapatma,
 çalışan eklenti/Paper sürümünü görüntüleme, **beklemeden bir dünya bossu
-çağırma** (türünü, nadirliğini ve yerini yine sistem seçer), çevrimiçi
+çağırma** (türünü, nadirliğini ve yerini yine sistem seçer; onay mesajı boss
+gerçekten doğduktan sonra gelir, yer bulunamazsa bunu açıkça söyler), çevrimiçi
 oyuncuları gezip herhangi birinin salt okunur profil/sınıf/beceri özetini
 görüntüleme, ve **kayıtlı her oyuncuyu** (çevrimdışı olanlar dahil) listeleyip
 beceri/sınıf seviyesini ve XP'sini tıklamalarla ayarlama ya da oyuncunun
@@ -823,6 +918,107 @@ kabiliyetini kuşanmasından çıkarır). Bir seviye atlamaya yol açan her müd
 oyuncu çevrimiçiyse organik bir seviye atlamayla birebir aynı geri bildirimi
 (cübuk, ses, "yeni kabiliyet açıldı" ekran yazısı, panel güncellemesi)
 tetikler. Her yönetici müdahalesi Türkçe bir sunucu günlüğü kaydı bırakır.
+
+## Gereksinimler
+
+- Java 26 (Oracle JDK veya OpenJDK)
+- Paper 26.2 (Build 60 veya üzeri)
+- Gradle Wrapper (repo ile birlikte gelir, ayrıca yerel Gradle kurulumu gerekmez)
+
+## Proje yapısı
+
+- [`api/`](api) — Herkese açık geliştirici API'si. Saf arayüzler + bir
+  `ServicesManager` tabanlı erişimci. Diğer eklentiler yalnızca bu modüle bağımlı olur.
+- [`core/`](core) — Eklentinin tam uygulaması (`HalilIbrahimMMOPlugin` ve her bir
+  iç sistem). `api` modülüne bağımlıdır.
+- [`clientmod/`](clientmod) — Zorunlu Fabric eşlik mod'u. **Kök derlemeye dâhil
+  değildir**, kendi Gradle wrapper'ı vardır (bkz. "İki ayrı derleme zinciri").
+
+## Derleme
+
+```powershell
+./gradlew build
+```
+
+Dağıtıma hazır, birleştirilmiş (shaded) jar dosyası
+`core/build/libs/HalilIbrahimMMO-<surum>-all.jar` yolunda oluşturulur.
+Her Gradle komutu için Java 26 kullanın; bu makinede kurulu JDK
+`C:\Program Files\Java\jdk-26.0.1` konumundadır.
+
+### İki ayrı derleme zinciri
+
+Depoda **birbirinden bağımsız iki Gradle derlemesi** vardır ve bunlar asla tek
+komutla birlikte derlenmez:
+
+| | Sunucu eklentisi | İstemci mod'u |
+|---|---|---|
+| Konum | kök (`api` + `core`) | `clientmod/` |
+| Gradle | 9.6.1 | 9.5.1 (ayrı wrapper) |
+| JDK | 26 | 25 hedefli derleme |
+| Komut | `./gradlew build` | `cd clientmod` → `.\gradlew.bat build` |
+| Çıktı | `core/build/libs/HalilIbrahimMMO-<sürüm>-all.jar` | `clientmod/build/libs/hmmo-client-<sürüm>.jar` |
+| Nereye gider | sunucunun `plugins/` klasörü | oyuncunun `mods/` klasörü |
+
+PowerShell'de `clientmod` içinde `./gradlew` çalışmaz, `.\gradlew.bat` gerekir.
+
+## Yerel test sunucusu çalıştırma
+
+```powershell
+./gradlew runServer
+```
+
+Bu komut `core/run/` klasörüne bir Paper 26.2 test sunucusu indirir ve eklenti
+kurulu olarak başlatır.
+
+## Sürüm yükseltirken: yapılandırma dosyaları
+
+Eklenti, paketlenmiş YAML dosyalarını veri klasörüne **yalnızca dosya yoksa**
+kopyalar; var olan bir dosyanın üzerine asla yazmaz. Bu, yaptığınız
+düzenlemelerin ve yorum satırlarının bir yeniden yükleme sonrası hayatta
+kalmasını sağlar — ama şu sonucu da doğurur:
+
+> **Yeni mesaj anahtarı veya yeni ayar getiren bir sürüme geçerken**, ilgili
+> dosyaları `plugins/HalilIbrahimMMO/` altından silip yeniden ürettirmeniz
+> gerekir. Aksi halde yeni anahtarlar eksik kalır ve sunucu günlüğü
+> "eksik mesaj anahtari" uyarılarıyla dolar.
+
+Elle yaptığınız değişiklikler varsa, silmeden önce yedekleyip yeni dosyayla
+karşılaştırın.
+
+## Veritabanı
+
+SQLite, sıfır yapılandırma gerektiren varsayılan seçenektir. MySQL, MariaDB ve
+PostgreSQL, `config.yml` (`veritabani.tur`) üzerinden desteklenir. Tüm JDBC
+sürücüleri ve HikariCP, Paper'ın `PluginLoader` mekanizması üzerinden çalışma
+zamanında çözümlenir — eklenti jar'ına hiçbir şey gömülmez (shade edilmez).
+
+Tüm tablolar `hmmo_` ön ekiyle oluşturulur, böylece birden fazla eklentinin aynı
+şemayı paylaştığı ortak veritabanlarında çakışma olmaz. Şema değişiklikleri
+sürüm numaralı göç (migration) dosyalarıyla yapılır ve `hmmo_schema_version`
+tablosunda takip edilir; gönderilmiş bir göç asla değiştirilmez veya
+numarası yeniden verilmez.
+
+## Yapılandırma dosyaları
+
+Hepsi Türkçe yorumludur ve `/haliladmin` panelindeki **Yeniden Yükle** düğmesiyle
+sunucuyu yeniden başlatmadan uygulanabilir.
+
+| Dosya | Ne denetler |
+|---|---|
+| `config.yml` | Dil, hata ayıklama modu, veritabanı bağlantısı ve havuz ayarları |
+| `messages.yml` | Oyuncunun/yöneticinin gördüğü **her** metin, ikon paketi etiketleri |
+| `skills.yml` | Altı becerinin seviye eğrisi, blok/yaratık/eylem başına XP, kilometre taşları, simgeler |
+| `abilities.yml` | Enerji havuzu ve yenilenme hızı, her kabiliyetin süresi/beklemesi/maliyeti/etkisi/görseli |
+| `classes.yml` | Sınıf kataloğu, sinerji becerileri, yetenek ağaçları, iki puan havuzu, sınıf renkleri/çerçeveleri |
+| `quests.yml` | 65 görev: hedef türü, sayı, XP, eğittiği beceri, simge, açıklama ve panel için `kisa-ad` |
+| `collections.yml` | Koleksiyon kataloğu ve tamamlama bonusları |
+| `prestige.yml` | Prestij şartları ve maksimum prestij sayısı |
+| `leaderboards.yml` | Tablo başına gösterilecek oyuncu sayısı ve önbellek tazeleme aralığı |
+| `titles.yml` / `cosmetics.yml` | 19 unvan / 14 kozmetik: görünen ad, simge, açılma koşulu, sohbet stili |
+| `feedback.yml` | Cübuk/başlık süreleri, isimli ses efektleri, boss doğuş sesi listesi |
+| `zenginlik.yml` | Zenginlik Puanı değerleri, kilometre taşları, sıralama duyurusu aralığı |
+| `bosslar.yml` | Boss doğuş aralığı ve mesafesi, beş nadirlik, arketipler ve isim havuzları |
+| `modlar.yml` | Zorunlu/yasaklı Fabric mod listesi ve doğrulama ayarları |
 
 ## PlaceholderAPI ve LuckPerms (isteğe bağlı)
 
