@@ -32,6 +32,7 @@ public final class AdminMenu implements GuiView {
     private static final int ALL_PLAYERS_SLOT = 25;
     private static final int BOSS_SLOT = 30;
     private static final int VERSION_SLOT = 32;
+    private static final int MODCHECK_SLOT = 34;
     private static final int CREDITS_SLOT = 40;
 
     private final GuiServices services;
@@ -97,6 +98,11 @@ public final class AdminMenu implements GuiView {
                         "paper_surumu", services.api().getSupportedMinecraftVersion()
                 )))
         ));
+        inventory.setItem(MODCHECK_SLOT, GuiItems.of(
+                Material.COMMAND_BLOCK,
+                services.messages().render(MessageKey.GUI_ADMIN_MODCHECK_ITEM),
+                List.of(services.messages().render(MessageKey.GUI_ADMIN_MODCHECK_LORE))
+        ));
         inventory.setItem(CREDITS_SLOT, GuiItems.of(
                 Material.NETHER_STAR,
                 services.messages().render(MessageKey.GUI_ADMIN_CREDITS_ITEM),
@@ -120,6 +126,7 @@ public final class AdminMenu implements GuiView {
             }
             case ONLINE_PLAYERS_SLOT -> GuiManager.open(player, new AdminOnlinePlayersMenu(services));
             case ALL_PLAYERS_SLOT -> GuiManager.open(player, new AdminAllPlayersMenu(services));
+            case MODCHECK_SLOT -> GuiManager.open(player, new AdminModCheckMenu(services));
             case BOSS_SLOT -> spawnBoss(player);
             case CREDITS_SLOT -> GuiManager.open(player, new CreditsMenu(services, true));
             default -> {

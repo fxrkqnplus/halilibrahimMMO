@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "HalilIbrahimMMO İstemci Mod'u",
+  "description": "HalilIbrahimMMO sunucusunun zorunlu mod kontrolüne yanıt verir. Oyuna hiçbir görsel öğe, komut veya ayar eklemez.",
+  "authors": [
+    "HalilIbrahim Studio"
+  ],
+  "license": "All rights reserved",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.halilibrahim.halilibrahimmmo.client.HmmoClientMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

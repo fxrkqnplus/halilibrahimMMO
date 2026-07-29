@@ -16,6 +16,7 @@ import com.halilibrahim.halilibrahimmmo.leaderboards.LeaderboardService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.home.HomeService;
 import com.halilibrahim.halilibrahimmmo.logging.PluginLogger;
+import com.halilibrahim.halilibrahimmmo.modcheck.ModVerificationService;
 import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingRewarder;
 import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingService;
 import com.halilibrahim.halilibrahimmmo.trade.TradeService;
@@ -60,6 +61,7 @@ public record GuiServices(
         HomeService homes,
         TradeService trades,
         WealthService wealth,
-        BossService bosses
+        BossService bosses,
+        ModVerificationService modVerification
 ) {
 }

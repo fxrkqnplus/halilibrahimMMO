@@ -23,3 +23,6 @@ permissions:
   halilibrahimmmo.admin:
     description: "/haliladmin yönetici panelini açma izni (yeniden yükleme, hata ayıklama, sürüm bilgisi, çevrimiçi oyuncu bilgisi)."
     default: op
+  hmmo.mod.bypass:
+    description: "Zorunlu Fabric mod doğrulamasından muaf tutulma izni. Bu izne sahip oyuncuya mod listesi sorulmaz ve asla atılmaz."
+    default: op

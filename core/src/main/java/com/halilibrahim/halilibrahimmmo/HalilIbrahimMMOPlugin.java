@@ -90,6 +90,10 @@ import com.halilibrahim.halilibrahimmmo.luckperms.LuckPermsHook;
 import com.halilibrahim.halilibrahimmmo.placeholder.PlaceholderApiHook;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.locale.MiniMessageService;
+import com.halilibrahim.halilibrahimmmo.modcheck.ModCheckListener;
+import com.halilibrahim.halilibrahimmmo.modcheck.ModCheckProtocol;
+import com.halilibrahim.halilibrahimmmo.modcheck.ModVerificationService;
+import com.halilibrahim.halilibrahimmmo.modcheck.PluginMessageModVerificationService;
 import com.halilibrahim.halilibrahimmmo.logging.PluginLogger;
 import com.halilibrahim.halilibrahimmmo.onboarding.CachedOnboardingService;
 import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingRepository;
@@ -177,6 +181,15 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             PlacedBlockTracker placedBlockTracker = new PlacedBlockTracker(this);
             ConfigService configService = startService(new YamlConfigService(this, pluginLogger), ConfigService.class);
             MessageService messageService = startService(new MiniMessageService(this, pluginLogger), MessageService.class);
+
+            // Depends only on config + locale, and deliberately runs before the
+            // database: a player who fails mod verification must be turned away
+            // whether or not the rest of the plugin is healthy.
+            ModVerificationService modVerificationService = startService(
+                    new PluginMessageModVerificationService(this, messageService, pluginLogger),
+                    ModVerificationService.class
+            );
+            registerModCheckChannel(modVerificationService);
 
             DatabaseService databaseService = startService(
                     new HikariDatabaseService(configService.coreConfig().databaseSettings(), getDataFolder().toPath(), pluginLogger),
@@ -332,7 +345,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             this.api = new HalilIbrahimMMOApiImpl(
                     this, configService, messageService, pluginLogger, profileService, progressionService, skillService,
                     abilityService, classService, prestigeService, questService, collectionService, leaderboardService,
-                    titleService, cosmeticService, feedbackService, wealthService, bossService
+                    titleService, cosmeticService, feedbackService, wealthService, bossService, modVerificationService
             );
             getServer().getServicesManager().register(HalilIbrahimMMOAPI.class, api, this, ServicePriority.Normal);
 
@@ -348,7 +361,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     classService, prestigeService, questService, collectionService, journalService, leaderboardService,
                     titleService, cosmeticService, feedbackService, sidebarService, configService, api, activationService,
                     pluginLogger, onboardingService, onboardingRewarder, homeService, tradeService,
-                    wealthService, bossService
+                    wealthService, bossService, modVerificationService
             );
             // The trade screen lives in the GUI layer, which needs the trade
             // service to build - so the service is told how to draw itself only
@@ -370,6 +383,8 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         getServer().getServicesManager().unregisterAll(this);
+        getServer().getMessenger().unregisterOutgoingPluginChannel(this, ModCheckProtocol.CHANNEL);
+        getServer().getMessenger().unregisterIncomingPluginChannel(this, ModCheckProtocol.CHANNEL);
 
         if (placeholderTeardown != null) {
             placeholderTeardown.run();
@@ -404,6 +419,18 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
 
         enabledServices.clear();
         services.clear();
+    }
+
+    /**
+     * Registers the {@code hmmo:modcheck} channel in both directions and wires
+     * the join/quit/payload listener. Both registrations are required: outgoing
+     * to send the challenge, incoming to receive the client's mod list.
+     */
+    private void registerModCheckChannel(ModVerificationService modVerificationService) {
+        ModCheckListener listener = new ModCheckListener(modVerificationService);
+        getServer().getMessenger().registerOutgoingPluginChannel(this, ModCheckProtocol.CHANNEL);
+        getServer().getMessenger().registerIncomingPluginChannel(this, ModCheckProtocol.CHANNEL, listener);
+        getServer().getPluginManager().registerEvents(listener, this);
     }
 
     private <T extends PluginService> T startService(T service, Class<T> type) {

@@ -305,6 +305,15 @@ gui:
     baslik: "<dark_red>HalilIbrahimMMO</dark_red> <dark_gray>-</dark_gray> <gray>Yönetici Paneli</gray>"
     baslik-oge: "<dark_red><bold><simge:bilgi> Yönetim Paneli</bold></dark_red>"
     baslik-aciklama: "<gray>Sürüm <white><surum></white> <dark_gray>|</dark_gray> Çevrimiçi <white><oyuncu></white> oyuncu</gray>"
+    modcheck-oge: "<aqua>Mod Doğrulama</aqua>"
+    modcheck-aciklama: "<gray>Çevrimiçi oyuncuların zorunlu mod kontrolünden geçip geçmediğini gösterir.</gray>"
+    modcheck-baslik: "<dark_gray>Mod Doğrulama Durumu</dark_gray>"
+    modcheck-kapali: "<red>Mod doğrulaması şu anda kapalı.</red>"
+    modcheck-ozet: "<gray>Zorunlu mod sayısı: <white><zorunlu></white> <dark_gray>|</dark_gray> Yasaklı: <white><yasakli></white></gray>"
+    modcheck-oyuncu-dogrulandi: "<green><simge:tamam> <oyuncu></green>"
+    modcheck-oyuncu-bekliyor: "<yellow>? <oyuncu></yellow>"
+    modcheck-oyuncu-muaf: "<gray>- <oyuncu></gray>"
+    modcheck-oyuncu-aciklama: "<gray>İstemci: <white><marka></white> <dark_gray>|</dark_gray> Bildirilen mod: <white><sayi></white></gray>"
     boss-oge: "<gold><simge:boss> Dünya Bossu Çağır</gold>"
     boss-aciklama: "<gray>Sıradaki bossu beklemeden şimdi çağırır. Türünü, nadirliğini ve yerini yine sistem seçer.</gray>"
     yenile-oge: "<green>Yeniden Yükle</green>"
@@ -593,3 +602,18 @@ gui:
     oge: "<light_purple><kozmetik></light_purple>"
     oge-aciklama-acik: "<green><simge:tamam> Açık</green> <gray>• Kuşanmak için tıkla</gray>"
     oge-aciklama-kilitli: "<red><simge:eksik> Kilitli</red>"
+
+# =====================================================================
+#  Zorunlu Fabric mod doğrulaması (modlar.yml)
+#  Bu metinler oyuncunun ATILMA ekranında görünür; chat öneki eklenmez.
+#  Kısa ve eyleme dönük tutun.
+# =====================================================================
+modcheck:
+  fabric-gerekli: "<red>Bu sunucuya yalnızca Fabric istemcisiyle girebilirsiniz.</red>"
+  eslik-modu-yok: "<red>Sunucunun mod kontrolü yanıt alamadı.</red><newline><gray>Gerekli modlar kurulu değil ya da eksik.</gray>"
+  eksik-mod: "<red>Sunucuya girebilmek için gerekli modlar eksik.</red><newline><gray>Eksik: <white><modlar></white></gray>"
+  eski-surum: "<red><mod> modunun sürümü çok eski.</red><newline><gray>Gereken: <white><gereken></white> <dark_gray>|</dark_gray> Sizde: <white><mevcut></white></gray>"
+  yasakli-mod: "<red>Bu sunucuda izin verilmeyen bir mod kullanıyorsunuz: <white><mod></white></red>"
+  gecersiz-cevap: "<red>Mod listeniz okunamadı.</red><newline><gray>İstemciniz beklenmeyen bir yanıt gönderdi.</gray>"
+  kurulum-yonergesi: "<yellow>Modları kurmak için mod kurulum uygulamasını tekrar çalıştırın.</yellow>"
+  dogrulandi: "<green>Mod kontrolü tamam, iyi oyunlar!</green>"

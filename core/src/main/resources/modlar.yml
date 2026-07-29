@@ -1,0 +1,149 @@
+# ==========================================================================
+#  HalilIbrahimMMO - Zorunlu Fabric mod doğrulaması
+# ==========================================================================
+#  Sunucuya giren her oyuncunun Fabric kullandığını ve aşağıdaki zorunlu
+#  modların tamamını kurduğunu kontrol eder. Oyuncu bunların dışında
+#  istediği kadar ekstra mod kullanabilir; yalnızca "yasakli-modlar"
+#  listesindekiler engellenir.
+#
+#  ÖNEMLİ - bu bir hile koruması DEĞİLDİR. Kontrol, oyuncunun istemcisinde
+#  çalışan eşlik mod'unun (hmmo-client) bildirdiği listeye dayanır;
+#  değiştirilmiş bir istemci yalan söyleyebilir. Amacı, yanlış modpack
+#  kuran iyi niyetli oyuncuyu bozuk bir oyun deneyiminden korumaktır.
+# ==========================================================================
+
+dogrulama:
+  # Kapatılırsa hiçbir kontrol yapılmaz, hiçbir oyuncu atılmaz.
+  # Geliştirme/bakım sırasında bunu false yapın.
+  etkin: true
+
+  # İstemcinin mod listesini göndermesi için tanınan süre. Bu süre içinde
+  # cevap gelmezse oyuncu "eşlik mod'u yok" gerekçesiyle atılır.
+  zaman-asimi-saniye: 10
+
+  # İstemci markasını (client brand) kontrol eder. Fabric olmayan bir
+  # istemci mod listesi beklemeden anında atılır.
+  brand-kontrolu: true
+
+  # Marka bilgisi girişten hemen sonra gelmez; bu kadar tik beklenir.
+  brand-gecikme-tik: 20
+
+  # İstemcinin bildirebileceği azami mod sayısı. Fabric API tek başına
+  # ~100 alt modül olarak göründüğü için tipik bir oyuncu 150-200 mod
+  # bildirir; bu değeri düşürmeyin.
+  azami-mod-sayisi: 512
+
+  # Bu izne sahip oyuncular doğrulamadan tamamen muaftır.
+  # Kendinize vermeyi unutmayın, yoksa siz de giremezsiniz.
+  bypass-izni: "hmmo.mod.bypass"
+
+# --------------------------------------------------------------------------
+#  ZORUNLU MODLAR
+# --------------------------------------------------------------------------
+#  id            : Mod'un fabric.mod.json içindeki kendi kimliği. Jar dosya
+#                  adı DEĞİLDİR. Yanlış bir id, doğru modpack'i kurmuş TÜM
+#                  oyuncuların atılmasına yol açar.
+#  gorunen-ad    : Oyuncuya gösterilecek ad (atma mesajında görünür).
+#  minimum-versiyon : ALT SINIRDIR. Oyuncu daha yeni sürüm kurabilir,
+#                  yalnızca daha eskisi reddedilir.
+#
+#  Bu listeyi elle yazmayın: modpack güncellendiğinde
+#  tools/mod-listesi-cikar.ps1 script'ini çalıştırıp çıktısını buraya
+#  kopyalayın. Script her jar'ın kendi fabric.mod.json'unu okur.
+# --------------------------------------------------------------------------
+zorunlu-modlar:
+  # Fabric Loader mods klasöründe bir jar olarak yer almaz, bu yüzden
+  # script onu bulamaz; elle eklenmiştir. Sürümü sabitlenmiyor.
+  - id: "fabricloader"
+    gorunen-ad: "Fabric Loader"
+    minimum-versiyon: "0.17.0"
+
+  # Sunucunun mod doğrulamasını yapan eşlik mod'u. Bu mod olmadan hiçbir
+  # oyuncu doğrulamayı geçemez.
+  - id: "hmmo-client"
+    gorunen-ad: "HalilIbrahimMMO İstemci Mod'u"
+    minimum-versiyon: "1.0.0"
+
+  - id: "appleskin"
+    gorunen-ad: "AppleSkin"
+    minimum-versiyon: "3.0.10+mc26.2"
+  - id: "architectury"
+    gorunen-ad: "Architectury"
+    minimum-versiyon: "21.0.4"
+  - id: "cloth-config"
+    gorunen-ad: "Cloth Config v26.2"
+    minimum-versiyon: "26.2.155"
+  - id: "collective"
+    gorunen-ad: "Collective"
+    minimum-versiyon: "8.39"
+  - id: "debugify"
+    gorunen-ad: "Debugify"
+    minimum-versiyon: "26.2.0.0"
+  - id: "distanthorizons"
+    gorunen-ad: "Distant Horizons"
+    minimum-versiyon: "3.2.0-b"
+  - id: "entityculling"
+    gorunen-ad: "EntityCulling"
+    minimum-versiyon: "1.10.5"
+  - id: "fabric-api"
+    gorunen-ad: "Fabric API"
+    minimum-versiyon: "0.154.2+26.2"
+  - id: "fabric-language-kotlin"
+    gorunen-ad: "Fabric Language Kotlin"
+    minimum-versiyon: "1.13.12+kotlin.2.4.0"
+  - id: "ferritecore"
+    gorunen-ad: "FerriteCore"
+    minimum-versiyon: "9.0.0"
+  - id: "fullbrightnesstoggle"
+    gorunen-ad: "Full Brightness Toggle"
+    minimum-versiyon: "4.5"
+  - id: "immediatelyfast"
+    gorunen-ad: "ImmediatelyFast"
+    minimum-versiyon: "1.16.2+26.2"
+  - id: "iris"
+    gorunen-ad: "Iris"
+    minimum-versiyon: "1.11.2+mc26.2"
+  - id: "jade"
+    gorunen-ad: "Jade"
+    minimum-versiyon: "26.2.8+fabric"
+  - id: "lithium"
+    gorunen-ad: "Lithium"
+    minimum-versiyon: "0.25.2+mc26.2"
+  - id: "modmenu"
+    gorunen-ad: "Mod Menu"
+    minimum-versiyon: "20.0.1"
+  - id: "placeholder-api"
+    gorunen-ad: "Placeholder API"
+    minimum-versiyon: "3.1.0-beta.1+26.2"
+  - id: "reeses-sodium-options"
+    gorunen-ad: "Reese's Sodium Options"
+    minimum-versiyon: "2.2.3+mc26.2"
+  - id: "sodium"
+    gorunen-ad: "Sodium"
+    minimum-versiyon: "0.9.1+mc26.2"
+  - id: "sodium-extra"
+    gorunen-ad: "Sodium Extra"
+    minimum-versiyon: "0.9.3+mc26.2"
+  - id: "voicechat"
+    gorunen-ad: "Simple Voice Chat"
+    minimum-versiyon: "2.6.20+26.2"
+  - id: "xaerominimap"
+    gorunen-ad: "Xaero's Minimap"
+    minimum-versiyon: "26.4.2"
+  - id: "yet_another_config_lib_v3"
+    gorunen-ad: "YetAnotherConfigLib"
+    minimum-versiyon: "3.9.5+26.2-fabric"
+  - id: "zoomify"
+    gorunen-ad: "Zoomify"
+    minimum-versiyon: "2.16.1+26.2"
+
+# --------------------------------------------------------------------------
+#  YASAKLI MODLAR
+# --------------------------------------------------------------------------
+#  Bu id'lerden herhangi biri bildirilirse oyuncu atılır. Liste boş
+#  bırakılabilir. Yalnızca dürüst oyuncuyu engeller (bkz. yukarıdaki uyarı).
+# --------------------------------------------------------------------------
+yasakli-modlar: []
+#  Örnek:
+#  - id: "xray"
+#    gorunen-ad: "X-Ray"

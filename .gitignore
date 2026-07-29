@@ -1,9 +1,13 @@
-# Gradle
+# =====================================================================
+#  HalilIbrahimMMO - .gitignore
+# =====================================================================
+
+# --- Gradle / derleme ciktilari ---------------------------------------
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 
-# IDE
+# --- IDE ---------------------------------------------------------------
 .idea/
 *.iml
 .vscode/
@@ -12,16 +16,44 @@ build/
 .settings/
 out/
 
-# Local test server (run-paper)
+# --- Yerel test sunucusu (run-paper) -----------------------------------
+# core/run/ altindaki her sey tek komutla yeniden uretilir: dunya, Paper
+# jar'i, kutuphaneler, loglar. Depoya girmemeli.
 run/
 
-# OS
+# --- Isletim sistemi ---------------------------------------------------
 .DS_Store
 Thumbs.db
 
-# Logs
+# --- Loglar ------------------------------------------------------------
 *.log
 run_server_log*.txt
 
-# Local secrets / overrides
+# --- Yerel gizli bilgiler / gecersiz kilmalar --------------------------
 local.properties
+
+# =====================================================================
+#  Depoya GIRMEYECEK ic gelistirme belgeleri
+# =====================================================================
+# Bunlar projeyi gelistirirken kullanilan ic notlar ve planlama
+# belgeleridir; calisan kodun parcasi degildir ve herkese acik depoda
+# yer almalari istenmiyor. Diskte durmaya devam ederler, yalnizca git
+# tarafindan takip edilmezler.
+
+CLAUDE.md
+PROJECT_MEMORY.md
+tasks/
+
+# Claude Code / editor oturum ayarlari
+.claude/
+
+# =====================================================================
+#  Uretilen ciktilar
+# =====================================================================
+# tools/mod-listesi-cikar.ps1 script'i depoda kalir, urettigi liste
+# kalmaz: her modpack guncellemesinde yeniden uretilir ve sunucuya
+# ozeldir.
+tools/modlar.yml
+
+# Fabric sablon indirmeleri, gecici zip'ler
+template-mod-*.zip

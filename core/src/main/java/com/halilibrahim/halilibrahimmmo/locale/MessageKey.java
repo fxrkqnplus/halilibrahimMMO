@@ -486,7 +486,26 @@ public enum MessageKey {
     GUI_COSMETICS_TITLE("gui.kozmetik.baslik"),
     GUI_COSMETIC_ITEM("gui.kozmetik.oge"),
     GUI_COSMETIC_ITEM_LORE_UNLOCKED("gui.kozmetik.oge-aciklama-acik"),
-    GUI_COSMETIC_ITEM_LORE_LOCKED("gui.kozmetik.oge-aciklama-kilitli");
+    GUI_COSMETIC_ITEM_LORE_LOCKED("gui.kozmetik.oge-aciklama-kilitli"),
+
+    MODCHECK_KICK_NOT_FABRIC("modcheck.fabric-gerekli"),
+    MODCHECK_KICK_TIMEOUT("modcheck.eslik-modu-yok"),
+    MODCHECK_KICK_MISSING("modcheck.eksik-mod"),
+    MODCHECK_KICK_OUTDATED("modcheck.eski-surum"),
+    MODCHECK_KICK_FORBIDDEN("modcheck.yasakli-mod"),
+    MODCHECK_KICK_INVALID("modcheck.gecersiz-cevap"),
+    MODCHECK_INSTALLER_HINT("modcheck.kurulum-yonergesi"),
+    MODCHECK_VERIFIED("modcheck.dogrulandi"),
+
+    GUI_ADMIN_MODCHECK_ITEM("gui.yonetici.modcheck-oge"),
+    GUI_ADMIN_MODCHECK_LORE("gui.yonetici.modcheck-aciklama"),
+    GUI_ADMIN_MODCHECK_TITLE("gui.yonetici.modcheck-baslik"),
+    GUI_ADMIN_MODCHECK_DISABLED("gui.yonetici.modcheck-kapali"),
+    GUI_ADMIN_MODCHECK_SUMMARY("gui.yonetici.modcheck-ozet"),
+    GUI_ADMIN_MODCHECK_ENTRY_VERIFIED("gui.yonetici.modcheck-oyuncu-dogrulandi"),
+    GUI_ADMIN_MODCHECK_ENTRY_PENDING("gui.yonetici.modcheck-oyuncu-bekliyor"),
+    GUI_ADMIN_MODCHECK_ENTRY_EXEMPT("gui.yonetici.modcheck-oyuncu-muaf"),
+    GUI_ADMIN_MODCHECK_ENTRY_LORE("gui.yonetici.modcheck-oyuncu-aciklama");
 
     private final String path;
 

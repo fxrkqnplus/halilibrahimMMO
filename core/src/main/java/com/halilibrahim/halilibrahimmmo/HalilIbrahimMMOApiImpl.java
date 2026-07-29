@@ -30,6 +30,7 @@ import com.halilibrahim.halilibrahimmmo.leaderboards.LeaderboardEntry;
 import com.halilibrahim.halilibrahimmmo.leaderboards.LeaderboardService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.logging.PluginLogger;
+import com.halilibrahim.halilibrahimmmo.modcheck.ModVerificationService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestDefinition;
@@ -75,6 +76,7 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
     private final FeedbackService feedback;
     private final WealthService wealth;
     private final BossService bosses;
+    private final ModVerificationService modVerification;
 
     public HalilIbrahimMMOApiImpl(
             HalilIbrahimMMOPlugin plugin,
@@ -94,7 +96,8 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
             CosmeticService cosmetics,
             FeedbackService feedback,
             WealthService wealth,
-            BossService bosses
+            BossService bosses,
+            ModVerificationService modVerification
     ) {
         this.plugin = plugin;
         this.configService = configService;
@@ -114,6 +117,7 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
         this.feedback = feedback;
         this.wealth = wealth;
         this.bosses = bosses;
+        this.modVerification = modVerification;
     }
 
     @Override
@@ -148,6 +152,9 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
             feedback.reload();
             wealth.reload();
             bosses.reload();
+            // Reloading the mod list deliberately does not re-verify players who are
+            // already online; it only changes what the next join is judged against.
+            modVerification.reload();
             logger.info("Yapilandirma ve mesajlar basariyla yeniden yuklendi.");
             return true;
         } catch (Exception exception) {

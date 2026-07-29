@@ -845,6 +845,44 @@ Geliştirici API'si, değişmez beceri/sınıf/görev tanımlarını ve asenkron
 okunur oyuncu sorgularını sunar. Harici eklentilerin XP vermesine veya
 kabiliyet tetiklemesine izin vermez.
 
+## Zorunlu Fabric modları (`modlar.yml`)
+
+Sunucuya giren her oyuncunun Fabric kullandığı ve önceden belirlenmiş mod
+listesinin tamamını kurduğu, giriş anında kontrol edilir. Kontrolü geçemeyen
+oyuncu, hangi modun eksik olduğunu ve ne yapması gerektiğini yazan Türkçe bir
+mesajla sunucudan atılır. Bunun dışında oyuncu istediği kadar ekstra mod
+kullanabilir; yalnızca `yasakli-modlar` listesindekiler engellenir.
+
+**Bu bir hile koruması değildir.** Paper, istemcinin mod listesini kendi
+başına göremez; kontrol, zorunlu listedeki `hmmo-client` eşlik mod'unun
+bildirdiği listeye dayanır. Değiştirilmiş bir istemci yalan söyleyebilir.
+Amaç, yanlış modpack kuran iyi niyetli oyuncuyu bozuk bir deneyimden
+korumaktır.
+
+Ayarlar `modlar.yml` içindedir:
+
+- `dogrulama.etkin` — tüm sistemi tek anahtarla kapatır (bakım/geliştirme).
+- `dogrulama.zaman-asimi-saniye` — istemcinin cevap vermesi için tanınan süre.
+- `dogrulama.brand-kontrolu` — Fabric olmayan istemciyi liste beklemeden atar.
+- `dogrulama.azami-mod-sayisi` — bildirilebilecek azami mod sayısı. Fabric API
+  tek başına ~100 alt modül olarak göründüğü için tipik bir oyuncu 150-200 mod
+  bildirir; varsayılan 512'yi düşürmeyin.
+- `dogrulama.bypass-izni` — varsayılan `hmmo.mod.bypass`. **Bu izni kendinize
+  vermeyi unutmayın**, aksi halde siz de sunucuya giremezsiniz.
+- `zorunlu-modlar` — her kayıtta mod id'si, görünen ad ve minimum sürüm.
+  `minimum-versiyon` bir **alt sınırdır**: oyuncu daha yeni sürüm kurabilir.
+
+Mod id'si jar dosyasının adı değildir; her jar'ın içindeki `fabric.mod.json`
+dosyasında yazan kimliktir. Listeyi elle yazmayın — modpack her
+güncellendiğinde `tools/mod-listesi-cikar.ps1` script'ini çalıştırıp çıktısını
+`modlar.yml`'ye kopyalayın.
+
+Çevrimiçi oyuncuların doğrulama durumunu `/haliladmin` panelindeki **Mod
+Doğrulama** ekranından görebilirsiniz (salt okunur).
+
+Eşlik mod'unun kaynak kodu `clientmod/` klasöründedir ve kök derlemeden
+bağımsızdır; ayrıntılar için `clientmod/README.md`.
+
 ## Test
 
 `./gradlew test`, hızlı birim/yapılandırma test paketini çalıştırır (harici
