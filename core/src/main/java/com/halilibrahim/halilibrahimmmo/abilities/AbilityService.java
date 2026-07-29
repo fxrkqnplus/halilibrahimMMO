@@ -120,4 +120,34 @@ public interface AbilityService extends PluginService {
      * state. Safe to call even if no feedback is currently showing.
      */
     void clearActivationFeedback(Player player);
+
+    /**
+     * The flourish {@link AbilityEffectType#LIFE_STEAL} plays when a creature
+     * this player was draining actually dies. Purely audiovisual - the healing
+     * itself happened blow by blow in {@link #handleEntityDamage} - so a caller
+     * with no life-steal running is a no-op.
+     *
+     * @param at where the creature fell, which is where the soul is torn from
+     */
+    void handleCreatureDeath(Player killer, org.bukkit.Location at);
+
+    /**
+     * Puts back the Efficiency level of every pickaxe in this player's
+     * inventory that {@link AbilityEffectType#TOOL_EFFICIENCY} temporarily
+     * raised. The original level rides on the item's own persistent data, so
+     * this is correct however the item moved in the meantime, and is a no-op
+     * for a player holding nothing marked.
+     */
+    void restoreEfficiency(Player player);
+
+    /**
+     * Runs a mine bomb's clearing sweep in place of the vanilla explosion its
+     * listener suppressed. Bounded and spread across ticks; see the
+     * implementation for why both of those are required rather than tuning.
+     *
+     * @param radius how far the charge reaches, as tagged on the charge itself
+     *               so a live edit to {@code abilities.yml} cannot change what
+     *               an already-lit bomb does
+     */
+    void detonateMineBomb(org.bukkit.Location at, UUID ownerId, String abilityId, int radius);
 }

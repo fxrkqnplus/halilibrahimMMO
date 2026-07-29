@@ -13,11 +13,14 @@ import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import com.halilibrahim.halilibrahimmmo.skills.TreeShape;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -25,16 +28,22 @@ import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -103,6 +112,46 @@ public final class YamlAbilityService implements AbilityService {
      * are deliberately independent.
      */
     private static final int LOVE_MODE_TICKS = 600;
+    /**
+     * Blocks no sweep and no charge may ever take. Bedrock and the portal
+     * frames because they cannot be replaced; spawners, ancient debris and the
+     * vault/trial blocks because they are the point of the place they are in;
+     * anything with an inventory is handled separately by its block state.
+     */
+    private static final Set<Material> PROTECTED_BLOCKS = Set.of(
+            Material.BEDROCK, Material.END_PORTAL_FRAME, Material.SPAWNER, Material.TRIAL_SPAWNER,
+            Material.VAULT, Material.REINFORCED_DEEPSLATE, Material.OBSIDIAN, Material.CRYING_OBSIDIAN,
+            Material.RESPAWN_ANCHOR, Material.BEACON, Material.CONDUIT, Material.ENCHANTING_TABLE,
+            Material.ANCIENT_DEBRIS, Material.END_PORTAL, Material.NETHER_PORTAL, Material.END_GATEWAY
+    );
+    /** How long the ores a mine bomb uncovers keep glowing, in ticks. */
+    private static final long MINE_BOMB_GLOW_TICKS = 100L;
+    /** How long a mine bomb sits there before it goes off, in ticks. */
+    private static final int MINE_BOMB_FUSE_TICKS = 60;
+    /**
+     * How many blocks one mine bomb inspects per tick, and how many it may
+     * clear in total.
+     *
+     * <p>Both are load-bearing rather than tuning. A 35-block radius is roughly
+     * 180 000 positions; doing that in one tick would stall the region for
+     * whole seconds, so the charge walks outward one shell at a time across
+     * ticks. The ceiling is the second brake: a charge fired inside solid
+     * deepslate would otherwise clear its entire sphere and hand the server a
+     * relight job proportional to it.</p>
+     */
+    private static final int MINE_BOMB_SCAN_PER_TICK = 4_000;
+    private static final int MINE_BOMB_MAX_CLEARED = 60_000;
+    /** How far {@link AbilityEffectType#PHANTOM_STEP} reaches when it makes creatures forget the player. */
+    private static final double PHANTOM_STEP_RADIUS = 40.0D;
+    /** How far {@link AbilityEffectType#GUARDIAN_CALL} recruits from, and how far its guardians will chase. */
+    private static final double GUARDIAN_RADIUS = 14.0D;
+    private static final double GUARDIAN_HUNT_RADIUS = 20.0D;
+    /** How close a guardian has to get before its charge actually lands. */
+    private static final double GUARDIAN_STRIKE_RANGE = 2.6D;
+    /** How fast a summoned guardian runs, as a multiple of its own walking speed. */
+    private static final double GUARDIAN_CHARGE_SPEED = 1.7D;
+    /** Ticks between guardian/phantom upkeep passes - often enough to look continuous, rare enough to be free. */
+    private static final long UPKEEP_PERIOD_TICKS = 5L;
 
     private final JavaPlugin plugin;
     private final SkillService skills;
@@ -131,6 +180,11 @@ public final class YamlAbilityService implements AbilityService {
     private final ConcurrentHashMap<UUID, Integer> glintedSlots = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<RevealedBlock, RevealedOre> revealedOres = new ConcurrentHashMap<>();
     private final ThreadLocal<Set<Block>> secondaryBreaks = ThreadLocal.withInitial(HashSet::new);
+    /** Written onto a temporarily-enchanted pickaxe: the Efficiency level it had before. */
+    private final NamespacedKey efficiencyKey;
+    private final NamespacedKey mineBombKey;
+    private final NamespacedKey mineBombOwnerKey;
+    private final NamespacedKey mineBombAbilityKey;
 
     public YamlAbilityService(
             JavaPlugin plugin, SkillService skills, MessageService messages, ProfileService profiles,
@@ -145,6 +199,23 @@ public final class YamlAbilityService implements AbilityService {
         this.placedBlocks = placedBlocks;
         this.classModifiers = classModifiers;
         this.classLevelLookup = classLevelLookup;
+        this.efficiencyKey = new NamespacedKey(plugin, "gecici-verimlilik");
+        this.mineBombKey = new NamespacedKey(plugin, "maden-bombasi");
+        this.mineBombOwnerKey = new NamespacedKey(plugin, "maden-bombasi-sahip");
+        this.mineBombAbilityKey = new NamespacedKey(plugin, "maden-bombasi-kabiliyet");
+    }
+
+    /** The tags {@code AbilityExplosionListener} reads off a primed charge to know it is ours. */
+    public NamespacedKey mineBombKey() {
+        return mineBombKey;
+    }
+
+    public NamespacedKey mineBombOwnerKey() {
+        return mineBombOwnerKey;
+    }
+
+    public NamespacedKey mineBombAbilityKey() {
+        return mineBombAbilityKey;
     }
 
     @Override
@@ -237,7 +308,7 @@ public final class YamlAbilityService implements AbilityService {
             return;
         }
         AbilityDefinition definition = settings().definitions().get(current.abilityId());
-        if (definition == null || !isEligibleBlock(definition, event.getBlock())) {
+        if (definition == null || !isSweepable(definition, event.getBlock())) {
             return;
         }
         // Ağaç Kırıcı stays armed until it finds an actual tree: a village
@@ -245,17 +316,29 @@ public final class YamlAbilityService implements AbilityService {
         // like a trunk is, and chopping a building down is never what the
         // player asked for. Every other effect fires on the block it was
         // pointed at.
+        //
+        // Rejection is deliberately silent. The ability is not consumed and
+        // nothing went wrong from the player's side - they chopped a log, which
+        // is a thing people do all day - so a chat line here was pure noise on
+        // an action that had already done what it looked like it would.
         if (definition.effectType() == AbilityEffectType.TREE_FELL && !TreeShape.isNaturalTreeRoot(event.getBlock())) {
-            messages.send(player, MessageKey.ABILITY_REQUIRES_TREE, Map.of("kabiliyet", definition.displayName()));
             return;
         }
-        armed.remove(player.getUniqueId(), current);
-        clearActivationFeedback(player);
+        // A sustained sweep is a mode, not a single shot: it keeps felling or
+        // tunnelling until the clock or the energy bar ends it, which is what
+        // makes the per-block drain the number that decides how far one
+        // activation reaches.
+        boolean sustained = definition.effectType().isSustainedSweep();
+        if (!sustained) {
+            armed.remove(player.getUniqueId(), current);
+            clearActivationFeedback(player);
+        }
         // Creative lifts every budget an ability answers to (§16.5), energy
         // included, so a sweep there is never cut short by an empty bar.
         EnergyDrain drain = isCreative(player)
                 ? EnergyDrain.none()
-                : new EnergyDrain(energy, definition.energyPerBlock());
+                : new EnergyDrain(energy, classModifiers.apply(player.getUniqueId())
+                        .adjustedEnergyPerBlock(definition.id(), definition.energyPerBlock()));
         int broken = switch (definition.effectType()) {
             case EXCAVATE -> breakSecondaryBlocks(player, event.getBlock(), excavationArea(event.getBlock(),
                     candidate -> isEligibleBlock(definition, candidate)), current.limit(), drain);
@@ -264,17 +347,45 @@ public final class YamlAbilityService implements AbilityService {
                         candidate -> isEligibleBlock(definition, candidate));
                 yield breakSecondaryBlocks(player, event.getBlock(), cube, cube.size(), drain);
             }
+            // Digs whatever the pickaxe can, not only the skill's own ores: a
+            // tunnelling tool that refused everything but diamond would leave
+            // the player standing in the stone it was supposed to remove.
+            case BULLDOZER -> {
+                List<Block> cube = cubeArea(event.getBlock(), current.limit(), YamlAbilityService::isDiggable);
+                yield breakSecondaryBlocks(player, event.getBlock(), cube, cube.size(), drain);
+            }
             case TREE_FELL, VEIN_MINE -> breakSecondaryBlocks(player, event.getBlock(),
                     connectedBlocks(event.getBlock(), block -> block.getType() == event.getBlock().getType(), current.limit()),
                     current.limit(), drain);
             default -> throw new IllegalStateException("Ability effect cannot be armed by a block break: " + definition.effectType());
         };
-        messages.send(player, MessageKey.ABILITY_TRIGGERED, Map.of("kabiliyet", definition.displayName()));
+        if (!sustained) {
+            messages.send(player, MessageKey.ABILITY_TRIGGERED, Map.of("kabiliyet", definition.displayName()));
+        }
         if (drain.exhausted()) {
             messages.send(player, MessageKey.ABILITY_ENERGY_DEPLETED, Map.of(
                     "kabiliyet", definition.displayName(), "sayi", Integer.toString(broken)
             ));
+            if (sustained) {
+                armed.remove(player.getUniqueId(), current);
+                clearActivationFeedback(player);
+            }
         }
+    }
+
+    /**
+     * Whether this block can start {@code definition}'s sweep at all.
+     *
+     * <p>Every sweep but one is scoped to its own skill's configured materials,
+     * which is what keeps {@code skills.yml} the single source of truth for
+     * what an ore or a log is. {@link AbilityEffectType#BULLDOZER} is the
+     * exception on purpose: it is a shape, not a harvest, and the block it
+     * starts on is whatever the player happened to be digging.</p>
+     */
+    private boolean isSweepable(AbilityDefinition definition, Block block) {
+        return definition.effectType() == AbilityEffectType.BULLDOZER
+                ? isDiggable(block)
+                : isEligibleBlock(definition, block);
     }
 
     private void applyDropBuff(Player player, BlockBreakEvent event) {
@@ -439,18 +550,31 @@ public final class YamlAbilityService implements AbilityService {
             return false;
         }
         ArmedAbility instant = activeEffects.remove(playerId);
+        ArmedAbility buff = damageBuffs.remove(playerId);
         armed.remove(playerId);
-        damageBuffs.remove(playerId);
         dropBuffs.remove(playerId);
         clearRevealedOres(playerId);
-        if (instant != null) {
-            AbilityDefinition definition = settings().definitions().get(instant.abilityId());
-            if (definition != null) {
-                clearInstantEffect(player, definition);
-            }
-        }
+        clearLeftovers(player, instant);
+        clearLeftovers(player, buff);
         clearActivationFeedback(player);
         return true;
+    }
+
+    /**
+     * Undoes whatever an ability was still holding on the player - a potion
+     * effect it applied, an enchantment it lent their pickaxe. Takes the state
+     * entry rather than the definition because the caller has only ever removed
+     * the former, and a state entry naming an ability that has since been
+     * removed from configuration simply has nothing left to undo.
+     */
+    private void clearLeftovers(Player player, ArmedAbility state) {
+        if (state == null) {
+            return;
+        }
+        AbilityDefinition definition = settings().definitions().get(state.abilityId());
+        if (definition != null) {
+            clearInstantEffect(player, definition);
+        }
     }
 
     /**
@@ -470,8 +594,8 @@ public final class YamlAbilityService implements AbilityService {
         lastSelectedAbility.remove(playerId);
         lastSwitchMillis.remove(playerId);
         ArmedAbility instant = activeEffects.remove(playerId);
+        ArmedAbility buff = damageBuffs.remove(playerId);
         armed.remove(playerId);
-        damageBuffs.remove(playerId);
         dropBuffs.remove(playerId);
         clearRevealedOres(playerId);
         Player player = plugin.getServer().getPlayer(playerId);
@@ -484,12 +608,8 @@ public final class YamlAbilityService implements AbilityService {
         // the held item's glint and the action bar may only be touched from the
         // region that owns the player.
         player.getScheduler().run(plugin, task -> {
-            if (instant != null) {
-                AbilityDefinition definition = settings().definitions().get(instant.abilityId());
-                if (definition != null) {
-                    clearInstantEffect(player, definition);
-                }
-            }
+            clearLeftovers(player, instant);
+            clearLeftovers(player, buff);
             clearActivationFeedback(player);
         }, null);
     }
@@ -536,18 +656,13 @@ public final class YamlAbilityService implements AbilityService {
     @Override
     public void deactivate(Player player) {
         UUID playerId = player.getUniqueId();
-        ArmedAbility instant = activeEffects.get(playerId);
+        ArmedAbility instant = activeEffects.remove(playerId);
+        ArmedAbility buff = damageBuffs.remove(playerId);
         armed.remove(playerId);
-        damageBuffs.remove(playerId);
         dropBuffs.remove(playerId);
-        activeEffects.remove(playerId);
         clearRevealedOres(playerId);
-        if (instant != null) {
-            AbilityDefinition definition = settings().definitions().get(instant.abilityId());
-            if (definition != null) {
-                clearInstantEffect(player, definition);
-            }
-        }
+        clearLeftovers(player, instant);
+        clearLeftovers(player, buff);
         clearActivationFeedback(player);
         messages.send(player, MessageKey.ABILITY_DEACTIVATED);
     }
@@ -559,6 +674,14 @@ public final class YamlAbilityService implements AbilityService {
             case AREA_HEAL -> player.removePotionEffect(PotionEffectType.REGENERATION);
             case SPEED_BURST -> player.removePotionEffect(PotionEffectType.SPEED);
             case NIGHT_VISION -> player.removePotionEffect(PotionEffectType.NIGHT_VISION);
+            case PHANTOM_STEP -> {
+                player.removePotionEffect(PotionEffectType.INVISIBILITY);
+                player.removePotionEffect(PotionEffectType.SPEED);
+            }
+            case LIFE_STEAL -> player.removePotionEffect(PotionEffectType.SPEED);
+            // The enchantment is on an item the player still holds, so unlike
+            // every potion effect above it cannot simply be allowed to expire.
+            case TOOL_EFFICIENCY -> restoreEfficiency(player);
             default -> {
                 // Every other effect either already resolved (a one-shot area
                 // sweep) or has its own expiry (the ore outlines).
@@ -710,6 +833,18 @@ public final class YamlAbilityService implements AbilityService {
             messages.send(player, MessageKey.ABILITY_REQUIRES_MINE, Map.of("kabiliyet", definition.displayName()));
             return;
         }
+        // The same shape, for the same reason: a call for help with nobody
+        // around to answer it is not a use of the ability, so it must not cost
+        // energy or start a cooldown.
+        if (definition.effectType() == AbilityEffectType.GUARDIAN_CALL && nearbyGuardians(player, 1).isEmpty()) {
+            messages.send(player, MessageKey.ABILITY_REQUIRES_ANIMALS, Map.of("kabiliyet", definition.displayName()));
+            return;
+        }
+        if (definition.effectType() == AbilityEffectType.TOOL_EFFICIENCY
+                && !Tag.ITEMS_PICKAXES.isTagged(player.getInventory().getItemInMainHand().getType())) {
+            messages.send(player, MessageKey.ABILITY_REQUIRES_PICKAXE, Map.of("kabiliyet", definition.displayName()));
+            return;
+        }
         // Creative mode lifts every budget an ability normally answers to: no
         // cooldown, no energy, and a duration that outlasts any session, so it
         // stays on until it is explicitly switched off again. The point of
@@ -750,7 +885,7 @@ public final class YamlAbilityService implements AbilityService {
         ArmedAbility active = new ArmedAbility(definition.id(), now + activeMillis, limit);
         String duration = DurationFormatter.ofMillis(messages, activeMillis);
         switch (definition.effectType()) {
-            case EXCAVATE, TREE_FELL, VEIN_MINE, BLAST_MINE -> {
+            case EXCAVATE, TREE_FELL, VEIN_MINE, BLAST_MINE, BULLDOZER -> {
                 armed.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ARMED, Map.of(
                         "kabiliyet", definition.displayName(), "sure", duration
@@ -768,9 +903,11 @@ public final class YamlAbilityService implements AbilityService {
             // definition in hand to tell them apart.
             case LIFE_STEAL -> {
                 damageBuffs.put(player.getUniqueId(), active);
+                startBloodOath(player, definition, limit, activeMillis);
                 messages.send(player, MessageKey.ABILITY_ACTIVE_LIFE_STEAL, Map.of(
                         "kabiliyet", definition.displayName(), "sure", duration,
-                        "yuzde", Integer.toString((int) Math.round(definition.damageMultiplier() * 100))
+                        "yuzde", Integer.toString((int) Math.round(
+                                modifiers.adjustedEffectValue(definition.id(), definition.damageMultiplier()) * 100))
                 ));
             }
             case EXTRA_DROP_CHANCE -> {
@@ -800,6 +937,36 @@ public final class YamlAbilityService implements AbilityService {
                 activeEffects.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ACTIVE_LOVE_CALL, Map.of(
                         "kabiliyet", definition.displayName(), "sayi", Integer.toString(called)
+                ));
+            }
+            case MINE_BOMB -> {
+                placeMineBomb(player, definition, limit);
+                activeEffects.put(player.getUniqueId(), active);
+                messages.send(player, MessageKey.ABILITY_ACTIVE_MINE_BOMB, Map.of(
+                        "kabiliyet", definition.displayName(), "yaricap", Integer.toString(limit)
+                ));
+            }
+            case TOOL_EFFICIENCY -> {
+                applyToolEfficiency(player, definition, limit, activeMillis);
+                activeEffects.put(player.getUniqueId(), active);
+                messages.send(player, MessageKey.ABILITY_ACTIVE_TOOL_EFFICIENCY, Map.of(
+                        "kabiliyet", definition.displayName(), "sure", duration,
+                        "seviye", Integer.toString(limit)
+                ));
+            }
+            case PHANTOM_STEP -> {
+                startPhantomStep(player, definition, activeMillis);
+                activeEffects.put(player.getUniqueId(), active);
+                messages.send(player, MessageKey.ABILITY_ACTIVE_PHANTOM_STEP, Map.of(
+                        "kabiliyet", definition.displayName(), "sure", duration
+                ));
+            }
+            case GUARDIAN_CALL -> {
+                int answered = startGuardianCall(player, definition, limit, activeMillis, modifiers);
+                activeEffects.put(player.getUniqueId(), active);
+                messages.send(player, MessageKey.ABILITY_ACTIVE_GUARDIAN_CALL, Map.of(
+                        "kabiliyet", definition.displayName(), "sayi", Integer.toString(answered),
+                        "sure", duration
                 ));
             }
             default -> {
@@ -1171,6 +1338,335 @@ public final class YamlAbilityService implements AbilityService {
     }
 
     /**
+     * Kan Yemini's own presence, separate from the healing itself.
+     *
+     * <p>Three things run for the ability's duration: the Speed the oath is
+     * supposed to feel like ({@code limit} carries the level, so a talent can
+     * raise it - the same dual-purposing of {@code limit} this file has used
+     * since ORE_REVEAL's radius), a red haze at the edge of the caster's own
+     * view, and nothing else. <strong>The haze is dust particles spawned in a
+     * shell around the player's head and sent to that one player</strong>,
+     * because a server genuinely cannot draw on a vanilla client's HUD - there
+     * is no packet for "tint the screen". Particles right at the camera are the
+     * only honest way to get the same read, and they are private to the caster
+     * for exactly the same reason a screen tint would be.</p>
+     */
+    private void startBloodOath(Player player, AbilityDefinition definition, int speedLevel, long activeMillis) {
+        int durationTicks = (int) Math.max(1L, activeMillis / 50L);
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, durationTicks,
+                Math.max(0, speedLevel - 1), false, false));
+        long expiresAt = System.currentTimeMillis() + activeMillis;
+        Particle.DustOptions blood = new Particle.DustOptions(Color.fromRGB(0x8B, 0x00, 0x00), 1.9F);
+        player.getScheduler().runAtFixedRate(plugin, task -> {
+            if (!player.isOnline() || System.currentTimeMillis() >= expiresAt
+                    || !isStillActive(player.getUniqueId(), definition.id())) {
+                task.cancel();
+                return;
+            }
+            Location eye = player.getEyeLocation();
+            for (int i = 0; i < 14; i++) {
+                double angle = 2 * Math.PI * i / 14.0D;
+                Location at = eye.clone().add(Math.cos(angle) * 0.55D, Math.sin(angle) * 0.35D, 0)
+                        .add(eye.getDirection().multiply(0.7D));
+                player.spawnParticle(Particle.DUST, at, 1, 0, 0, 0, 0.0D, blood);
+            }
+        }, null, 1L, UPKEEP_PERIOD_TICKS);
+    }
+
+    /**
+     * The soul torn out of a creature that died under Kan Yemini.
+     *
+     * <p>Called from the death path rather than from the damage path on
+     * purpose: the oath's whole flavour is claiming what is left when something
+     * dies, and firing this on every hit would have turned a moment into a
+     * background hum. Nothing gameplay-affecting happens here - the healing
+     * already happened, blow by blow, in {@link #handleEntityDamage}.</p>
+     */
+    @Override
+    public void handleCreatureDeath(Player killer, Location at) {
+        ArmedAbility active = damageBuffs.get(killer.getUniqueId());
+        if (active == null || active.expiresAtMillis() < System.currentTimeMillis()) {
+            return;
+        }
+        AbilityDefinition definition = settings().definitions().get(active.abilityId());
+        if (definition == null || definition.effectType() != AbilityEffectType.LIFE_STEAL) {
+            return;
+        }
+        World world = at.getWorld();
+        world.playSound(at, Sound.PARTICLE_SOUL_ESCAPE, 1.4F, 0.6F);
+        world.playSound(at, Sound.ENTITY_VEX_DEATH, 0.8F, 0.7F);
+        world.spawnParticle(Particle.SOUL, at.clone().add(0, 1, 0), 30, 0.3D, 0.6D, 0.3D, 0.04D);
+        // The trail from the corpse to the caster is what makes it read as the
+        // soul being taken rather than as the creature simply dying.
+        Vector step = killer.getEyeLocation().toVector().subtract(at.toVector()).multiply(0.1D);
+        Location trail = at.clone().add(0, 0.8D, 0);
+        for (int i = 0; i < 10; i++) {
+            trail.add(step);
+            world.spawnParticle(Particle.SOUL_FIRE_FLAME, trail, 2, 0.05D, 0.05D, 0.05D, 0.0D);
+        }
+    }
+
+    /**
+     * B Planı: for a few seconds nothing hostile knows where the player is.
+     *
+     * <p>Vanilla has no "untargetable" flag, so this is done by taking the
+     * target away from anything currently holding it, every few ticks, for as
+     * long as the ability runs. That is not the same as being invisible -
+     * invisibility alone still lets a creature that already has you keep coming
+     * - and it is the half that actually gets the player out of a fight. The
+     * potion effects are what the player <em>sees</em> and what carries them
+     * away from the place they were losing.</p>
+     */
+    private void startPhantomStep(Player player, AbilityDefinition definition, long activeMillis) {
+        int durationTicks = (int) Math.max(1L, activeMillis / 50L);
+        player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, durationTicks, 0, false, false));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, durationTicks, 1, false, false));
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0F, 1.4F);
+        long expiresAt = System.currentTimeMillis() + activeMillis;
+        player.getScheduler().runAtFixedRate(plugin, task -> {
+            if (!player.isOnline() || System.currentTimeMillis() >= expiresAt
+                    || !isStillActive(player.getUniqueId(), definition.id())) {
+                task.cancel();
+                return;
+            }
+            forgetPlayer(player);
+        }, null, 1L, UPKEEP_PERIOD_TICKS);
+    }
+
+    /** Every creature within reach that is hunting this player loses its target. */
+    private void forgetPlayer(Player player) {
+        for (Entity nearby : player.getNearbyEntities(PHANTOM_STEP_RADIUS, PHANTOM_STEP_RADIUS, PHANTOM_STEP_RADIUS)) {
+            if (nearby instanceof Mob mob && player.equals(mob.getTarget())) {
+                mob.setTarget(null);
+                mob.getWorld().spawnParticle(Particle.SMOKE, mob.getLocation().add(0, 1, 0), 4, 0.2D, 0.3D, 0.2D, 0.01D);
+            }
+        }
+    }
+
+    /**
+     * Madenci Refleksleri: the held pickaxe swings faster for a few seconds.
+     *
+     * <p>Deliberately the real enchantment rather than a Haste potion, because
+     * the request was specifically that it <em>stack</em> on what the pickaxe
+     * already has - an Efficiency V pickaxe becoming Efficiency VIII is a
+     * different, better feeling than a flat speed buff, and it is the one a
+     * miner can already reason about.</p>
+     *
+     * <p><strong>The original level is written onto the item itself</strong>, in
+     * its own persistent data, not into a map in memory. That is what makes the
+     * restore correct across every path a temporarily-enchanted pickaxe can
+     * take: moved between hotbar slots, dropped, handed to somebody else, or
+     * carried through a server restart. Whoever is holding it when the sweep
+     * next runs gets it put back exactly as it was. The one case that outlives
+     * this is a pickaxe stashed in a chest and never picked up again - it stays
+     * enchanted until somebody logs in with it, which is when the join sweep
+     * sees it.</p>
+     */
+    private void applyToolEfficiency(Player player, AbilityDefinition definition, int levels, long activeMillis) {
+        int slot = player.getInventory().getHeldItemSlot();
+        ItemStack tool = player.getInventory().getItem(slot);
+        if (tool == null || tool.getType().isAir()) {
+            return;
+        }
+        ItemMeta meta = tool.getItemMeta();
+        int original = tool.getEnchantmentLevel(Enchantment.EFFICIENCY);
+        meta.getPersistentDataContainer().set(efficiencyKey, PersistentDataType.INTEGER, original);
+        tool.setItemMeta(meta);
+        tool.addUnsafeEnchantment(Enchantment.EFFICIENCY, original + levels);
+        player.getInventory().setItem(slot, tool);
+        player.getWorld().spawnParticle(Particle.ENCHANT, player.getLocation().add(0, 1.2D, 0), 40, 0.5D, 0.7D, 0.5D, 0.6D);
+        player.getScheduler().runDelayed(plugin, task -> restoreEfficiency(player),
+                () -> restoreEfficiency(player), Math.max(1L, activeMillis / 50L));
+    }
+
+    /**
+     * Puts every temporarily-enchanted pickaxe in this player's inventory back
+     * the way it was. Scans the whole inventory rather than one remembered slot
+     * because the player is free to move the pickaxe while the ability runs -
+     * the marker travels with the item, so the item is the thing to look for.
+     */
+    @Override
+    public void restoreEfficiency(Player player) {
+        ItemStack[] contents = player.getInventory().getContents();
+        for (int slot = 0; slot < contents.length; slot++) {
+            ItemStack item = contents[slot];
+            if (item == null || item.getType().isAir() || !item.hasItemMeta()) {
+                continue;
+            }
+            ItemMeta meta = item.getItemMeta();
+            Integer original = meta.getPersistentDataContainer().get(efficiencyKey, PersistentDataType.INTEGER);
+            if (original == null) {
+                continue;
+            }
+            meta.getPersistentDataContainer().remove(efficiencyKey);
+            item.setItemMeta(meta);
+            if (original <= 0) {
+                item.removeEnchantment(Enchantment.EFFICIENCY);
+            } else {
+                item.addUnsafeEnchantment(Enchantment.EFFICIENCY, original);
+            }
+            player.getInventory().setItem(slot, item);
+        }
+    }
+
+    /**
+     * Doğa Ana'nın Koruyucuları: the animals nearby turn on whatever is hunting
+     * the player.
+     *
+     * <p>Setting a target is not enough on its own - a cow has no attack goal
+     * whatever its target is - so the upkeep pass does the work itself: it
+     * points each recruit at the current threat, pushes it there at well above
+     * its own walking speed, and lands the hit when it arrives. Written that
+     * way deliberately rather than relying on vanilla AI, so the ability
+     * behaves the same whether the guardians are wolves, which really do
+     * fight, or chickens, which really do not.</p>
+     *
+     * @return how many animals answered, for the player's feedback message
+     */
+    private int startGuardianCall(Player player, AbilityDefinition definition, int limit, long activeMillis, ClassModifiers modifiers) {
+        List<Mob> guardians = nearbyGuardians(player, limit);
+        if (guardians.isEmpty()) {
+            return 0;
+        }
+        double damage = modifiers.adjustedEffectValue(definition.id(), definition.damageMultiplier());
+        long expiresAt = System.currentTimeMillis() + activeMillis;
+        guardians.forEach(guardian -> guardian.getWorld().spawnParticle(Particle.HEART,
+                guardian.getLocation().add(0, 1, 0), 6, 0.3D, 0.3D, 0.3D, 0.0D));
+        player.getScheduler().runAtFixedRate(plugin, task -> {
+            if (!player.isOnline() || System.currentTimeMillis() >= expiresAt
+                    || !isStillActive(player.getUniqueId(), definition.id())) {
+                task.cancel();
+                return;
+            }
+            Mob threat = currentThreat(player);
+            if (threat == null) {
+                return;
+            }
+            guardians.forEach(guardian -> driveGuardian(guardian, threat, damage));
+        }, null, 1L, UPKEEP_PERIOD_TICKS);
+        return guardians.size();
+    }
+
+    /** The friendly creatures around the player, nearest first, capped at {@code limit}. */
+    private List<Mob> nearbyGuardians(Player player, int limit) {
+        List<Mob> found = new ArrayList<>();
+        for (Entity nearby : player.getNearbyEntities(GUARDIAN_RADIUS, GUARDIAN_RADIUS, GUARDIAN_RADIUS)) {
+            if ((nearby instanceof Animals || nearby instanceof IronGolem) && nearby instanceof Mob mob && !mob.isDead()) {
+                found.add(mob);
+            }
+        }
+        found.sort((left, right) -> Double.compare(
+                left.getLocation().distanceSquared(player.getLocation()),
+                right.getLocation().distanceSquared(player.getLocation())));
+        return found.size() <= limit ? found : new ArrayList<>(found.subList(0, limit));
+    }
+
+    /**
+     * What the guardians go for: whatever is currently hunting the player,
+     * preferred over whatever merely happens to be nearby. Answering the thing
+     * that is actually attacking is the whole promise of the ability.
+     */
+    private Mob currentThreat(Player player) {
+        Mob fallback = null;
+        double best = Double.MAX_VALUE;
+        for (Entity nearby : player.getNearbyEntities(GUARDIAN_HUNT_RADIUS, GUARDIAN_HUNT_RADIUS, GUARDIAN_HUNT_RADIUS)) {
+            if (!(nearby instanceof Monster monster) || monster.isDead()) {
+                continue;
+            }
+            if (player.equals(monster.getTarget())) {
+                return monster;
+            }
+            double distance = monster.getLocation().distanceSquared(player.getLocation());
+            if (distance < best) {
+                best = distance;
+                fallback = monster;
+            }
+        }
+        return fallback;
+    }
+
+    private void driveGuardian(Mob guardian, Mob threat, double damage) {
+        if (guardian.isDead() || threat.isDead()) {
+            return;
+        }
+        guardian.setTarget(threat);
+        guardian.getPathfinder().moveTo(threat.getLocation(), GUARDIAN_CHARGE_SPEED);
+        if (guardian.getLocation().distanceSquared(threat.getLocation()) > GUARDIAN_STRIKE_RANGE * GUARDIAN_STRIKE_RANGE) {
+            return;
+        }
+        threat.damage(damage, guardian);
+        Vector shove = threat.getLocation().toVector().subtract(guardian.getLocation().toVector());
+        if (shove.lengthSquared() > 0) {
+            threat.setVelocity(shove.normalize().multiply(0.85D).setY(0.35D));
+        }
+        threat.getWorld().spawnParticle(Particle.CRIT, threat.getLocation().add(0, 1, 0), 8, 0.3D, 0.3D, 0.3D, 0.1D);
+        threat.getWorld().playSound(threat.getLocation(), Sound.ENTITY_GENERIC_HURT, 0.7F, 1.3F);
+    }
+
+    /**
+     * Kaya Patlaması: drops a charge that clears the rock and leaves the ore.
+     *
+     * <p>A primed TNT is used purely as the object the player sees and hears -
+     * it looks right, it ticks down, and everybody nearby understands what is
+     * about to happen. <strong>Its own explosion is disarmed entirely</strong>
+     * ({@code AbilityExplosionListener} sets the radius to zero), because a
+     * vanilla blast is exactly the wrong shape here: it would hurt whoever set
+     * it, kill the creatures nearby, and destroy the ore this ability exists to
+     * expose. What actually happens is {@link #detonateMineBomb}, which is a
+     * bounded, tick-spread sweep under the plugin's own rules.</p>
+     */
+    private void placeMineBomb(Player player, AbilityDefinition definition, int radius) {
+        Location at = player.getLocation().clone().add(0, 0.2D, 0);
+        TNTPrimed bomb = at.getWorld().spawn(at, TNTPrimed.class, primed -> {
+            primed.setFuseTicks(MINE_BOMB_FUSE_TICKS);
+            primed.setSource(player);
+            primed.setIsIncendiary(false);
+            primed.setYield(0f);
+            primed.customName(messages.render(MessageKey.MINE_BOMB_NAME));
+            primed.setCustomNameVisible(true);
+            // A different block on the charge is what tells a miner at a glance
+            // that this is not ordinary TNT and is not going to kill them.
+            primed.setBlockData(Material.SHROOMLIGHT.createBlockData());
+            primed.getPersistentDataContainer().set(mineBombKey, PersistentDataType.INTEGER, radius);
+            primed.getPersistentDataContainer().set(mineBombOwnerKey, PersistentDataType.STRING,
+                    player.getUniqueId().toString());
+            primed.getPersistentDataContainer().set(mineBombAbilityKey, PersistentDataType.STRING, definition.id());
+        });
+        bomb.getWorld().playSound(bomb.getLocation(), Sound.ENTITY_TNT_PRIMED, 1.0F, 0.8F);
+    }
+
+    /**
+     * What a mine bomb actually does, in place of the explosion it never has.
+     *
+     * <p>Walks outward one cube shell at a time across ticks, clearing only
+     * blocks a tunnel is made of and never an ore, a container, a creature or a
+     * player. Two ceilings bound it - {@link #MINE_BOMB_SCAN_PER_TICK} per tick
+     * and {@link #MINE_BOMB_MAX_CLEARED} in total - because the configured
+     * radius describes a sphere of well over a hundred thousand positions and
+     * neither the region thread nor the lighting engine would survive being
+     * handed that at once. Blocks are cleared without physics and without
+     * drops: this is a demolition charge, not a free quarry.</p>
+     */
+    @Override
+    public void detonateMineBomb(Location at, UUID ownerId, String abilityId, int radius) {
+        World world = at.getWorld();
+        world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 2.0F, 0.5F);
+        world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 4, 1.5D, 1.0D, 1.5D, 0.0D);
+        AbilityDefinition definition = settings().definitions().get(abilityId);
+        Set<Material> ores = definition == null
+                ? Set.of()
+                : Optional.ofNullable(skills.settings().definitions().get(definition.skillId()))
+                        .map(SkillDefinition::materials).orElse(Set.of());
+        MineBombSweep sweep = new MineBombSweep(at, radius, ores, ownerId, definition);
+        plugin.getServer().getGlobalRegionScheduler().runAtFixedRate(plugin, task -> {
+            if (sweep.advance()) {
+                task.cancel();
+                sweep.finish();
+            }
+        }, 1L, 1L);
+    }
+
+    /**
      * The outline is scaled a clear 8% larger than the real block rather than
      * the 2% it started at. At 2% an ore the player could already see plainly
      * had its halo hidden inside its own faces, so only ores buried in rock -
@@ -1236,6 +1732,25 @@ public final class YamlAbilityService implements AbilityService {
     private boolean isEligibleBlock(AbilityDefinition definition, Block block) {
         SkillDefinition skill = skills.settings().definitions().get(definition.skillId());
         return skill != null && skill.materials().contains(block.getType());
+    }
+
+    /**
+     * Whether a tunnelling sweep may take this block out.
+     *
+     * <p>Written as a small deny-list over "solid, not liquid" rather than as
+     * an allow-list of stone types, because a tunnel runs through whatever the
+     * world put there and an allow-list would silently stop at the first
+     * unlisted block. What is denied is the set of things that are either
+     * irreplaceable, hold somebody's belongings, or would take a structure with
+     * them - the same bounded-list discipline {@code InteractableBlocks} uses on
+     * the other side of the ability system.</p>
+     */
+    private static boolean isDiggable(Block block) {
+        Material type = block.getType();
+        if (type.isAir() || !type.isSolid() || block.isLiquid() || PROTECTED_BLOCKS.contains(type)) {
+            return false;
+        }
+        return !(block.getState() instanceof org.bukkit.inventory.InventoryHolder);
     }
 
     /**
@@ -1441,7 +1956,8 @@ public final class YamlAbilityService implements AbilityService {
                 throw new IllegalArgumentException("Invalid ability settings: " + id);
             }
             boolean sweep = effect == AbilityEffectType.EXCAVATE || effect == AbilityEffectType.TREE_FELL
-                    || effect == AbilityEffectType.VEIN_MINE || effect == AbilityEffectType.BLAST_MINE;
+                    || effect == AbilityEffectType.VEIN_MINE || effect == AbilityEffectType.BLAST_MINE
+                    || effect == AbilityEffectType.BULLDOZER;
             if (energyPerBlock > 0 && !sweep) {
                 throw new IllegalArgumentException("enerji-blok-basi only applies to a block-sweep ability: " + id);
             }
@@ -1461,10 +1977,37 @@ public final class YamlAbilityService implements AbilityService {
                     double ratio = section.getDouble("etki.can-orani", -1.0D);
                     if (ratio <= 0 || ratio > 1.0D) throw new IllegalArgumentException("Life steal can-orani must be in (0, 1]: " + id);
                     multiplier = ratio;
+                    // limit carries the Speed level, so an ABILITY_LIMIT_BONUS
+                    // talent raises it - the same dual-purposing of limit this
+                    // file has used since ORE_REVEAL's radius.
+                    int speedLevel = section.getInt("etki.hiz-seviyesi", 1);
+                    if (speedLevel < 1 || speedLevel > 5) throw new IllegalArgumentException("Life steal hiz-seviyesi must be in [1, 5]: " + id);
+                    limit = speedLevel;
                 }
-                case BLAST_MINE -> {
-                    if (radius < 1 || radius > 2) throw new IllegalArgumentException("Blast mine yaricap must be 1 or 2: " + id);
+                case BLAST_MINE, BULLDOZER -> {
+                    if (radius < 1 || radius > 2) throw new IllegalArgumentException("Cube sweep yaricap must be 1 or 2: " + id);
                     limit = radius;
+                }
+                case MINE_BOMB -> {
+                    if (radius < 1) throw new IllegalArgumentException("Mine bomb requires a positive yaricap: " + id);
+                    limit = radius;
+                }
+                case TOOL_EFFICIENCY -> {
+                    int levels = section.getInt("etki.seviye", 0);
+                    if (levels < 1 || levels > 10) throw new IllegalArgumentException("Tool efficiency seviye must be in [1, 10]: " + id);
+                    limit = levels;
+                }
+                case GUARDIAN_CALL -> {
+                    int guardians = section.getInt("etki.hayvan-sayisi", 0);
+                    double hit = section.getDouble("etki.hasar", -1.0D);
+                    if (guardians < 1) throw new IllegalArgumentException("Guardian call requires a positive hayvan-sayisi: " + id);
+                    if (hit <= 0) throw new IllegalArgumentException("Guardian call requires positive hasar: " + id);
+                    limit = guardians;
+                    multiplier = hit;
+                }
+                case PHANTOM_STEP -> {
+                    // Duration and cooldown are the whole configuration; there
+                    // is nothing to scale.
                 }
                 case EXTRA_DROP_CHANCE -> {
                     if (chance <= 0 || chance > 1.0D) throw new IllegalArgumentException("Extra-drop chance must be in (0, 1]: " + id);
@@ -1546,6 +2089,95 @@ public final class YamlAbilityService implements AbilityService {
             throw new IllegalArgumentException("Duration cannot be negative.");
         }
         return Math.multiplyExact(seconds, 1_000L);
+    }
+
+    /**
+     * One mine bomb's clearing job, carried across ticks.
+     *
+     * <p>Holds its own shell counter rather than a materialised block list: at
+     * the configured radius the list alone would be a six-figure allocation,
+     * and shell order means the charge visibly clears outward from where it sat
+     * instead of from an arbitrary corner - the same reason ORE_REVEAL walks
+     * shells (§17.3).</p>
+     */
+    private final class MineBombSweep {
+
+        private final Location origin;
+        private final int radius;
+        private final Set<Material> ores;
+        private final UUID ownerId;
+        private final AbilityDefinition definition;
+        private final List<Block> uncovered = new ArrayList<>();
+        private int shell;
+        private int cleared;
+
+        private MineBombSweep(Location origin, int radius, Set<Material> ores, UUID ownerId, AbilityDefinition definition) {
+            this.origin = origin;
+            this.radius = radius;
+            this.ores = ores;
+            this.ownerId = ownerId;
+            this.definition = definition;
+        }
+
+        /** @return {@code true} once the sweep is finished */
+        boolean advance() {
+            World world = origin.getWorld();
+            int inspected = 0;
+            while (shell <= radius && inspected < MINE_BOMB_SCAN_PER_TICK && cleared < MINE_BOMB_MAX_CLEARED) {
+                for (int[] offset : shellOffsets(shell)) {
+                    inspected++;
+                    int x = origin.getBlockX() + offset[0];
+                    int y = origin.getBlockY() + offset[1];
+                    int z = origin.getBlockZ() + offset[2];
+                    if (y < world.getMinHeight() || y > world.getMaxHeight() - 1
+                            || !world.isChunkLoaded(x >> 4, z >> 4)) {
+                        continue;
+                    }
+                    Block block = world.getBlockAt(x, y, z);
+                    if (ores.contains(block.getType())) {
+                        // The whole point: the ore stays exactly where it is,
+                        // and is what the player is left looking at.
+                        if (uncovered.size() < MAX_REVEALED_ORES) {
+                            uncovered.add(block);
+                        }
+                        continue;
+                    }
+                    if (!isDiggable(block) || placedBlocks.isPlayerPlaced(block)) {
+                        continue;
+                    }
+                    // No physics and no drops: a charge that showered the player
+                    // in sixty thousand cobblestone entities would take the
+                    // server down more surely than the scan ever could.
+                    block.setType(Material.AIR, false);
+                    cleared++;
+                }
+                shell++;
+            }
+            return shell > radius || cleared >= MINE_BOMB_MAX_CLEARED;
+        }
+
+        void finish() {
+            Player owner = plugin.getServer().getPlayer(ownerId);
+            if (definition != null) {
+                uncovered.forEach(block -> highlight(block, definition, MINE_BOMB_GLOW_TICKS, ownerId));
+            }
+            if (owner == null) {
+                return;
+            }
+            owner.getScheduler().run(plugin, task -> {
+                messages.send(owner, MessageKey.MINE_BOMB_RESULT, Map.of(
+                        "sayi", Integer.toString(uncovered.size()),
+                        "blok", Integer.toString(cleared)
+                ));
+                // The charge is spent the moment it goes off; leaving the
+                // ability armed afterwards would only mean a second bomb for
+                // free on the same activation.
+                if (definition != null) {
+                    activeEffects.remove(ownerId);
+                    clearActivationFeedback(owner);
+                }
+            }, null);
+        }
     }
 
     private record ArmedAbility(String abilityId, long expiresAtMillis, int limit) {

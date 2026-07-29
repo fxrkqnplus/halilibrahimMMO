@@ -30,6 +30,21 @@ public interface ClassService extends PluginService {
     int availablePoints(PlayerProfile profile, PlayerClassProgress progress, TalentPointCategory category);
 
     /**
+     * Internal, admin-only: moves this player's granted points in one pool by
+     * {@code delta}, floored at zero, and answers with the pool's new grant.
+     *
+     * <p>The grant is stored separately from the derived budget rather than
+     * written into it, because the budget recomputes from Güç and prestige on
+     * every read - anything written there would be gone the next time the
+     * player levelled. Works for an offline target, like every other admin
+     * mutation here.</p>
+     */
+    CompletableFuture<Integer> adminAdjustTalentPoints(UUID playerId, String playerName, TalentPointCategory category, int delta);
+
+    /** How many points of one pool an admin has granted this player. In-memory, warmed on load. */
+    int grantedPoints(UUID playerId, TalentPointCategory category);
+
+    /**
      * Internal: awards class-track XP to one specific (player, class) pair
      * through the shared per-player update chain, independent of whether
      * that class is currently selected. Callers (the skill-synergy bridge)

@@ -10,7 +10,9 @@ import com.halilibrahim.halilibrahimmmo.collections.CollectionService;
 import com.halilibrahim.halilibrahimmmo.config.ConfigService;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
+import com.halilibrahim.halilibrahimmmo.backpack.BackpackService;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
+import com.halilibrahim.halilibrahimmmo.guide.GuideService;
 import com.halilibrahim.halilibrahimmmo.journal.JournalService;
 import com.halilibrahim.halilibrahimmmo.leaderboards.LeaderboardService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
@@ -63,6 +65,8 @@ public record GuiServices(
         WealthService wealth,
         BossService bosses,
         ModVerificationService modVerification,
-        ChatPromptService chatPrompts
+        ChatPromptService chatPrompts,
+        GuideService guide,
+        BackpackService backpacks
 ) {
 }

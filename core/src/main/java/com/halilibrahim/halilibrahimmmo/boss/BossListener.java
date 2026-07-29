@@ -12,10 +12,13 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -61,6 +64,33 @@ public final class BossListener implements Listener {
         this.wealthAwards = wealthAwards;
         this.feedback = feedback;
         this.messages = messages;
+    }
+
+    /**
+     * The moment a boss stops being scenery and becomes somebody's fight.
+     *
+     * <p>Only a player's own blow counts. A boss that took splash damage from a
+     * creeper or a fall never had anybody go to it, and clearing it away when
+     * the next one spawns is exactly right; a boss somebody actually swung at
+     * must survive that sweep however long the fight runs.</p>
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onBossDamaged(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof LivingEntity victim) || !(resolveAttacker(event) instanceof Player)) {
+            return;
+        }
+        if (bosses.isBoss(victim)) {
+            bosses.markEngaged(victim);
+        }
+    }
+
+    /** Unwraps an arrow/trident/potion so a ranged kill counts as engagement too. */
+    private Entity resolveAttacker(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof Projectile projectile
+                && projectile.getShooter() instanceof Entity shooter) {
+            return shooter;
+        }
+        return event.getDamager();
     }
 
     @EventHandler

@@ -127,34 +127,12 @@ public final class AdminMenu implements GuiView {
             case ONLINE_PLAYERS_SLOT -> GuiManager.open(player, new AdminOnlinePlayersMenu(services));
             case ALL_PLAYERS_SLOT -> GuiManager.open(player, new AdminAllPlayersMenu(services));
             case MODCHECK_SLOT -> GuiManager.open(player, new AdminModCheckMenu(services));
-            case BOSS_SLOT -> spawnBoss(player);
+            // A screen rather than a button since Faz 21: staff running an
+            // event need to choose the tier, and sometimes the name.
+            case BOSS_SLOT -> GuiManager.open(player, new AdminBossMenu(services));
             case CREDITS_SLOT -> GuiManager.open(player, new CreditsMenu(services, true));
             default -> {
             }
         }
-    }
-
-    /**
-     * Spawns the next world boss immediately instead of waiting out the
-     * interval. The boss still picks its own archetype, rarity and location, so
-     * this is a "start it now" button rather than a way to hand-place a mystic
-     * boss on request.
-     *
-     * <p>The confirmation waits for the spawn to actually happen. It used to be
-     * sent the instant a name had been drawn, while the search for somewhere to
-     * put the boss was still running - so an admin was told a boss had been
-     * summoned and then saw no announcement, no bar and no sound, because the
-     * search had quietly failed. Now the failure says so.</p>
-     */
-    private void spawnBoss(Player player) {
-        player.closeInventory();
-        services.bosses().spawnNow().thenAccept(name -> player.getScheduler().run(services.plugin(), task ->
-                name.ifPresentOrElse(
-                        spawned -> {
-                            services.messages().send(player, MessageKey.ADMIN_BOSS_SPAWNED, Map.of("isim", spawned));
-                            services.logger().info("Yonetici " + player.getName() + " elle bir dunya bossu cagirdi: " + spawned + ".");
-                        },
-                        () -> services.messages().send(player, MessageKey.ADMIN_BOSS_NO_ANCHOR)
-                ), null));
     }
 }

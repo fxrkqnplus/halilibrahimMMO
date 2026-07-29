@@ -39,6 +39,7 @@ import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -247,19 +248,36 @@ public final class ScoreboardSidebarService implements SidebarService {
     }
 
     /**
-     * One rendered panel line and whether it may be sacrificed when the layout
-     * runs past {@link #MAXIMUM_LINES}. Dividers and the {@code /panel} footer
-     * are decoration; everything a player actually reads a number off is not.
+     * One rendered panel line and how readily it may be sacrificed when the
+     * layout runs past {@link #MAXIMUM_LINES}.
+     *
+     * <p>A plain boolean was enough while the only expendable lines were
+     * separators, but the quest block now carries a heading per type and those
+     * are somewhere in between: worth more than a divider, worth less than the
+     * quest under them. {@code shedOrder} orders that - the highest number goes
+     * first, and {@link #KEEP} is never dropped while anything above it
+     * remains.</p>
      */
-    private record SidebarLine(Component text, boolean decorative) {
+    private record SidebarLine(Component text, int shedOrder) {
     }
 
+    /** A line carrying something the player reads a value off. Never sacrificed. */
+    private static final int KEEP = 0;
+    /** A quest-type heading: goes only after every separator has already gone. */
+    private static final int SHED_HEADING = 1;
+    /** Separators and the {@code /panel} footer: nothing is lost by dropping them. */
+    private static final int SHED_DECORATION = 2;
+
     private static SidebarLine information(Component text) {
-        return new SidebarLine(text, false);
+        return new SidebarLine(text, KEEP);
+    }
+
+    private static SidebarLine heading(Component text) {
+        return new SidebarLine(text, SHED_HEADING);
     }
 
     private static SidebarLine decoration(Component text) {
-        return new SidebarLine(text, true);
+        return new SidebarLine(text, SHED_DECORATION);
     }
 
     private SidebarLine footer() {
@@ -452,12 +470,15 @@ public final class ScoreboardSidebarService implements SidebarService {
      * unassigned pool quest cannot make progress at all - showing one would be
      * a line that never moves.</p>
      *
-     * <p>The three types used to own a header and a divider each, six lines
-     * spent before a single quest was listed - which is exactly why a full nine
-     * pins never fit and why the permanent header regularly appeared with
-     * nothing under it. Each entry now carries its type in its own colour
-     * instead, through a template per (type, finished) pair rather than one
-     * template fed a Turkish label from Java.</p>
+     * <p><strong>Each type gets its own heading again.</strong> Phase 20 had
+     * collapsed all three under one label and let the entry's own colour say
+     * which was which, purely to buy back the six lines three headed sections
+     * cost - and it did fit, but a player reading a colour to work out whether
+     * something resets tomorrow is reading the wrong thing. The headings are
+     * back, and the line budget is answered where it should have been: they are
+     * marked {@link #SHED_HEADING}, so a panel too full for them loses a
+     * heading rather than a quest, one at a time from the bottom, and only
+     * after every separator has already gone.</p>
      *
      * <p>Names come from each quest's {@code kisa-ad} rather than its full
      * title: a scoreboard line does not wrap, it truncates, and the full titles
@@ -465,29 +486,48 @@ public final class ScoreboardSidebarService implements SidebarService {
      */
     private void addQuestSection(List<SidebarLine> lines, UUID playerId) {
         Map<String, QuestProgress> progress = quests.cachedAll(playerId);
-        List<QuestDefinition> shown = new ArrayList<>();
+        Map<QuestType, List<QuestDefinition>> shown = new EnumMap<>(QuestType.class);
         for (QuestType type : QuestType.values()) {
             Set<String> pinned = quests.cachedPins(playerId, type);
             boolean pinsOnly = type == QuestType.PERMANENT || !pinned.isEmpty();
-            quests.definitions().stream()
+            List<QuestDefinition> ofType = quests.definitions().stream()
                     .filter(definition -> definition.type() == type)
                     .filter(definition -> progress.containsKey(definition.id()))
                     .filter(definition -> !pinsOnly || pinned.contains(definition.id()))
-                    .forEach(shown::add);
+                    .toList();
+            if (!ofType.isEmpty()) {
+                shown.put(type, ofType);
+            }
         }
         if (shown.isEmpty()) {
             return;
         }
         lines.add(decoration(divider()));
-        lines.add(information(messages.render(MessageKey.SIDEBAR_LINE_QUESTS_HEADER)));
-        for (QuestDefinition definition : shown) {
-            QuestProgress current = progress.get(definition.id());
-            lines.add(information(messages.render(questEntryKey(definition.type(), current.completed()), Map.of(
-                    "gorev", definition.shortName(),
-                    "ilerleme", current.progress() + "/" + definition.target(),
-                    "xp", Long.toString(definition.rewardExperience())
-            ))));
+        for (Map.Entry<QuestType, List<QuestDefinition>> section : shown.entrySet()) {
+            lines.add(heading(messages.render(questHeaderKey(section.getKey()))));
+            for (QuestDefinition definition : section.getValue()) {
+                QuestProgress current = progress.get(definition.id());
+                lines.add(information(messages.render(questEntryKey(definition.type(), current.completed()), Map.of(
+                        "gorev", definition.shortName(),
+                        "ilerleme", current.progress() + "/" + definition.target(),
+                        "xp", Long.toString(definition.rewardExperience())
+                ))));
+            }
         }
+    }
+
+    /**
+     * One fully-authored heading per type rather than a shared template fed a
+     * Turkish word from Java - the same discipline every other per-shape label
+     * in this codebase follows, and it is also what keeps each heading the same
+     * colour as the entries beneath it.
+     */
+    private MessageKey questHeaderKey(QuestType type) {
+        return switch (type) {
+            case DAILY -> MessageKey.SIDEBAR_LINE_QUESTS_DAILY_HEADER;
+            case WEEKLY -> MessageKey.SIDEBAR_LINE_QUESTS_WEEKLY_HEADER;
+            case PERMANENT -> MessageKey.SIDEBAR_LINE_QUESTS_PERMANENT_HEADER;
+        };
     }
 
     /**
@@ -509,18 +549,21 @@ public final class ScoreboardSidebarService implements SidebarService {
      * to the client - the client's own truncation is what used to leave the
      * permanent quest header standing over an empty space.
      *
-     * <p>Decoration goes first, from the bottom up: dividers and the
-     * {@code /panel} footer are the only lines carrying nothing a player needs
-     * to read, so a panel full of pinned quests loses its separators rather
-     * than its quests. Only if that is still not enough are lines dropped
-     * outright, and because the list is built most-important-first that sheds
-     * quests before anything above them.</p>
+     * <p>Lines are given up in order of how little they carry, from the bottom
+     * up: first separators and the {@code /panel} footer, then quest headings,
+     * and only when neither is left does anything a player reads a value off
+     * get dropped. So a panel full of pinned quests loses its separators, then
+     * at worst the last heading - never a quest while a divider is still
+     * standing. The final cut is from the end because the list is built
+     * most-important-first.</p>
      */
     private List<Component> trimToFit(List<SidebarLine> lines) {
         List<SidebarLine> remaining = new ArrayList<>(lines);
-        for (int i = remaining.size() - 1; i >= 0 && remaining.size() > MAXIMUM_LINES; i--) {
-            if (remaining.get(i).decorative()) {
-                remaining.remove(i);
+        for (int order = SHED_DECORATION; order > KEEP && remaining.size() > MAXIMUM_LINES; order--) {
+            for (int i = remaining.size() - 1; i >= 0 && remaining.size() > MAXIMUM_LINES; i--) {
+                if (remaining.get(i).shedOrder() == order) {
+                    remaining.remove(i);
+                }
             }
         }
         return remaining.stream()

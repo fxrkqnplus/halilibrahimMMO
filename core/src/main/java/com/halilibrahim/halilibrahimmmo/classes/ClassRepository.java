@@ -106,6 +106,46 @@ public final class ClassRepository {
         });
     }
 
+    /** The extra talent points an admin has handed this player, per pool. */
+    CompletableFuture<Map<TalentPointCategory, Integer>> loadGrants(UUID playerId) {
+        return database.execute(connection -> {
+            Map<TalentPointCategory, Integer> grants = new LinkedHashMap<>();
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT category, amount FROM hmmo_player_talent_grants WHERE player_id = ?
+                    """)) {
+                statement.setString(1, playerId.toString());
+                try (ResultSet result = statement.executeQuery()) {
+                    while (result.next()) {
+                        try {
+                            grants.put(TalentPointCategory.valueOf(result.getString("category")), result.getInt("amount"));
+                        } catch (IllegalArgumentException exception) {
+                            // A pool removed from the code after a grant was
+                            // written: the row stays, it simply stops counting.
+                        }
+                    }
+                }
+            }
+            return Map.copyOf(grants);
+        });
+    }
+
+    CompletableFuture<Void> saveGrant(UUID playerId, TalentPointCategory category, int amount) {
+        return database.executeVoid(connection -> {
+            try (PreparedStatement update = connection.prepareStatement("""
+                    UPDATE hmmo_player_talent_grants SET amount = ? WHERE player_id = ? AND category = ?
+                    """)) {
+                update.setInt(1, amount); update.setString(2, playerId.toString()); update.setString(3, category.name());
+                if (update.executeUpdate() != 0) return;
+            }
+            try (PreparedStatement insert = connection.prepareStatement("""
+                    INSERT INTO hmmo_player_talent_grants (player_id, category, amount) VALUES (?, ?, ?)
+                    """)) {
+                insert.setString(1, playerId.toString()); insert.setString(2, category.name()); insert.setInt(3, amount);
+                insert.executeUpdate();
+            }
+        });
+    }
+
     private static Map<String, Map<String, Integer>> copy(Map<String, Map<String, Integer>> source) {
         Map<String, Map<String, Integer>> copied = new LinkedHashMap<>();
         source.forEach((classId, ranks) -> copied.put(classId, Map.copyOf(ranks)));

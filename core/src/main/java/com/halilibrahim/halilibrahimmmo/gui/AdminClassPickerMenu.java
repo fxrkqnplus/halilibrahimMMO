@@ -43,6 +43,7 @@ public final class AdminClassPickerMenu implements GuiView {
 
     @Override
     public void populate(Player player, Inventory inventory) {
+        GuiItems.frame(inventory, GuiItems.pane(Material.ORANGE_STAINED_GLASS_PANE), GuiItems.filler());
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
         inventory.setItem(CLEAR_SLOT, GuiItems.of(Material.BARRIER, services.messages().render(MessageKey.GUI_ADMIN_CLASS_PICKER_CLEAR_ITEM)));
         int slot = FIRST_CLASS_SLOT;

@@ -224,6 +224,10 @@ public final class ClassMenu implements GuiView {
                     Map.of("kabiliyet", abilityName(talent.abilityId()), "yuzde", formatAmount(talent.valuePerRank() * 100)));
             case ABILITY_EFFECT_BONUS -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_EFFECT,
                     Map.of("kabiliyet", abilityName(talent.abilityId()), "yuzde", formatAmount(talent.valuePerRank() * 100)));
+            // A flat number of energy off each swept block, so unlike every
+            // other reduction above it is stated as a count rather than a share.
+            case ABILITY_BLOCK_ENERGY_REDUCTION -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_BLOCK_ENERGY,
+                    Map.of("kabiliyet", abilityName(talent.abilityId()), "deger", formatAmount(talent.valuePerRank())));
         };
     }
 
@@ -234,7 +238,8 @@ public final class ClassMenu implements GuiView {
             return services.messages().render(MessageKey.GUI_TALENT_LORE_CURRENT_HEART, Map.of("kalp", formatAmount(total / 2)));
         }
         boolean percentage = talent.effectType() != ClassEffectType.MAX_ENERGY
-                && talent.effectType() != ClassEffectType.ABILITY_LIMIT_BONUS;
+                && talent.effectType() != ClassEffectType.ABILITY_LIMIT_BONUS
+                && talent.effectType() != ClassEffectType.ABILITY_BLOCK_ENERGY_REDUCTION;
         return services.messages().render(percentage ? MessageKey.GUI_TALENT_LORE_CURRENT_PERCENT : MessageKey.GUI_TALENT_LORE_CURRENT,
                 Map.of("deger", formatAmount(percentage ? total * 100 : total)));
     }

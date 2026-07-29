@@ -85,6 +85,11 @@ public final class MiniMessageService implements MessageService {
     }
 
     @Override
+    public Component renderText(String template) {
+        return miniMessage.deserialize(template, ICON_TAGS);
+    }
+
+    @Override
     public String plain(MessageKey key, Map<String, String> placeholders) {
         return PlainTextComponentSerializer.plainText().serialize(render(key, placeholders));
     }

@@ -11,10 +11,11 @@ public record ClassModifiers(
         Map<String, Double> cooldownReductions,
         Map<String, Integer> limitBonuses,
         Map<String, Double> durationBonuses,
-        Map<String, Double> effectBonuses
+        Map<String, Double> effectBonuses,
+        Map<String, Integer> blockEnergyReductions
 ) {
     private static final ClassModifiers NONE =
-            new ClassModifiers(0, 0, 0, Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+            new ClassModifiers(0, 0, 0, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
 
     public static ClassModifiers none() {
         return NONE;
@@ -47,5 +48,16 @@ public record ClassModifiers(
      */
     public double adjustedEffectValue(String abilityId, double base) {
         return base * (1.0D + effectBonuses.getOrDefault(abilityId, 0.0D));
+    }
+
+    /**
+     * Per-block sweep cost after talents. Floored at one rather than at zero:
+     * a sweep that costs nothing per block is bounded only by its own duration,
+     * which is precisely the "energy never actually runs out" state the whole
+     * per-block drain was introduced to end.
+     */
+    public int adjustedEnergyPerBlock(String abilityId, int base) {
+        if (base <= 0) return 0;
+        return Math.max(1, base - blockEnergyReductions.getOrDefault(abilityId, 0));
     }
 }

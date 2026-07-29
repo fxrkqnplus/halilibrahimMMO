@@ -25,9 +25,9 @@ import java.util.UUID;
 /** Prestige requirement checklist plus a confirm button - the only way to prestige, opened by {@code /prestij}. */
 public final class PrestigeMenu implements GuiView {
 
-    private static final int INFO_SLOT = 3;
-    private static final int CONFIRM_SLOT = 5;
-    private static final int BACK_SLOT = 8;
+    private static final int INFO_SLOT = 21;
+    private static final int CONFIRM_SLOT = 23;
+    private static final int BACK_SLOT = 40;
 
     private final GuiServices services;
 
@@ -42,11 +42,12 @@ public final class PrestigeMenu implements GuiView {
 
     @Override
     public int size() {
-        return 9;
+        return 45;
     }
 
     @Override
     public void populate(Player player, Inventory inventory) {
+        GuiItems.frame(inventory, GuiItems.pane(Material.PURPLE_STAINED_GLASS_PANE), GuiItems.filler());
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
         inventory.setItem(CONFIRM_SLOT, GuiItems.of(Material.TOTEM_OF_UNDYING,
                 services.messages().render(MessageKey.GUI_PRESTIGE_CONFIRM_ITEM),

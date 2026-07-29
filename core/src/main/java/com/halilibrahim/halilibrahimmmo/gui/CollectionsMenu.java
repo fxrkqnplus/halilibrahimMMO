@@ -38,6 +38,7 @@ public final class CollectionsMenu implements GuiView {
 
     @Override
     public void populate(Player player, Inventory inventory) {
+        int contentSlots = GuiItems.listBoard(inventory, GuiItems.pane(Material.BLUE_STAINED_GLASS_PANE));
         inventory.setItem(BACK_SLOT, GuiItems.backButton(services.messages()));
         services.collections().loadAll(player.getUniqueId()).thenAccept(progressById ->
                 player.getScheduler().run(services.plugin(), task -> {
@@ -45,6 +46,9 @@ public final class CollectionsMenu implements GuiView {
                             .sorted((left, right) -> left.displayName().compareToIgnoreCase(right.displayName())).toList();
                     int slot = 0;
                     for (CollectionDefinition definition : definitions) {
+                        if (slot >= contentSlots) {
+                            break;
+                        }
                         CollectionProgress progress = progressById.get(definition.id());
                         slotToCollectionId.put(slot, definition.id());
                         inventory.setItem(slot++, GuiItems.of(

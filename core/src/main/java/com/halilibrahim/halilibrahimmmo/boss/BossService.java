@@ -31,6 +31,17 @@ public interface BossService extends PluginService {
     Optional<BossRarity> rarityOf(LivingEntity entity);
 
     /**
+     * Records that a player has actually fought this boss, which is what
+     * protects it from being cleared away when the next one spawns.
+     *
+     * <p>An untouched boss is map clutter: nobody went to it, and leaving it
+     * standing only means the next announcement competes with a stale one. A
+     * boss somebody is <em>mid-fight</em> with is the opposite, and must never
+     * vanish out from under them - so engagement, not age, is the test.</p>
+     */
+    void markEngaged(LivingEntity entity);
+
+    /**
      * Takes this boss's health bar off every screen still showing it and forgets
      * its behaviour state. Called when it dies; a no-op for a boss this session
      * never spawned (one that outlived a restart), which has no bar to take
@@ -51,4 +62,13 @@ public interface BossService extends PluginService {
      * naming a boss that never arrived.</p>
      */
     CompletableFuture<Optional<String>> spawnNow();
+
+    /**
+     * The same spawn, with either half chosen by an admin instead of rolled.
+     *
+     * @param rarity the tier to spawn, or {@code null} to roll one by weight
+     * @param name   the boss's name, or {@code null} to draw one from the
+     *               archetype's own pool
+     */
+    CompletableFuture<Optional<String>> spawnNow(BossRarity rarity, String name);
 }

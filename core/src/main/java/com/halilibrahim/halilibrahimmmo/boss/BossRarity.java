@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.boss;
 
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import net.kyori.adventure.bossbar.BossBar;
+import org.bukkit.Color;
 
 /**
  * How dangerous - and how valuable - one world boss is.
@@ -19,6 +20,16 @@ import net.kyori.adventure.bossbar.BossBar;
  * than as part of its text - the same bounded-enum shape {@code ClassBarColor}
  * already uses for class XP bars.</p>
  *
+ * <p>{@link #auraColor()} is the second such case, and it exists because of a
+ * real crash: on Paper 26.2 {@link org.bukkit.Particle#FLASH} is a coloured
+ * particle and refuses to spawn without an {@link Color} payload
+ * ({@code IllegalArgumentException: missing required data class
+ * org.bukkit.Color}). The spawn burst was being raised without one, which threw
+ * inside the entity task <em>after</em> the creature had already been created -
+ * so the admin panel's summon produced no message, no bar and no boss at all.
+ * Giving each rarity its own colour fixes the crash and makes the flash itself
+ * say which tier just arrived.</p>
+ *
  * <p>Everything numeric about a rarity - how much health it multiplies, what it
  * drops, whether it runs - lives in {@code bosslar.yml}. This enum is only the
  * bounded set of names those settings may be keyed by.</p>
@@ -26,15 +37,20 @@ import net.kyori.adventure.bossbar.BossBar;
 public enum BossRarity {
 
     SIRADAN(MessageKey.BOSS_NAME_SIRADAN, MessageKey.BOSS_SPAWN_SIRADAN, MessageKey.BOSS_DEATH_SIRADAN,
-            MessageKey.BOSS_HEAD_SIRADAN, MessageKey.BOSS_BAR_SIRADAN, BossBar.Color.WHITE),
+            MessageKey.BOSS_HEAD_SIRADAN, MessageKey.BOSS_BAR_SIRADAN, BossBar.Color.WHITE,
+            Color.fromRGB(0xDD, 0xDD, 0xDD)),
     NADIR(MessageKey.BOSS_NAME_NADIR, MessageKey.BOSS_SPAWN_NADIR, MessageKey.BOSS_DEATH_NADIR,
-            MessageKey.BOSS_HEAD_NADIR, MessageKey.BOSS_BAR_NADIR, BossBar.Color.GREEN),
+            MessageKey.BOSS_HEAD_NADIR, MessageKey.BOSS_BAR_NADIR, BossBar.Color.GREEN,
+            Color.fromRGB(0x55, 0xFF, 0x55)),
     EPIK(MessageKey.BOSS_NAME_EPIK, MessageKey.BOSS_SPAWN_EPIK, MessageKey.BOSS_DEATH_EPIK,
-            MessageKey.BOSS_HEAD_EPIK, MessageKey.BOSS_BAR_EPIK, BossBar.Color.PURPLE),
+            MessageKey.BOSS_HEAD_EPIK, MessageKey.BOSS_BAR_EPIK, BossBar.Color.PURPLE,
+            Color.fromRGB(0xAA, 0x00, 0xFF)),
     EFSANEVI(MessageKey.BOSS_NAME_EFSANEVI, MessageKey.BOSS_SPAWN_EFSANEVI, MessageKey.BOSS_DEATH_EFSANEVI,
-            MessageKey.BOSS_HEAD_EFSANEVI, MessageKey.BOSS_BAR_EFSANEVI, BossBar.Color.YELLOW),
+            MessageKey.BOSS_HEAD_EFSANEVI, MessageKey.BOSS_BAR_EFSANEVI, BossBar.Color.YELLOW,
+            Color.fromRGB(0xFF, 0xD7, 0x00)),
     MISTIK(MessageKey.BOSS_NAME_MISTIK, MessageKey.BOSS_SPAWN_MISTIK, MessageKey.BOSS_DEATH_MISTIK,
-            MessageKey.BOSS_HEAD_MISTIK, MessageKey.BOSS_BAR_MISTIK, BossBar.Color.PINK);
+            MessageKey.BOSS_HEAD_MISTIK, MessageKey.BOSS_BAR_MISTIK, BossBar.Color.PINK,
+            Color.fromRGB(0xFF, 0x55, 0xFF));
 
     private final MessageKey nameplateKey;
     private final MessageKey spawnBroadcastKey;
@@ -42,10 +58,11 @@ public enum BossRarity {
     private final MessageKey headKey;
     private final MessageKey bossBarKey;
     private final BossBar.Color barColor;
+    private final Color auraColor;
 
     BossRarity(
             MessageKey nameplateKey, MessageKey spawnBroadcastKey, MessageKey deathBroadcastKey,
-            MessageKey headKey, MessageKey bossBarKey, BossBar.Color barColor
+            MessageKey headKey, MessageKey bossBarKey, BossBar.Color barColor, Color auraColor
     ) {
         this.nameplateKey = nameplateKey;
         this.spawnBroadcastKey = spawnBroadcastKey;
@@ -53,6 +70,7 @@ public enum BossRarity {
         this.headKey = headKey;
         this.bossBarKey = bossBarKey;
         this.barColor = barColor;
+        this.auraColor = auraColor;
     }
 
     /** The floating name above the boss's head. */
@@ -80,5 +98,14 @@ public enum BossRarity {
 
     public BossBar.Color barColor() {
         return barColor;
+    }
+
+    /**
+     * The tint of the spawn flash and of every coloured particle this boss
+     * raises. Required, not decorative: {@link org.bukkit.Particle#FLASH}
+     * throws without a colour payload on this server version.
+     */
+    public Color auraColor() {
+        return auraColor;
     }
 }

@@ -10,7 +10,9 @@ import com.halilibrahim.halilibrahimmmo.database.migration.OnboardingSchemaMigra
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerActivationSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerProfileSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerHomeSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.BackpackSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.QuestPinSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.TalentGrantSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.WealthSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PrestigeBankedPowerSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.QuestAssignmentSchemaMigration;
@@ -52,7 +54,7 @@ final class SqliteMigrationContractTest {
                     new ClassSchemaMigration(), new QuestSchemaMigration(), new TitleCosmeticSchemaMigration(),
                     new ClassProgressSchemaMigration(), new PlayerActivationSchemaMigration(), new QuestAssignmentSchemaMigration(),
                     new OnboardingSchemaMigration(), new PrestigeBankedPowerSchemaMigration(),
-                    new PlayerHomeSchemaMigration(), new WealthSchemaMigration(), new QuestPinSchemaMigration()
+                    new PlayerHomeSchemaMigration(), new WealthSchemaMigration(), new QuestPinSchemaMigration(), new BackpackSchemaMigration(), new TalentGrantSchemaMigration()
             );
             new MigrationRunner(database, logger, migrations).runPendingMigrations().get();
 
@@ -67,7 +69,7 @@ final class SqliteMigrationContractTest {
                 return versions;
             }).get();
 
-            assertEquals(Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14), appliedVersions);
+            assertEquals(Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), appliedVersions);
         } finally {
             database.disable();
         }

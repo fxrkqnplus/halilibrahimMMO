@@ -1,0 +1,638 @@
+# =====================================================================
+#  HalilIbrahimMMO - Oyun İçi Rehber (/yardım, /bilgi, /rehber)
+# =====================================================================
+#  Bu dosya rehberin BÜTÜN metnini taşır. İstediğiniz kadar kategori ve
+#  konu ekleyebilir, sırayı değiştirebilir, hepsini kendi üslubunuzla
+#  yeniden yazabilirsiniz - tek bir satır Java kodu değişmez.
+#
+#  YAPI
+#    kategoriler.<id>            : ASCII, küçük harf, benzersiz kimlik
+#      gorunen-ad                : rehberin ana ekranında görünen başlık
+#      simge                     : o kategoriyi temsil eden Bukkit Material
+#      ozet                      : ana ekranda başlığın altındaki tek satır
+#      konular                   : o kategorinin sayfaları (en fazla 28)
+#        - baslik                : sayfanın adı
+#          simge                 : sayfanın eşya simgesi
+#          satirlar              : gövde metni, HER SATIR AYRI BİR SATIRDIR
+#
+#  BİÇİMLENDİRME
+#    Her satır MiniMessage ile yazılır: <gray>, <white>, <gold>, <bold>...
+#    <simge:guc>, <simge:enerji> gibi sunucunun kendi ikonları da çalışır.
+#
+#  ÖNEMLİ: Eşya açıklama satırları ALT SATIRA KAYMAZ, kesilir. Bir satırı
+#  60-70 karakterin altında tutun; uzun bir açıklamayı iki satıra bölün.
+# =====================================================================
+
+kategoriler:
+
+  # -------------------------------------------------------------------
+  baslangic:
+    gorunen-ad: "<green><bold>Başlangıç</bold></green>"
+    simge: OAK_SAPLING
+    ozet: "Sunucuya yeni geldiysen buradan başla."
+    konular:
+      - baslik: "<green>1. Adım - MMO'yu aç</green>"
+        simge: NETHER_STAR
+        satirlar:
+          - "<gray>Sunucuya ilk girdiğinde MMO sistemi <white>kapalıdır</white>.</gray>"
+          - "<gray>Açmak için <white>/mmo</white> yaz.</gray>"
+          - ""
+          - "<gray>Açılmadan önce hiçbir şey ilerlemez: beceri XP'si,</gray>"
+          - "<gray>görev, zenginlik, hiçbiri. Bu kasıtlıdır - sisteme</gray>"
+          - "<gray>girmeyi sen seçersin.</gray>"
+      - baslik: "<green>2. Adım - Sınıfını seç</green>"
+        simge: DIAMOND_SWORD
+        satirlar:
+          - "<gray>/mmo komutu seni doğrudan sınıf seçim ekranına götürür.</gray>"
+          - "<gray>Üç sınıf vardır ve hepsinin oynanışı farklıdır.</gray>"
+          - ""
+          - "<yellow>Sınıfın en önemli kararın</yellow><gray>: hangi kabiliyetleri</gray>"
+          - "<gray>açacağını ve hangi becerilerden ekstra XP alacağını</gray>"
+          - "<gray>belirler. Değiştirmek 7 gün bekleme gerektirir.</gray>"
+          - ""
+          - "<gray>Ayrıntı için rehberin <white>Sınıflar</white> bölümüne bak.</gray>"
+      - baslik: "<green>3. Adım - Oyna, panelini oku</green>"
+        simge: OAK_SIGN
+        satirlar:
+          - "<gray>Ekranın sağındaki panel her şeyi anlatır: Güç'ün,</gray>"
+          - "<gray>prestijin, zenginliğin, sınıfın, kuşandığın kabiliyet</gray>"
+          - "<gray>ve takip ettiğin görevler.</gray>"
+          - ""
+          - "<gray>Panel iki saniyede bir kendini yeniler.</gray>"
+          - "<gray><white>/panel</white> ile gizleyip gösterebilirsin.</gray>"
+      - baslik: "<green>Başlangıç görevleri</green>"
+        simge: MAP
+        satirlar:
+          - "<gray>Panelde <white>Başlangıç</white> başlığı altında dört küçük</gray>"
+          - "<gray>görev görürsün. Hepsi tek seferliktir ve sana</gray>"
+          - "<gray>sınıf XP'si kazandırır.</gray>"
+          - ""
+          - "<gray>Hepsini bitirince o bölüm panelden tamamen kaybolur.</gray>"
+
+  # -------------------------------------------------------------------
+  siniflar:
+    gorunen-ad: "<red><bold>Sınıflar</bold></red>"
+    simge: DIAMOND_SWORD
+    ozet: "Üç sınıf, üç oynanış. Sınıfının mantığı."
+    konular:
+      - baslik: "<yellow>Sınıf ne işe yarar?</yellow>"
+        simge: BOOK
+        satirlar:
+          - "<gray>Bir sınıf üç şeye birden karar verir:</gray>"
+          - ""
+          - "<white>1.</white> <gray>Hangi <white>kabiliyetleri</white> kullanabileceğine.</gray>"
+          - "<white>2.</white> <gray>Hangi becerilerden <white>+%20 XP</white> alacağına.</gray>"
+          - "<white>3.</white> <gray>Prestij yaptıkça biriken kalıcı bonusuna.</gray>"
+          - ""
+          - "<gray>Sınıfının beslendiği becerilere <white>sinerji becerisi</white></gray>"
+          - "<gray>denir. O becerilerden kazandığın XP'nin bir kısmı</gray>"
+          - "<gray>sınıfının kendi seviyesine de yazılır.</gray>"
+      - baslik: "<red>Amansız Savaşçı</red>"
+        simge: DIAMOND_SWORD
+        satirlar:
+          - "<gray>Sinerji becerisi: <white>Avcılık</white></gray>"
+          - "<gray>Kalıcı prestij bonusu: <white>PvE hasarı</white></gray>"
+          - ""
+          - "<gray>Dar ama derin bir uzman. Yaratık öldürerek büyür,</gray>"
+          - "<gray>kabiliyetlerinin hepsi dövüşle ilgilidir.</gray>"
+          - ""
+          - "<yellow>Kabiliyetleri kılıçla DA baltayla DA çalışır.</yellow>"
+          - ""
+          - "<white>10</white> <gray>B Planı - 5 sn boyunca yaratıklar seni göremez</gray>"
+          - "<white>20</white> <gray>Avcı Odağı - PvE hasarın %50 artar</gray>"
+          - "<white>35</white> <gray>Yıkıcı Darbe - çevrene şok dalgası</gray>"
+          - "<white>50</white> <gray>Kan Yemini - verdiğin hasar cana döner</gray>"
+      - baslik: "<blue>Mağara Adamı</blue>"
+        simge: DIAMOND_PICKAXE
+        satirlar:
+          - "<gray>Sinerji becerisi: <white>Madencilik</white></gray>"
+          - "<gray>Kalıcı prestij bonusu: <white>maksimum enerji</white></gray>"
+          - ""
+          - "<gray>Yeraltının sahibi. Kabiliyetlerinin tamamı kaya</gray>"
+          - "<gray>kaldırmak, cevher bulmak ve hızlı kazmak üzerine.</gray>"
+          - ""
+          - "<white>10</white> <gray>Bulldozer - kazdığın her blok 3x3x3 düşer</gray>"
+          - "<white>20</white> <gray>Madenci Refleksleri - kazmana +3 Verimlilik</gray>"
+          - "<white>35</white> <gray>Kaya Patlaması - Maden Bombası bırakır</gray>"
+          - "<white>50</white> <gray>Maden Feneri - 36 blokta cevherler parlar</gray>"
+      - baslik: "<green>Tabiat Vârisi</green>"
+        simge: IRON_AXE
+        satirlar:
+          - "<gray>Sinerji becerileri: <white>Odunculuk, Kazıcılık,</white></gray>"
+          - "<white>Tarımcılık, Hayvancılık</white>"
+          - "<gray>Kalıcı prestij bonusu: <white>maksimum can</white></gray>"
+          - ""
+          - "<gray>Tek başına dört beceri besler. Her kabiliyeti bu dört</gray>"
+          - "<gray>becerinin birine düşer, bu yüzden hiçbiri tek başına</gray>"
+          - "<gray>belirleyici değildir - ama dördü birden çok yönlüdür.</gray>"
+          - ""
+          - "<white>10</white> <gray>Doğa Ana'nın Koruyucuları - hayvanlar savaşır</gray>"
+          - "<white>20</white> <gray>Filiz Patlaması - ekinler anında olgunlaşır</gray>"
+          - "<white>35</white> <gray>Sürü Çağrısı - sürü yemsiz çiftleşir</gray>"
+          - "<white>50</white> <gray>Ağaç Kırıcı - ağaçlar bütün olarak devrilir</gray>"
+      - baslik: "<yellow>Sınıf seviyesi</yellow>"
+        simge: EXPERIENCE_BOTTLE
+        satirlar:
+          - "<gray>Beceri seviyenden ayrı, kendi XP çizgisi olan bir</gray>"
+          - "<gray>ilerlemedir. Maksimum <white>50</white>'dir.</gray>"
+          - ""
+          - "<gray>Kabiliyetlerin <white>sınıf seviyesiyle</white> açılır:</gray>"
+          - "<gray>10 → 20 → 35 → 50. Beceri seviyesiyle değil.</gray>"
+          - ""
+          - "<gray>Sınıf XP'si üç yerden gelir: sinerji becerilerinden,</gray>"
+          - "<gray>görevlerden ve dünya bossu öldürmekten.</gray>"
+      - baslik: "<yellow>Sınıf değiştirmek</yellow>"
+        simge: CLOCK
+        satirlar:
+          - "<gray><white>/sınıf</white> ekranından değiştirilir.</gray>"
+          - ""
+          - "<red>İki şeyi bilerek yap:</red>"
+          - "<gray>• Ayrıldığın sınıfın seviyesi <white>tamamen sıfırlanır</white>.</gray>"
+          - "<gray>• Bir daha değiştirmek için <white>7 gün</white> beklersin.</gray>"
+          - ""
+          - "<gray>Harcadığın yetenek puanları kaybolmaz - onlar bütün</gray>"
+          - "<gray>sınıflar arasında paylaşılır.</gray>"
+
+  # -------------------------------------------------------------------
+  beceriler:
+    gorunen-ad: "<gold><bold>Beceriler</bold></gold>"
+    simge: IRON_PICKAXE
+    ozet: "Altı beceri, nasıl arttığı ve ne kazandırdığı."
+    konular:
+      - baslik: "<gold>Altı beceri</gold>"
+        simge: EXPERIENCE_BOTTLE
+        satirlar:
+          - "<gray>Her biri 1-100 arası, birbirinden bağımsız seviyelenir.</gray>"
+          - ""
+          - "<white>Kazıcılık</white> <gray>- toprak, kum, çakıl, kil kazmak</gray>"
+          - "<white>Odunculuk</white> <gray>- kütük kesmek</gray>"
+          - "<white>Madencilik</white> <gray>- cevher kırmak</gray>"
+          - "<white>Avcılık</white> <gray>- yaratık öldürmek</gray>"
+          - "<white>Tarımcılık</white> <gray>- tarlada yapılan her iş</gray>"
+          - "<white>Hayvancılık</white> <gray>- hayvanı yaşatmanın her adımı</gray>"
+          - ""
+          - "<gray>Her birinin kendi komutu var: <white>/madencilik</white> gibi.</gray>"
+      - baslik: "<gold>Beceri XP'si nasıl kazanılır?</gold>"
+        simge: DIAMOND_ORE
+        satirlar:
+          - "<gray>Her blok ve her yaratık <white>gerçek değerine göre</white></gray>"
+          - "<gray>XP verir. Kömür 12, elmas 135, kadim kalıntı 300.</gray>"
+          - "<gray>Bir inek 15, bir zombi 24, bir Warden 1800.</gray>"
+          - ""
+          - "<yellow>Tarımcılık ve hayvancılık farklıdır</yellow><gray>: blok kırmakla</gray>"
+          - "<gray>değil <white>eylemle</white> artar - çapalamak, kemik tozu,</gray>"
+          - "<gray>sağmak, kırpmak, çiftleştirmek, evcilleştirmek,</gray>"
+          - "<gray>köylüyle ticaret, kayışla hayvan taşımak, pişirmek.</gray>"
+          - ""
+          - "<gray>Görevler de eğittikleri beceriye XP öder.</gray>"
+      - baslik: "<red>XP vermeyen iki durum</red>"
+        simge: BARRIER
+        satirlar:
+          - "<red>1. Yaratıcı ya da İzleyici mod.</red>"
+          - "<gray>Hiçbir beceri, sınıf ya da görev ilerlemesi olmaz.</gray>"
+          - ""
+          - "<red>2. Oyuncunun koyduğu bloklar.</red>"
+          - "<gray>Yere koyduğun bir cevheri kırmak hiçbir şey vermez.</gray>"
+          - "<gray>Blok kayıtları chunk'ın kendi verisinde saklanır ve</gray>"
+          - "<gray>sunucu yeniden başlasa bile unutulmaz.</gray>"
+          - ""
+          - "<gray>Tek istisna <white>ekinlerdir</white>: kendi ektiğin buğday da</gray>"
+          - "<gray>tam olgunlaştığında XP verir. Olmamış ekin vermez.</gray>"
+      - baslik: "<gold>Kilometre taşları</gold>"
+        simge: GOLDEN_APPLE
+        satirlar:
+          - "<gray>Her beceri <white>25 / 50 / 75 / 100</white>. seviyede kalıcı</gray>"
+          - "<gray>bir bonus açar. Zayıftan güçlüye sıralanmıştır.</gray>"
+          - ""
+          - "<gray>Her beceri <white>kendi işine yarayan</white> bir şey verir:</gray>"
+          - "<gray>• Kazıcılık: çift düşme, enerji, geniş kazı</gray>"
+          - "<gray>• Odunculuk: ağaç devirme, çift düşme</gray>"
+          - "<gray>• Madencilik: çift düşme, Acele I ve II</gray>"
+          - "<gray>• Avcılık: ekstra kalp ve PvE hasarı</gray>"
+          - "<gray>• Tarımcılık: çift düşme, otomatik ekim</gray>"
+          - "<gray>• Hayvancılık: yem iadesi, ikiz doğum</gray>"
+          - ""
+          - "<gray>Bonuslar <white>ölünce kaybolmaz</white>, yeniden doğunca geri</gray>"
+          - "<gray>gelir. Yalnızca prestij onları sıfırlar.</gray>"
+      - baslik: "<gold>Güç nedir?</gold>"
+        simge: NETHERITE_INGOT
+        satirlar:
+          - "<gray>Güç'ün kendi XP kaynağı <white>yoktur</white>. Altı becerinin</gray>"
+          - "<gray>seviyelerinin toplamıdır.</gray>"
+          - ""
+          - "<gray>Buna prestij yaptıkça <white>biriken</white> Güç eklenir, bu</gray>"
+          - "<gray>yüzden prestij Güç'ünü asla düşürmez.</gray>"
+          - ""
+          - "<gray>Güç 25/50/75/100'e ulaştığında sunucuya duyurulur.</gray>"
+
+  # -------------------------------------------------------------------
+  kabiliyetler:
+    gorunen-ad: "<light_purple><bold>Kabiliyetler</bold></light_purple>"
+    simge: BLAZE_POWDER
+    ozet: "Nasıl kuşanılır, nasıl çalıştırılır, ne yaparlar."
+    konular:
+      - baslik: "<light_purple>Nasıl kullanılır?</light_purple>"
+        simge: BLAZE_POWDER
+        satirlar:
+          - "<white>1.</white> <gray><white>/kabiliyet</white> menüsünden birini <white>kuşan</white>.</gray>"
+          - "<white>2.</white> <gray>Kabiliyetin istediği aleti eline al.</gray>"
+          - "<white>3.</white> <gray><white>Çift sağ tıkla</white> - ilk tık uyarır, ikincisi çalıştırır.</gray>"
+          - ""
+          - "<gray>Bloğa, boş havaya ya da bir yaratığa tıklamak - üçü de</gray>"
+          - "<gray>çalışır. Onay için 3 saniyen var.</gray>"
+          - ""
+          - "<gray>Tek tıkla çalışmamasının sebebi basit: kabiliyetler</gray>"
+          - "<gray>enerji harcar ve uzun bekleme süreleri başlatır.</gray>"
+      - baslik: "<light_purple>Kabiliyet açılma seviyeleri</light_purple>"
+        simge: EXPERIENCE_BOTTLE
+        satirlar:
+          - "<gray>Her sınıfın <white>tam olarak dört</white> kabiliyeti vardır ve</gray>"
+          - "<gray>hepsi aynı basamaklarda açılır:</gray>"
+          - ""
+          - "<white>Sınıf seviyesi 10 → 20 → 35 → 50</white>"
+          - ""
+          - "<gray>Basamak yükseldikçe kabiliyet güçlenir ve bekleme</gray>"
+          - "<gray>süresi uzar. <white>50. seviyedeki kabiliyet sınıfın son</white></gray>"
+          - "<white>sözüdür</white><gray>: en güçlü etki, en uzun bekleme.</gray>"
+      - baslik: "<yellow>Kabiliyeti tetiklemeyen tıklamalar</yellow>"
+        simge: OAK_DOOR
+        satirlar:
+          - "<gray>Kendi işi olan bloklar kabiliyeti açmaz: kapı, sandık,</gray>"
+          - "<gray>fırın, örs, tabela, yatak, düğme, şalter...</gray>"
+          - "<gray>Gerçekten orada kullanmak istiyorsan <white>shift + sağ tık</white>.</gray>"
+          - ""
+          - "<gray>Elinde blok, kova, kayık, kayış gibi kendi işlevi olan</gray>"
+          - "<gray>bir eşya varken bir bloğa tıklamak da açmaz - orada</gray>"
+          - "<gray>shift kaçış yolu <white>değildir</white>. Boş havaya tıkla.</gray>"
+      - baslik: "<light_purple>Kuşanma ve çıkarma</light_purple>"
+        simge: SHEARS
+        satirlar:
+          - "<gray>Farklı bir kabiliyete geçmek <white>2 dakika</white> bekleme</gray>"
+          - "<gray>gerektirir; aynısını yeniden seçmek serbesttir.</gray>"
+          - ""
+          - "<gray>Kabiliyet ekranındaki <white>Kabiliyeti Çıkar</white> düğmesi</gray>"
+          - "<gray>kuşandığını bırakır ve çalışan etkisini sonlandırır.</gray>"
+          - "<gray>Bekleme süreleri sıfırlanmaz - çıkarıp takmak bir</gray>"
+          - "<gray>kısayol değildir.</gray>"
+          - ""
+          - "<gray>Alet yalnızca <white>başlatmak</white> için gerekir. Bir kez</gray>"
+          - "<gray>çalıştıktan sonra eşya değiştirmen onu bozmaz.</gray>"
+
+  # -------------------------------------------------------------------
+  enerji:
+    gorunen-ad: "<aqua><bold>Enerji</bold></aqua>"
+    simge: GLOWSTONE_DUST
+    ozet: "Kabiliyetlerin yakıtı ve üç kuralı."
+    konular:
+      - baslik: "<aqua>Üç kural</aqua>"
+        simge: GLOWSTONE_DUST
+        satirlar:
+          - "<white>1.</white> <gray>Enerjiyi <white>yalnızca kabiliyetler</white> harcar.</gray>"
+          - "<gray>   Koşmak, savaşmak, blok kırmak enerjiye dokunmaz.</gray>"
+          - ""
+          - "<white>2.</white> <gray>Bir kabiliyet açıkken enerji <white>hiç yenilenmez</white>.</gray>"
+          - "<gray>   Kabiliyet bitince saniyede 3 puan dolmaya başlar.</gray>"
+          - ""
+          - "<white>3.</white> <gray>Süpürme kabiliyetleri <white>blok başına</white> öder.</gray>"
+          - "<gray>   Enerjin biterse kabiliyet orada durur.</gray>"
+      - baslik: "<aqua>Blok başına maliyetler</aqua>"
+        simge: IRON_PICKAXE
+        satirlar:
+          - "<white>Ağaç Kırıcı</white>  <gray>düşen her kütük için <white>5</white> enerji</gray>"
+          - "<white>Bulldozer</white>   <gray>kazılan her blok için <white>3</white> enerji</gray>"
+          - ""
+          - "<gray>Yani \"bir seferde kaç kütük devirirsin\" sorusunun</gray>"
+          - "<gray>cevabı blok sınırı değil, <white>enerji barındır</white>.</gray>"
+          - ""
+          - "<gray>Süpürme <white>aleti de yer</white>: düşen her blok için elindeki</gray>"
+          - "<gray>alet 1 dayanıklılık kaybeder. Elle kırsan zaten aynı</gray>"
+          - "<gray>bedeli öderdin.</gray>"
+      - baslik: "<aqua>Maksimum enerjini arttır</aqua>"
+        simge: BEACON
+        satirlar:
+          - "<gray>Varsayılan maksimum <white>100</white>'dür. Üç yerden artar:</gray>"
+          - ""
+          - "<gray>• Odak ağacındaki <white>Dayanıklılık</white> özellikleri</gray>"
+          - "<gray>• Beceri kilometre taşları (kazıcılık, odunculuk...)</gray>"
+          - "<gray>• Mağara Adamı'nın prestij bonusu</gray>"
+          - ""
+          - "<gray>Eylem çubuğunda her zaman <white>mevcut/maksimum</white> yazar.</gray>"
+
+  # -------------------------------------------------------------------
+  odak-agaci:
+    gorunen-ad: "<blue><bold>Odak Ağacı</bold></blue>"
+    simge: ENCHANTED_BOOK
+    ozet: "İki ayrı puan havuzu ve ne satın aldıkları."
+    konular:
+      - baslik: "<blue>İki ayrı havuz</blue>"
+        simge: ENCHANTED_BOOK
+        satirlar:
+          - "<gray>Yetenekler <white>birbirinin yerine geçmeyen</white> iki puan</gray>"
+          - "<gray>havuzundan ödenir:</gray>"
+          - ""
+          - "<white>Özellik Puanı</white> <gray>- her 25 Güç seviyesinde 1,</gray>"
+          - "<gray>her prestijde 4. Can, PvE hasar, maksimum enerji.</gray>"
+          - ""
+          - "<white>Kabiliyet Puanı</white> <gray>- her 40 Güç seviyesinde 1,</gray>"
+          - "<gray>her prestijde 2. Tek bir kabiliyete özel iyileştirme.</gray>"
+          - ""
+          - "<yellow>Kabiliyet puanı bilerek daha nadirdir.</yellow>"
+      - baslik: "<blue>Kabiliyet yetenekleri ne yapar?</blue>"
+        simge: EXPERIENCE_BOTTLE
+        satirlar:
+          - "<gray>Bir kabiliyetin şunlarından birini değiştirirler:</gray>"
+          - ""
+          - "<gray>• <white>Enerji maliyetini</white> düşürür</gray>"
+          - "<gray>• <white>Bekleme süresini</white> kısaltır</gray>"
+          - "<gray>• <white>Etki sınırını</white> genişletir (yarıçap, hayvan sayısı,</gray>"
+          - "<gray>  Verimlilik seviyesi, Hız seviyesi...)</gray>"
+          - "<gray>• <white>Etki süresini</white> uzatır</gray>"
+          - "<gray>• <white>Etkisinin gücünü</white> arttırır</gray>"
+          - "<gray>• <white>Blok başına enerjisini</white> düşürür</gray>"
+          - ""
+          - "<gray>Menüde bir yeteneğin üstüne geldiğinde her rankın tam</gray>"
+          - "<gray>olarak ne verdiği ve şu ana kadarki toplam yazar.</gray>"
+      - baslik: "<blue>Puanlar kaybolmaz</blue>"
+        simge: TOTEM_OF_UNDYING
+        satirlar:
+          - "<gray>İki havuz da <white>bütün sınıflar arasında paylaşılır</white>.</gray>"
+          - "<gray>Sınıf değiştirmek harcanmış rankları silmez.</gray>"
+          - ""
+          - "<gray>Yapılandırmadan bir yetenek kaldırılırsa o yeteneğe</gray>"
+          - "<gray>harcanmış puanlar sana geri döner.</gray>"
+
+  # -------------------------------------------------------------------
+  gorevler:
+    gorunen-ad: "<yellow><bold>Görevler</bold></yellow>"
+    simge: WRITABLE_BOOK
+    ozet: "85 görev, üç tür ve panele sabitleme."
+    konular:
+      - baslik: "<yellow>Üç görev türü</yellow>"
+        simge: WRITABLE_BOOK
+        satirlar:
+          - "<yellow>Günlük Görevler</yellow> <gray>- 23 görevlik havuzdan her gün</gray>"
+          - "<gray>rastgele atanan <white>3</white> görev.</gray>"
+          - ""
+          - "<gold>Haftalık Görevler</gold> <gray>- 19 görevlik havuzdan her hafta</gray>"
+          - "<gray>rastgele atanan <white>2</white> görev.</gray>"
+          - ""
+          - "<aqua>Kalıcı Görevler</aqua> <gray>- tek seferlik, hiç sıfırlanmayan,</gray>"
+          - "<gray>herkeste ortak <white>43</white> görev.</gray>"
+      - baslik: "<yellow>Beş görev çeşidi</yellow>"
+        simge: COMPASS
+        satirlar:
+          - "<gray>• <white>Blok kırma</white> ve <white>yaratık öldürme</white> - klasik sayaçlar</gray>"
+          - "<gray>• <white>Yapı bulma</white> - o yapının içinde durmak yeterli</gray>"
+          - "<gray>• <white>Eşya edinme</white> - yerden almak da, sandıktan da olur</gray>"
+          - "<gray>• <white>Kahramanlık</white> - sayıyla değil, hikâyeyle biten görev</gray>"
+          - "<gray>  (bir ghast'ı kendi ateşiyle öldürmek gibi)</gray>"
+          - ""
+          - "<gray>Bazı görevler <white>boyut</white> ister: End'de enderman,</gray>"
+          - "<gray>Nether'de blaze gibi.</gray>"
+      - baslik: "<yellow>Ödül hangi beceriye yazılır?</yellow>"
+        simge: EXPERIENCE_BOTTLE
+        satirlar:
+          - "<gray>Her görev <white>eğittiği beceriyi</white> kendisi bildirir ve</gray>"
+          - "<gray>ödülünü oraya öder - sıradan beceri XP'si gibi, aynı</gray>"
+          - "<gray>sinerji ve prestij çarpanlarıyla.</gray>"
+          - ""
+          - "<gray>Sonuç: bir görev hem beceriyi hem <white>o beceriden</white></gray>"
+          - "<white>beslenen sınıfı</white> <gray>birden büyütür.</gray>"
+          - ""
+          - "<gray>Sınıfın o beceriden beslenmiyorsa sınıf XP'ni yine</gray>"
+          - "<gray>alırsın - ama iki kere de sayılmaz.</gray>"
+      - baslik: "<yellow>Görevi panele sabitle</yellow>"
+        simge: ITEM_FRAME
+        satirlar:
+          - "<gray>Görev panosunda <white>tamamlanmamış bir göreve tıklamak</white></gray>"
+          - "<gray>onu sağdaki panele sabitler. Tekrar tıklamak kaldırır.</gray>"
+          - "<gray>Her tür için en fazla <white>3</white> görev sabitlenebilir.</gray>"
+          - ""
+          - "<gray><white>Kalıcı görevler</white> panelde yalnızca sabitlediklerinle</gray>"
+          - "<gray>görünür - 43 tanesini listelemek mümkün değil.</gray>"
+          - ""
+          - "<gray><white>Günlük ve haftalıkta</white> sabitleme bir filtredir:</gray>"
+          - "<gray>hiçbir şey sabitlemezsen hepsi görünür.</gray>"
+
+  # -------------------------------------------------------------------
+  zenginlik:
+    gorunen-ad: "<blue><bold>Zenginlik Puanı</bold></blue>"
+    simge: DIAMOND
+    ozet: "Para değil, itibar. Nasıl artar?"
+    konular:
+      - baslik: "<blue>Zenginlik nedir?</blue>"
+        simge: DIAMOND
+        satirlar:
+          - "<red>Bu sunucuda para yoktur.</red> <gray>Zenginlik Puanı bir</gray>"
+          - "<gray>bakiye değil, bir <white>skordur</white>: harcanmaz, düşmez,</gray>"
+          - "<gray>hiçbir şeye takas edilmez.</gray>"
+          - ""
+          - "<gray>Satın aldığı tek şey <white>itibardır</white>: liderlik tablosunda</gray>"
+          - "<gray>sıra, unvanlar, kozmetikler ve sunucu duyuruları.</gray>"
+      - baslik: "<blue>Zenginlik nasıl artar?</blue>"
+        simge: ANCIENT_DEBRIS
+        satirlar:
+          - "<gray>Dört kaynaktan, hepsi tek seferlik:</gray>"
+          - ""
+          - "<gray>• <white>Dünyanın ürettiği değerli blokları kırmak</white></gray>"
+          - "<gray>  (demir 500, elmas 10.000, kadim kalıntı 40.000)</gray>"
+          - "<gray>• <white>Yaratık öldürmek</white> (Warden 250.000, Ejderha 500.000)</gray>"
+          - "<gray>• <white>Görev tamamlamak</white></gray>"
+          - "<gray>• <white>Dünya bossu öldürmek</white></gray>"
+          - ""
+          - "<gray>Beceri XP'siyle aynı dört kurala tabidir: MMO açık</gray>"
+          - "<gray>olmalı, mod gerçek olmalı, blok dünyanın olmalı.</gray>"
+      - baslik: "<blue>Kilometre taşları ve sıralama</blue>"
+        simge: GOLD_BLOCK
+        satirlar:
+          - "<gray>Yedi eşik vardır; her birini geçtiğinde sunucuya</gray>"
+          - "<gray>duyurulur. Aynı anda birkaçını birden geçersen</gray>"
+          - "<gray>yalnızca <white>en yükseği</white> duyurulur.</gray>"
+          - ""
+          - "<gray>25 dakikada bir zenginlik sıralamasındaki en dikkat</gray>"
+          - "<gray>çekici değişiklik sunucuya duyurulur.</gray>"
+          - ""
+          - "<gray>Panelde kısaltılarak yazılır: <white>12.6K</white>, <white>1.05M</white>.</gray>"
+
+  # -------------------------------------------------------------------
+  prestij:
+    gorunen-ad: "<light_purple><bold>Prestij</bold></light_purple>"
+    simge: NETHER_STAR
+    ozet: "Ne ister, ne alır, ne verir."
+    konular:
+      - baslik: "<light_purple>Prestij mantığı</light_purple>"
+        simge: NETHER_STAR
+        satirlar:
+          - "<gray>Prestij, ilerlemenin bir kısmını geri vererek <white>kalıcı</white></gray>"
+          - "<white>güç satın almaktır</white><gray>. En fazla 10 kez yapılabilir.</gray>"
+          - ""
+          - "<gray>Sıfırladığı şeyler:</gray>"
+          - "<gray>• Seçili sınıfın sınıf seviyesi</gray>"
+          - "<gray>• Altı becerinin tümü (ve kilometre taşı bonusları)</gray>"
+          - ""
+          - "<yellow>Güç DÜŞMEZ.</yellow> <gray>Sıfırlanmadan önceki Güç'ün kalıcı</gray>"
+          - "<gray>olarak biriktirilir ve üstüne yeniden yükselirsin.</gray>"
+      - baslik: "<light_purple>Şartlar</light_purple>"
+        simge: BARRIER
+        satirlar:
+          - "<gray>Üç şart <white>birden</white> sağlanmalıdır:</gray>"
+          - ""
+          - "<gray>• Altı becerinin de en az <white>25</white>. seviyede olması</gray>"
+          - "<gray>• Seçili sınıfın <white>50</white>. sınıf seviyesine ulaşması</gray>"
+          - "<gray>• Sınıfın sinerji becerilerinin <white>hepsinin</white> o sınıfın</gray>"
+          - "<gray>  istediği seviyeye ulaşması</gray>"
+          - ""
+          - "<gray>Son şart sınıf başına ayarlanır: tek beceri besleyen</gray>"
+          - "<gray>sınıflar <white>100</white> ister, Tabiat Vârisi dördünde de</gray>"
+          - "<gray><white>30</white> ister - dört beceriyi birden 100 yapmak onu</gray>"
+          - "<gray>diğerlerinden kat kat zor yapardı.</gray>"
+          - ""
+          - "<gray><white>/prestij</white> bunları tek tek ✔/✘ olarak listeler.</gray>"
+      - baslik: "<light_purple>Karşılığında ne alırsın?</light_purple>"
+        simge: FIREWORK_ROCKET
+        satirlar:
+          - "<gray>• Her prestij rankında kalıcı <white>+%25 XP</white></gray>"
+          - "<gray>  (hem beceri hem sınıf XP'sinde, üst üste biner)</gray>"
+          - "<gray>• Sınıfına özgü kalıcı bonus (can / hasar / enerji)</gray>"
+          - "<gray>• 4 özellik + 2 kabiliyet puanı</gray>"
+          - "<gray>• Liderlik tablosunda ham seviyeden bağımsız üstünlük</gray>"
+          - "<gray>• <white>/ev</white>, <white>/takas</white> ve <white>/çanta</white> kalıcı olarak açılır</gray>"
+          - ""
+          - "<gray>Prestij sunucu genelinde duyurulur, havai fişek atılır.</gray>"
+
+  # -------------------------------------------------------------------
+  bosslar:
+    gorunen-ad: "<dark_red><bold>Dünya Bossları</bold></dark_red>"
+    simge: WITHER_SKELETON_SKULL
+    ozet: "30 dakikada bir doğan, adı olan yaratıklar."
+    konular:
+      - baslik: "<dark_red>Boss nedir?</dark_red>"
+        simge: WITHER_SKELETON_SKULL
+        satirlar:
+          - "<gray><white>30 dakikada bir</white>, çevrimiçi bir oyuncunun 120-320</gray>"
+          - "<gray>blok uzağında adı olan bir yaratık doğar.</gray>"
+          - ""
+          - "<gray>Doğuşu ses, sunucu duyurusu ve <white>koordinat</white> ile</gray>"
+          - "<gray>bildirilir; ayrıca <white>Xaero's Minimap</white> haritanda bir</gray>"
+          - "<gray>işaret olarak belirir - uzaktaysan bile hangi yönde</gray>"
+          - "<gray>olduğunu gösterir.</gray>"
+          - ""
+          - "<gray>Yakınına gidince ekranın üstünde can çubuğu çıkar.</gray>"
+      - baslik: "<dark_red>Beş nadirlik</dark_red>"
+        simge: NETHER_STAR
+        satirlar:
+          - "<gray>Sıradan → Nadir → Epik → Efsanevi → <white>Mistik</white></gray>"
+          - ""
+          - "<gray>Nadirlik canını, hasarını, hızını, zırhını, silahını,</gray>"
+          - "<gray>ganimetini ve verdiği zenginliği birden belirler.</gray>"
+          - ""
+          - "<gray>Bazıları yarı canda kendini iyileştirir, bazıları sana</gray>"
+          - "<gray>doğru ışınlanır, bazıları çeyrek canda <white>kaçar</white>.</gray>"
+      - baslik: "<dark_red>Boss kuralları</dark_red>"
+        simge: CLOCK
+        satirlar:
+          - "<gray>• Bosslar <white>güneşte yanmaz</white> - sabahı bekleyerek</gray>"
+          - "<gray>  bedavaya ölmelerini sağlayamazsın.</gray>"
+          - ""
+          - "<gray>• Kimse dokunmadıysa bir sonraki boss doğduğunda</gray>"
+          - "<gray>  eskisi <white>kaybolur</white>. Ama bir oyuncu ona bir kez</gray>"
+          - "<gray>  bile vurduysa kaybolmaz - dövüş bitene kadar durur.</gray>"
+          - ""
+          - "<gray>• Öldüren oyuncu sınıf XP'si, zenginlik, ganimet ve</gray>"
+          - "<gray>  bossun <white>kendi adını taşıyan kafasını</white> alır.</gray>"
+
+  # -------------------------------------------------------------------
+  komutlar:
+    gorunen-ad: "<white><bold>Komutlar</bold></white>"
+    simge: COMMAND_BLOCK
+    ozet: "Bütün komutlar ve ne açtıkları."
+    konular:
+      - baslik: "<white>Ana ekranlar</white>"
+        simge: COMPASS
+        satirlar:
+          - "<white>/menü</white>       <gray>ana menü (dört kategori)</gray>"
+          - "<white>/yardım</white>     <gray>bu rehber (<white>/bilgi</white>, <white>/rehber</white>)</gray>"
+          - "<white>/profil</white>     <gray>kendi profilin</gray>"
+          - "<white>/profil <isim></white> <gray>başka bir oyuncunun tam kaydı</gray>"
+          - "<white>/sınıf</white>      <gray>sınıf ve odak ağacı</gray>"
+          - "<white>/kabiliyet</white>  <gray>kabiliyet ekranı</gray>"
+          - "<white>/beceri</white>     <gray>altı becerinin özeti</gray>"
+          - "<white>/panel</white>      <gray>sağdaki paneli gizler/gösterir</gray>"
+      - baslik: "<white>İlerleme ekranları</white>"
+        simge: EXPERIENCE_BOTTLE
+        satirlar:
+          - "<white>/görev</white>      <gray>görev panosu</gray>"
+          - "<white>/koleksiyon</white> <gray>koleksiyonlar</gray>"
+          - "<white>/günlük</white>     <gray>macera günlüğü</gray>"
+          - "<white>/prestij</white>    <gray>prestij şartları ve onay</gray>"
+          - "<white>/liderlik</white>   <gray>liderlik tabloları</gray>"
+          - "<white>/ünvan</white>      <gray>unvan gardırobu</gray>"
+          - "<white>/kozmetik</white>   <gray>kozmetik gardırobu</gray>"
+          - ""
+          - "<gray>Her becerinin kendi komutu vardır: <white>/madencilik</white>,</gray>"
+          - "<white>/odunculuk</white>, <white>/kazıcılık</white>, <white>/avcılık</white>,"
+          - "<white>/tarımcılık</white>, <white>/hayvancılık</white>"
+      - baslik: "<white>Dünya komutları</white>"
+        simge: ENDER_PEARL
+        satirlar:
+          - "<white>/ev</white>         <gray>evine ışınlanır (5 dk bekleme)</gray>"
+          - "<gray>            <white>/ev ayarla <isim></white>, <white>/ev sil</white></gray>"
+          - "<white>/çanta</white>      <gray>bulut sandığı - ölünce kaybolmaz</gray>"
+          - "<white>/takas <isim></white> <gray>takas isteği gönderir</gray>"
+          - "<white>/rtp</white>        <gray>rastgele bir noktaya (30 dk bekleme)</gray>"
+          - "<white>/harita</white>     <gray>canlı oyun içi harita adresi</gray>"
+          - ""
+          - "<gray>Türkçe karakterli her komutun ASCII yazımı da çalışır:</gray>"
+          - "<gray><white>/menu</white>, <white>/gorev</white>, <white>/canta</white>, <white>/sinif</white>...</gray>"
+
+  # -------------------------------------------------------------------
+  ozellikler:
+    gorunen-ad: "<dark_aqua><bold>Ek Özellikler</bold></dark_aqua>"
+    simge: ENDER_CHEST
+    ozet: "Ev, takas, çanta, unvan, kozmetik ve daha fazlası."
+    konular:
+      - baslik: "<dark_aqua>Bulut Sandığı (/çanta)</dark_aqua>"
+        simge: ENDER_CHEST
+        satirlar:
+          - "<gray>Tek sandık kapasitesinde, <white>ölünce kaybolmayan</white></gray>"
+          - "<gray>kişisel bir depo. İçindekiler veritabanında durur,</gray>"
+          - "<gray>envanterinde değil - ne lav ne ölüm ona ulaşabilir.</gray>"
+          - ""
+          - "<gray>Her biyomda, her dünyada, her yerde açılır.</gray>"
+          - ""
+          - "<gray>Açılma şartı: <white>30. sınıf seviyesi</white> ya da en az bir</gray>"
+          - "<gray>kez prestij yapmış olmak.</gray>"
+      - baslik: "<dark_aqua>Ev ve Takas</dark_aqua>"
+        simge: RED_BED
+        satirlar:
+          - "<white>/ev</white> <gray>15. sınıf seviyesinde açılır. Nether ve End'de</gray>"
+          - "<gray>ne ayarlanır ne oraya gidilir - portalı anlamsız</gray>"
+          - "<gray>kılmamak için. 5 dakikada bir kullanılabilir.</gray>"
+          - ""
+          - "<white>/takas</white> <gray>20. sınıf seviyesinde açılır (karşı taraf 15).</gray>"
+          - "<gray>Mesafe şartı yoktur - uzaktan takas etmek amacın</gray>"
+          - "<gray>ta kendisidir. Masaya konan eşya anında envanterinden</gray>"
+          - "<gray>çıkar, bu yüzden kopyalanamaz.</gray>"
+      - baslik: "<dark_aqua>Unvan ve Kozmetik</dark_aqua>"
+        simge: NAME_TAG
+        satirlar:
+          - "<gray><white>19 unvan</white> ve <white>14 kozmetik</white> vardır.</gray>"
+          - ""
+          - "<gray>Unvan kuşandığında adının önünde <white>kendi renginde</white></gray>"
+          - "<gray>görünür: sohbette, panelde ve TAB listesinde.</gray>"
+          - ""
+          - "<gray>Kozmetik seviye atladığında ve girişte partikül patlatır.</gray>"
+          - ""
+          - "<gray>Açılma şartları seviye, prestij, görev, koleksiyon</gray>"
+          - "<gray>ya da zenginliktir. Kilitli olanın üstüne gelince</gray>"
+          - "<gray>onu <white>neyin açacağı</white> yazar.</gray>"
+      - baslik: "<dark_aqua>Uyku ve TAB listesi</dark_aqua>"
+        simge: WHITE_BED
+        satirlar:
+          - "<gray><white>Tek bir oyuncunun uyuması sabahı getirir</white>. Yatakta</gray>"
+          - "<gray>vanilla'nın \"geceyi uyudu\" saydığı kadar kal, saat</gray>"
+          - "<gray>sabaha alınsın ve yağmur dinsin.</gray>"
+          - ""
+          - "<gray>TAB tuşunda sunucu adı, çevrimiçi sayısı, canlı TPS ve</gray>"
+          - "<gray>kendi ping'in görünür. Her oyuncunun adının önünde</gray>"
+          - "<gray>unvanı, yanında Güç'ü yazar.</gray>"
