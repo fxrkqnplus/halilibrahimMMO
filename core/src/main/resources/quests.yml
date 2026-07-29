@@ -42,8 +42,10 @@
 #           Sınıfı o beceriden beslenmeyen oyuncular sınıf XP'sini yine alır.
 #
 #  gorunen-ad: /görev menüsünde görünen tam ad.
-#  kisa-ad   : SAĞDAKİ PANELDE görünen kısa ad. Panel satırları kaydırmaz,
-#              keser - o yüzden burayı kısa tutun (yaklaşık 18 karakter).
+#  kisa-ad   : SAĞDAKİ PANELDE görünen kısa ad. Bir emir cümlesi olarak yazın:
+#              "40 kütük kır", "8 enderman öldür", "Bir köy keşfet" gibi - ne
+#              yapılacağı panelden tek bakışta anlaşılsın. Panel satırları
+#              kaydırmaz, keser; en fazla 24 karakter kullanın.
 #  aciklama  : görev menüsünde görevin üstüne gelindiğinde okunan açıklama.
 #  simge     : görev menüsündeki eşya simgesi (herhangi bir Bukkit Material adı).
 #
@@ -72,7 +74,7 @@ gorevler:
   # ----- Uzun soluklu toplama -----
   odun-ustasi:
     gorunen-ad: "Odun Ustası"
-    kisa-ad: "Odun Ustası"
+    kisa-ad: "500 kütük kes"
     aciklama: "Ormanlarda 500 kütük kes. Hangi ağaç türü olduğu fark etmez."
     simge: OAK_LOG
     tur: PERMANENT
@@ -85,7 +87,7 @@ gorevler:
 
   derinlik-kazicisi:
     gorunen-ad: "Derinlik Kazıcısı"
-    kisa-ad: "Derinlik Kazıcısı"
+    kisa-ad: "50 nadir cevher kaz"
     aciklama: "Dünyanın en derin katmanlarından 50 nadir cevher çıkar: elmas, zümrüt ya da antik döküntü."
     simge: DIAMOND_PICKAXE
     tur: PERMANENT
@@ -98,7 +100,7 @@ gorevler:
 
   netherite-arayisi:
     gorunen-ad: "Netherite Arayışı"
-    kisa-ad: "Netherite"
+    kisa-ad: "32 antik döküntü kaz"
     aciklama: "Nether'ın derinliklerinden 32 antik döküntü çıkar. Kazma kadar sabır da gerekecek."
     simge: NETHERITE_SCRAP
     tur: PERMANENT
@@ -113,7 +115,7 @@ gorevler:
   # ----- Keşif -----
   kesif-koy:
     gorunen-ad: "İlk Komşular"
-    kisa-ad: "Köy Bul"
+    kisa-ad: "Bir köy keşfet"
     aciklama: "Dünyayı gez ve herhangi bir köy bul. İçine girmen yeterli."
     simge: EMERALD
     tur: PERMANENT
@@ -126,7 +128,7 @@ gorevler:
 
   kesif-batik-hazine:
     gorunen-ad: "Batık Hazine"
-    kisa-ad: "Batık Hazine"
+    kisa-ad: "Batık hazine bul"
     aciklama: "Bir haritanın peşine düş ve gömülü hazineyi bul. Kazman gerekecek."
     simge: HEART_OF_THE_SEA
     tur: PERMANENT
@@ -139,7 +141,7 @@ gorevler:
 
   kesif-terkedilmis-maden:
     gorunen-ad: "Terk Edilmiş Maden"
-    kisa-ad: "Terk Edilmiş Maden"
+    kisa-ad: "Terk edilmiş maden bul"
     aciklama: "Yer altındaki eski maden ocaklarından birini bul."
     simge: RAIL
     tur: PERMANENT
@@ -152,7 +154,7 @@ gorevler:
 
   kesif-batik-gemi:
     gorunen-ad: "Karaya Vuran Gemi"
-    kisa-ad: "Batık Gemi"
+    kisa-ad: "Batık gemi keşfet"
     aciklama: "Okyanusun dibinde ya da kıyıda bir batık gemi bul."
     simge: OAK_BOAT
     tur: PERMANENT
@@ -165,7 +167,7 @@ gorevler:
 
   kesif-yagmaci-karakolu:
     gorunen-ad: "Yağmacı Karakolu"
-    kisa-ad: "Yağmacı Karakolu"
+    kisa-ad: "Yağmacı karakolu bul"
     aciklama: "Bir yağmacı karakolu bul - ama hazırlıklı git."
     simge: CROSSBOW
     tur: PERMANENT
@@ -178,7 +180,7 @@ gorevler:
 
   kesif-orman-konagi:
     gorunen-ad: "Ormandaki Konak"
-    kisa-ad: "Orman Konağı"
+    kisa-ad: "Orman konağı keşfet"
     aciklama: "Kara meşe ormanlarının derinliğindeki devasa konağı bul. Kolay olmayacak."
     simge: DARK_OAK_DOOR
     tur: PERMANENT
@@ -191,7 +193,7 @@ gorevler:
 
   kesif-nether-kalesi:
     gorunen-ad: "Nether Kalesi"
-    kisa-ad: "Nether Kalesi"
+    kisa-ad: "Nether kalesi keşfet"
     aciklama: "Nether'a in ve bir nether kalesi bul."
     simge: NETHER_BRICK
     tur: PERMANENT
@@ -204,7 +206,7 @@ gorevler:
 
   kesif-bastion:
     gorunen-ad: "Bastion Kalıntısı"
-    kisa-ad: "Bastion"
+    kisa-ad: "Bastion kalıntısı bul"
     aciklama: "Nether'daki piglin bastion kalıntılarından birini bul."
     simge: GOLD_BLOCK
     tur: PERMANENT
@@ -217,7 +219,7 @@ gorevler:
 
   kesif-okyanus-aniti:
     gorunen-ad: "Okyanus Anıtı"
-    kisa-ad: "Okyanus Anıtı"
+    kisa-ad: "Okyanus anıtı keşfet"
     aciklama: "Denizin dibindeki devasa anıtı bul. Nefesine dikkat et."
     simge: PRISMARINE
     tur: PERMANENT
@@ -230,7 +232,7 @@ gorevler:
 
   kesif-kadim-kalintilar:
     gorunen-ad: "Kadim Kalıntılar"
-    kisa-ad: "Kadim Kalıntılar"
+    kisa-ad: "Kadim kalıntı bul"
     aciklama: "Toprağın altına gömülmüş antik kalıntıları bul ve fırçanı hazırla."
     simge: BRUSH
     tur: PERMANENT
@@ -243,7 +245,7 @@ gorevler:
 
   kesif-kadim-sehir:
     gorunen-ad: "Kadim Şehir"
-    kisa-ad: "Kadim Şehir"
+    kisa-ad: "Kadim şehri keşfet"
     aciklama: "Derin karanlıkta uyuyan Kadim Şehir'i bul. Sessiz ol."
     simge: SCULK_CATALYST
     tur: PERMANENT
@@ -256,7 +258,7 @@ gorevler:
 
   kesif-deneme-odalari:
     gorunen-ad: "Deneme Odaları"
-    kisa-ad: "Deneme Odaları"
+    kisa-ad: "Deneme odalarını bul"
     aciklama: "Yer altındaki deneme odalarını bul."
     simge: TRIAL_KEY
     tur: PERMANENT
@@ -269,7 +271,7 @@ gorevler:
 
   kesif-kale:
     gorunen-ad: "Son Kapı"
-    kisa-ad: "Kale"
+    kisa-ad: "Kaleyi keşfet"
     aciklama: "End portalını barındıran kaleyi bul."
     simge: ENDER_EYE
     tur: PERMANENT
@@ -284,7 +286,7 @@ gorevler:
   # Bir yeri bulmak yarısı; asıl görev içine girip iş bitirmek.
   konak-buyuculeri:
     gorunen-ad: "Konağın Büyücüleri"
-    kisa-ad: "Konak Büyücüleri"
+    kisa-ad: "3 evoker öldür"
     aciklama: "Ormandaki konağı bul ve içindeki büyücülerden (evoker) 3 tanesini öldür."
     simge: TOTEM_OF_UNDYING
     tur: PERMANENT
@@ -297,7 +299,7 @@ gorevler:
 
   yasli-muhafiz:
     gorunen-ad: "Yaşlı Muhafız"
-    kisa-ad: "Yaşlı Muhafız"
+    kisa-ad: "Yaşlı muhafız öldür"
     aciklama: "Denizin dibindeki anıtı bul ve içindeki Elder Guardian'ı öldür."
     simge: SPONGE
     tur: PERMANENT
@@ -310,7 +312,7 @@ gorevler:
 
   bastion-altini:
     gorunen-ad: "Bastion'un Altını"
-    kisa-ad: "Bastion Altını"
+    kisa-ad: "10 altın bloğu kır"
     aciklama: "Bir bastion kalıntısı bul ve oradan 10 altın bloğu kaz. Piglinler bundan hoşlanmayacak."
     simge: GOLD_BLOCK
     tur: PERMANENT
@@ -324,7 +326,7 @@ gorevler:
 
   piglin-ticareti:
     gorunen-ad: "Piglin Ticareti"
-    kisa-ad: "Piglin Takası"
+    kisa-ad: "8 piglin takası yap"
     aciklama: "Nether'da piglinlere altın vererek 8 kez takas yap."
     simge: GOLD_INGOT
     tur: PERMANENT
@@ -337,7 +339,7 @@ gorevler:
 
   blaze-avi:
     gorunen-ad: "Alev Avı"
-    kisa-ad: "10 Blaze"
+    kisa-ad: "10 blaze öldür"
     aciklama: "Bir nether kalesi bul ve içindeki 10 blaze'i öldür."
     simge: BLAZE_ROD
     tur: PERMANENT
@@ -351,7 +353,7 @@ gorevler:
 
   wither-iskeletleri:
     gorunen-ad: "Kara Kemikler"
-    kisa-ad: "10 Wither İskeleti"
+    kisa-ad: "10 wither iskeleti kes"
     aciklama: "Nether kalesinde 10 wither iskeleti öldür. Kafatasları için de iyi bir fırsat."
     simge: WITHER_SKELETON_SKULL
     tur: PERMANENT
@@ -365,7 +367,7 @@ gorevler:
 
   ghast-yansimasi:
     gorunen-ad: "Kendi Ateşiyle"
-    kisa-ad: "Ghast Yansıması"
+    kisa-ad: "Ghast'ı ateşiyle öldür"
     aciklama: "Bir ghast'ın attığı ateş topunu geri yolla ve onu kendi ateşiyle öldür."
     simge: GHAST_TEAR
     tur: PERMANENT
@@ -378,7 +380,7 @@ gorevler:
 
   end-enderman-avi:
     gorunen-ad: "End'in Sakinleri"
-    kisa-ad: "100 Enderman"
+    kisa-ad: "100 enderman öldür"
     aciklama: "End'e geç ve orada toplam 100 enderman öldür. Gözlerine bakmayı unutma."
     simge: ENDER_PEARL
     tur: PERMANENT
@@ -392,7 +394,7 @@ gorevler:
 
   shulker-avcisi:
     gorunen-ad: "Kutu Avcısı"
-    kisa-ad: "20 Shulker"
+    kisa-ad: "20 shulker öldür"
     aciklama: "End şehirlerinde 20 shulker öldür."
     simge: SHULKER_SHELL
     tur: PERMANENT
@@ -406,7 +408,7 @@ gorevler:
 
   wither-katili:
     gorunen-ad: "Wither Katili"
-    kisa-ad: "Wither"
+    kisa-ad: "Wither'ı öldür"
     aciklama: "Wither'ı çağır ve öldür. Yanına yalnız gitme."
     simge: NETHER_STAR
     tur: PERMANENT
@@ -419,7 +421,7 @@ gorevler:
 
   derinin-bekcisi:
     gorunen-ad: "Derinin Bekçisi"
-    kisa-ad: "Warden"
+    kisa-ad: "Warden'ı öldür"
     aciklama: "Kadim Şehir'in bekçisini uyandır ve öldür. Bu sunucudaki en zor işlerden biri."
     simge: ECHO_SHARD
     tur: PERMANENT
@@ -433,7 +435,7 @@ gorevler:
   # ----- Zanaat ve gündelik hüner -----
   ilk-buyu:
     gorunen-ad: "İlk Büyüler"
-    kisa-ad: "10 Büyüleme"
+    kisa-ad: "10 eşya büyüle"
     aciklama: "Büyü masasında 10 eşya büyüle."
     simge: ENCHANTING_TABLE
     tur: PERMANENT
@@ -446,7 +448,7 @@ gorevler:
 
   sabirli-balikci:
     gorunen-ad: "Sabırlı Balıkçı"
-    kisa-ad: "50 Balık"
+    kisa-ad: "50 balık tut"
     aciklama: "Oltanı at ve 50 kez balık çıkar."
     simge: FISHING_ROD
     tur: PERMANENT
@@ -459,7 +461,7 @@ gorevler:
 
   sadik-dost:
     gorunen-ad: "Sadık Dostlar"
-    kisa-ad: "5 Evcilleştirme"
+    kisa-ad: "5 hayvan evcilleştir"
     aciklama: "5 hayvan evcilleştir - kurt, kedi, at, papağan, hepsi sayılır."
     simge: BONE
     tur: PERMANENT
@@ -472,7 +474,7 @@ gorevler:
 
   koy-tuccari:
     gorunen-ad: "Köy Tüccarı"
-    kisa-ad: "30 Ticaret"
+    kisa-ad: "30 köylü takası yap"
     aciklama: "Köylülerle 30 kez ticaret yap."
     simge: EMERALD_BLOCK
     tur: PERMANENT
@@ -486,7 +488,7 @@ gorevler:
   # ----- Kalıcı eşya görevleri -----
   esya-muzik-diski:
     gorunen-ad: "İlk Plak"
-    kisa-ad: "Müzik Diski"
+    kisa-ad: "Müzik diski bul"
     aciklama: "Herhangi bir müzik diski edin. Creeper'ın vurduğu bir iskelet ya da bir zindan sandığı işini görür."
     simge: MUSIC_DISC_CAT
     tur: PERMANENT
@@ -502,7 +504,7 @@ gorevler:
 
   esya-isim-etiketi:
     gorunen-ad: "Bir İsim Ver"
-    kisa-ad: "İsim Etiketi"
+    kisa-ad: "İsim etiketi bul"
     aciklama: "Bir isim etiketi edin. Balık tutarak ya da sandıklardan çıkabilir."
     simge: NAME_TAG
     tur: PERMANENT
@@ -515,7 +517,7 @@ gorevler:
 
   esya-ejderha-yumurtasi:
     gorunen-ad: "Ejderhanın Mirası"
-    kisa-ad: "Ejderha Yumurtası"
+    kisa-ad: "Ejderha yumurtası al"
     aciklama: "Ejderha yumurtasını ele geçir. Bu sunucudaki en zor görevlerden biri."
     simge: DRAGON_EGG
     tur: PERMANENT
@@ -528,7 +530,7 @@ gorevler:
 
   esya-elytra:
     gorunen-ad: "Kanatlar"
-    kisa-ad: "Elytra"
+    kisa-ad: "Elytra bul"
     aciklama: "End şehirlerindeki gemilerden bir elytra al."
     simge: ELYTRA
     tur: PERMANENT
@@ -541,7 +543,7 @@ gorevler:
 
   esya-totem:
     gorunen-ad: "Ölümsüzlük Totemi"
-    kisa-ad: "Totem"
+    kisa-ad: "Ölümsüzlük totemi al"
     aciklama: "Bir evoker öldür ve düşürdüğü totemi al."
     simge: TOTEM_OF_UNDYING
     tur: PERMANENT
@@ -557,7 +559,7 @@ gorevler:
   # ===================================================================
   gunluk-maden-turu:
     gorunen-ad: "Günlük Maden Turu"
-    kisa-ad: "50 Cevher"
+    kisa-ad: "50 cevher kaz"
     aciklama: "Sıradan bir maden turu: 50 kömür, demir ya da bakır cevheri kır."
     simge: IRON_ORE
     tur: DAILY
@@ -570,7 +572,7 @@ gorevler:
 
   gunluk-avlanma:
     gorunen-ad: "Günlük Avlanma"
-    kisa-ad: "20 Yaratık"
+    kisa-ad: "20 yaratık öldür"
     aciklama: "Herhangi 20 yaratığı avla - düşman ya da barışçıl, hepsi sayılır."
     simge: IRON_SWORD
     tur: DAILY
@@ -583,7 +585,7 @@ gorevler:
 
   gunluk-oduncu:
     gorunen-ad: "Günlük Oduncu"
-    kisa-ad: "40 Kütük"
+    kisa-ad: "40 kütük kır"
     aciklama: "Baltanı kap ve 40 kütük kes."
     simge: IRON_AXE
     tur: DAILY
@@ -596,7 +598,7 @@ gorevler:
 
   gunluk-degerli-madenler:
     gorunen-ad: "Değerli Madenler"
-    kisa-ad: "30 Değerli Cevher"
+    kisa-ad: "30 değerli cevher kaz"
     aciklama: "30 altın, lapis ya da redstone cevheri çıkar."
     simge: GOLD_INGOT
     tur: DAILY
@@ -609,7 +611,7 @@ gorevler:
 
   gunluk-zombi-temizligi:
     gorunen-ad: "Zombi Temizliği"
-    kisa-ad: "15 Zombi"
+    kisa-ad: "15 zombi öldür"
     aciklama: "15 zombi, çöl zombisi ya da boğulmuş öldür."
     simge: ROTTEN_FLESH
     tur: DAILY
@@ -622,7 +624,7 @@ gorevler:
 
   gunluk-iskelet-avi:
     gorunen-ad: "İskelet Avı"
-    kisa-ad: "15 İskelet"
+    kisa-ad: "15 iskelet öldür"
     aciklama: "15 iskelet, buz iskeleti ya da wither iskeleti öldür."
     simge: BONE
     tur: DAILY
@@ -635,7 +637,7 @@ gorevler:
 
   gunluk-toprak-temizligi:
     gorunen-ad: "Toprak Temizliği"
-    kisa-ad: "80 Toprak"
+    kisa-ad: "80 toprak kaz"
     aciklama: "Küreğinle 80 toprak, çakıl ya da kum bloğu kaz."
     simge: IRON_SHOVEL
     tur: DAILY
@@ -648,7 +650,7 @@ gorevler:
 
   gunluk-orumcek-avi:
     gorunen-ad: "Örümcek Avı"
-    kisa-ad: "15 Örümcek"
+    kisa-ad: "15 örümcek öldür"
     aciklama: "15 örümcek ya da mağara örümceği öldür."
     simge: STRING
     tur: DAILY
@@ -661,7 +663,7 @@ gorevler:
 
   gunluk-nether-madenciligi:
     gorunen-ad: "Nether Madenciliği"
-    kisa-ad: "30 Nether Cevheri"
+    kisa-ad: "30 nether cevheri kaz"
     aciklama: "Nether'a in ve 30 nether cevheri ya da kızıl gövde kır."
     simge: NETHER_QUARTZ_ORE
     tur: DAILY
@@ -675,7 +677,7 @@ gorevler:
 
   gunluk-creeper-avi:
     gorunen-ad: "Creeper Avı"
-    kisa-ad: "10 Creeper"
+    kisa-ad: "10 creeper öldür"
     aciklama: "10 creeper öldür - patlamadan önce yetiş."
     simge: GUNPOWDER
     tur: DAILY
@@ -688,7 +690,7 @@ gorevler:
 
   gunluk-derin-maden:
     gorunen-ad: "Derin Maden Taraması"
-    kisa-ad: "10 Elmas/Zümrüt"
+    kisa-ad: "10 elmas/zümrüt kaz"
     aciklama: "10 elmas ya da zümrüt cevheri bul ve çıkar."
     simge: DIAMOND
     tur: DAILY
@@ -701,7 +703,7 @@ gorevler:
 
   gunluk-hasat:
     gorunen-ad: "Günlük Hasat"
-    kisa-ad: "60 Ekin"
+    kisa-ad: "60 ekin hasat et"
     aciklama: "Tarlanda 60 olgunlaşmış ekin biç."
     simge: WHEAT
     tur: DAILY
@@ -714,7 +716,7 @@ gorevler:
 
   gunluk-balikci:
     gorunen-ad: "Günlük Balıkçılık"
-    kisa-ad: "10 Balık"
+    kisa-ad: "10 balık tut"
     aciklama: "Oltanı at ve 10 kez balık çıkar."
     simge: COD
     tur: DAILY
@@ -727,7 +729,7 @@ gorevler:
 
   gunluk-ticaret:
     gorunen-ad: "Günlük Ticaret"
-    kisa-ad: "5 Ticaret"
+    kisa-ad: "5 köylü takası yap"
     aciklama: "Bir köylüyle 5 kez ticaret yap."
     simge: EMERALD
     tur: DAILY
@@ -740,7 +742,7 @@ gorevler:
 
   gunluk-buyuleme:
     gorunen-ad: "Günlük Büyüleme"
-    kisa-ad: "3 Büyüleme"
+    kisa-ad: "3 eşya büyüle"
     aciklama: "Büyü masasında 3 eşya büyüle."
     simge: LAPIS_LAZULI
     tur: DAILY
@@ -753,7 +755,7 @@ gorevler:
 
   gunluk-enderman:
     gorunen-ad: "Enderman Avı"
-    kisa-ad: "8 Enderman"
+    kisa-ad: "8 enderman öldür"
     aciklama: "8 enderman öldür. Nereye baktığına dikkat et."
     simge: ENDER_PEARL
     tur: DAILY
@@ -769,7 +771,7 @@ gorevler:
   # ===================================================================
   haftalik-zombi-avi:
     gorunen-ad: "Haftalık Zombi Avı"
-    kisa-ad: "100 Zombi"
+    kisa-ad: "100 zombi öldür"
     aciklama: "Bir hafta boyunca 100 zombi, çöl zombisi ya da boğulmuş öldür."
     simge: ZOMBIE_HEAD
     tur: WEEKLY
@@ -782,7 +784,7 @@ gorevler:
 
   haftalik-derin-kazi:
     gorunen-ad: "Haftalık Derin Kazı"
-    kisa-ad: "80 Değerli Cevher"
+    kisa-ad: "80 değerli cevher kaz"
     aciklama: "Derinlerden 80 değerli cevher çıkar: elmas, zümrüt, altın ya da antik döküntü."
     simge: NETHERITE_SCRAP
     tur: WEEKLY
@@ -795,7 +797,7 @@ gorevler:
 
   haftalik-orman-kesimi:
     gorunen-ad: "Haftalık Orman Kesimi"
-    kisa-ad: "300 Kütük"
+    kisa-ad: "300 kütük kes"
     aciklama: "Bir hafta boyunca 300 kütük kes."
     simge: DARK_OAK_LOG
     tur: WEEKLY
@@ -808,7 +810,7 @@ gorevler:
 
   haftalik-nether-avi:
     gorunen-ad: "Haftalık Nether Avı"
-    kisa-ad: "60 Nether Yaratığı"
+    kisa-ad: "60 nether yaratığı kes"
     aciklama: "Nether'ın 60 sakinini avla: blaze, ghast, piglin ya da hoglin."
     simge: BLAZE_ROD
     tur: WEEKLY
@@ -822,7 +824,7 @@ gorevler:
 
   haftalik-magara-taramasi:
     gorunen-ad: "Haftalık Mağara Taraması"
-    kisa-ad: "250 Cevher"
+    kisa-ad: "250 cevher kaz"
     aciklama: "Mağaraları tara ve 250 sıradan cevher kır."
     simge: TORCH
     tur: WEEKLY
@@ -835,7 +837,7 @@ gorevler:
 
   haftalik-guclu-canavarlar:
     gorunen-ad: "Güçlü Canavarlar"
-    kisa-ad: "30 Yağmacı"
+    kisa-ad: "30 yağmacı öldür"
     aciklama: "30 yağmacı, ravager, evoker ya da vindicator öldür."
     simge: OMINOUS_BOTTLE
     tur: WEEKLY
@@ -848,7 +850,7 @@ gorevler:
 
   haftalik-magma-avi:
     gorunen-ad: "Mağma Avı"
-    kisa-ad: "50 Mağma/Balçık"
+    kisa-ad: "50 mağma/balçık öldür"
     aciklama: "50 mağma küpü ya da balçık öldür."
     simge: MAGMA_CREAM
     tur: WEEKLY
@@ -861,7 +863,7 @@ gorevler:
 
   haftalik-tas-ustasi:
     gorunen-ad: "Taş Ustası"
-    kisa-ad: "400 Yumuşak Blok"
+    kisa-ad: "400 yumuşak blok kaz"
     aciklama: "Küreğinle 400 yumuşak blok kaz: toprak, çakıl, kum ya da kil."
     simge: CLAY_BALL
     tur: WEEKLY
@@ -874,7 +876,7 @@ gorevler:
 
   haftalik-bereketli-tarla:
     gorunen-ad: "Bereketli Tarla"
-    kisa-ad: "300 Ekin"
+    kisa-ad: "300 ekin hasat et"
     aciklama: "Bir hafta boyunca 300 olgunlaşmış ekin biç."
     simge: HAY_BLOCK
     tur: WEEKLY
@@ -887,7 +889,7 @@ gorevler:
 
   haftalik-balikcilik:
     gorunen-ad: "Haftalık Balıkçılık"
-    kisa-ad: "60 Balık"
+    kisa-ad: "60 balık tut"
     aciklama: "Bir hafta boyunca 60 kez balık çıkar."
     simge: FISHING_ROD
     tur: WEEKLY
@@ -900,7 +902,7 @@ gorevler:
 
   haftalik-buyuculuk:
     gorunen-ad: "Haftalık Büyücülük"
-    kisa-ad: "20 Büyüleme"
+    kisa-ad: "20 eşya büyüle"
     aciklama: "Bir hafta boyunca 20 eşya büyüle."
     simge: ENCHANTED_BOOK
     tur: WEEKLY
@@ -913,7 +915,7 @@ gorevler:
 
   haftalik-ticaret:
     gorunen-ad: "Haftalık Ticaret"
-    kisa-ad: "40 Ticaret"
+    kisa-ad: "40 köylü takası yap"
     aciklama: "Bir hafta boyunca köylülerle 40 kez ticaret yap."
     simge: EMERALD_BLOCK
     tur: WEEKLY
@@ -926,7 +928,7 @@ gorevler:
 
   haftalik-end-avi:
     gorunen-ad: "Haftalık End Avı"
-    kisa-ad: "60 End Yaratığı"
+    kisa-ad: "60 End yaratığı öldür"
     aciklama: "End'de 60 enderman ya da shulker öldür."
     simge: CHORUS_FRUIT
     tur: WEEKLY

@@ -138,6 +138,7 @@ import com.halilibrahim.halilibrahimmmo.trade.TradeService;
 import com.halilibrahim.halilibrahimmmo.unlock.UnlockContextLoader;
 import com.halilibrahim.halilibrahimmmo.wealth.CachedWealthService;
 import com.halilibrahim.halilibrahimmmo.wealth.WealthAwardHandler;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthRankAnnouncer;
 import com.halilibrahim.halilibrahimmmo.wealth.WealthRepository;
 import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
 import org.bukkit.plugin.ServicePriority;
@@ -168,6 +169,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
     private ProgressionListener progressionListener;
     private HusbandryListener husbandryListener;
     private QuestDiscoveryListener questDiscoveryListener;
+    private WealthRankAnnouncer wealthRankAnnouncer;
     private Runnable placeholderTeardown;
     private Runnable luckPermsTeardown;
 
@@ -222,7 +224,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             // consumer, and reads both services through the same forward
             // references the synergy bridge already needs.
             ClassAwardHandler classAwardHandler = new ClassAwardHandler(
-                    this, classServiceReference, abilityServiceReference, feedbackService
+                    this, classServiceReference, abilityServiceReference, feedbackService, messageService
             );
             SkillService skillService = startService(
                     new CachedSkillService(this, new SkillRepository(databaseService),
@@ -302,6 +304,8 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     this, onboardingService, profileService, classService, messageService, sidebarService, classAwardHandler
             );
             WealthAwardHandler wealthAwardHandler = new WealthAwardHandler(this, messageService, feedbackService, sidebarService);
+            this.wealthRankAnnouncer = new WealthRankAnnouncer(this, messageService, leaderboardService, wealthService);
+            wealthRankAnnouncer.start();
             YamlBossService bossService = new YamlBossService(this, messageService, feedbackService);
             startService(bossService, BossService.class);
             getServer().getPluginManager().registerEvents(new BossListener(this, bossService, profileService, classService,
@@ -406,6 +410,10 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
         if (questDiscoveryListener != null) {
             questDiscoveryListener.close();
             questDiscoveryListener = null;
+        }
+        if (wealthRankAnnouncer != null) {
+            wealthRankAnnouncer.close();
+            wealthRankAnnouncer = null;
         }
 
         for (int i = enabledServices.size() - 1; i >= 0; i--) {

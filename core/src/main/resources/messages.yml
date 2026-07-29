@@ -65,8 +65,9 @@ sidebar:
   oyuncu: "<gray>Oyuncu:</gray> <white><oyuncu></white>"
   oyuncu-etiket: "<gray>Oyuncu:</gray> "
   sinif-yok: "<gray><simge:sinif> Sınıf:</gray> <white>Seçilmedi</white>"
-  guc: "<gray><simge:guc> Güç:</gray> <gold><seviye></gold> <dark_gray>|</dark_gray> <gray><simge:prestij></gray> <light_purple><prestij></light_purple>"
-  zenginlik: "<gray><simge:zenginlik> Zenginlik:</gray> <blue><zenginlik></blue>"
+  # Güç, prestij ve zenginlik tek satırı paylaşır: panelde toplam 15 satır var
+  # ve bu üç sayı zaten birlikte okunuyor.
+  guc: "<gray><simge:guc></gray> <gold><seviye></gold> <dark_gray>|</dark_gray> <gray><simge:prestij></gray> <light_purple><prestij></light_purple> <dark_gray>|</dark_gray> <gray><simge:zenginlik></gray> <blue><zenginlik></blue>"
   aktivasyon-onerisi: "<yellow><simge:ok> Başlamak için /mmo aktif yaz!</yellow>"
   sinif-onerisi: "<yellow><simge:ok> Sınıf seçmek için /sınıf yaz!</yellow>"
   sinif-seviye: "<aqua><simge:sinif> <sinif></aqua> <gray>Sv.</gray><aqua><seviye></aqua> <dark_gray>(<xp>/<gereken>)</dark_gray>"
@@ -78,13 +79,21 @@ sidebar:
   ozellik-kilitli: "Kilitli"
   ozellik-ayarsiz: "Ayarlanmadı"
   takas-acik: "<yellow><simge:koleksiyon> Takas açık:</yellow> <white><oyuncu></white>"
-  gunluk-gorev-baslik: "<yellow><simge:gorev> Günlük Görevler:</yellow>"
-  haftalik-gorev-baslik: "<gold><simge:gorev> Haftalık Görevler:</gold>"
+  # Uc gorev turu tek baslik altinda listelenir; hangi tur oldugunu satirin
+  # KENDI RENGI soyler (gunluk sari, haftalik altin, kalici camgobegi). Her
+  # ture ayri baslik + ayri ayrac vermek 6 satir goturuyordu ve her kategoriden
+  # 3 gorev sabitleyen bir oyuncuda kalici gorevler basligin altinda hic
+  # gorunmuyordu.
+  #
   # Kalici gorevler panelde yalnizca oyuncunun /görev ekranindan sabitledigi
   # gorevlerden olusur - onlarcasi var, hepsini listelemek mumkun degil.
-  kalici-gorev-baslik: "<aqua><simge:gorev> Kalıcı Görevler:</aqua>"
-  gunluk-gorev-satiri: "<gray>• <gorev>:</gray> <yellow><ilerleme></yellow> <dark_gray>(+<xp>)</dark_gray>"
-  tamamlanan-gorev-satiri: "<green><simge:tamam> <gorev></green> <dark_gray>(+<xp>)</dark_gray>"
+  gorev-baslik: "<white><simge:gorev> Görevler:</white>"
+  gorev-gunluk: "<yellow>• <gorev>:</yellow> <white><ilerleme></white> <dark_gray>(+<xp>)</dark_gray>"
+  gorev-gunluk-tamam: "<yellow>• <simge:tamam> <gorev></yellow> <dark_gray>(+<xp>)</dark_gray>"
+  gorev-haftalik: "<gold>• <gorev>:</gold> <white><ilerleme></white> <dark_gray>(+<xp>)</dark_gray>"
+  gorev-haftalik-tamam: "<gold>• <simge:tamam> <gorev></gold> <dark_gray>(+<xp>)</dark_gray>"
+  gorev-kalici: "<aqua>• <gorev>:</aqua> <white><ilerleme></white> <dark_gray>(+<xp>)</dark_gray>"
+  gorev-kalici-tamam: "<aqua>• <simge:tamam> <gorev></aqua> <dark_gray>(+<xp>)</dark_gray>"
   alt-bilgi: "<dark_gray>/panel ile aç/kapat</dark_gray>"
   onboarding-baslik: "<yellow><simge:bilgi> Başlangıç Görevleri:</yellow>"
   onboarding-menu: "<gray>• /menü ile ana menüyü aç</gray>"
@@ -200,11 +209,20 @@ boss:
   isim-epik: "<light_purple>[Epik]</light_purple> <white><isim></white>"
   isim-efsanevi: "<gold><bold>[Efsanevi]</bold></gold> <yellow><isim></yellow>"
   isim-mistik: "<gradient:#FF00E4:#00FFFF><bold>[Mistik]</bold></gradient> <aqua><isim></aqua>"
-  dogus-siradan: "<gray><simge:boss> Sıradan bir boss belirdi:</gray> <white><isim></white> <dark_gray>(<x>, <z>)</dark_gray>"
-  dogus-nadir: "<green><simge:boss> Nadir bir boss belirdi:</green> <white><isim></white> <dark_gray>(<x>, <z>)</dark_gray>"
-  dogus-epik: "<light_purple><simge:boss> Epik bir boss belirdi:</light_purple> <white><isim></white> <dark_gray>(<x>, <z>)</dark_gray>"
-  dogus-efsanevi: "<gold><bold><simge:boss> EFSANEVİ BİR BOSS BELİRDİ:</bold></gold> <yellow><isim></yellow> <dark_gray>(<x>, <z>)</dark_gray>"
-  dogus-mistik: "<gradient:#FF00E4:#00FFFF><bold><simge:boss> MİSTİK BİR BOSS BELİRDİ:</bold></gradient> <aqua><isim></aqua> <dark_gray>(<x>, <z>)</dark_gray>"
+  # Doguş duyurusu tüm sunucuya gider. <x>/<y>/<z> koordinatlar, <dunya>
+  # dünyanın adıdır - herkesin bossa doğru yola çıkabilmesi için buradadır.
+  dogus-siradan: "<gray><simge:boss> Sıradan bir boss belirdi:</gray> <white><isim></white> <dark_gray>•</dark_gray> <gray>Koordinat:</gray> <white><x>, <y>, <z></white>"
+  dogus-nadir: "<green><simge:boss> Nadir bir boss belirdi:</green> <white><isim></white> <dark_gray>•</dark_gray> <gray>Koordinat:</gray> <white><x>, <y>, <z></white>"
+  dogus-epik: "<light_purple><simge:boss> Epik bir boss belirdi:</light_purple> <white><isim></white> <dark_gray>•</dark_gray> <gray>Koordinat:</gray> <white><x>, <y>, <z></white>"
+  dogus-efsanevi: "<gold><bold><simge:boss> EFSANEVİ BİR BOSS BELİRDİ:</bold></gold> <yellow><isim></yellow> <dark_gray>•</dark_gray> <gray>Koordinat:</gray> <white><x>, <y>, <z></white>"
+  dogus-mistik: "<gradient:#FF00E4:#00FFFF><bold><simge:boss> MİSTİK BİR BOSS BELİRDİ:</bold></gradient> <aqua><isim></aqua> <dark_gray>•</dark_gray> <gray>Koordinat:</gray> <white><x>, <y>, <z></white>"
+  # Ekranin ustundeki can cubugu. Bossa 96 blok mesafedeki herkes gorur.
+  # <can>/<maksimum> anlik can, parantez icindeki de nadirliktir.
+  cubuk-siradan: "<gray><simge:boss> <isim></gray> <dark_gray>|</dark_gray> <white><can></white><gray>/</gray><white><maksimum></white> <gray>(Sıradan)</gray>"
+  cubuk-nadir: "<green><simge:boss> <isim></green> <dark_gray>|</dark_gray> <white><can></white><gray>/</gray><white><maksimum></white> <green>(Nadir)</green>"
+  cubuk-epik: "<light_purple><simge:boss> <isim></light_purple> <dark_gray>|</dark_gray> <white><can></white><gray>/</gray><white><maksimum></white> <light_purple>(Epik)</light_purple>"
+  cubuk-efsanevi: "<gold><bold><simge:boss> <isim></bold></gold> <dark_gray>|</dark_gray> <white><can></white><gray>/</gray><white><maksimum></white> <gold>(Efsanevi)</gold>"
+  cubuk-mistik: "<gradient:#FF00E4:#00FFFF><bold><simge:boss> <isim></bold></gradient> <dark_gray>|</dark_gray> <white><can></white><gray>/</gray><white><maksimum></white> <aqua>(Mistik)</aqua>"
   olum-siradan: "<gray><simge:tamam> <oyuncu>, <isim> adlı bossu öldürdü.</gray>"
   olum-nadir: "<green><simge:tamam> <oyuncu>, <isim> adlı nadir bossu öldürdü!</green>"
   olum-epik: "<light_purple><simge:tamam> <oyuncu>, <isim> adlı epik bossu öldürdü!</light_purple>"
@@ -219,6 +237,37 @@ boss:
 zenginlik:
   kilometre-tasi: "<blue><simge:zenginlik> Zenginlik kilometre taşı!</blue> <gray>Toplam puanın:</gray> <white><zenginlik></white>"
   kilometre-tasi-duyuru: "<blue><bold><simge:zenginlik> <oyuncu> <esik> zenginlik puanına ulaştı!</bold></blue>"
+  # ----- Zenginlik sıralaması duyuruları -----
+  # Bunlar "siralama-duyuru-araligi-dakika" (zenginlik.yml) periyoduyla, her
+  # turda EN FAZLA BİR TANE olmak üzere tüm sunucuya gider. İki çeşit vardır:
+  #   siralama-gecis-*   : bir oyuncu tam olarak bir kişiyi geçti.
+  #                        <oyuncu> yükselen, <rakip> geçilen kişi,
+  #                        <sira> yeni sıra, <zenginlik> yeni puan.
+  #   siralama-yukselis-*: bir oyuncu birkaç basamak birden tırmandı.
+  #                        <basamak> kaç sıra yükseldiği.
+  # Aynı cümlenin sürekli tekrarlanmaması için her turda rastgele biri seçilir;
+  # istediğiniz kadarını kendi üslubunuzla değiştirebilirsiniz.
+  siralama-gecis-1: "<blue><simge:zenginlik> <oyuncu> aman tanımıyor!</blue> <gray><rakip>, <oyuncu> adlı oyuncunun gölgesinde kalarak <sira>. sıraya düştü.</gray>"
+  siralama-gecis-2: "<blue><simge:zenginlik> <oyuncu>, <rakip> adlı oyuncuyu geride bıraktı</blue> <gray>ve zenginlikte <sira>. sıraya yerleşti.</gray>"
+  siralama-gecis-3: "<blue><simge:zenginlik> Sıralama değişti:</blue> <white><oyuncu></white> <gray><rakip> adlı oyuncunun yerini aldı ve artık <sira>. sırada.</gray>"
+  siralama-gecis-4: "<blue><simge:zenginlik> <oyuncu> kervanı çevirdi!</blue> <gray><rakip> bir basamak geriledi, <sira>. sıra artık <oyuncu> adlı oyuncunun.</gray>"
+  siralama-gecis-5: "<blue><simge:zenginlik> <rakip> arkasına baktığında <oyuncu> adlı oyuncuyu göremedi</blue> <gray>- çünkü çoktan önüne geçmişti. Yeni sıra: <sira>.</gray>"
+  siralama-gecis-6: "<blue><simge:zenginlik> <oyuncu>, <rakip> adlı oyuncunun servetini aştı</blue> <gray>ve <zenginlik> puanla <sira>. sıraya çıktı.</gray>"
+  siralama-gecis-7: "<blue><simge:zenginlik> El değiştirdi!</blue> <gray><sira>. sıra artık <oyuncu> adlı oyuncunun; <rakip> bir basamak aşağıda.</gray>"
+  siralama-gecis-8: "<blue><simge:zenginlik> <oyuncu> sessiz sedasız çalıştı</blue> <gray>ve <rakip> adlı oyuncuyu geçerek <sira>. sıraya oturdu.</gray>"
+  siralama-yukselis-1: "<blue><simge:zenginlik> <oyuncu> önünde engel tanımıyor!</blue> <gray>Yükselişlerinin ardı arkası kesilmeyerek zenginlikte <sira>. sıraya ulaştı.</gray>"
+  siralama-yukselis-2: "<blue><simge:zenginlik> <oyuncu> tek turda <basamak> basamak birden tırmandı</blue> <gray>ve <sira>. sıraya yerleşti.</gray>"
+  siralama-yukselis-3: "<blue><simge:zenginlik> Kimse <oyuncu> adlı oyuncuyu durduramıyor:</blue> <gray><basamak> sıra birden yükselerek <sira>. sıraya çıktı.</gray>"
+  siralama-yukselis-4: "<blue><simge:zenginlik> <oyuncu> merdivenleri ikişer ikişer çıkıyor!</blue> <gray><basamak> basamak yükseldi, artık <sira>. sırada.</gray>"
+  siralama-yukselis-5: "<blue><simge:zenginlik> <oyuncu> adlı oyuncunun serveti <zenginlik> puana ulaştı</blue> <gray>ve <basamak> sıra birden atlayarak <sira>. sıraya geldi.</gray>"
+  siralama-yukselis-6: "<blue><simge:zenginlik> Tablo <oyuncu> yüzünden yeniden yazıldı:</blue> <gray><basamak> basamak yukarı, doğruca <sira>. sıraya.</gray>"
+  siralama-yukselis-7: "<blue><simge:zenginlik> <oyuncu> nefes almadan çalışıyor</blue> <gray>- <basamak> sıra yükselip <sira>. sıraya kuruldu.</gray>"
+
+# Sinif seviyesi belirli bir esige gelince acilan komutlar. Bu mesajlar
+# yalnizca acilan oyuncunun kendi sohbetine gider, duyuru degildir.
+ozellik:
+  ev-acildi: "<green><simge:kutlama> Yeni özellik açıldı: <white>/ev</white></green> <gray>Bulunduğun yeri ev olarak ayarlamak için <white>/ev ayarla</white> yaz.</gray>"
+  takas-acildi: "<green><simge:kutlama> Yeni özellik açıldı: <white>/takas</white></green> <gray>Başka bir oyuncuyla eşya takası yapmak için <white>/takas <oyuncu></white> yaz.</gray>"
 
 # "/takas" ("/trade") komutu - sinif seviyesi 20'de ya da ilk prestijde acilir.
 takas:
@@ -569,20 +618,37 @@ gui:
     bos-oge: "<gray>Günlüğünde henüz bir kayıt yok.</gray>"
 
   liderlik:
-    baslik: "<dark_gray>Liderlik Tablosu</dark_gray>"
-    seviye: "<yellow>Güç</yellow>"
-    prestij: "<light_purple>Prestij</light_purple>"
-    gorev: "<aqua>Görev Tamamlama</aqua>"
-    koleksiyon: "<blue>Koleksiyon</blue>"
+    baslik: "<dark_gray><simge:liderlik> Liderlik Tabloları</dark_gray>"
+    baslik-oge: "<gold><bold><simge:liderlik> Liderlik Tabloları</bold></gold>"
+    baslik-aciklama: "<gray>Her tabloda ilk <white><sayi></white> oyuncu listelenir.</gray>"
+    acma-ipucu: "<dark_gray>Açmak için tıkla</dark_gray>"
+    seviye: "<yellow><simge:guc> Güç</yellow>"
+    seviye-aciklama: "<gray>Tüm beceri seviyelerinin toplamı. Prestij her zaman ham seviyeyi geçer.</gray>"
+    prestij: "<light_purple><simge:prestij> Prestij</light_purple>"
+    prestij-aciklama: "<gray>Kaç kez prestij yapıldığı.</gray>"
+    gorev: "<aqua><simge:gorev> Görev Tamamlama</aqua>"
+    gorev-aciklama: "<gray>Tamamlanan toplam görev sayısı.</gray>"
+    koleksiyon: "<blue><simge:koleksiyon> Koleksiyon</blue>"
+    koleksiyon-aciklama: "<gray>Koleksiyonlarda toplanan ayrı öge sayısı.</gray>"
     zenginlik: "<blue><simge:zenginlik> Zenginlik</blue>"
+    zenginlik-aciklama: "<gray>Dünyadan çıkarılan toplam Zenginlik Puanı.</gray>"
+    beceri-basligi: "<white><bold>Beceri Tabloları</bold></white>"
     yetenek-oge: "<green><yetenek></green>"
+    yetenek-aciklama: "<gray><yetenek> becerisinde en yüksek seviyeler.</gray>"
     detay-baslik-seviye: "<dark_gray>Güç Liderlik Tablosu</dark_gray>"
     detay-baslik-prestij: "<dark_gray>Prestij Liderlik Tablosu</dark_gray>"
     detay-baslik-gorev: "<dark_gray>Görev Tamamlama Liderlik Tablosu</dark_gray>"
     detay-baslik-koleksiyon: "<dark_gray>Koleksiyon Liderlik Tablosu</dark_gray>"
     detay-baslik-zenginlik: "<dark_gray><simge:zenginlik> Zenginlik Liderlik Tablosu</dark_gray>"
     detay-baslik-yetenek: "<dark_gray><yetenek> Liderlik Tablosu</dark_gray>"
-    detay-oge: "<gold>#<sira></gold> <white><oyuncu></white>"
+    detay-baslik-oge: "<gold><bold><simge:liderlik> Sıralama</bold></gold>"
+    detay-baslik-aciklama: "<gray>Şu anda <white><sayi></white> oyuncu listeleniyor.</gray>"
+    # Ilk uc sira ve oyuncunun kendi satiri ayri sablonlardir; renk buradan gelir.
+    detay-oge-birinci: "<gold><bold>#1</bold></gold> <yellow><bold><oyuncu></bold></yellow>"
+    detay-oge-ikinci: "<white><bold>#2</bold></white> <gray><oyuncu></gray>"
+    detay-oge-ucuncu: "<gold>#3</gold> <gray><oyuncu></gray>"
+    detay-oge-sen: "<green><bold>#<sira></bold></green> <green><oyuncu></green> <dark_gray>(sen)</dark_gray>"
+    detay-oge: "<gray>#<sira></gray> <white><oyuncu></white>"
     oge-seviye: "<gray>Seviye <white><seviye></white> <dark_gray>|</dark_gray> XP <white><xp></white></gray>"
     oge-guc: "<gray>Güç <white><seviye></white> <dark_gray>|</dark_gray> Prestij <white><prestij></white></gray>"
     oge-prestij: "<gray>Prestij <white><prestij></white></gray>"
@@ -591,17 +657,35 @@ gui:
     oge-zenginlik: "<blue><simge:zenginlik> <zenginlik></blue> <gray>zenginlik puanı</gray>"
     bos-oge: "<gray>Bu liderlik tablosunda henüz kimse yok.</gray>"
 
+  # Kilitli bir unvan/kozmetigin ADI GOSTERILMEZ; yerine yalnizca onu neyin
+  # acacagi yazilir. Asagidaki satirlar her iki ekran tarafindan da paylasilir.
+  kilit:
+    seviye: "<gray>Gereken:</gray> <white><seviye>. seviye</white>"
+    prestij: "<gray>Gereken:</gray> <white><prestij>. prestij</white>"
+    gorev: "<gray>Gereken:</gray> <white><gorev> görevini tamamla</white>"
+    koleksiyon: "<gray>Gereken:</gray> <white><koleksiyon> koleksiyonunu tamamla</white>"
+    beceri: "<gray>Gereken:</gray> <white><beceri> becerisinde <seviye>. seviye</white>"
+    zenginlik: "<gray>Gereken:</gray> <white><zenginlik> zenginlik puanı</white>"
+
   unvan:
-    baslik: "<dark_gray>Unvanlarım</dark_gray>"
+    baslik: "<dark_gray><simge:unvan> Unvanlarım</dark_gray>"
+    baslik-oge: "<gold><bold><simge:unvan> Unvanlarım</bold></gold>"
+    baslik-aciklama: "<gray>Açılan unvan: <white><acik></white><dark_gray>/</dark_gray><white><toplam></white></gray>"
     oge: "<gold><unvan></gold>"
+    kilitli-oge: "<dark_gray><simge:eksik> Kilitli Unvan</dark_gray>"
     oge-aciklama-acik: "<green><simge:tamam> Açık</green> <gray>• Kuşanmak için tıkla</gray>"
-    oge-aciklama-kilitli: "<red><simge:eksik> Kilitli</red>"
+    oge-aciklama-kusanik: "<green><simge:tamam> Kuşanıldı</green>"
+    oge-aciklama-kilitli: "<red><simge:eksik> Henüz açılmadı</red>"
 
   kozmetik:
-    baslik: "<dark_gray>Kozmetiklerim</dark_gray>"
+    baslik: "<dark_gray><simge:kozmetik> Kozmetiklerim</dark_gray>"
+    baslik-oge: "<light_purple><bold><simge:kozmetik> Kozmetiklerim</bold></light_purple>"
+    baslik-aciklama: "<gray>Açılan kozmetik: <white><acik></white><dark_gray>/</dark_gray><white><toplam></white></gray>"
     oge: "<light_purple><kozmetik></light_purple>"
+    kilitli-oge: "<dark_gray><simge:eksik> Kilitli Kozmetik</dark_gray>"
     oge-aciklama-acik: "<green><simge:tamam> Açık</green> <gray>• Kuşanmak için tıkla</gray>"
-    oge-aciklama-kilitli: "<red><simge:eksik> Kilitli</red>"
+    oge-aciklama-kusanik: "<green><simge:tamam> Kuşanıldı</green>"
+    oge-aciklama-kilitli: "<red><simge:eksik> Henüz açılmadı</red>"
 
 # =====================================================================
 #  Zorunlu Fabric mod doğrulaması (modlar.yml)

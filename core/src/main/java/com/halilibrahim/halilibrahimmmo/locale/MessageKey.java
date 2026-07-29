@@ -46,10 +46,13 @@ public enum MessageKey {
     SIDEBAR_FEATURE_LOCKED("sidebar.ozellik-kilitli"),
     SIDEBAR_FEATURE_UNSET("sidebar.ozellik-ayarsiz"),
     SIDEBAR_LINE_TRADE_ACTIVE("sidebar.takas-acik"),
-    SIDEBAR_LINE_QUESTS_DAILY_HEADER("sidebar.gunluk-gorev-baslik"),
-    SIDEBAR_LINE_QUESTS_WEEKLY_HEADER("sidebar.haftalik-gorev-baslik"),
-    SIDEBAR_LINE_QUEST_DAILY_ENTRY("sidebar.gunluk-gorev-satiri"),
-    SIDEBAR_LINE_QUEST_COMPLETED_ENTRY("sidebar.tamamlanan-gorev-satiri"),
+    SIDEBAR_LINE_QUESTS_HEADER("sidebar.gorev-baslik"),
+    SIDEBAR_LINE_QUEST_DAILY("sidebar.gorev-gunluk"),
+    SIDEBAR_LINE_QUEST_DAILY_DONE("sidebar.gorev-gunluk-tamam"),
+    SIDEBAR_LINE_QUEST_WEEKLY("sidebar.gorev-haftalik"),
+    SIDEBAR_LINE_QUEST_WEEKLY_DONE("sidebar.gorev-haftalik-tamam"),
+    SIDEBAR_LINE_QUEST_PERMANENT("sidebar.gorev-kalici"),
+    SIDEBAR_LINE_QUEST_PERMANENT_DONE("sidebar.gorev-kalici-tamam"),
     SIDEBAR_LINE_FOOTER_PANEL_HINT("sidebar.alt-bilgi"),
     SIDEBAR_LINE_ONBOARDING_HEADER("sidebar.onboarding-baslik"),
     SIDEBAR_LINE_ONBOARDING_MENU("sidebar.onboarding-menu"),
@@ -147,6 +150,11 @@ public enum MessageKey {
     BOSS_DEATH_EPIK("boss.olum-epik"),
     BOSS_DEATH_EFSANEVI("boss.olum-efsanevi"),
     BOSS_DEATH_MISTIK("boss.olum-mistik"),
+    BOSS_BAR_SIRADAN("boss.cubuk-siradan"),
+    BOSS_BAR_NADIR("boss.cubuk-nadir"),
+    BOSS_BAR_EPIK("boss.cubuk-epik"),
+    BOSS_BAR_EFSANEVI("boss.cubuk-efsanevi"),
+    BOSS_BAR_MISTIK("boss.cubuk-mistik"),
     BOSS_HEAD_SIRADAN("boss.kafa-siradan"),
     BOSS_HEAD_NADIR("boss.kafa-nadir"),
     BOSS_HEAD_EPIK("boss.kafa-epik"),
@@ -155,8 +163,32 @@ public enum MessageKey {
 
     WEALTH_MILESTONE_PERSONAL("zenginlik.kilometre-tasi"),
     WEALTH_MILESTONE_BROADCAST("zenginlik.kilometre-tasi-duyuru"),
-    SIDEBAR_LINE_WEALTH("sidebar.zenginlik"),
-    SIDEBAR_LINE_QUESTS_PERMANENT_HEADER("sidebar.kalici-gorev-baslik"),
+
+    /**
+     * The Zenginlik rank-change announcements. Two shapes, one per kind of
+     * change: a takeover names both players, a climb names one player and how
+     * many places they gained. Each shape ships several interchangeable
+     * wordings picked at random, because this fires on a timer and one fixed
+     * sentence read to the whole server every half hour stops being news.
+     */
+    WEALTH_RANK_TAKEOVER_1("zenginlik.siralama-gecis-1"),
+    WEALTH_RANK_TAKEOVER_2("zenginlik.siralama-gecis-2"),
+    WEALTH_RANK_TAKEOVER_3("zenginlik.siralama-gecis-3"),
+    WEALTH_RANK_TAKEOVER_4("zenginlik.siralama-gecis-4"),
+    WEALTH_RANK_TAKEOVER_5("zenginlik.siralama-gecis-5"),
+    WEALTH_RANK_TAKEOVER_6("zenginlik.siralama-gecis-6"),
+    WEALTH_RANK_TAKEOVER_7("zenginlik.siralama-gecis-7"),
+    WEALTH_RANK_TAKEOVER_8("zenginlik.siralama-gecis-8"),
+    WEALTH_RANK_CLIMB_1("zenginlik.siralama-yukselis-1"),
+    WEALTH_RANK_CLIMB_2("zenginlik.siralama-yukselis-2"),
+    WEALTH_RANK_CLIMB_3("zenginlik.siralama-yukselis-3"),
+    WEALTH_RANK_CLIMB_4("zenginlik.siralama-yukselis-4"),
+    WEALTH_RANK_CLIMB_5("zenginlik.siralama-yukselis-5"),
+    WEALTH_RANK_CLIMB_6("zenginlik.siralama-yukselis-6"),
+    WEALTH_RANK_CLIMB_7("zenginlik.siralama-yukselis-7"),
+
+    FEATURE_UNLOCKED_HOME("ozellik.ev-acildi"),
+    FEATURE_UNLOCKED_TRADE("ozellik.takas-acildi"),
 
     TRADE_USAGE("takas.kullanim"),
     TRADE_REQUEST_SENT("takas.istek-gonderildi"),
@@ -457,11 +489,27 @@ public enum MessageKey {
     GUI_JOURNAL_EMPTY_ITEM("gui.gunluk.bos-oge"),
 
     GUI_LEADERBOARDS_TITLE("gui.liderlik.baslik"),
+    GUI_LEADERBOARDS_HEADER_ITEM("gui.liderlik.baslik-oge"),
+    GUI_LEADERBOARDS_HEADER_LORE("gui.liderlik.baslik-aciklama"),
+    GUI_LEADERBOARD_OPEN_HINT("gui.liderlik.acma-ipucu"),
     GUI_LEADERBOARD_CATEGORY_LEVEL("gui.liderlik.seviye"),
+    GUI_LEADERBOARD_CATEGORY_LEVEL_LORE("gui.liderlik.seviye-aciklama"),
     GUI_LEADERBOARD_CATEGORY_PRESTIGE("gui.liderlik.prestij"),
+    GUI_LEADERBOARD_CATEGORY_PRESTIGE_LORE("gui.liderlik.prestij-aciklama"),
     GUI_LEADERBOARD_CATEGORY_QUESTS("gui.liderlik.gorev"),
+    GUI_LEADERBOARD_CATEGORY_QUESTS_LORE("gui.liderlik.gorev-aciklama"),
     GUI_LEADERBOARD_CATEGORY_COLLECTIONS("gui.liderlik.koleksiyon"),
+    GUI_LEADERBOARD_CATEGORY_COLLECTIONS_LORE("gui.liderlik.koleksiyon-aciklama"),
     GUI_LEADERBOARD_CATEGORY_WEALTH("gui.liderlik.zenginlik"),
+    GUI_LEADERBOARD_CATEGORY_WEALTH_LORE("gui.liderlik.zenginlik-aciklama"),
+    GUI_LEADERBOARD_SKILL_SECTION("gui.liderlik.beceri-basligi"),
+    GUI_LEADERBOARD_SKILL_LORE("gui.liderlik.yetenek-aciklama"),
+    GUI_LEADERBOARD_DETAIL_HEADER_ITEM("gui.liderlik.detay-baslik-oge"),
+    GUI_LEADERBOARD_DETAIL_HEADER_LORE("gui.liderlik.detay-baslik-aciklama"),
+    GUI_LEADERBOARD_ENTRY_FIRST("gui.liderlik.detay-oge-birinci"),
+    GUI_LEADERBOARD_ENTRY_SECOND("gui.liderlik.detay-oge-ikinci"),
+    GUI_LEADERBOARD_ENTRY_THIRD("gui.liderlik.detay-oge-ucuncu"),
+    GUI_LEADERBOARD_ENTRY_SELF("gui.liderlik.detay-oge-sen"),
     GUI_LEADERBOARD_DETAIL_TITLE_WEALTH("gui.liderlik.detay-baslik-zenginlik"),
     GUI_LEADERBOARD_ENTRY_WEALTH_LORE("gui.liderlik.oge-zenginlik"),
     GUI_LEADERBOARD_SKILL_ITEM("gui.liderlik.yetenek-oge"),
@@ -478,14 +526,34 @@ public enum MessageKey {
     GUI_LEADERBOARD_ENTRY_COLLECTION_LORE("gui.liderlik.oge-koleksiyon"),
     GUI_LEADERBOARD_EMPTY_ITEM("gui.liderlik.bos-oge"),
 
+    /**
+     * The one line a locked title or cosmetic gets instead of its name: what
+     * would unlock it. Shared by both screens because both use the same
+     * {@code unlock} condition model.
+     */
+    GUI_UNLOCK_REQUIREMENT_LEVEL("gui.kilit.seviye"),
+    GUI_UNLOCK_REQUIREMENT_PRESTIGE("gui.kilit.prestij"),
+    GUI_UNLOCK_REQUIREMENT_QUEST("gui.kilit.gorev"),
+    GUI_UNLOCK_REQUIREMENT_COLLECTION("gui.kilit.koleksiyon"),
+    GUI_UNLOCK_REQUIREMENT_SKILL("gui.kilit.beceri"),
+    GUI_UNLOCK_REQUIREMENT_WEALTH("gui.kilit.zenginlik"),
+
     GUI_TITLES_TITLE("gui.unvan.baslik"),
+    GUI_TITLES_HEADER_ITEM("gui.unvan.baslik-oge"),
+    GUI_TITLES_HEADER_LORE("gui.unvan.baslik-aciklama"),
     GUI_TITLE_ITEM("gui.unvan.oge"),
+    GUI_TITLE_ITEM_LOCKED("gui.unvan.kilitli-oge"),
     GUI_TITLE_ITEM_LORE_UNLOCKED("gui.unvan.oge-aciklama-acik"),
+    GUI_TITLE_ITEM_LORE_EQUIPPED("gui.unvan.oge-aciklama-kusanik"),
     GUI_TITLE_ITEM_LORE_LOCKED("gui.unvan.oge-aciklama-kilitli"),
 
     GUI_COSMETICS_TITLE("gui.kozmetik.baslik"),
+    GUI_COSMETICS_HEADER_ITEM("gui.kozmetik.baslik-oge"),
+    GUI_COSMETICS_HEADER_LORE("gui.kozmetik.baslik-aciklama"),
     GUI_COSMETIC_ITEM("gui.kozmetik.oge"),
+    GUI_COSMETIC_ITEM_LOCKED("gui.kozmetik.kilitli-oge"),
     GUI_COSMETIC_ITEM_LORE_UNLOCKED("gui.kozmetik.oge-aciklama-acik"),
+    GUI_COSMETIC_ITEM_LORE_EQUIPPED("gui.kozmetik.oge-aciklama-kusanik"),
     GUI_COSMETIC_ITEM_LORE_LOCKED("gui.kozmetik.oge-aciklama-kilitli"),
 
     MODCHECK_KICK_NOT_FABRIC("modcheck.fabric-gerekli"),

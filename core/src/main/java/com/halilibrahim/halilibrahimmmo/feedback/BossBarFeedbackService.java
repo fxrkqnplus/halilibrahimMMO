@@ -15,12 +15,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Adventure {@link BossBar}/{@link Title}-backed implementation of {@link FeedbackService}. */
@@ -35,6 +38,7 @@ public final class BossBarFeedbackService implements FeedbackService {
     private final MessageService messages;
     private final AtomicReference<FeedbackSettings> settings = new AtomicReference<>();
     private final AtomicReference<Map<String, SoundCue>> sounds = new AtomicReference<>();
+    private final AtomicReference<List<SoundCue>> bossSpawnSounds = new AtomicReference<>(List.of());
     private final ConcurrentHashMap<ExperienceBarKey, BossBar> experienceBars = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ExperienceBarKey, ScheduledTask> experienceBarHideTasks = new ConcurrentHashMap<>();
 
@@ -69,6 +73,7 @@ public final class BossBarFeedbackService implements FeedbackService {
             }
             settings.set(new FeedbackSettings(seconds * 1000L, experienceBarSeconds * 1000L));
             sounds.set(parseSounds(yaml));
+            bossSpawnSounds.set(parseSoundList(yaml, "boss-dogus-sesleri"));
         } catch (RuntimeException exception) {
             throw new LifecycleException("feedback.yml could not be loaded.", exception);
         }
@@ -96,11 +101,40 @@ public final class BossBarFeedbackService implements FeedbackService {
         return Map.copyOf(parsed);
     }
 
+    /**
+     * A list of interchangeable cues rather than a single named one, so an
+     * event that fires repeatedly does not sound identical every time. An
+     * absent or empty section is not an error - the caller falls back to its
+     * single named cue, which is exactly the pre-existing behaviour.
+     */
+    private List<SoundCue> parseSoundList(YamlConfiguration yaml, String path) {
+        List<SoundCue> parsed = new ArrayList<>();
+        for (Map<?, ?> raw : yaml.getMapList(path)) {
+            Sound sound = Sound.valueOf(String.valueOf(raw.get("ses")).toUpperCase(Locale.ROOT));
+            float volume = raw.get("ses-seviyesi") instanceof Number value ? value.floatValue() : 1.0f;
+            float pitch = raw.get("ton") instanceof Number value ? value.floatValue() : 1.0f;
+            if (volume <= 0 || pitch <= 0) {
+                throw new IllegalArgumentException("Sound volume/pitch must be positive: " + path);
+            }
+            parsed.add(new SoundCue(sound, volume, pitch));
+        }
+        return List.copyOf(parsed);
+    }
+
     private void playSound(Player player, String key) {
         SoundCue cue = sounds.get().get(key);
         if (cue != null) {
             player.playSound(player.getLocation(), cue.sound(), cue.volume(), cue.pitch());
         }
+    }
+
+    private void playRandom(Player player, List<SoundCue> cues, String fallbackKey) {
+        if (cues.isEmpty()) {
+            playSound(player, fallbackKey);
+            return;
+        }
+        SoundCue cue = cues.get(ThreadLocalRandom.current().nextInt(cues.size()));
+        player.playSound(player.getLocation(), cue.sound(), cue.volume(), cue.pitch());
     }
 
     @Override
@@ -256,9 +290,15 @@ public final class BossBarFeedbackService implements FeedbackService {
                 Map.of("guc", Integer.toString(newGuc)), BossBar.Color.GREEN);
     }
 
+    /**
+     * A boss spawns every half hour for the whole server's benefit, so this cue
+     * is heard more often than any other in the plugin - one fixed sound would
+     * turn the most dramatic moment on the map into a notification chime. One
+     * of {@code boss-dogus-sesleri}' authored cues is picked at random instead.
+     */
     @Override
     public void celebrateBossSpawned(Player player) {
-        playSound(player, "boss-belirdi");
+        playRandom(player, bossSpawnSounds.get(), "boss-belirdi");
     }
 
     @Override

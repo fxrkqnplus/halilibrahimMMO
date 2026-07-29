@@ -102,8 +102,11 @@ kabiliyetler:
     sinif: tabiat-varisi
     gerekli-seviye: 25
     enerji: 30
-    bekleme-suresi-saniye: 240
-    etki-suresi-saniye: 20
+    bekleme-suresi-saniye: 180
+    # Cagri aninda biter: hayvanlar zaten cagriya o anda karsilik veriyor,
+    # kabiliyetin acik kalmasinin bir islevi yok. 2 saniye sonra hem
+    # survival'da hem yaratici modda kendiliginden kapanir.
+    etki-suresi-saniye: 2
     arac:
       tur: ANY
     etki:

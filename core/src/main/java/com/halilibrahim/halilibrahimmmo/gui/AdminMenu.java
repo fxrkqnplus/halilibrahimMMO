@@ -139,15 +139,22 @@ public final class AdminMenu implements GuiView {
      * interval. The boss still picks its own archetype, rarity and location, so
      * this is a "start it now" button rather than a way to hand-place a mystic
      * boss on request.
+     *
+     * <p>The confirmation waits for the spawn to actually happen. It used to be
+     * sent the instant a name had been drawn, while the search for somewhere to
+     * put the boss was still running - so an admin was told a boss had been
+     * summoned and then saw no announcement, no bar and no sound, because the
+     * search had quietly failed. Now the failure says so.</p>
      */
     private void spawnBoss(Player player) {
-        services.bosses().spawnNow().ifPresentOrElse(
-                name -> {
-                    services.messages().send(player, MessageKey.ADMIN_BOSS_SPAWNED, Map.of("isim", name));
-                    services.logger().info("Yonetici " + player.getName() + " elle bir dunya bossu cagirdi: " + name + ".");
-                },
-                () -> services.messages().send(player, MessageKey.ADMIN_BOSS_NO_ANCHOR)
-        );
         player.closeInventory();
+        services.bosses().spawnNow().thenAccept(name -> player.getScheduler().run(services.plugin(), task ->
+                name.ifPresentOrElse(
+                        spawned -> {
+                            services.messages().send(player, MessageKey.ADMIN_BOSS_SPAWNED, Map.of("isim", spawned));
+                            services.logger().info("Yonetici " + player.getName() + " elle bir dunya bossu cagirdi: " + spawned + ".");
+                        },
+                        () -> services.messages().send(player, MessageKey.ADMIN_BOSS_NO_ANCHOR)
+                ), null));
     }
 }

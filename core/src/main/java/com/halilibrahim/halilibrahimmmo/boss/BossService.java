@@ -4,6 +4,8 @@ import com.halilibrahim.halilibrahimmmo.core.PluginService;
 import org.bukkit.entity.LivingEntity;
 
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * World bosses: one named, rarity-tiered creature spawned somewhere on the map
@@ -29,9 +31,24 @@ public interface BossService extends PluginService {
     Optional<BossRarity> rarityOf(LivingEntity entity);
 
     /**
-     * Spawns one boss right now near a randomly chosen online player, ignoring
-     * the interval timer. Used by the admin panel; returns empty when there is
-     * nobody online to spawn near.
+     * Takes this boss's health bar off every screen still showing it and forgets
+     * its behaviour state. Called when it dies; a no-op for a boss this session
+     * never spawned (one that outlived a restart), which has no bar to take
+     * down in the first place.
      */
-    Optional<String> spawnNow();
+    void retire(UUID bossId);
+
+    /**
+     * Spawns one boss right now near a randomly chosen online player, ignoring
+     * the interval timer. Used by the admin panel.
+     *
+     * <p>Asynchronous because the search genuinely is: a spot a few hundred
+     * blocks from the anchor player is almost never in an already-loaded chunk,
+     * so each candidate has to be loaded before it can be inspected. The future
+     * completes with the boss's name only once it has actually spawned and been
+     * announced, and empty when there was nobody to spawn near or nowhere to
+     * stand - which is what lets the caller tell an admin the truth instead of
+     * naming a boss that never arrived.</p>
+     */
+    CompletableFuture<Optional<String>> spawnNow();
 }

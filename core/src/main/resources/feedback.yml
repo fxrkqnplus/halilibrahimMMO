@@ -53,6 +53,8 @@ sesler:
     ses-seviyesi: 1.0
     ton: 1.0
   # Haritada yeni bir dunya bossu belirdiginde herkese calan uyari.
+  # NOT: Asagidaki "boss-dogus-sesleri" listesi doluysa bu ses KULLANILMAZ;
+  # liste bosaltilirsa eklenti bu tek sese geri doner.
   boss-belirdi:
     ses: ENTITY_ENDER_DRAGON_GROWL
     ses-seviyesi: 0.7
@@ -67,3 +69,33 @@ sesler:
     ses: BLOCK_AMETHYST_BLOCK_CHIME
     ses-seviyesi: 1.0
     ton: 1.2
+
+# Dunya bossu belirdiginde her oyuncuya bu listeden RASTGELE bir ses calar.
+# Yarim saatte bir duyulan bir olay icin tek bir ses cabuk siradanlasiyor;
+# burada ne kadar cesit tanimlarsaniz doguslar o kadar farkli duyulur.
+# Listeyi tamamen bosaltirsaniz yukaridaki "boss-belirdi" sesi kullanilir.
+boss-dogus-sesleri:
+  - ses: ENTITY_ENDER_DRAGON_GROWL
+    ses-seviyesi: 0.9
+    ton: 0.7
+  - ses: ENTITY_WITHER_SPAWN
+    ses-seviyesi: 0.8
+    ton: 0.9
+  - ses: ENTITY_WARDEN_ROAR
+    ses-seviyesi: 0.8
+    ton: 1.0
+  - ses: ENTITY_RAVAGER_ROAR
+    ses-seviyesi: 1.0
+    ton: 0.6
+  - ses: ENTITY_ELDER_GUARDIAN_CURSE
+    ses-seviyesi: 0.7
+    ton: 0.8
+  - ses: ENTITY_ILLUSIONER_PREPARE_BLINDNESS
+    ses-seviyesi: 1.0
+    ton: 0.7
+  - ses: BLOCK_BELL_RESONATE
+    ses-seviyesi: 1.0
+    ton: 0.5
+  - ses: ENTITY_ENDER_DRAGON_FLAP
+    ses-seviyesi: 1.0
+    ton: 0.5

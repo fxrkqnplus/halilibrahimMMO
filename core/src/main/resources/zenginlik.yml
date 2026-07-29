@@ -26,12 +26,20 @@
 #  hem oyuncunun kendisine bir mesaj gider hem de tüm sunucuya duyurulur.
 #  Bir ödül aynı anda birkaç eşiği birden geçerse yalnızca en yükseği
 #  duyurulur.
+#
+#  siralama-duyuru-araligi-dakika: zenginlik liderlik tablosunun ne sıklıkla
+#  yeniden okunup sıralama değişikliklerinin sohbete duyurulacağı. Her duyuru
+#  TÜM SUNUCUYA gider; kısa bir aralık tabloyu kimsenin susturamayacağı bir
+#  spikere çevirir, o yüzden 20-30 dakika arası önerilir. Her turda yalnızca
+#  en dikkat çekici tek bir değişiklik duyurulur.
 # =====================================================================
 
 varsayilan-varlik: 25
 varsayilan-gorev: 2500
 
 kilometre-taslari: [10000, 50000, 250000, 1000000, 5000000, 25000000, 100000000]
+
+siralama-duyuru-araligi-dakika: 25
 
 # ----- Doğal olarak oluşmuş bloklar -----
 bloklar:

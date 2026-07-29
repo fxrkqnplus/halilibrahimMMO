@@ -23,8 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class QuestConfigTest {
 
     private static final Set<String> SUPPORTED_TYPES = Set.of("PERMANENT", "DAILY", "WEEKLY");
-    /** Roughly what fits on a scoreboard line alongside its progress fraction and XP tag. */
-    private static final int MAXIMUM_SHORT_NAME_LENGTH = 20;
+    /**
+     * Roughly what fits on a scoreboard line alongside its progress fraction and
+     * XP tag. Widened from 20 once short names became full instructions
+     * ("40 kütük kır" rather than "40 Kütük") - a bare noun told a player what
+     * the quest counted but never what to go and do.
+     */
+    private static final int MAXIMUM_SHORT_NAME_LENGTH = 24;
     private static final Set<String> SUPPORTED_OBJECTIVES =
             Set.of("BLOCK_BREAK", "MOB_KILL", "STRUCTURE_DISCOVER", "ITEM_OBTAIN", "DEED");
     private static final Set<String> SUPPORTED_DIMENSIONS = Set.of("NORMAL", "NETHER", "THE_END");

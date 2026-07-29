@@ -4,6 +4,8 @@ import com.halilibrahim.halilibrahimmmo.abilities.AbilityDefinition;
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
+import com.halilibrahim.halilibrahimmmo.locale.MessageService;
+import com.halilibrahim.halilibrahimmmo.progression.FeatureUnlockRules;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -36,17 +38,20 @@ public final class ClassAwardHandler {
     private final AtomicReference<ClassService> classServiceReference;
     private final AtomicReference<AbilityService> abilityServiceReference;
     private final FeedbackService feedback;
+    private final MessageService messages;
 
     public ClassAwardHandler(
             JavaPlugin plugin,
             AtomicReference<ClassService> classServiceReference,
             AtomicReference<AbilityService> abilityServiceReference,
-            FeedbackService feedback
+            FeedbackService feedback,
+            MessageService messages
     ) {
         this.plugin = plugin;
         this.classServiceReference = classServiceReference;
         this.abilityServiceReference = abilityServiceReference;
         this.feedback = feedback;
+        this.messages = messages;
     }
 
     /**
@@ -83,8 +88,36 @@ public final class ClassAwardHandler {
             if (result.leveledUp()) {
                 feedback.celebrateClassLevelUp(player, definition.displayName(), result.newLevel());
                 notifyUnlockedAbilities(player, classId, result.previousLevel(), result.newLevel());
+                notifyUnlockedFeatures(player, result.previousLevel(), result.newLevel());
             }
         }, null);
+    }
+
+    /**
+     * {@code /ev} and {@code /takas} open at fixed class levels and nothing was
+     * telling a player when: the sidebar's feature line simply changed from
+     * "Kilitli" to "Açık" one level, which nobody is looking at in the middle of
+     * a fight. Announced here rather than from the home/trade services because
+     * this is the moment the level actually changed - those services only ever
+     * answer "is it open now".
+     *
+     * <p>Only the class-level path announces. Prestige also satisfies the gate
+     * (see {@code FeatureUnlockRules}), but a prestiging player has had both
+     * features for a long time and does not need to be told they still have
+     * them.</p>
+     */
+    private void notifyUnlockedFeatures(Player player, int previousLevel, int newLevel) {
+        if (crossed(FeatureUnlockRules.HOME_CLASS_LEVEL, previousLevel, newLevel)) {
+            messages.send(player, MessageKey.FEATURE_UNLOCKED_HOME);
+        }
+        if (crossed(FeatureUnlockRules.TRADE_CLASS_LEVEL, previousLevel, newLevel)) {
+            messages.send(player, MessageKey.FEATURE_UNLOCKED_TRADE);
+        }
+    }
+
+    /** Handles multi-level jumps, exactly like the ability-unlock check above it. */
+    private static boolean crossed(int threshold, int previousLevel, int newLevel) {
+        return threshold > previousLevel && threshold <= newLevel;
     }
 
     /** Handles multi-level jumps, not just +1 increments - an ability unlocked mid-jump still announces itself. */
