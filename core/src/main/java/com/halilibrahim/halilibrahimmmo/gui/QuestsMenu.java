@@ -150,7 +150,8 @@ public final class QuestsMenu implements GuiView {
             QuestDefinition definition = shown.get(index);
             slotToQuestId.put(ENTRY_SLOTS[index], definition.id());
             boolean pinned = services.quests().cachedPins(player.getUniqueId(), definition.type()).contains(definition.id());
-            inventory.setItem(ENTRY_SLOTS[index], questItem(definition, progressById.get(definition.id()), pinned));
+            boolean dismissed = services.quests().cachedDismissals(player.getUniqueId()).contains(definition.id());
+            inventory.setItem(ENTRY_SLOTS[index], questItem(definition, progressById.get(definition.id()), pinned, dismissed));
         }
         if (shown.isEmpty()) {
             inventory.setItem(ENTRY_SLOTS[0], GuiItems.of(Material.GRAY_DYE,
@@ -174,7 +175,7 @@ public final class QuestsMenu implements GuiView {
         };
     }
 
-    private ItemStack questItem(QuestDefinition definition, QuestProgress progress, boolean pinned) {
+    private ItemStack questItem(QuestDefinition definition, QuestProgress progress, boolean pinned, boolean dismissed) {
         List<Component> lore = new ArrayList<>();
         lore.add(services.messages().render(MessageKey.GUI_QUEST_ITEM_LORE_DESCRIPTION, Map.of("aciklama", definition.description())));
         lore.add(services.messages().render(MessageKey.GUI_QUEST_ITEM_LORE, Map.of(
@@ -186,6 +187,8 @@ public final class QuestsMenu implements GuiView {
         )));
         if (progress.completed()) {
             lore.add(services.messages().render(MessageKey.GUI_QUEST_ITEM_LORE_COMPLETED));
+            lore.add(services.messages().render(dismissed
+                    ? MessageKey.GUI_QUEST_ITEM_LORE_DISMISSED : MessageKey.GUI_QUEST_ITEM_LORE_DISMISS_HINT));
         } else {
             lore.add(services.messages().render(pinned
                     ? MessageKey.GUI_QUEST_ITEM_LORE_PINNED : MessageKey.GUI_QUEST_ITEM_LORE_UNPINNED));
@@ -213,9 +216,39 @@ public final class QuestsMenu implements GuiView {
             }
         }
         String questId = slotToQuestId.get(slot);
-        if (questId != null) {
-            togglePin(player, questId);
+        if (questId == null) {
+            return;
         }
+        // A finished quest has nothing left to pin - the only useful thing to do
+        // with it is to stop it taking up a panel line, which is a different
+        // verb on the same click.
+        if (section == Section.COMPLETED) {
+            dismiss(player, questId);
+            return;
+        }
+        togglePin(player, questId);
+    }
+
+    /**
+     * Clicking a finished quest takes it off the panel for good.
+     *
+     * <p>Deliberately one-way rather than a toggle. A completed permanent quest
+     * keeps its panel line forever otherwise, and "I have read this" is not a
+     * state anybody wants to switch back off - so putting it back is not on
+     * offer, and the lore line says so before the click.</p>
+     */
+    private void dismiss(Player player, String questId) {
+        if (services.quests().cachedDismissals(player.getUniqueId()).contains(questId)) {
+            return;
+        }
+        services.quests().dismiss(player.getUniqueId(), questId).thenAccept(dismissed ->
+                player.getScheduler().run(services.plugin(), task -> {
+                    if (dismissed) {
+                        services.messages().send(player, MessageKey.QUEST_DISMISSED, Map.of("gorev", questName(questId)));
+                        services.sidebar().refresh(player);
+                    }
+                    GuiManager.open(player, new QuestsMenu(services, section));
+                }, null));
     }
 
     /**

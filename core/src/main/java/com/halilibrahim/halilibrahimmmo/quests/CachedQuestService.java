@@ -44,6 +44,12 @@ public final class CachedQuestService implements QuestService {
     private final ConcurrentHashMap<QuestKey, CompletableFuture<Optional<QuestProgress>>> updateChains = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<AssignmentKey, QuestAssignment> assignmentCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<AssignmentKey, Set<String>> pinCache = new ConcurrentHashMap<>();
+    /**
+     * Keyed by player alone, unlike the pin cache: a dismissal is about one
+     * specific finished quest and never about a whole section, so the quest
+     * type it happens to belong to is not part of the question.
+     */
+    private final ConcurrentHashMap<UUID, Set<String>> dismissalCache = new ConcurrentHashMap<>();
 
     public CachedQuestService(JavaPlugin plugin, QuestRepository repository, SkillService skills) {
         this.plugin = plugin;
@@ -219,6 +225,7 @@ public final class CachedQuestService implements QuestService {
         cache.keySet().removeIf(key -> key.playerId().equals(playerId));
         assignmentCache.keySet().removeIf(key -> key.playerId().equals(playerId));
         pinCache.keySet().removeIf(key -> key.playerId().equals(playerId));
+        dismissalCache.remove(playerId);
     }
 
     @Override
@@ -265,6 +272,29 @@ public final class CachedQuestService implements QuestService {
         return repository.savePins(playerId, definition.type(), updated).thenApply(ignored -> {
             pinCache.put(key, updated);
             return result;
+        });
+    }
+
+    @Override
+    public CompletableFuture<Void> loadDismissals(UUID playerId) {
+        return repository.findDismissals(playerId).thenAccept(dismissed -> dismissalCache.put(playerId, dismissed));
+    }
+
+    @Override
+    public Set<String> cachedDismissals(UUID playerId) {
+        return dismissalCache.getOrDefault(playerId, Set.of());
+    }
+
+    @Override
+    public CompletableFuture<Boolean> dismiss(UUID playerId, String questId) {
+        if (!settings().definitions().containsKey(questId)) {
+            return CompletableFuture.completedFuture(false);
+        }
+        return repository.saveDismissal(playerId, questId).thenApply(ignored -> {
+            Set<String> updated = new LinkedHashSet<>(dismissalCache.getOrDefault(playerId, Set.of()));
+            updated.add(questId);
+            dismissalCache.put(playerId, Set.copyOf(updated));
+            return true;
         });
     }
 

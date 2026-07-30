@@ -74,24 +74,24 @@ kabiliyetler:
   # =====================================================================
   #  Tabiat Vârisi (tabiat-varisi)
   #  Sinerji: odunculuk + kazicilik + tarimcilik + hayvancilik
-  #  Dort becerinin her biri icin tam olarak bir kabiliyet. En zayiftan en
-  #  gucluye: kazicilik (10) -> tarimcilik (20) -> hayvancilik (35) ->
-  #  odunculuk (50).
-  #  Doga Ana'nin Koruyuculari (10) -> Filiz Patlamasi (20) ->
-  #  Suru Cagrisi (35) -> Agac Kirici (50)
+  #  Dort becerinin her biri icin tam olarak bir kabiliyet:
+  #  Agac Kirici (10, odunculuk) -> Filiz Patlamasi (20, tarimcilik) ->
+  #  Doga Ana'nin Koruyuculari (35, kazicilik) -> Suru Cagrisi (50, hayvancilik)
   # =====================================================================
   doga-ana-koruyuculari:
     gorunen-ad: "Doğa Ana'nın Koruyucuları"
-    aciklama: "Yalnızca çevrende hayvan varken kullanılabilir. En yakın 6 hayvan (inek, domuz, koyun, at, eşek, kurt, kedi, tavuk, panda, demir golem...) sana saldıran yaratığın üstüne koşar, ona vurur ve onu senden uzaklaştırır. 10 saniye sürer."
+    aciklama: "Yalnızca çevrende hayvan varken kullanılabilir. En yakın 6 hayvan (inek, domuz, koyun, tavuk, panda, demir golem...) sana saldıran yaratığın üstüne koşar, ona vurur ve onu senden uzaklaştırır. Yaralanan her koruyucuyu enerjinle iyileştirirsin: 5 enerji = 1 kalp. Enerjin bitse bile kabiliyet kapanmaz, süre bitince kapanır. Bütün koruyucular ölürse kendiliğinden sona erer. Evcilleştirilmiş at, eşek, kurt, kedi ve köylüler çağrıya katılmaz."
     simge: LEAD
     beceri: kazicilik
     sinif: tabiat-varisi
-    gerekli-seviye: 10
+    gerekli-seviye: 35
     enerji: 20
-    bekleme-suresi-saniye: 150
+    bekleme-suresi-saniye: 240
     etki-suresi-saniye: 10
+    # Aleti "herhangi bir sey": bu bir savas kabiliyeti degil, bir yardim
+    # cagrisidir - saldiriya ugradiginda elinde ne varsa onunla acilmali.
     arac:
-      tur: SHOVEL
+      tur: ANY
     etki:
       tur: GUARDIAN_CALL
       # Cagriya kac hayvan cevap verir. Odak agacindan arttirilabilir.
@@ -99,6 +99,10 @@ kabiliyetler:
       # Bir hayvanin bir vurusunun degeri. Az olmasi kasitli: koruyucular
       # yaratigi oldurmez, senden uzaklastirir.
       hasar: 2.0
+      # Yaralanan bir koruyucunun bir KALBINI (2 can puani) doldurmanin
+      # oyuncuya maliyeti. Enerji bittiginde iyilestirme durur ama kabiliyet
+      # calismaya devam eder.
+      enerji-kalp-basi: 5
     gorsel:
       renk: YESIL
       ses: ENTITY_WOLF_ANGRY_GROWL
@@ -136,13 +140,14 @@ kabiliyetler:
 
   suru-cagrisi:
     gorunen-ad: "Sürü Çağrısı"
-    aciklama: "Çevrendeki 10 blok yarıçapındaki bütün yetişkin hayvanlar tek bir yem harcamadan çiftleşme moduna girer."
+    aciklama: "Çevrendeki 10 blok yarıçapındaki bütün yetişkin hayvanlar tek bir yem harcamadan çiftleşme moduna girer. Sınıfın son basamağı: bir sürüyü tek çağrıyla ikiye katlar."
     simge: WHEAT
     beceri: hayvancilik
     sinif: tabiat-varisi
-    gerekli-seviye: 35
+    gerekli-seviye: 50
     enerji: 30
-    bekleme-suresi-saniye: 240
+    # Sinifin son kabiliyeti: 8 dakika bekleme.
+    bekleme-suresi-saniye: 480
     # Cagri aninda biter: hayvanlar zaten cagriya o anda karsilik veriyor,
     # kabiliyetin acik kalmasinin bir islevi yok. 2 saniye sonra hem
     # survival'da hem yaratici modda kendiliginden kapanir.
@@ -164,15 +169,17 @@ kabiliyetler:
 
   agac-kirici:
     gorunen-ad: "Ağaç Kırıcı"
-    aciklama: "2,5 dakika boyunca kestiğin HER ağaç bir bütün olarak devrilir. Düşen her kütük 5 enerji ve baltandan 1 dayanıklılık götürür; enerjin biterse kabiliyet orada kapanır. Enerji kabiliyet açıkken hiç yenilenmez. Sınıfın en güçlü kabiliyeti."
+    aciklama: "2,5 dakika boyunca kestiğin HER ağaç bir bütün olarak devrilir. Düşen her kütük 5 enerji ve baltandan 1 dayanıklılık götürür; enerjin biterse kabiliyet orada kapanır. Enerji kabiliyet açıkken hiç yenilenmez."
     simge: IRON_AXE
     beceri: odunculuk
     sinif: tabiat-varisi
-    gerekli-seviye: 50
+    # Faz 22: sinifin ilk basamagi. Odunculuk Tabiat Varisi'nin en erken
+    # ogrendigi is, bu yuzden kabiliyeti de ilk acilan oldu.
+    gerekli-seviye: 10
     enerji: 10
-    # Faz 21: 10 dakika -> 5 dakika. Kabiliyet artik tek bir agacta tukenmiyor,
-    # 2,5 dakika boyunca acik kaliyor - o yuzden bekleme suresi de yariya indi.
-    bekleme-suresi-saniye: 300
+    # Ilk basamak oldugu icin bekleme de 5 dakikadan 3 dakikaya indi; suresi ve
+    # blok basi enerjisi degismedi, yani bir seferde kac kutuk aldigi ayni.
+    bekleme-suresi-saniye: 180
     # SUREKLI KABILIYET: ilk agacta tukenmez. 2,5 dakika boyunca acik kalir ve
     # o sure boyunca kesilen her agac devrilir. Enerji biterse daha erken kapanir.
     etki-suresi-saniye: 150
@@ -323,12 +330,15 @@ kabiliyetler:
   # =====================================================================
   bulldozer:
     gorunen-ad: "Bulldozer"
-    aciklama: "1 dakika boyunca kazdığın HER blok, merkezinde durduğu 3x3x3 küple birlikte düşer. Her blok 3 enerji ve kazmandan 1 dayanıklılık götürür; enerjin biterse kabiliyet orada kapanır. Enerji kabiliyet açıkken hiç yenilenmez."
+    aciklama: "Açması bedavadır. 1 dakika boyunca kazdığın HER blok, merkezinde durduğu 3x3x3 küple birlikte düşer. Her blok 3 enerji ve kazmandan 1 dayanıklılık götürür; enerjin biterse kabiliyet orada kapanır. Enerji kabiliyet açıkken hiç yenilenmez."
     simge: GOLDEN_PICKAXE
     beceri: madencilik
     sinif: madenci
     gerekli-seviye: 10
-    enerji: 25
+    # Faz 22: acilis bedeli 25 -> 0. Bulldozer'in gercek fiyati zaten blok basi
+    # enerjisi; ustune bir de acilis bedeli almak, bir tunele girmeden once
+    # barin dortte birini goturuyordu. Blok basi 3 enerji aynen duruyor.
+    enerji: 0
     bekleme-suresi-saniye: 150
     # SUREKLI KABILIYET: ilk blokta tukenmez, 1 dakika acik kalir.
     etki-suresi-saniye: 60
@@ -379,7 +389,7 @@ kabiliyetler:
 
   kaya-patlamasi:
     gorunen-ad: "Kaya Patlaması"
-    aciklama: "Bulunduğun yere bir Maden Bombası bırakır. Patladığında 35 blok yarıçapındaki kayayı temizler ama hiçbir cevhere, oyuncuya veya yaratığa zarar vermez. Ortaya çıkan cevherler 5 saniye boyunca parlar ve kaç tane çıktığı sana yazılır."
+    aciklama: "Bulunduğun yere bir Maden Bombası bırakır. Normal bir TNT'den 6 kat güçlü patlar ama hiçbir cevhere, oyuncuya veya yaratığa zarar vermez. Ortaya çıkan cevherler 5 saniye boyunca parlar ve kaç tane çıktığı sana yazılır."
     simge: TNT
     beceri: madencilik
     sinif: madenci
@@ -392,10 +402,15 @@ kabiliyetler:
       tur: PICKAXE
     etki:
       tur: MINE_BOMB
-      # DIKKAT: yaricap 35, yaklasik 180 000 konumluk bir kure demektir.
-      # Eklenti taramayi tik tik yayar ve toplam 60 000 blokta durur, ama yine
-      # de sunucunuz zorlanirsa dusurulecek ilk deger budur.
-      yaricap: 35
+      # Faz 22: yaricap 35 -> 7.
+      #
+      # Vanilla bir TNT tasta yaklasik 4 blokluk bir cukur acar. "Normal
+      # TNT'den 6 kat guclu" demek 6 KATI HACIM demektir, yani yaricapin kup
+      # koku 6 kadar buyumesi: 4 * ~1.82 = ~7 blok. Eski 35 blok bunun yerine
+      # koca bir salon aciyordu ve hicbir TNT patlamasina benzemiyordu.
+      #
+      # Odak agacindaki "Patlama Alani" her rankta +1 blok ekler (rank 4'te 11).
+      yaricap: 7
     gorsel:
       renk: KOYU_MOR
       ses: ENTITY_TNT_PRIMED

@@ -252,8 +252,7 @@ public final class YamlClassService implements ClassService {
     @Override
     public CompletableFuture<ClassExperienceAwardResult> awardClassExperience(UUID playerId, String playerName, String classId, long amount) {
         return serial(playerId, () -> profiles.load(playerId, playerName).thenCompose(profile -> {
-            double prestigeMultiplier = 1.0 + 0.25 * profile.prestige();
-            long adjustedAmount = Math.round(amount * prestigeMultiplier);
+            long adjustedAmount = Math.round(amount * profile.prestigeExperienceMultiplier());
             return applyClassExperience(playerId, playerName, classId, adjustedAmount);
         }));
     }
@@ -264,7 +263,8 @@ public final class YamlClassService implements ClassService {
      * that already went through the skill-side prestige bonus
      * ({@code classSynergyMultiplier} in the plugin bootstrap); reapplying it
      * here would compound prestige quadratically for synergy-skill class XP
-     * instead of the single +25%-per-rank bonus every other XP source gets.
+     * instead of the single per-rank bonus every other XP source gets - see
+     * {@code PlayerProfile#prestigeExperienceMultiplier()}.
      */
     @Override
     public CompletableFuture<ClassExperienceAwardResult> awardClassExperienceExact(UUID playerId, String playerName, String classId, long amount) {

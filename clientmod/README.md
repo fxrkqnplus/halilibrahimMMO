@@ -1,8 +1,33 @@
 # hmmo-client — HalilIbrahimMMO eşlik istemci mod'u
 
-Sunucunun zorunlu mod kontrolüne yanıt veren küçük Fabric istemci mod'u.
-Oyuna hiçbir ekran, komut, tuş bağlaması veya ayar eklemez; tek işi
-`hmmo:modcheck` kanalından gelen isteğe yüklü mod listesini yollamaktır.
+Sunucunun zorunlu mod kontrolüne yanıt veren ve sunucunun bildirdiği
+**aktif kabiliyeti ekranda gösteren** küçük Fabric istemci mod'u.
+
+İki kanal dinler:
+
+| Kanal | Yön | Ne yapar |
+|---|---|---|
+| `hmmo:modcheck` | sunucu ↔ istemci | Gelen isteğe yüklü mod listesini yollar (Faz 18) |
+| `hmmo:hud` | sunucu → istemci | Çalışan kabiliyeti bildirir (Faz 22) |
+
+`hmmo:hud` üzerinden gelen bilgiyle üç şey çizilir:
+
+1. **Ekran kenarı renklenir** — kabiliyetin kendi rengiyle, kademesine göre
+   (10/20/35/50 → %25/%45/%70/%100 yoğunluk).
+2. **Kabiliyet rozeti** — simgesi, adı ve kalan süresi; hem HUD'un sol
+   üstünde hem de envanter açıkken vanilla'nın iksir etkilerini listelediği
+   sütunda.
+3. **Kan Yemini açıkken** çevredeki düşman yaratıklar kırmızı parlar.
+
+Bunlar **yalnızca sunum**tur. Mod'un hiçbir ekranı, komutu, tuş bağlaması ya
+da ayar dosyası yoktur ve oyunun kurallarına karışmaz: bu paketlerin hepsini
+yok sayan bir istemci aynı oyunu daha sade bir ekranla oynar. Otorite
+tamamen sunucudadır.
+
+**Neden istemcide?** Sunucu vanilla bir istemcinin HUD'una çizemez — "ekranı
+boya" ya da "bu yaratığı yalnızca senin için parlat" diye bir paket yoktur.
+Bukkit'in parlama bayrağı yaratığın kendi özelliğidir, bir izleyicinin değil;
+sunucudan yapılsa görüş mesafesindeki herkes için parlardı.
 
 ## Neden ayrı bir proje?
 
@@ -59,13 +84,26 @@ doğrulandı: `CustomPacketPayload`, `CustomPacketPayload.Type`,
 `ResourceLocation` **değil**), `PayloadTypeRegistry.clientboundPlay()` /
 `serverboundPlay()` (eski `playS2C()`/`playC2S()` değil).
 
-## Kalan doğrulanmamış nokta
+## HUD API'si — 26.2'de neyin nerede olduğu
 
-Mod bu depoda henüz derlenmedi. Geriye tek belirsizlik kaldı:
-`StreamCodec.of(encoder, decoder)` imzası ve
-`net.minecraft.network.RegistryFriendlyByteBuf` paket yolu. İkisi de
-dokümandaki örneklerle tutarlı; hata verirse `CustomPacketPayload.codec(...)`
-yardımcısı denenmeli.
+Faz 22'de eklenen çizim kodu, tahminle değil **derlenmiş 26.2 jar'ları
+`javap` ile okunarak** yazıldı. 26.x'te HUD mimarisi değişti; eski
+`HudRenderCallback` artık yok:
+
+| İş | 26.2'deki API |
+|---|---|
+| HUD'a katman eklemek | `HudElementRegistry.addLast(Identifier, HudElement)` |
+| Çizim yüzeyi | `HudElement.extractRenderState(GuiGraphicsExtractor, DeltaTracker)` |
+| Dikdörtgen / yazı / eşya | `GuiGraphicsExtractor#fill / #text / #item` |
+| Açık ekranın üstüne çizmek | `ScreenEvents.AFTER_INIT` → `ScreenEvents.afterExtract(screen)` |
+| Yaratık parlatma | `Entity#setGlowingTag(boolean)` |
+| Parlama rengi | istemci tarafı takım + `PlayerTeam#setColor(Optional<TeamColor>)` |
+
+**Bilinçli sınır:** `AbstractContainerScreen`'in `leftPos`/`topPos` alanları
+`protected`. Bunlara ulaşmak için mixin ya da access widener gerekirdi;
+ikisi de her oyun güncellemesinde kırılabilecek yapı. Panel her zaman
+ortalandığı için rozetin yeri ekran boyutundan hesaplanıyor (176x166 varsayımı).
+Daha geniş bir konteynerde rozet kenardan biraz daha uzağa düşer, o kadar.
 
 ## Sürüm kuralı — dikkat
 
@@ -80,3 +118,7 @@ Yeni bir sürüm çıkarırken sıra şudur:
 
 Ters sırada yapılırsa, kurulum uygulamasını dürüstçe çalıştıran oyuncular
 bile atılır.
+
+Faz 22 mod'u **1.1.0**'a çıkardı; `modlar.yml`'deki minimum bilerek
+`1.0.0`'da bırakıldı. 1.0.0 istemcisi `hmmo:hud` paketlerini sessizce yok
+sayar ve oyunu eskisi gibi oynar, yani acele etmeye gerek yok.

@@ -81,10 +81,13 @@ public enum AbilityEffectType {
      */
     PHANTOM_STEP,
     /**
-     * Instant: the tame and passive animals around the player turn on whatever
+     * Instant: the wild and farmed animals around the player turn on whatever
      * is hunting them, charging it, shoving it back and worrying at it for the
-     * ability's duration. {@code limit} is how many answer the call and
-     * {@code damageMultiplier} is what one of their hits is worth.
+     * ability's duration, while the player keeps them alive out of their own
+     * energy. {@code limit} is how many answer the call,
+     * {@code damageMultiplier} is what one of their hits is worth and
+     * {@code energyPerHit} is what restoring one of their hearts costs. Tamed
+     * animals never answer - see {@code nearbyGuardians} for why.
      */
     GUARDIAN_CALL;
 

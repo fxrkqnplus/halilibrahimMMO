@@ -3,7 +3,7 @@
   "id": "${mod_id}",
   "version": "${version}",
   "name": "HalilIbrahimMMO İstemci Mod'u",
-  "description": "HalilIbrahimMMO sunucusunun zorunlu mod kontrolüne yanıt verir. Oyuna hiçbir görsel öğe, komut veya ayar eklemez.",
+  "description": "HalilIbrahimMMO sunucusunun zorunlu mod kontrolüne yanıt verir ve sunucunun bildirdiği aktif kabiliyeti ekranda gösterir (ekran kenarı rengi, kabiliyet rozeti). Kendi ekranı, komutu, tuş atamasi ya da ayar dosyası yoktur; oyunun kurallarına hiçbir şekilde karışmaz.",
   "authors": [
     "HalilIbrahim Studio"
   ],

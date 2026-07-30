@@ -14,6 +14,12 @@ import org.bukkit.Material;
  * {@link AbilityEffectType#EXTRA_DROP_CHANCE} and a 0-1 minimum open-air ratio
  * for {@link AbilityEffectType#ORE_REVEAL}'s "wide mine" precondition.
  *
+ * <p>{@code energyPerHit} follows the same convention: it is the per-swing
+ * energy drain of an {@link AbilityActivationMode#ENERJI} damage buff, and the
+ * price of restoring one heart to a summoned guardian for
+ * {@link AbilityEffectType#GUARDIAN_CALL}. Both answer the same question - what
+ * one unit of this ability's combat effect costs the player in energy.
+ *
  * <p>{@code energyPerBlock} is the per-block running cost of a sweep ability
  * ({@code EXCAVATE}/{@code TREE_FELL}/{@code VEIN_MINE}): energy is spent as
  * the sweep progresses and the sweep stops the moment the player runs out, so

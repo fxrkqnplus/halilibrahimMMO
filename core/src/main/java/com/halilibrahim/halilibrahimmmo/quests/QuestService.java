@@ -74,5 +74,28 @@ public interface QuestService extends PluginService {
     /** Pins an unpinned quest or unpins a pinned one, within {@link #MAXIMUM_PINS_PER_TYPE} per type. */
     CompletableFuture<QuestPinResult> togglePin(UUID playerId, String questId);
 
+    /** Warms this player's dismissed-quest set on join; the sidebar reads it synchronously. */
+    CompletableFuture<Void> loadDismissals(UUID playerId);
+
+    /**
+     * Synchronous, in-memory only: the finished quests this player has taken
+     * off their panel.
+     *
+     * <p>A completed quest keeps a panel line for as long as its period lasts,
+     * which for a permanent quest is forever - so the panel needed a way to say
+     * "I have read this one". Dismissal is deliberately one-way: putting the
+     * line back would make the button a toggle, and a toggle is not what
+     * clearing a finished notice means.</p>
+     */
+    Set<String> cachedDismissals(UUID playerId);
+
+    /**
+     * Takes one finished quest off this player's panel permanently.
+     *
+     * @return {@code false} when the quest is unknown, so the caller can stay
+     *         quiet rather than claim something happened
+     */
+    CompletableFuture<Boolean> dismiss(UUID playerId, String questId);
+
     void evict(UUID playerId);
 }

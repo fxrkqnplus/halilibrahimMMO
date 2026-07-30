@@ -4,6 +4,8 @@ import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.Color;
 
+import java.util.Optional;
+
 /**
  * How dangerous - and how valuable - one world boss is.
  *
@@ -47,10 +49,12 @@ public enum BossRarity {
             Color.fromRGB(0xAA, 0x00, 0xFF)),
     EFSANEVI(MessageKey.BOSS_NAME_EFSANEVI, MessageKey.BOSS_SPAWN_EFSANEVI, MessageKey.BOSS_DEATH_EFSANEVI,
             MessageKey.BOSS_HEAD_EFSANEVI, MessageKey.BOSS_BAR_EFSANEVI, BossBar.Color.YELLOW,
-            Color.fromRGB(0xFF, 0xD7, 0x00)),
+            Color.fromRGB(0xFF, 0xD7, 0x00),
+            MessageKey.BOSS_TITLE_EFSANEVI, MessageKey.BOSS_SUBTITLE_EFSANEVI, false),
     MISTIK(MessageKey.BOSS_NAME_MISTIK, MessageKey.BOSS_SPAWN_MISTIK, MessageKey.BOSS_DEATH_MISTIK,
             MessageKey.BOSS_HEAD_MISTIK, MessageKey.BOSS_BAR_MISTIK, BossBar.Color.PINK,
-            Color.fromRGB(0xFF, 0x55, 0xFF));
+            Color.fromRGB(0xFF, 0x55, 0xFF),
+            MessageKey.BOSS_TITLE_MISTIK, MessageKey.BOSS_SUBTITLE_MISTIK, true);
 
     private final MessageKey nameplateKey;
     private final MessageKey spawnBroadcastKey;
@@ -59,10 +63,22 @@ public enum BossRarity {
     private final MessageKey bossBarKey;
     private final BossBar.Color barColor;
     private final Color auraColor;
+    private final MessageKey arrivalTitleKey;
+    private final MessageKey arrivalSubtitleKey;
+    private final boolean elderGuardianOmen;
 
     BossRarity(
             MessageKey nameplateKey, MessageKey spawnBroadcastKey, MessageKey deathBroadcastKey,
             MessageKey headKey, MessageKey bossBarKey, BossBar.Color barColor, Color auraColor
+    ) {
+        this(nameplateKey, spawnBroadcastKey, deathBroadcastKey, headKey, bossBarKey, barColor, auraColor,
+                null, null, false);
+    }
+
+    BossRarity(
+            MessageKey nameplateKey, MessageKey spawnBroadcastKey, MessageKey deathBroadcastKey,
+            MessageKey headKey, MessageKey bossBarKey, BossBar.Color barColor, Color auraColor,
+            MessageKey arrivalTitleKey, MessageKey arrivalSubtitleKey, boolean elderGuardianOmen
     ) {
         this.nameplateKey = nameplateKey;
         this.spawnBroadcastKey = spawnBroadcastKey;
@@ -71,6 +87,9 @@ public enum BossRarity {
         this.bossBarKey = bossBarKey;
         this.barColor = barColor;
         this.auraColor = auraColor;
+        this.arrivalTitleKey = arrivalTitleKey;
+        this.arrivalSubtitleKey = arrivalSubtitleKey;
+        this.elderGuardianOmen = elderGuardianOmen;
     }
 
     /** The floating name above the boss's head. */
@@ -107,5 +126,37 @@ public enum BossRarity {
      */
     public Color auraColor() {
         return auraColor;
+    }
+
+    /**
+     * The on-screen title this rarity's arrival puts in front of every player,
+     * or empty when it arrives with a chat broadcast alone.
+     *
+     * <p>Only the top two tiers announce themselves this way, and that is the
+     * whole point of doing it: a boss appears every half hour, so a title on
+     * each of them would be an interruption rather than an event. An Efsanevi
+     * shows up roughly one time in eleven and a Mistik one in a hundred and ten
+     * - rare enough that stopping what you are doing to read it is the correct
+     * reaction.</p>
+     */
+    public Optional<MessageKey> arrivalTitleKey() {
+        return Optional.ofNullable(arrivalTitleKey);
+    }
+
+    public Optional<MessageKey> arrivalSubtitleKey() {
+        return Optional.ofNullable(arrivalSubtitleKey);
+    }
+
+    /**
+     * Whether this rarity's arrival is heralded by the elder guardian's own
+     * appearance - the full-screen apparition and the curse that goes with it.
+     *
+     * <p>Reserved for Mistik alone. It is the loudest thing vanilla can put in
+     * front of a player without hurting them, so it means exactly one thing on
+     * this server, and a player who sees it knows what has just spawned before
+     * they read a word.</p>
+     */
+    public boolean summonsElderGuardianOmen() {
+        return elderGuardianOmen;
     }
 }

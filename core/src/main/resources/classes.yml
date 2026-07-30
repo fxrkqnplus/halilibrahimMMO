@@ -146,7 +146,7 @@ siniflar:
       refleks-suresi: { gorunen-ad: "Refleks Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: madenci-refleksleri, deger-rank-basina: 0.5 } }
       # Kaya Patlamasi: temel bekleme 300 sn -> her rank -30 sn (rank 4'te 180 sn).
       patlama-ritmi: { gorunen-ad: "Patlama Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: kaya-patlamasi, deger-rank-basina: 0.10 } }
-      # Kaya Patlamasi: temel yaricap 35 -> her rank +1 blok (rank 4'te 39).
+      # Kaya Patlamasi: temel yaricap 7 -> her rank +1 blok (rank 4'te 11).
       patlama-alani: { gorunen-ad: "Patlama Alanı", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: kaya-patlamasi, deger-rank-basina: 1 } }
       fener-ritmi: { gorunen-ad: "Fener Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: maden-feneri, deger-rank-basina: 0.05 } }
 
@@ -168,15 +168,26 @@ siniflar:
       guc: { gorunen-ad: "Güç", maksimum-rank: 4, etki: { tur: PVE_DAMAGE_MULTIPLIER, deger-rank-basina: 0.03 } }
       dayaniklilik: { gorunen-ad: "Dayanıklılık", maksimum-rank: 4, etki: { tur: MAX_ENERGY, deger-rank-basina: 5 } }
       # --- Kabiliyet yetenekleri ---
-      kesim-tasarrufu: { gorunen-ad: "Kesim Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }
+      # Agac Kirici: temel enerji 10 -> her rank -1 enerji (rank 4'te 6).
+      kesim-tasarrufu: { gorunen-ad: "Kesim Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.10 } }
+      # Agac Kirici: temel bekleme 180 sn -> her rank -9 sn (rank 4'te 144 sn).
       kesim-ritmi: { gorunen-ad: "Kesim Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }
+      # Agac Kirici: temel 64 kutuk -> her rank +1 kutuk.
       kesim-uzmanligi: { gorunen-ad: "Kesim Uzmanlığı", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: agac-kirici, deger-rank-basina: 1 } }
       # Doga Ana'nin Koruyuculari: temel sure 10 sn -> her rank +5 sn (rank 4'te 30 sn).
       koruyucu-suresi: { gorunen-ad: "Koruyucu Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: doga-ana-koruyuculari, deger-rank-basina: 0.5 } }
       # Doga Ana'nin Koruyuculari: temel 6 hayvan -> her rank +1 (rank 2'de 8).
       # Bilerek kucuk: cagriya cevap veren her hayvan ayri bir yol bulma isi.
       koruyucu-cagrisi: { gorunen-ad: "Koruyucu Çağrısı", maksimum-rank: 2, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: doga-ana-koruyuculari, deger-rank-basina: 1 } }
-      # Doga Ana'nin Koruyuculari: temel bekleme 150 sn -> her rank -15 sn (rank 4'te 90 sn).
-      koruyucu-ritmi: { gorunen-ad: "Koruyucu Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: doga-ana-koruyuculari, deger-rank-basina: 0.10 } }
+      # Doga Ana'nin Koruyuculari: temel bekleme 240 sn -> her rank -15 sn (rank 4'te 180 sn).
+      koruyucu-ritmi: { gorunen-ad: "Koruyucu Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: doga-ana-koruyuculari, deger-rank-basina: 0.0625 } }
+      # Filiz Patlamasi: temel yaricap 7 -> her rank +1 blok (rank 4'te 11).
       filiz-genisligi: { gorunen-ad: "Filiz Genişliği", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: filiz-patlamasi, deger-rank-basina: 1 } }
-      suru-suresi: { gorunen-ad: "Sürü Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: suru-cagrisi, deger-rank-basina: 0.15 } }
+      # Suru Cagrisi: temel bekleme 480 sn -> her rank -30 sn (rank 4'te 360 sn).
+      #
+      # Faz 22'de sure yerine beklemeyi kisaltiyor. LOVE_CALL cagri gider gitmez
+      # biten bir kabiliyet (2 sn) ve hayvanlarin ask penceresi ondan bagimsiz,
+      # yani "suresini uzatmak" rank basina 0,3 saniye gibi hicbir sey ifade
+      # etmeyen bir sayi uretiyordu. Harcanmis rankler kaybolmaz: ayni id, ayni
+      # havuz, yalnizca daha ise yarar bir etki.
+      suru-suresi: { gorunen-ad: "Sürü Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: suru-cagrisi, deger-rank-basina: 0.0625 } }

@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.gui;
 
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityDefinition;
 import com.halilibrahim.halilibrahimmmo.classes.ClassLevelProgress;
+import com.halilibrahim.halilibrahimmmo.classes.ClassModifiers;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.locale.DurationFormatter;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
@@ -17,7 +18,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The class's four abilities, laid out as the four rungs they are.
@@ -92,11 +95,12 @@ public final class AbilitiesMenu implements GuiView {
                 .limit(ABILITY_SLOTS.length)
                 .toList();
 
+        ClassModifiers modifiers = services.classes().modifiers(player.getUniqueId());
         inventory.setItem(HEADER_SLOT, header(classDefinition, progress, definitions));
         for (int index = 0; index < definitions.size(); index++) {
             AbilityDefinition definition = definitions.get(index);
             inventory.setItem(RUNG_SLOTS[index], rungMarker(index, definition, progress.level()));
-            inventory.setItem(ABILITY_SLOTS[index], abilityItem(definition, progress.level(), selectedAbilityId));
+            inventory.setItem(ABILITY_SLOTS[index], abilityItem(definition, progress.level(), selectedAbilityId, modifiers));
             if (progress.level() >= definition.requiredLevel()) {
                 slotToAbilityId.put(ABILITY_SLOTS[index], definition.id());
             }
@@ -129,7 +133,19 @@ public final class AbilitiesMenu implements GuiView {
         ));
     }
 
-    private ItemStack abilityItem(AbilityDefinition definition, int classLevel, String selectedAbilityId) {
+    /**
+     * One ability's tooltip, showing <strong>this player's</strong> numbers
+     * rather than the configured ones.
+     *
+     * <p>Every value here goes through the same {@link ClassModifiers} the
+     * activation path itself uses, so a Kan Yemini raised from 15% to 35% by the
+     * focus tree reads as 35%, and a Madenci Refleksleri talented from +3 to +5
+     * Efficiency reads as +5. The screen used to show the configured defaults
+     * forever, which meant the one place a player goes to look at their
+     * abilities was the one place their talents were invisible - and quietly
+     * told them the points they had spent had done nothing.</p>
+     */
+    private ItemStack abilityItem(AbilityDefinition definition, int classLevel, String selectedAbilityId, ClassModifiers modifiers) {
         if (classLevel < definition.requiredLevel()) {
             return GuiItems.of(
                     Material.BARRIER,
@@ -138,26 +154,86 @@ public final class AbilitiesMenu implements GuiView {
             );
         }
         boolean selected = definition.id().equals(selectedAbilityId);
+        int energyCost = modifiers.adjustedEnergyCost(definition.id(), definition.energyCost());
+        long cooldownMillis = modifiers.adjustedCooldownMillis(definition.id(), definition.cooldownMillis());
+        long activeMillis = modifiers.adjustedDurationMillis(definition.id(), definition.activeMillis());
+        int limit = modifiers.adjustedLimit(definition.id(), definition.limit());
+        double effect = modifiers.adjustedEffectValue(definition.id(), definition.damageMultiplier());
+        int energyPerBlock = modifiers.adjustedEnergyPerBlock(definition.id(), definition.energyPerBlock());
+
         List<Component> lore = new ArrayList<>();
         lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_DESCRIPTION, Map.of("aciklama", definition.description())));
         lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE, Map.of(
                 "seviye", Integer.toString(definition.requiredLevel()),
-                "bekleme", DurationFormatter.ofMillis(services.messages(), definition.cooldownMillis())
+                "bekleme", DurationFormatter.ofMillis(services.messages(), cooldownMillis)
         )));
-        if (definition.energyCost() > 0) {
-            lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_ENERGY_LINE, Map.of("enerji", Integer.toString(definition.energyCost()))));
+        lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_DURATION, Map.of(
+                "sure", DurationFormatter.ofMillis(services.messages(), activeMillis)
+        )));
+        effectLore(definition, limit, effect).ifPresent(lore::add);
+        if (energyCost > 0) {
+            lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_ENERGY_LINE, Map.of("enerji", Integer.toString(energyCost))));
         }
         // Only the sweep abilities have a running per-block cost, and it is the
         // number that decides how much of a vein or a tree they actually take.
-        if (definition.energyPerBlock() > 0) {
+        if (energyPerBlock > 0) {
             lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_ENERGY_PER_BLOCK, Map.of(
-                    "enerji", Integer.toString(definition.energyPerBlock())
+                    "enerji", Integer.toString(energyPerBlock)
             )));
+        }
+        if (isUpgraded(definition, energyCost, cooldownMillis, activeMillis, limit, effect, energyPerBlock)) {
+            lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_UPGRADED));
         }
         lore.add(services.messages().render(selected
                 ? MessageKey.GUI_ABILITY_SELECTED_MARKER
                 : MessageKey.GUI_ABILITY_EQUIP_HINT));
         return GuiItems.of(definition.icon(), abilityName(definition), lore, selected);
+    }
+
+    /**
+     * The one number that is this ability's own, in the unit it belongs to -
+     * hearts of lifesteal, levels of Efficiency, blocks of radius. Chosen by
+     * effect type with a fully-authored template per shape, so no Turkish unit
+     * word is ever built in Java.
+     */
+    private Optional<Component> effectLore(AbilityDefinition definition, int limit, double effect) {
+        return switch (definition.effectType()) {
+            case LIFE_STEAL -> Optional.of(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_EFFECT_LIFE_STEAL, Map.of(
+                    "yuzde", format(effect * 100), "seviye", Integer.toString(limit))));
+            case DAMAGE_BUFF -> Optional.of(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_EFFECT_DAMAGE_BUFF,
+                    Map.of("yuzde", format((effect - 1) * 100))));
+            case EXTRA_DROP_CHANCE -> Optional.of(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_EFFECT_CHANCE,
+                    Map.of("yuzde", format(effect * 100))));
+            case KNOCKBACK_SLAM -> Optional.of(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_EFFECT_SLAM,
+                    Map.of("hasar", format(effect), "yaricap", Integer.toString(limit))));
+            case TOOL_EFFICIENCY -> Optional.of(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_EFFECT_EFFICIENCY,
+                    Map.of("seviye", Integer.toString(limit))));
+            case GUARDIAN_CALL -> Optional.of(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_EFFECT_GUARDIANS,
+                    Map.of("sayi", Integer.toString(limit), "enerji", Integer.toString(definition.energyPerHit()))));
+            case EXCAVATE, TREE_FELL, VEIN_MINE -> Optional.of(services.messages().render(
+                    MessageKey.GUI_ABILITY_ITEM_LORE_EFFECT_BLOCKS, Map.of("sayi", Integer.toString(limit))));
+            case MINE_BOMB, ORE_REVEAL, GROWTH_SURGE, LOVE_CALL, BLAST_MINE, BULLDOZER -> Optional.of(
+                    services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_EFFECT_RADIUS,
+                            Map.of("yaricap", Integer.toString(limit))));
+            // The rest are described entirely by their duration, which already
+            // has its own line.
+            default -> Optional.empty();
+        };
+    }
+
+    /** Whether any of this ability's numbers has been moved off its configured value by the focus tree. */
+    private boolean isUpgraded(
+            AbilityDefinition definition, int energyCost, long cooldownMillis,
+            long activeMillis, int limit, double effect, int energyPerBlock
+    ) {
+        return energyCost != definition.energyCost() || cooldownMillis != definition.cooldownMillis()
+                || activeMillis != definition.activeMillis() || limit != definition.limit()
+                || Math.abs(effect - definition.damageMultiplier()) > 1.0E-6D
+                || energyPerBlock != definition.energyPerBlock();
+    }
+
+    private String format(double value) {
+        return value == Math.rint(value) ? Long.toString(Math.round(value)) : String.format(Locale.ROOT, "%.1f", value);
     }
 
     private ItemStack unequipButton(String selectedAbilityId) {

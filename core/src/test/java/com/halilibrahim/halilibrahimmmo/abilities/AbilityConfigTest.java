@@ -89,6 +89,11 @@ final class AbilityConfigTest {
             if (effect == AbilityEffectType.GUARDIAN_CALL) {
                 assertTrue(ability.getInt("etki.hayvan-sayisi", 0) > 0, id + " must declare a positive etki.hayvan-sayisi");
                 assertTrue(ability.getDouble("etki.hasar", 0) > 0, id + " must declare a positive etki.hasar");
+                // Mending is what makes the call last longer than two hits, so
+                // its price is required rather than defaulted: a zero here would
+                // silently give the guardians free healing.
+                assertTrue(ability.getInt("etki.enerji-kalp-basi", 0) > 0,
+                        id + " must declare a positive etki.enerji-kalp-basi");
             }
             // Only the two sustained sweeps and the two cube sweeps charge per
             // block; anywhere else the key would be silently ignored.

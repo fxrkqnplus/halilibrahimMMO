@@ -9,6 +9,8 @@ import com.halilibrahim.halilibrahimmmo.database.migration.MigrationRunner;
 import com.halilibrahim.halilibrahimmmo.database.migration.OnboardingSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerActivationSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerProfileSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.PrestigeRewardSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.QuestDismissalSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerHomeSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.BackpackSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.QuestPinSchemaMigration;
@@ -54,7 +56,8 @@ final class SqliteMigrationContractTest {
                     new ClassSchemaMigration(), new QuestSchemaMigration(), new TitleCosmeticSchemaMigration(),
                     new ClassProgressSchemaMigration(), new PlayerActivationSchemaMigration(), new QuestAssignmentSchemaMigration(),
                     new OnboardingSchemaMigration(), new PrestigeBankedPowerSchemaMigration(),
-                    new PlayerHomeSchemaMigration(), new WealthSchemaMigration(), new QuestPinSchemaMigration(), new BackpackSchemaMigration(), new TalentGrantSchemaMigration()
+                    new PlayerHomeSchemaMigration(), new WealthSchemaMigration(), new QuestPinSchemaMigration(), new BackpackSchemaMigration(), new TalentGrantSchemaMigration(),
+                    new QuestDismissalSchemaMigration(), new PrestigeRewardSchemaMigration()
             );
             new MigrationRunner(database, logger, migrations).runPendingMigrations().get();
 
@@ -69,7 +72,7 @@ final class SqliteMigrationContractTest {
                 return versions;
             }).get();
 
-            assertEquals(Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), appliedVersions);
+            assertEquals(Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18), appliedVersions);
         } finally {
             database.disable();
         }

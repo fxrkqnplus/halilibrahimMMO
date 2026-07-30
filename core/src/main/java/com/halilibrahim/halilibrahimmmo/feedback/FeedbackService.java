@@ -74,8 +74,41 @@ public interface FeedbackService extends PluginService {
     /** Plays the "a world boss has appeared" cue - the chat announcement carrying its name and coordinates is a broadcast. */
     void celebrateBossSpawned(Player player);
 
+    /**
+     * Puts one boss's arrival on the screen as a title, for the rarities that
+     * deserve to interrupt what everybody is doing.
+     *
+     * <p>Takes the two keys rather than a rarity so {@code feedback} keeps
+     * knowing nothing about {@code boss} - the caller already holds the rarity
+     * and is the right place to decide whether this arrival is worth a title at
+     * all.</p>
+     */
+    void announceBossArrival(Player player, MessageKey titleKey, MessageKey subtitleKey, Map<String, String> placeholders);
+
+    /**
+     * The elder guardian's own apparition and curse, as the herald of the
+     * rarest boss on the server.
+     *
+     * <p>Sent per player rather than raised in the world, because the
+     * apparition is drawn on the screen of whoever receives the particle and
+     * has no position of its own worth speaking of.</p>
+     */
+    void celebrateMysticBossSpawned(Player player);
+
     /** Plays the "a world boss has fallen" cue for everyone online. */
     void celebrateBossDefeated(Player player);
+
+    /**
+     * Sets off a celebration firework over {@code player} that cannot hurt
+     * anybody.
+     *
+     * <p>A vanilla firework really does damage whatever is next to it when it
+     * bursts, which in a two-block-high mine shaft is the player it was
+     * congratulating. The charge is tagged and {@code FireworkDamageListener}
+     * refuses its damage outright, so the burst is exactly as loud and exactly
+     * as harmless as it looks.</p>
+     */
+    void celebrateWithFirework(Player player);
 
     /**
      * The Zenginlik Puanı milestone cue for the player who crossed it. Only the
