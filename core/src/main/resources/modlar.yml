@@ -62,6 +62,11 @@ zorunlu-modlar:
   # oyuncu doğrulamayı geçemez.
   - id: "hmmo-client"
     gorunen-ad: "HalilIbrahimMMO İstemci Mod'u"
+    # Faz 22'de mod 1.1.0'a çıktı (kabiliyet HUD'u eklendi), ama minimum
+    # BİLEREK 1.0.0'da bırakıldı. Minimum, yeni sürüm oyuncuların kurulumuna
+    # ULAŞTIKTAN SONRA yükseltilir; önce yükseltmek, mod'u güncelleyememiş
+    # dürüst oyuncuları kapıda bırakır. 1.0.0 istemcisi HUD paketlerini
+    # sessizce yok sayar ve oyunu eskisi gibi oynar.
     minimum-versiyon: "1.0.0"
 
   - id: "appleskin"

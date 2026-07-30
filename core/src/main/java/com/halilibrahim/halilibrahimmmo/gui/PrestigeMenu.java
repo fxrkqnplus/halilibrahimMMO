@@ -7,15 +7,12 @@ import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
 import com.halilibrahim.halilibrahimmmo.titles.TitleDefinition;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.FireworkEffect;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.FireworkMeta;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -127,27 +124,26 @@ public final class PrestigeMenu implements GuiView {
                             "prestij", Integer.toString(result.prestige()),
                             "maksimum", Integer.toString(services.prestige().settings().maximumPrestige())
                     ));
-                    if (result.status() == PrestigeResult.Status.PRESTIGED) {
-                        services.feedback().celebratePrestige(player, result.prestige());
-                        services.skills().applyMilestoneEffects(player);
-                        services.sidebar().refresh(player);
-                        celebratePrestigeFanfare(player, result.prestige());
-                        services.titles().evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyTitles(player, unlocked));
-                        services.cosmetics().evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyCosmetics(player, unlocked));
+                    if (result.status() != PrestigeResult.Status.PRESTIGED) {
+                        GuiManager.open(player, new PrestigeMenu(services));
+                        return;
                     }
-                    GuiManager.open(player, new PrestigeMenu(services));
+                    services.feedback().celebratePrestige(player, result.prestige());
+                    services.skills().applyMilestoneEffects(player);
+                    services.sidebar().refresh(player);
+                    celebratePrestigeFanfare(player, result.prestige());
+                    services.titles().evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyTitles(player, unlocked));
+                    services.cosmetics().evaluate(player.getUniqueId(), player.getName()).thenAccept(unlocked -> notifyCosmetics(player, unlocked));
+                    // Straight into the reward choice rather than back to the
+                    // checklist: the rank has just been earned and the choice is
+                    // part of collecting it, not a separate errand.
+                    GuiManager.open(player, new PrestigeRewardMenu(services));
                 }, null));
     }
 
     private void celebratePrestigeFanfare(Player player, int newPrestige) {
         services.messages().broadcast(MessageKey.PRESTIGE_BROADCAST, Map.of("oyuncu", player.getName(), "prestij", Integer.toString(newPrestige)));
-        player.getWorld().spawn(player.getLocation(), Firework.class, firework -> {
-            FireworkMeta meta = firework.getFireworkMeta();
-            meta.addEffect(FireworkEffect.builder().withColor(org.bukkit.Color.YELLOW, org.bukkit.Color.PURPLE)
-                    .with(FireworkEffect.Type.BURST).trail(true).flicker(true).build());
-            meta.setPower(1);
-            firework.setFireworkMeta(meta);
-        });
+        services.feedback().celebrateWithFirework(player);
         Bukkit.getOnlinePlayers().forEach(online -> {
             online.playSound(online.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
             online.playSound(online.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);

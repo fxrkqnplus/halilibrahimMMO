@@ -5,6 +5,7 @@ import com.halilibrahim.halilibrahimmmo.database.DatabaseService;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -141,6 +142,53 @@ public final class QuestRepository {
                     String raw = result.getString("pinned_quest_ids");
                     return raw.isBlank() ? Set.<String>of() : Set.of(raw.split(","));
                 }
+            }
+        });
+    }
+
+    /** The finished quests this player has taken off their panel for good. */
+    CompletableFuture<Set<String>> findDismissals(UUID playerId) {
+        return database.execute(connection -> {
+            Set<String> found = new LinkedHashSet<>();
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT quest_id FROM hmmo_player_quest_dismissals WHERE player_id = ?
+                    """)) {
+                statement.setString(1, playerId.toString());
+                try (ResultSet result = statement.executeQuery()) {
+                    while (result.next()) {
+                        found.add(result.getString("quest_id"));
+                    }
+                }
+            }
+            return Set.copyOf(found);
+        });
+    }
+
+    /**
+     * Records one dismissal. Written as an existence check followed by an
+     * insert rather than an upsert because there is nothing to update - the row
+     * carries no columns beyond its own key, exactly like the title and
+     * cosmetic membership tables.
+     */
+    CompletableFuture<Void> saveDismissal(UUID playerId, String questId) {
+        return database.executeVoid(connection -> {
+            try (PreparedStatement exists = connection.prepareStatement("""
+                    SELECT 1 FROM hmmo_player_quest_dismissals WHERE player_id = ? AND quest_id = ?
+                    """)) {
+                exists.setString(1, playerId.toString());
+                exists.setString(2, questId);
+                try (ResultSet result = exists.executeQuery()) {
+                    if (result.next()) {
+                        return;
+                    }
+                }
+            }
+            try (PreparedStatement insert = connection.prepareStatement("""
+                    INSERT INTO hmmo_player_quest_dismissals (player_id, quest_id) VALUES (?, ?)
+                    """)) {
+                insert.setString(1, playerId.toString());
+                insert.setString(2, questId);
+                insert.executeUpdate();
             }
         });
     }

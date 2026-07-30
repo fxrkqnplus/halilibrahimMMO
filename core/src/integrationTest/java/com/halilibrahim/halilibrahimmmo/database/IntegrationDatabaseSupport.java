@@ -9,6 +9,8 @@ import com.halilibrahim.halilibrahimmmo.database.migration.MigrationRunner;
 import com.halilibrahim.halilibrahimmmo.database.migration.OnboardingSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerActivationSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerProfileSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.PrestigeRewardSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.QuestDismissalSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerHomeSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.BackpackSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.QuestPinSchemaMigration;
@@ -53,7 +55,8 @@ public final class IntegrationDatabaseSupport {
                 new ClassSchemaMigration(), new QuestSchemaMigration(), new TitleCosmeticSchemaMigration(),
                 new ClassProgressSchemaMigration(), new PlayerActivationSchemaMigration(), new QuestAssignmentSchemaMigration(),
                 new OnboardingSchemaMigration(), new PrestigeBankedPowerSchemaMigration(),
-                new PlayerHomeSchemaMigration(), new WealthSchemaMigration(), new QuestPinSchemaMigration(), new BackpackSchemaMigration(), new TalentGrantSchemaMigration()
+                new PlayerHomeSchemaMigration(), new WealthSchemaMigration(), new QuestPinSchemaMigration(), new BackpackSchemaMigration(), new TalentGrantSchemaMigration(),
+                new QuestDismissalSchemaMigration(), new PrestigeRewardSchemaMigration()
         );
     }
 

@@ -32,6 +32,10 @@
 #  yere düşer.
 #
 #  silah-turu: KILIC | BALTA | YAY | YOK
+#  hiz-seviyesi: bu türün kalıcı Hız büyüsü seviyesi (0 = yok, 2 = Hız 2).
+#                Nadirliğin "hiz-carpani" değerinden ayrıdır: o, yaratığın
+#                kendi yürüyüş hızını ölçekler; bu ise türün genel olarak
+#                yavaş mı hızlı mı olduğunu söyler.
 # =====================================================================
 
 spawn-araligi-dakika: 30
@@ -156,6 +160,9 @@ bosslar:
     varlik: ZOMBIE
     kafa: ZOMBIE_HEAD
     silah-turu: KILIC
+    # Faz 22: kalici Hiz 2. Kosmayan bir boss, ilan edilen koordinata
+    # gidip bir kere vurup uzaklasilan bir hedefe donusuyordu.
+    hiz-seviyesi: 2
     isimler:
       - "Diriltilmiş Jackson"
       - "İnsan Yiyen Annabelle"
@@ -169,6 +176,9 @@ bosslar:
     varlik: SKELETON
     kafa: SKELETON_SKULL
     silah-turu: YAY
+    # Faz 22: kalici Hiz 2. Kosmayan bir boss, ilan edilen koordinata
+    # gidip bir kere vurup uzaklasilan bir hedefe donusuyordu.
+    hiz-seviyesi: 2
     isimler:
       - "Nişancı Edward"
       - "Kemik Usta Silas"
@@ -182,6 +192,9 @@ bosslar:
     varlik: DROWNED
     kafa: ZOMBIE_HEAD
     silah-turu: KILIC
+    # Faz 22: kalici Hiz 2. Kosmayan bir boss, ilan edilen koordinata
+    # gidip bir kere vurup uzaklasilan bir hedefe donusuyordu.
+    hiz-seviyesi: 2
     isimler:
       - "Derin Su Nadia"
       - "Boğulmuş Kaptan Yusuf"
@@ -195,6 +208,9 @@ bosslar:
     varlik: WITCH
     kafa: PLAYER_HEAD
     silah-turu: YOK
+    # Faz 22: kalici Hiz 2. Kosmayan bir boss, ilan edilen koordinata
+    # gidip bir kere vurup uzaklasilan bir hedefe donusuyordu.
+    hiz-seviyesi: 2
     isimler:
       - "Zehirli Elma Morgana"
       - "Kazan Karıştıran Hilda"

@@ -28,12 +28,21 @@ public final class GuiItems {
         return of(material, name, List.of());
     }
 
-    /** Same as {@link #of(Material, Component, List)}, with a purely cosmetic enchant glint when {@code glowing}. */
+    /**
+     * Same as {@link #of(Material, Component, List)}, with a purely cosmetic
+     * enchant glint when {@code glowing}.
+     *
+     * <p>Every lore line goes through {@link LoreWrapper} on the way in. That is
+     * done here, once, rather than at the call sites: Minecraft never wraps
+     * lore, so any description long enough to be worth writing used to run off
+     * the right-hand edge of the screen as a single thin ribbon, and every menu
+     * in the plugin builds its tooltips through this one method.</p>
+     */
     public static ItemStack of(Material material, Component name, List<Component> lore, boolean glowing) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         meta.displayName(undecorate(name));
-        meta.lore(lore.stream().map(GuiItems::undecorate).toList());
+        meta.lore(LoreWrapper.wrapAll(lore).stream().map(GuiItems::undecorate).toList());
         meta.setEnchantmentGlintOverride(glowing);
         item.setItemMeta(meta);
         return item;

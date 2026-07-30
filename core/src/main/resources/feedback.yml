@@ -31,6 +31,17 @@ sesler:
     ses: BLOCK_BEACON_POWER_SELECT
     ses-seviyesi: 1.0
     ton: 1.1
+  # Prestij: sunucudaki en buyuk an, en gorkemli cue.
+  prestij:
+    ses: UI_TOAST_CHALLENGE_COMPLETE
+    ses-seviyesi: 1.0
+    ton: 1.0
+  # Yalnizca MISTIK bir boss dogdugunda calar; yaninda elder guardian'in
+  # ekrana cikan gorunusu de gelir. Yuz doguşta bir duyulan bir ses.
+  boss-mistik:
+    ses: ENTITY_ELDER_GUARDIAN_CURSE
+    ses-seviyesi: 1.0
+    ton: 1.0
   kabiliyet-secildi:
     ses: UI_BUTTON_CLICK
     ses-seviyesi: 0.9

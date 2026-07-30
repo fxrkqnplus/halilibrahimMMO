@@ -4,6 +4,7 @@ import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.prestige.BankedPowerService;
+import com.halilibrahim.halilibrahimmmo.prestige.PrestigeRewardService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
 import org.bukkit.entity.Player;
@@ -26,6 +27,7 @@ public final class ProgressionListener implements Listener {
     private final BlockBreakRateLimiter breakRateLimiter;
     private final ActivationService activation;
     private final BankedPowerService bankedPower;
+    private final PrestigeRewardService prestigeRewards;
     private final WealthService wealth;
 
     public ProgressionListener(
@@ -34,6 +36,7 @@ public final class ProgressionListener implements Listener {
             BlockBreakRateLimiter breakRateLimiter,
             ActivationService activation,
             BankedPowerService bankedPower,
+            PrestigeRewardService prestigeRewards,
             WealthService wealth
     ) {
         this.profiles = profiles;
@@ -41,6 +44,7 @@ public final class ProgressionListener implements Listener {
         this.breakRateLimiter = breakRateLimiter;
         this.activation = activation;
         this.bankedPower = bankedPower;
+        this.prestigeRewards = prestigeRewards;
         this.wealth = wealth;
     }
 
@@ -54,6 +58,10 @@ public final class ProgressionListener implements Listener {
         profiles.load(player.getUniqueId(), player.getName());
         activation.isActivated(player.getUniqueId());
         bankedPower.load(player.getUniqueId());
+        // Warmed here rather than applied here: the health half of a prestige
+        // reward is written on by ClassListener once the class effects it has to
+        // coexist with have been applied.
+        prestigeRewards.load(player.getUniqueId());
         wealth.load(player.getUniqueId());
     }
 
@@ -64,6 +72,7 @@ public final class ProgressionListener implements Listener {
         feedback.clearExperienceProgress(event.getPlayer());
         activation.evict(event.getPlayer().getUniqueId());
         bankedPower.evict(event.getPlayer().getUniqueId());
+        prestigeRewards.evict(event.getPlayer().getUniqueId());
         wealth.evict(event.getPlayer().getUniqueId());
     }
 }

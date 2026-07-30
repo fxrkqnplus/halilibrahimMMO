@@ -6,8 +6,32 @@
 #  3) o sinifin sinerji becerilerinin HER BIRI, sinifin kendi
 #     "prestij-sinerji-seviyesi" degerine ulasmis olmali (bkz classes.yml;
 #     yazilmayan siniflarda bu deger skills.yml'deki maksimum seviyedir).
-# Prestij; secili sinifin sinif seviyesini ve 4 becerinin tumunu 1. seviye/0
+# Prestij; secili sinifin sinif seviyesini ve ALTI becerinin tumunu 1. seviye/0
 # XP'ye sifirlar (Guc dusmez, kalici olarak "biriktirilir"), karsiliginda
-# kalici +%25/rank XP bonusu ve sinifa ozel kalici bir bonus verir.
+# kalici +%50/rank XP bonusu ve sinifa ozel kalici bir bonus verir.
 maksimum-prestij: 10
 gerekli-beceri-seviyesi: 25
+
+# Her prestijde yazilan Zenginlik Puani. Prestij zenginligi ASLA sifirlamaz -
+# zenginlik "dunyadan ne cikardin" sorusunun cevabidir ve prestij bunu
+# degistirmez; bu deger onun ustune eklenir.
+prestij-zenginlik-odulu: 1000000
+
+# HER PRESTIJDE BIR KALICI ODUL SECILIR.
+# Prestij yapan oyuncunun onune bir secim ekrani gelir ve secimini yapana kadar
+# diger MMO ekranlari acilmaz. Odul turleri kodda sabittir (her birinin gercek
+# bir karsiligi olmali); burada yalnizca DEGERLERI ayarlanir. Bir secim
+# harcandiginda geri alinamaz, ama ayni odul tekrar tekrar secilebilir.
+#
+#   CAN      : can puani olarak eklenir (2 puan = 1 kalp)
+#   HASAR    : yaratiklara verilen hasara eklenen oran (0.05 = +%5)
+#   ENERJI   : maksimum enerjiye eklenen puan
+#   BILGELIK : BECERI XP'sine eklenen oran (0.10 = +%10). Sinerji becerisinden
+#              gelen sinif XP'si de bu artistan pay alir, cunku o XP becerinin
+#              verdigi miktarla aynadan gecer; dogrudan sinifa yazilan gorev
+#              odulleri etkilenmez.
+kalici-oduller:
+  CAN: 2
+  HASAR: 0.05
+  ENERJI: 15
+  BILGELIK: 0.10

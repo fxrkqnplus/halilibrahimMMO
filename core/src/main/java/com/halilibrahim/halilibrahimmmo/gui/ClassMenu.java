@@ -1,7 +1,5 @@
 package com.halilibrahim.halilibrahimmmo.gui;
 
-import com.halilibrahim.halilibrahimmmo.abilities.AbilityDefinition;
-import com.halilibrahim.halilibrahimmmo.classes.ClassEffectType;
 import com.halilibrahim.halilibrahimmmo.classes.ClassLevelProgress;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassProgress;
@@ -21,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -52,11 +49,13 @@ public final class ClassMenu implements GuiView {
     private static final int BACK_SLOT = 53;
 
     private final GuiServices services;
+    private final TalentEffectLore talentLore;
     private final Map<Integer, String> slotToClassId = new LinkedHashMap<>();
     private final Map<Integer, String> slotToTalentId = new LinkedHashMap<>();
 
     public ClassMenu(GuiServices services) {
         this.services = services;
+        this.talentLore = new TalentEffectLore(services.messages(), services.abilities());
     }
 
     @Override
@@ -149,8 +148,8 @@ public final class ClassMenu implements GuiView {
             int rank = ranks.getOrDefault(talent.id(), 0);
             slotToTalentId.put(slots[index], talent.id());
             List<Component> lore = new ArrayList<>();
-            lore.add(effectLore(talent));
-            lore.add(currentEffectLore(talent, rank));
+            lore.add(talentLore.perRank(talent, rank));
+            talentLore.characterTotal(talent, rank).ifPresent(lore::add);
             lore.add(services.messages().render(MessageKey.GUI_TALENT_ITEM_LORE, Map.of(
                     "rank", Integer.toString(rank),
                     "maksimum", Integer.toString(talent.maximumRank())
@@ -195,66 +194,6 @@ public final class ClassMenu implements GuiView {
                         "kalan", Integer.toString(available),
                         "toplam", Integer.toString(total)
                 ))));
-    }
-
-    /**
-     * What one rank of this talent actually buys, branched per
-     * {@link com.halilibrahim.halilibrahimmmo.classes.ClassEffectType} so the
-     * player never has to guess from the name alone. Mirrors
-     * {@link SkillMilestoneInfoMenu}'s per-effect-type lore, including its
-     * multiplier-to-percentage conversion for the two ratio-shaped effects.
-     */
-    private Component effectLore(TalentNodeDefinition talent) {
-        return switch (talent.effectType()) {
-            // Health is stated in hearts, matching the skill milestone screen and
-            // the player's own HUD - the configured value is half-heart points.
-            case MAX_HEALTH -> services.messages().render(MessageKey.GUI_TALENT_LORE_HEALTH,
-                    Map.of("kalp", formatAmount(talent.valuePerRank() / 2)));
-            case PVE_DAMAGE_MULTIPLIER -> services.messages().render(MessageKey.GUI_TALENT_LORE_DAMAGE,
-                    Map.of("yuzde", formatAmount(talent.valuePerRank() * 100)));
-            case MAX_ENERGY -> services.messages().render(MessageKey.GUI_TALENT_LORE_ENERGY,
-                    Map.of("deger", formatAmount(talent.valuePerRank())));
-            case ABILITY_ENERGY_COST_REDUCTION -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_COST,
-                    Map.of("kabiliyet", abilityName(talent.abilityId()), "yuzde", formatAmount(talent.valuePerRank() * 100)));
-            case ABILITY_COOLDOWN_REDUCTION -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_COOLDOWN,
-                    Map.of("kabiliyet", abilityName(talent.abilityId()), "yuzde", formatAmount(talent.valuePerRank() * 100)));
-            case ABILITY_LIMIT_BONUS -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_LIMIT,
-                    Map.of("kabiliyet", abilityName(talent.abilityId()), "deger", formatAmount(talent.valuePerRank())));
-            case ABILITY_DURATION_BONUS -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_DURATION,
-                    Map.of("kabiliyet", abilityName(talent.abilityId()), "yuzde", formatAmount(talent.valuePerRank() * 100)));
-            case ABILITY_EFFECT_BONUS -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_EFFECT,
-                    Map.of("kabiliyet", abilityName(talent.abilityId()), "yuzde", formatAmount(talent.valuePerRank() * 100)));
-            // A flat number of energy off each swept block, so unlike every
-            // other reduction above it is stated as a count rather than a share.
-            case ABILITY_BLOCK_ENERGY_REDUCTION -> services.messages().render(MessageKey.GUI_TALENT_LORE_ABILITY_BLOCK_ENERGY,
-                    Map.of("kabiliyet", abilityName(talent.abilityId()), "deger", formatAmount(talent.valuePerRank())));
-        };
-    }
-
-    /** The total already earned, so spending the next point is an informed decision rather than a blind one. */
-    private Component currentEffectLore(TalentNodeDefinition talent, int rank) {
-        double total = talent.valuePerRank() * rank;
-        if (talent.effectType() == ClassEffectType.MAX_HEALTH) {
-            return services.messages().render(MessageKey.GUI_TALENT_LORE_CURRENT_HEART, Map.of("kalp", formatAmount(total / 2)));
-        }
-        boolean percentage = talent.effectType() != ClassEffectType.MAX_ENERGY
-                && talent.effectType() != ClassEffectType.ABILITY_LIMIT_BONUS
-                && talent.effectType() != ClassEffectType.ABILITY_BLOCK_ENERGY_REDUCTION;
-        return services.messages().render(percentage ? MessageKey.GUI_TALENT_LORE_CURRENT_PERCENT : MessageKey.GUI_TALENT_LORE_CURRENT,
-                Map.of("deger", formatAmount(percentage ? total * 100 : total)));
-    }
-
-    private String abilityName(String abilityId) {
-        return services.abilities().definitions().stream()
-                .filter(definition -> definition.id().equals(abilityId))
-                .map(AbilityDefinition::displayName)
-                .findFirst()
-                .orElse(abilityId);
-    }
-
-    /** Whole numbers read as "2", not "2.0"; fractional talent values keep one decimal. */
-    private String formatAmount(double value) {
-        return value == Math.rint(value) ? Long.toString(Math.round(value)) : String.format(Locale.ROOT, "%.1f", value);
     }
 
     @Override

@@ -46,6 +46,19 @@ public final class TradeCommand implements BasicCommand {
             messages.send(stack.getSender(), MessageKey.PLAYER_ONLY);
             return;
         }
+        // Answering an invitation is deliberately outside the level check: the
+        // partner threshold is lower than the one for starting a trade, so a
+        // player between the two can legitimately be invited and must be able to
+        // reply. Everything else - including the usage line, which is help for
+        // something they cannot do yet - waits until they have unlocked it.
+        if (args.length == 0 || !isReply(args[0])) {
+            if (!trades.isUnlocked(player.getUniqueId())) {
+                messages.send(player, MessageKey.TRADE_LOCKED, Map.of(
+                        "seviye", Integer.toString(FeatureUnlockRules.TRADE_CLASS_LEVEL)
+                ));
+                return;
+            }
+        }
         if (args.length == 0) {
             messages.send(player, MessageKey.TRADE_USAGE);
             return;
@@ -66,6 +79,12 @@ public final class TradeCommand implements BasicCommand {
             case CANCEL_ACTION -> trades.cancel(player);
             default -> report(player, args[0], trades.request(player, args[0]));
         }
+    }
+
+    /** The three verbs a player who has only been invited still needs. */
+    private static boolean isReply(String argument) {
+        String action = argument.toLowerCase(Locale.ROOT);
+        return action.equals(ACCEPT_ACTION) || action.equals(DECLINE_ACTION) || action.equals(CANCEL_ACTION);
     }
 
     private void report(Player player, String targetName, TradeRequestResult result) {
@@ -92,7 +111,11 @@ public final class TradeCommand implements BasicCommand {
         }
         String prefix = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
         List<String> suggestions = new ArrayList<>(List.of(ACCEPT_ACTION, DECLINE_ACTION, CANCEL_ACTION));
-        Bukkit.getOnlinePlayers().forEach(online -> suggestions.add(online.getName()));
+        // Player names are only worth suggesting to somebody who can actually
+        // invite one of them.
+        if (stack.getSender() instanceof Player player && trades.isUnlocked(player.getUniqueId())) {
+            Bukkit.getOnlinePlayers().forEach(online -> suggestions.add(online.getName()));
+        }
         return suggestions.stream().filter(candidate -> candidate.toLowerCase(Locale.ROOT).startsWith(prefix)).toList();
     }
 }

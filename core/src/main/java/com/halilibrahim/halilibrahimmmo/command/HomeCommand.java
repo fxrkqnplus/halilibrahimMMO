@@ -57,6 +57,15 @@ public final class HomeCommand implements BasicCommand {
             messages.send(stack.getSender(), MessageKey.PLAYER_ONLY);
             return;
         }
+        // The level check comes first, before the arguments are even looked at.
+        // A player who has not unlocked homes used to be told how to set and
+        // delete one - the usage line is help for a feature, and reading it out
+        // to somebody who cannot use the feature is noise that also looks like
+        // the command half-worked.
+        if (!homes.isUnlocked(player.getUniqueId())) {
+            sendLocked(player);
+            return;
+        }
         if (args.length == 0) {
             onPlayerRegion(player, homes.teleportHome(player), result -> reportTeleport(player, result));
             return;
@@ -134,7 +143,7 @@ public final class HomeCommand implements BasicCommand {
 
     @Override
     public Collection<String> suggest(CommandSourceStack stack, String[] args) {
-        if (args.length > 1) {
+        if (args.length > 1 || !(stack.getSender() instanceof Player player) || !homes.isUnlocked(player.getUniqueId())) {
             return List.of();
         }
         String prefix = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);

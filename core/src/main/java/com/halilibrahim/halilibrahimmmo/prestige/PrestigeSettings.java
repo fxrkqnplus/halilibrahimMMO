@@ -1,5 +1,20 @@
 package com.halilibrahim.halilibrahimmmo.prestige;
 
-/** Immutable parsed {@code prestige.yml} snapshot. */
-public record PrestigeSettings(int maximumPrestige, int minimumSkillLevel) {
+import java.util.Map;
+
+/**
+ * Immutable parsed {@code prestige.yml} snapshot.
+ *
+ * @param wealthReward  Zenginlik Puanı granted by each prestige. Prestige never
+ *                      resets wealth - the score counts what a player has taken
+ *                      out of the world and that does not stop being true - so
+ *                      this is a straight addition on top.
+ * @param rewardValues  what one pick of each permanent reward is worth
+ */
+public record PrestigeSettings(
+        int maximumPrestige,
+        int minimumSkillLevel,
+        long wealthReward,
+        Map<PrestigeRewardType, Double> rewardValues
+) {
 }

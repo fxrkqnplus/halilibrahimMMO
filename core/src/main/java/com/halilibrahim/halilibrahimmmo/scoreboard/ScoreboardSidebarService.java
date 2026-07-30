@@ -3,6 +3,7 @@ package com.halilibrahim.halilibrahimmmo.scoreboard;
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.abilities.ActiveAbilityStatus;
 import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
+import com.halilibrahim.halilibrahimmmo.backpack.BackpackService;
 import com.halilibrahim.halilibrahimmmo.classes.ClassLevelProgress;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.home.HomeService;
@@ -100,6 +101,7 @@ public final class ScoreboardSidebarService implements SidebarService {
     private final OnboardingService onboarding;
     private final HomeService homes;
     private final TradeService trades;
+    private final BackpackService backpacks;
     private final WealthService wealth;
     private final ConcurrentHashMap<UUID, Boolean> visible = new ConcurrentHashMap<>();
     private ScheduledTask refreshTask;
@@ -117,6 +119,7 @@ public final class ScoreboardSidebarService implements SidebarService {
             OnboardingService onboarding,
             HomeService homes,
             TradeService trades,
+            BackpackService backpacks,
             WealthService wealth
     ) {
         this.plugin = plugin;
@@ -131,6 +134,7 @@ public final class ScoreboardSidebarService implements SidebarService {
         this.onboarding = onboarding;
         this.homes = homes;
         this.trades = trades;
+        this.backpacks = backpacks;
         this.wealth = wealth;
     }
 
@@ -388,25 +392,32 @@ public final class ScoreboardSidebarService implements SidebarService {
     }
 
     /**
-     * The {@code /ev} and {@code /takas} state, and a live line while a trade is
-     * open.
+     * The {@code /ev}, {@code /takas} and {@code /çanta} state, and a live line
+     * while a trade is open.
      *
-     * <p>Shown only once at least one of the two is unlocked. A brand-new player
-     * has neither, and telling them about two features they cannot use yet would
-     * cost two of the panel's fifteen lines at exactly the moment the onboarding
-     * section needs them most - by the time either unlocks (class level 15 or
-     * 20), onboarding is long finished.</p>
+     * <p>Shown only once at least one of the three is unlocked. A brand-new
+     * player has none of them, and telling them about features they cannot use
+     * yet would cost one of the panel's fifteen lines at exactly the moment the
+     * onboarding section needs them most - by the time any of them unlocks
+     * (class level 15, 20 or 30), onboarding is long finished.</p>
+     *
+     * <p>All three share a single line rather than taking one each, for the same
+     * reason Güç, prestij and Zenginlik do: each is one word of state, and every
+     * line they give back is a pinned quest that fits.</p>
      */
     private void addFeatureLines(List<SidebarLine> lines, UUID playerId) {
         boolean homeUnlocked = homes.isUnlocked(playerId);
         boolean tradeUnlocked = trades.isUnlocked(playerId);
+        boolean backpackUnlocked = backpacks.isUnlocked(playerId);
         Optional<TradeSession> session = trades.activeSession(playerId);
-        if (!homeUnlocked && !tradeUnlocked && session.isEmpty()) {
+        if (!homeUnlocked && !tradeUnlocked && !backpackUnlocked && session.isEmpty()) {
             return;
         }
         lines.add(information(messages.render(MessageKey.SIDEBAR_LINE_FEATURES, Map.of(
                 "ev", homeStatus(playerId, homeUnlocked),
                 "takas", messages.plain(tradeUnlocked
+                        ? MessageKey.SIDEBAR_FEATURE_OPEN : MessageKey.SIDEBAR_FEATURE_LOCKED, Map.of()),
+                "canta", messages.plain(backpackUnlocked
                         ? MessageKey.SIDEBAR_FEATURE_OPEN : MessageKey.SIDEBAR_FEATURE_LOCKED, Map.of())
         ))));
         session.ifPresent(active -> {
@@ -486,6 +497,7 @@ public final class ScoreboardSidebarService implements SidebarService {
      */
     private void addQuestSection(List<SidebarLine> lines, UUID playerId) {
         Map<String, QuestProgress> progress = quests.cachedAll(playerId);
+        Set<String> dismissed = quests.cachedDismissals(playerId);
         Map<QuestType, List<QuestDefinition>> shown = new EnumMap<>(QuestType.class);
         for (QuestType type : QuestType.values()) {
             Set<String> pinned = quests.cachedPins(playerId, type);
@@ -494,6 +506,12 @@ public final class ScoreboardSidebarService implements SidebarService {
                     .filter(definition -> definition.type() == type)
                     .filter(definition -> progress.containsKey(definition.id()))
                     .filter(definition -> !pinsOnly || pinned.contains(definition.id()))
+                    // A finished quest the player took off the panel stays off
+                    // it. The dismissal is only honoured while the quest is
+                    // still finished, so a daily that rolls over into a new
+                    // period comes back as the fresh quest it now is.
+                    .filter(definition -> !dismissed.contains(definition.id())
+                            || !progress.get(definition.id()).completed())
                     .toList();
             if (!ofType.isEmpty()) {
                 shown.put(type, ofType);

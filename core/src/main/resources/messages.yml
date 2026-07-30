@@ -32,6 +32,7 @@ genel:
 canta:
   baslik: "<dark_aqua>Bulut Sandığı</dark_aqua>"
   kilitli: "<red><simge:uyari> Bulut sandığı <white><seviye>. sınıf seviyesinde</white> açılır.</red> <gray>(Prestij yaptıysan seviyeden bağımsız olarak zaten açıktır.)</gray>"
+  acildi: "<dark_aqua><simge:koleksiyon> Bulut sandığın açıldı.</dark_aqua> <gray>İçindekiler ölümde kaybolmaz; pencereyi kapattığında kaydedilir.</gray>"
 
 # Ekranda gorunen HER sure bu dort parcadan birlestirilir: once gun, sonra
 # saat, dakika ve saniye - sifir olan birimler hic yazilmaz. Ornegin 130
@@ -100,7 +101,7 @@ sidebar:
   aktif-kabiliyet: "<gold><simge:kabiliyet> <kabiliyet></gold> <dark_gray>(<kalan>)</dark_gray>"
   kabiliyet-secili: "<green><simge:kabiliyet> <kabiliyet></green> <dark_gray>hazır</dark_gray>"
   kabiliyet-yok: "<dark_gray><simge:kabiliyet> Kabiliyet seçilmedi</dark_gray>"
-  ozellikler: "<gray><simge:bilgi> Ev:</gray> <white><ev></white> <dark_gray>|</dark_gray> <gray>Takas:</gray> <white><takas></white>"
+  ozellikler: "<gray><simge:bilgi> Ev:</gray> <white><ev></white> <dark_gray>|</dark_gray> <gray>Takas:</gray> <white><takas></white> <dark_gray>|</dark_gray> <gray>Çanta:</gray> <white><canta></white>"
   ozellik-acik: "Açık"
   ozellik-kilitli: "Kilitli"
   ozellik-ayarsiz: "Ayarlanmadı"
@@ -119,11 +120,11 @@ sidebar:
   gorev-baslik-haftalik: "<gold><simge:gorev> Haftalık Görevler</gold>"
   gorev-baslik-kalici: "<aqua><simge:gorev> Kalıcı Görevler</aqua>"
   gorev-gunluk: "<yellow>• <gorev>:</yellow> <white><ilerleme></white> <dark_gray>(+<xp>)</dark_gray>"
-  gorev-gunluk-tamam: "<yellow>• <simge:tamam> <gorev></yellow> <dark_gray>(+<xp>)</dark_gray>"
+  gorev-gunluk-tamam: "<green>• <simge:tamam> <gorev></green> <dark_gray>(+<xp>)</dark_gray>"
   gorev-haftalik: "<gold>• <gorev>:</gold> <white><ilerleme></white> <dark_gray>(+<xp>)</dark_gray>"
-  gorev-haftalik-tamam: "<gold>• <simge:tamam> <gorev></gold> <dark_gray>(+<xp>)</dark_gray>"
+  gorev-haftalik-tamam: "<green>• <simge:tamam> <gorev></green> <dark_gray>(+<xp>)</dark_gray>"
   gorev-kalici: "<aqua>• <gorev>:</aqua> <white><ilerleme></white> <dark_gray>(+<xp>)</dark_gray>"
-  gorev-kalici-tamam: "<aqua>• <simge:tamam> <gorev></aqua> <dark_gray>(+<xp>)</dark_gray>"
+  gorev-kalici-tamam: "<green>• <simge:tamam> <gorev></green> <dark_gray>(+<xp>)</dark_gray>"
   alt-bilgi: "<dark_gray>/panel ile aç/kapat</dark_gray>"
   onboarding-baslik: "<yellow><simge:bilgi> Başlangıç Görevleri:</yellow>"
   onboarding-menu: "<gray>• /menü ile ana menüyü aç</gray>"
@@ -188,6 +189,8 @@ kabiliyet:
   # sohbete hicbir sey gitmez, cunku bu tiklama cogunlukla kaza eseridir.
   bekleme-eylem-cubugu: "<yellow><simge:kabiliyet> <kabiliyet></yellow> <dark_gray>•</dark_gray> <gray>Hazır olmasına <white><sure></white> var</gray>"
   enerji-bitti: "<yellow><simge:enerji> Enerjin tükendi,</yellow> <white><kabiliyet></white> <gray><sayi> blokta sona erdi.</gray>"
+  # Cagriya cevap veren butun hayvanlar dustugunde kabiliyet kendiliginden biter.
+  koruyucu-dustu: "<red><simge:uyari> Bütün koruyucuların düştü;</red> <white><kabiliyet></white> <gray>sona erdi.</gray>"
   kuruldu: "<green><kabiliyet> kuruldu.</green> <gray><sure> içinde uygun bir blok kır.</gray>"
   etkin: "<green><kabiliyet> etkin.</green> <gray><sure> boyunca PvE hasarın güçlendi.</gray>"
   etkin-genel: "<green><kabiliyet> etkin.</green> <gray><sure> sürecek.</gray>"
@@ -237,7 +240,7 @@ hayvancilik:
   ikiz-dogum: "<green><simge:hayvancilik> İkiz doğum!</green> <gray>Sürüne bir yavru daha katıldı.</gray>"
 
 prestij:
-  basarili: "<green>Prestij yaptın! Yeni prestij seviyen: <prestij>.</green> <gray>Sınıf seviyen ve 4 becerin sıfırlandı; karşılığında kalıcı +%25 XP bonusu ve sınıfa özel kalıcı bir bonus kazandın.</gray>"
+  basarili: "<green>Prestij yaptın! Yeni prestij seviyen: <prestij>.</green> <gray>Sınıf seviyen ve altı becerin sıfırlandı; karşılığında kalıcı +%50/rank XP bonusu, sınıfa özel kalıcı bir bonus, 1.000.000 Zenginlik Puanı ve seçeceğin kalıcı bir ödül kazandın.</gray>"
   seviye-gerekli: "<red>Prestij için gerekli şartların tümünü sağlamalısın.</red>"
   maksimum: "<yellow>Maksimum prestij sayısına ulaştın: <maksimum>.</yellow>"
   duyuru: "<gold><bold><simge:prestij> <oyuncu> prestij yaptı! Yeni prestij: <prestij></bold></gold>"
@@ -249,6 +252,10 @@ prestij:
   gereksinim-sinerji-tamam: "<green><simge:tamam> Sinerji Becerisi (<beceri>): <seviye>/<gereken></green>"
   gereksinim-sinerji-eksik: "<red><simge:eksik> Sinerji Becerisi (<beceri>): <seviye>/<gereken></red>"
   gereksinim-sinif-yok: "<red><simge:eksik> Önce bir sınıf seçmelisin (/sınıf).</red>"
+  # Her prestij bir kalici odul secme hakki verir; secilene kadar diger
+  # MMO ekranlari yerine odul ekrani acilir.
+  odul-secildi: "<gold><simge:kutlama> Kalıcı ödülünü seçtin:</gold> <white><odul></white>"
+  odul-bekliyor: "<yellow><simge:uyari> Önce prestij ödülünü seçmelisin.</yellow>"
 
 gorev:
   tamamlandi: "<green><simge:gorev> <gorev> görevini tamamladın!</green> <gray>(+<xp> XP)</gray>"
@@ -257,6 +264,8 @@ gorev:
   sabitlendi: "<green><simge:tamam> <gorev> panele sabitlendi.</green>"
   sabit-kaldirildi: "<yellow><simge:eksik> <gorev> panelden kaldırıldı.</yellow>"
   sabit-dolu: "<red>Bu bölüme en fazla <white><sayi></white> görev sabitleyebilirsin.</red> <gray>Önce birini kaldır.</gray>"
+  # Tamamlanmis bir goreve tiklamak onu panelden kalici olarak kaldirir.
+  kaldirildi: "<gray><simge:tamam> <white><gorev></white> panelden kaldırıldı.</gray> <dark_gray>Bu görev bir daha panele eklenmez.</dark_gray>"
 
 # "/ev" ("/home") komutu - sinif seviyesi 15'te ya da ilk prestijde acilir.
 ev:
@@ -301,6 +310,13 @@ boss:
   dogus-epik: "<light_purple><simge:boss> Epik bir boss belirdi:</light_purple> <white><isim></white> <dark_gray>•</dark_gray> <gray>Koordinat:</gray> <white><x>, <y>, <z></white>"
   dogus-efsanevi: "<gold><bold><simge:boss> EFSANEVİ BİR BOSS BELİRDİ:</bold></gold> <yellow><isim></yellow> <dark_gray>•</dark_gray> <gray>Koordinat:</gray> <white><x>, <y>, <z></white>"
   dogus-mistik: "<gradient:#FF00E4:#00FFFF><bold><simge:boss> MİSTİK BİR BOSS BELİRDİ:</bold></gradient> <aqua><isim></aqua> <dark_gray>•</dark_gray> <gray>Koordinat:</gray> <white><x>, <y>, <z></white>"
+  # Yalnizca Efsanevi ve Mistik dogus, ekranin ortasina bir baslik olarak da
+  # gelir. Digerleri sadece sohbete duyurulur: yarim saatte bir gelen bir
+  # boss icin ekrani kesmek duyuru olmaktan cikip rahatsizliga donusurdu.
+  baslik-efsanevi: "<gold><bold>EFSANEVİ BOSS</bold></gold>"
+  altbaslik-efsanevi: "<yellow><isim></yellow> <gray>•</gray> <white><x>, <y>, <z></white>"
+  baslik-mistik: "<gradient:#FF00E4:#00FFFF><bold>MİSTİK BOSS</bold></gradient>"
+  altbaslik-mistik: "<aqua><isim></aqua> <gray>•</gray> <white><x>, <y>, <z></white>"
   # Ekranin ustundeki can cubugu. Bossa 96 blok mesafedeki herkes gorur.
   # <can>/<maksimum> anlik can, parantez icindeki de nadirliktir.
   cubuk-siradan: "<gray><simge:boss> <isim></gray> <dark_gray>|</dark_gray> <white><can></white><gray>/</gray><white><maksimum></white> <gray>(Sıradan)</gray>"
@@ -419,9 +435,12 @@ geribildirim:
   koleksiyon-bossbar: "<light_purple><koleksiyon> koleksiyonu tamamlandı!</light_purple>"
   koleksiyon-baslik: "<light_purple>Koleksiyon Tamamlandı!</light_purple>"
   koleksiyon-altbaslik: "<white><koleksiyon></white>"
-  prestij-bossbar: "<yellow>Prestij yaptın! Yeni prestij: <prestij></yellow>"
-  prestij-baslik: "<yellow>Prestij!</yellow>"
-  prestij-altbaslik: "<white>Yeni prestij: <prestij></white>"
+  # Prestij, bir oyuncunun bu sunucuda yaptigi en buyuk sey; ekran da oyle
+  # gorunmeli. <xp> o oyuncunun ARTIK sahip oldugu toplam XP bonusudur -
+  # bir oran, soylenmedigi surece gorunmez.
+  prestij-bossbar: "<gradient:#FFD700:#FF8C00><bold><simge:prestij> PRESTİJ <prestij></bold></gradient> <dark_gray>|</dark_gray> <yellow>Kalıcı XP bonusun: +%<xp></yellow>"
+  prestij-baslik: "<gradient:#FFD700:#FFFFFF:#FFD700><bold><simge:prestij> PRESTİJ <prestij> <simge:prestij></bold></gradient>"
+  prestij-altbaslik: "<yellow>Kalıcı <white>+%<xp></white> XP</yellow> <dark_gray>•</dark_gray> <light_purple>+1.000.000 Zenginlik</light_purple> <dark_gray>•</dark_gray> <aqua>Ödülünü seç</aqua>"
   kabiliyet-acildi-bossbar: "<white><simge:kabiliyet> Yeni kabiliyet açıldı - <kabiliyet></white>"
   kabiliyet-acildi-baslik: "<white>Yeni Kabiliyet!</white>"
   kabiliyet-acildi-altbaslik: "<gray><kabiliyet></gray>"
@@ -685,6 +704,18 @@ gui:
     oge-aciklama: "<gray>Gerekli seviye <white><seviye></white> <dark_gray>|</dark_gray> Bekleme <white><bekleme></white></gray>"
     oge-enerji-satiri: "<aqua><simge:enerji> Başlatma enerjisi: <white><enerji></white></aqua>"
     oge-enerji-blok-satiri: "<aqua><simge:enerji> Blok başına: <white><enerji></white> enerji <dark_gray>(enerjin bitince süpürme durur)</dark_gray></aqua>"
+    # BU EKRANDAKI HER SAYI OYUNCUNUN KENDI SAYISIDIR: odak agacindan alinan
+    # her rank buraya islenmis olarak gelir, varsayilan degil.
+    oge-sure: "<gray><simge:kabiliyet> Süre: <white><sure></white></gray>"
+    oge-guclendirildi: "<light_purple><simge:kutlama> Odak ağacıyla güçlendirildi</light_purple>"
+    oge-etki-can-calma: "<red><simge:can> Hasarın <white>%<yuzde></white>'i cana döner <dark_gray>•</dark_gray> Hız <white><seviye></white></red>"
+    oge-etki-hasar: "<red><simge:kabiliyet> Yaratıklara <white>+%<yuzde></white> hasar</red>"
+    oge-etki-ihtimal: "<gold><simge:kabiliyet> Fazladan düşme ihtimali: <white>%<yuzde></white></gold>"
+    oge-etki-darbe: "<gold><simge:kabiliyet> <white><hasar></white> hasar <dark_gray>•</dark_gray> <white><yaricap></white> blok yarıçap</gold>"
+    oge-etki-verimlilik: "<blue><simge:kabiliyet> Kazmana <white>+<seviye> Verimlilik</white></blue>"
+    oge-etki-koruyucu: "<green><simge:kabiliyet> <white><sayi></white> hayvan çağırır <dark_gray>•</dark_gray> kalp başına <white><enerji></white> enerji</green>"
+    oge-etki-blok: "<gold><simge:kabiliyet> En fazla <white><sayi></white> blok</gold>"
+    oge-etki-yaricap: "<gold><simge:kabiliyet> <white><yaricap></white> blok yarıçap</gold>"
     secili-isaret: "<green><simge:tamam> Kuşanıldı - uygun aleti tutup çift sağ tıkla</green>"
     kusan-ipucu: "<dark_gray>Kuşanmak için tıkla</dark_gray>"
     cikar-oge: "<red><simge:eksik> Kabiliyeti Çıkar</red>"
@@ -714,12 +745,26 @@ gui:
     yetenek-etki-can: "<gray>Her rank <white><simge:can> +<kalp> kalp</white> verir.</gray>"
     yetenek-etki-hasar: "<gray>Her rank yaratıklara karşı <white>+%<yuzde> hasar</white> verir.</gray>"
     yetenek-etki-enerji: "<gray>Her rank <white><simge:enerji> +<deger> maksimum enerji</white> verir.</gray>"
-    yetenek-etki-kabiliyet-enerji: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin enerji maliyetini <white>%<yuzde></white> azaltır.</gray>"
-    yetenek-etki-kabiliyet-bekleme: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin bekleme süresini <white>%<yuzde></white> azaltır.</gray>"
-    yetenek-etki-kabiliyet-limit: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin etki sınırını <white>+<deger></white> arttırır.</gray>"
-    yetenek-etki-kabiliyet-sure: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin etki süresini <white>%<yuzde></white> uzatır.</gray>"
-    yetenek-etki-kabiliyet-guc: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin etkisini <white>%<yuzde></white> güçlendirir.</gray>"
-    yetenek-etki-kabiliyet-blok-enerji: "<gray>Her rank <white><kabiliyet></white> kabiliyetinin blok başına enerjisini <white><deger></white> düşürür.</gray>"
+    # KABILIYET YETENEKLERI MUTLAK DEGERLE ANLATILIR.
+    # classes.yml oranlari saklar (bu, kabiliyetin temel degeri degistiginde
+    # yetenegin onunla birlikte olceklenmesini saglar), ama ekranda "%50 azaltir"
+    # yazmak oyuncuya hicbir sey soylemez: temel degeri bilmeden uzerine karar
+    # verilemez. Her satir bu yuzden UC sayi tasir: rank basina degisim,
+    # kabiliyetin varsayilani ve oyuncunun SU ANKI degeri.
+    yetenek-etki-kabiliyet-enerji: "<gray>Her rank <white><kabiliyet></white> enerjisini <white>-<rank></white> düşürür <dark_gray>(varsayılan <temel>, şu an <mevcut>)</dark_gray></gray>"
+    yetenek-etki-kabiliyet-bekleme: "<gray>Her rank <white><kabiliyet></white> beklemesini <white>-<rank></white> kısaltır <dark_gray>(varsayılan <temel>, şu an <mevcut>)</dark_gray></gray>"
+    yetenek-etki-kabiliyet-sure: "<gray>Her rank <white><kabiliyet></white> süresini <white>+<rank></white> uzatır <dark_gray>(varsayılan <temel>, şu an <mevcut>)</dark_gray></gray>"
+    yetenek-etki-kabiliyet-blok-enerji: "<gray>Her rank <white><kabiliyet></white> blok başı enerjisini <white>-<rank></white> düşürür <dark_gray>(varsayılan <temel>, şu an <mevcut>)</dark_gray></gray>"
+    # "Etki siniri" her kabiliyette baska bir sey sayar; her sekil icin ayri bir
+    # sablon var ki Java'da hicbir Turkce birim kelimesi kurulmasin.
+    yetenek-etki-limit-verimlilik: "<gray>Her rank <white><kabiliyet></white> kazmana <white>+<rank> Verimlilik</white> ekler <dark_gray>(varsayılan +<temel>, şu an +<mevcut>)</dark_gray></gray>"
+    yetenek-etki-limit-hiz: "<gray>Her rank <white><kabiliyet></white> Hız seviyesini <white>+<rank></white> arttırır <dark_gray>(varsayılan Hız <temel>, şu an Hız <mevcut>)</dark_gray></gray>"
+    yetenek-etki-limit-hayvan: "<gray>Her rank <white><kabiliyet></white> çağrısına <white>+<rank> hayvan</white> katar <dark_gray>(varsayılan <temel>, şu an <mevcut>)</dark_gray></gray>"
+    yetenek-etki-limit-blok: "<gray>Her rank <white><kabiliyet></white> blok sınırını <white>+<rank></white> arttırır <dark_gray>(varsayılan <temel>, şu an <mevcut>)</dark_gray></gray>"
+    yetenek-etki-limit-yaricap: "<gray>Her rank <white><kabiliyet></white> yarıçapını <white>+<rank> blok</white> büyütür <dark_gray>(varsayılan <temel>, şu an <mevcut>)</dark_gray></gray>"
+    yetenek-etki-guc-yuzde: "<gray>Her rank <white><kabiliyet></white> oranını <white>+%<rank></white> arttırır <dark_gray>(varsayılan %<temel>, şu an %<mevcut>)</dark_gray></gray>"
+    yetenek-etki-guc-hasar: "<gray>Her rank <white><kabiliyet></white> hasarını <white>+<rank></white> arttırır <dark_gray>(varsayılan <temel>, şu an <mevcut>)</dark_gray></gray>"
+    yetenek-etki-kabiliyet-yok: "<dark_gray>Bu yeteneğin bağlı olduğu kabiliyet (<kabiliyet>) yapılandırmada yok; harcanan rankler iade edilmiş sayılır.</dark_gray>"
     yetenek-mevcut-etki: "<dark_gray>Şu anki toplam: <white><deger></white></dark_gray>"
     yetenek-mevcut-etki-yuzde: "<dark_gray>Şu anki toplam: <white>%<deger></white></dark_gray>"
     yetenek-mevcut-etki-kalp: "<dark_gray>Şu anki toplam: <white><kalp> kalp</white></dark_gray>"
@@ -774,9 +819,28 @@ gui:
     baslik: "<dark_gray>Prestij</dark_gray>"
     bilgi-oge: "<gold>Prestij Durumun</gold>"
     bilgi-aciklama: "<gray>Prestij <white><prestij>/<maksimum></white></gray>"
-    bilgi-aciklama-detay: "<gray>Sınıf seviyen ve 4 becerin 1. seviyeye sıfırlanır. Karşılığında kalıcı +%25 XP bonusu (rank başına) ve sınıfına özel kalıcı bir bonus kazanırsın.</gray>"
+    bilgi-aciklama-detay: "<gray>Sınıf seviyen ve altı becerin 1. seviyeye sıfırlanır. Karşılığında rank başına kalıcı +%50 XP bonusu, sınıfına özel kalıcı bir bonus, 1.000.000 Zenginlik Puanı ve seçeceğin kalıcı bir ödül kazanırsın. Güç düşmez.</gray>"
     onayla-oge: "<light_purple>Prestij Yap</light_purple>"
-    onayla-aciklama: "<gray>Sınıf seviyen ve 4 becerin sıfırlanır, karşılığında kalıcı bonus kazanılır <dark_gray>•</dark_gray> Onaylamak için tıkla</gray>"
+    onayla-aciklama: "<gray>Sınıf seviyen ve altı becerin sıfırlanır, karşılığında kalıcı bonuslar kazanılır <dark_gray>•</dark_gray> Onaylamak için tıkla</gray>"
+
+  # Her prestijden sonra acilan kalici odul secim ekrani. Secim yapilana kadar
+  # butun MMO ekranlari yerine bu acilir - odul, prestijin kendisinin bir
+  # parcasidir ve pencereyi kapatip unutmak onu carcur etmek olurdu.
+  prestij-odul:
+    baslik: "<dark_gray><simge:prestij> Kalıcı Ödülünü Seç</dark_gray>"
+    ust-oge: "<gold><simge:prestij> Prestij Ödülü</gold>"
+    ust-aciklama: "<gray>Prestij <white><prestij></white> <dark_gray>•</dark_gray> Bekleyen seçim hakkın: <white><hak></white></gray>"
+    ust-ipucu: "<dark_gray>Seçimin kalıcıdır ve geri alınamaz. Aynı ödülü her prestijde tekrar seçebilirsin.</dark_gray>"
+    sahip: "<dark_gray>Şu ana kadar <white><sayi></white> kez seçtin <dark_gray>(toplam <toplam>)</dark_gray></dark_gray>"
+    sec-ipucu: "<green>Seçmek için tıkla</green>"
+    can: "<red><simge:can> Dayanıklılık</red>"
+    can-aciklama: "<gray>Kalıcı olarak <white>+<deger> kalp</white> maksimum can.</gray>"
+    hasar: "<gold><simge:kabiliyet> Vahşet</gold>"
+    hasar-aciklama: "<gray>Yaratıklara verdiğin hasar kalıcı olarak <white>+%<deger></white>.</gray>"
+    enerji: "<aqua><simge:enerji> Soluk</aqua>"
+    enerji-aciklama: "<gray>Kalıcı olarak <white>+<deger></white> maksimum enerji.</gray>"
+    bilgelik: "<light_purple><simge:xp> Bilgelik</light_purple>"
+    bilgelik-aciklama: "<gray>Kazandığın beceri XP'si kalıcı olarak <white>+%<deger></white>. Sinerji becerisinden gelen sınıf XP'si de bundan pay alır.</gray>"
 
   gorevler:
     baslik: "<dark_gray><simge:gorev> Görevlerim</dark_gray>"
@@ -793,6 +857,8 @@ gui:
     bilgi-sabitleme: "<gray>Bir göreve tıklayarak sağdaki panele sabitleyebilirsin <dark_gray>(bölüm başına en fazla <sayi>)</dark_gray></gray>"
     oge-sabitli: "<aqua><simge:tamam> Panele sabitlendi <dark_gray>• kaldırmak için tıkla</dark_gray></aqua>"
     oge-sabitsiz: "<dark_gray>Panele sabitlemek için tıkla</dark_gray>"
+    oge-kaldir-ipucu: "<gray>Panelden kaldırmak için tıkla <dark_gray>(geri alınamaz)</dark_gray></gray>"
+    oge-kaldirildi: "<dark_gray><simge:tamam> Panelden kaldırıldı</dark_gray>"
     bolum-gunluk: "<yellow><simge:gorev> Günlük Görevler</yellow>"
     bolum-gunluk-aciklama: "<gray>Her gün havuzdan rastgele yeniden atanır.</gray>"
     bolum-haftalik: "<gold><simge:gorev> Haftalık Görevler</gold>"

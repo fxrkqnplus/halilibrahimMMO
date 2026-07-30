@@ -232,9 +232,37 @@ public final class YamlBossService implements BossService {
                 "dunya", location.getWorld().getName()
         ));
         shareWaypoint(location, rarity, name);
-        Bukkit.getOnlinePlayers().forEach(online ->
-                online.getScheduler().run(plugin, task -> feedback.celebrateBossSpawned(online), null));
+        announceArrival(location, rarity, name);
         return true;
+    }
+
+    /**
+     * The per-player half of a spawn: the cue everybody hears, plus - for the
+     * two rarest tiers - a title on the screen and, for a Mistik, the elder
+     * guardian's own apparition.
+     *
+     * <p>The chat broadcast is what carries the detail; this is what makes a
+     * player look up. Kept apart from the broadcast because it is deliberately
+     * not uniform across rarities: an ordinary boss every half hour must not
+     * take over the screen, and the one-in-a-hundred-and-ten must.</p>
+     */
+    private void announceArrival(Location location, BossRarity rarity, String name) {
+        Map<String, String> placeholders = Map.of(
+                "isim", name,
+                "x", Integer.toString(location.getBlockX()),
+                "y", Integer.toString(location.getBlockY()),
+                "z", Integer.toString(location.getBlockZ()),
+                "dunya", location.getWorld().getName()
+        );
+        Bukkit.getOnlinePlayers().forEach(online -> online.getScheduler().run(plugin, task -> {
+            if (rarity.summonsElderGuardianOmen()) {
+                feedback.celebrateMysticBossSpawned(online);
+            } else {
+                feedback.celebrateBossSpawned(online);
+            }
+            rarity.arrivalTitleKey().ifPresent(titleKey -> rarity.arrivalSubtitleKey().ifPresent(subtitleKey ->
+                    feedback.announceBossArrival(online, titleKey, subtitleKey, placeholders)));
+        }, null));
     }
 
     /**
@@ -516,6 +544,12 @@ public final class YamlBossService implements BossService {
         if (tier.healthMultiplier() >= 6.0D) {
             mob.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, PotionEffect.INFINITE_DURATION, 1, false, false));
         }
+        // Per archetype, not per rarity: a boss that cannot keep up is a boss
+        // the player hits once and strolls away from, whatever it hits back for.
+        if (archetype.speedLevel() > 0) {
+            mob.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, PotionEffect.INFINITE_DURATION,
+                    archetype.speedLevel() - 1, false, false));
+        }
         makeSunproof(mob);
         // FLASH is a coloured particle on this server version and throws
         // outright without a Color payload - which is what killed the whole
@@ -764,11 +798,15 @@ public final class YamlBossService implements BossService {
             throw new IllegalArgumentException("Boss archetype must declare a known kafa material: " + id);
         }
         BossWeaponType weaponType = BossWeaponType.valueOf(section.getString("silah-turu", "YOK").toUpperCase(Locale.ROOT));
+        int speedLevel = section.getInt("hiz-seviyesi", 0);
+        if (speedLevel < 0 || speedLevel > 5) {
+            throw new IllegalArgumentException("Boss archetype hiz-seviyesi must be in [0, 5]: " + id);
+        }
         List<String> names = section.getStringList("isimler");
         if (names.isEmpty()) {
             throw new IllegalArgumentException("Boss archetype must declare at least one name: " + id);
         }
-        return new BossArchetype(id, entityType, head, weaponType, List.copyOf(names));
+        return new BossArchetype(id, entityType, head, weaponType, speedLevel, List.copyOf(names));
     }
 
     private ConfigurationSection requireSection(ConfigurationSection parent, String path) {

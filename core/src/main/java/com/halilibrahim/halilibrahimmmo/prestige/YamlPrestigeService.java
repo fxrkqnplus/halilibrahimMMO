@@ -8,10 +8,12 @@ import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
+import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -34,11 +36,12 @@ public final class YamlPrestigeService implements PrestigeService {
     private final SkillService skills;
     private final ClassService classes;
     private final BankedPowerService bankedPower;
+    private final WealthService wealth;
     private final AtomicReference<PrestigeSettings> settings = new AtomicReference<>();
 
     public YamlPrestigeService(
             JavaPlugin plugin, ProfileService profiles, ProgressionService progression,
-            SkillService skills, ClassService classes, BankedPowerService bankedPower
+            SkillService skills, ClassService classes, BankedPowerService bankedPower, WealthService wealth
     ) {
         this.plugin = plugin;
         this.profiles = profiles;
@@ -46,6 +49,7 @@ public final class YamlPrestigeService implements PrestigeService {
         this.skills = skills;
         this.classes = classes;
         this.bankedPower = bankedPower;
+        this.wealth = wealth;
     }
 
     @Override public void enable() { reload(); }
@@ -59,11 +63,31 @@ public final class YamlPrestigeService implements PrestigeService {
             YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
             int maximum = yaml.getInt("maksimum-prestij", 0);
             int minimumSkillLevel = yaml.getInt("gerekli-beceri-seviyesi", 0);
+            long wealthReward = yaml.getLong("prestij-zenginlik-odulu", 0);
             if (maximum < 1 || minimumSkillLevel < 1) throw new IllegalArgumentException("Maximum prestige and required skill level must be positive.");
-            settings.set(new PrestigeSettings(maximum, minimumSkillLevel));
+            if (wealthReward < 0) throw new IllegalArgumentException("Prestige wealth reward cannot be negative.");
+            settings.set(new PrestigeSettings(maximum, minimumSkillLevel, wealthReward, parseRewardValues(yaml)));
         } catch (RuntimeException exception) {
             throw new LifecycleException("prestige.yml could not be loaded.", exception);
         }
+    }
+
+    /**
+     * Every {@link PrestigeRewardType} must carry a positive value. A reward
+     * worth nothing is a button that lies about what it does, and the screen
+     * offers all four unconditionally - so a missing entry fails the load
+     * rather than shipping a dead choice.
+     */
+    private Map<PrestigeRewardType, Double> parseRewardValues(YamlConfiguration yaml) {
+        Map<PrestigeRewardType, Double> values = new EnumMap<>(PrestigeRewardType.class);
+        for (PrestigeRewardType type : PrestigeRewardType.values()) {
+            double value = yaml.getDouble("kalici-oduller." + type.name(), -1.0D);
+            if (value <= 0) {
+                throw new IllegalArgumentException("prestige.yml must declare a positive kalici-oduller." + type.name());
+            }
+            values.put(type, value);
+        }
+        return Map.copyOf(values);
     }
 
     @Override
@@ -86,7 +110,11 @@ public final class YamlPrestigeService implements PrestigeService {
                     .thenCompose(ignored -> profiles.update(playerId, playerName, PrestigeRules::apply))
                     .thenCompose(updated -> skills.resetAll(playerId)
                             .thenCompose(ignoredReset -> resetSelectedClassLevel(playerId, playerName, selectedClass))
-                            .thenApply(ignoredReset -> new PrestigeResult(PrestigeResult.Status.PRESTIGED, updated.prestige(), Optional.empty())));
+                            // Wealth is added, never reset: the score records what
+                            // this player has taken out of the world, and a
+                            // prestige does not undo any of it.
+                            .thenCompose(ignoredReset -> wealth.award(playerId, settings().wealthReward()))
+                            .thenApply(ignoredAward -> new PrestigeResult(PrestigeResult.Status.PRESTIGED, updated.prestige(), Optional.empty())));
         });
     }
 

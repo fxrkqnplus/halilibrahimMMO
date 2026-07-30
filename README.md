@@ -8,8 +8,8 @@ Bu dosya **iki bölümden** oluşur:
 
 - **[Bölüm 1 — Oyuncu Rehberi](#bölüm-1--oyuncu-rehberi)**: sunucuya giren bir
   oyuncunun bilmesi gereken her şey. Komutlar, beceriler, sınıflar,
-  kabiliyetler, enerji, görevler, zenginlik, prestij, bosslar,
-  ev/takas/bulut sandığı, unvanlar.
+  kabiliyetler, enerji, görevler, zenginlik, prestij, prestij ödülleri,
+  bosslar, ev/takas/bulut sandığı, unvanlar, kabiliyet HUD'u.
 - **[Bölüm 2 — Teknik Bölüm](#bölüm-2--teknik-bölüm)**: sunucu yöneticisi ve
   geliştirici için. Yönetici paneli, kurulum, derleme, veritabanı,
   yapılandırma dosyaları, entegrasyonlar, test.
@@ -306,9 +306,24 @@ alamaz, tersi de geçerlidir. **Kabiliyet puanı bilerek daha nadirdir.**
 Kabiliyet yetenekleri bir kabiliyetin **enerji maliyetini azaltabilir**,
 **bekleme süresini kısaltabilir**, **etki sınırını genişletebilir**, **etki
 süresini uzatabilir** veya **etkisinin gücünü arttırabilir** (bir hasar
-çarpanını, bir düşme ihtimalini ya da ham hasarı). Menüde bir yeteneğin üstüne
-geldiğinizde her rankın tam olarak ne verdiği ve şu ana kadar biriken toplam
-etki yazar.
+çarpanını, bir düşme ihtimalini ya da ham hasarı).
+
+**Menüdeki açıklamalar mutlak değer konuşur, yüzde değil.** Bir yeteneğin
+üstüne geldiğinizde tek satırda **üç sayı** görürsünüz: rank başına ne
+değiştiği, kabiliyetin varsayılanı ve **sizin şu anki değeriniz**.
+
+| Eskiden | Şimdi |
+|---|---|
+| "Bekleme süresini %50 azaltır" | "Her rank **-15 saniye** kısaltır *(varsayılan 2 dk, şu an 1 dk 30 sn)*" |
+| "Kabiliyet etkisini %75 arttırır" | "Her rank **+%5** arttırır *(varsayılan %15, şu an %25)*" |
+| "Kabiliyet etkisini %100 arttırır" | "Her rank kazmana **+1 Verimlilik** ekler *(varsayılan +3, şu an +5)*" |
+
+Sebebi basit: "%50 azaltır" cümlesi, temel değeri bilmeyen birine hiçbir şey
+söylemez ve küçük bir sayının yüzdesi ("üç seviyelik bir büyüde %100") olduğundan
+çok daha büyük okunur. Yapılandırma dosyası hâlâ oran saklar — kabiliyetin temel
+değeri ileride değişirse yetenek onunla birlikte ölçeklensin diye — ama ekranda
+gördüğünüz artık gerçek sayıdır. Birim de kabiliyete göre değişir: Verimlilik
+seviyesi, Hız seviyesi, hayvan sayısı, blok sınırı ya da blok yarıçapı.
 
 **Ekran iki ayrı bloktan oluşur.** En üstte oynadığınız sınıfı ve o sınıfın
 kendi seviyesini/XP'sini gösteren bir başlık, altında sınıf simgeleri ve iki
@@ -356,18 +371,22 @@ her sınıfta **dört kabiliyet** aynı dört basamakta açılır: **10 → 20 �
 
 | Sınıf | Kabiliyet | Sv. | Alet | Enerji | Bekleme | Etki |
 |---|---|---|---|---|---|---|
-| Tabiat Vârisi | **Doğa Ana'nın Koruyucuları** | 10 | Kürek | 20 | 2 dk 30 sn | En yakın 6 hayvan sana saldıran yaratığın üstüne koşar (10 sn) |
+| Tabiat Vârisi | **Ağaç Kırıcı** | 10 | Balta | 10 + kütük başına 5 | 3 dk | **2,5 dakika boyunca** kestiğin her ağaç bütün olarak devrilir |
 | Tabiat Vârisi | Filiz Patlaması | 20 | Çapa | 25 | 2 dk 30 sn | 7 blok yarıçapındaki tüm ekinleri anında olgunlaştırır |
-| Tabiat Vârisi | Sürü Çağrısı | 35 | Herhangi | 30 | 4 dk | 10 blok yarıçapındaki tüm yetişkin hayvanları yem harcamadan çiftleşme moduna sokar |
-| Tabiat Vârisi | **Ağaç Kırıcı** | 50 | Balta | 10 + kütük başına 5 | **5 dk** | **2,5 dakika boyunca** kestiğin her ağaç bütün olarak devrilir |
+| Tabiat Vârisi | **Doğa Ana'nın Koruyucuları** | 35 | Herhangi | 20 + kalp başına 5 | 4 dk | En yakın 6 hayvan sana saldıran yaratığın üstüne koşar; yaralananları enerjinle iyileştirirsin (10 sn) |
+| Tabiat Vârisi | **Sürü Çağrısı** | 50 | Herhangi | 30 | **8 dk** | 10 blok yarıçapındaki tüm yetişkin hayvanları yem harcamadan çiftleşme moduna sokar |
 | Amansız Savaşçı | **B Planı** | 10 | Kılıç/Balta | 15 | 2 dk | 5 saniye boyunca hiçbir yaratık seni göremez + Görünmezlik + Hız 2 |
 | Amansız Savaşçı | Avcı Odağı | 20 | Kılıç/Balta | 25 | 2 dk 30 sn | PvE hasarı %50 artar (vuruş başına enerji tüketir) |
 | Amansız Savaşçı | Yıkıcı Darbe | 35 | Kılıç/Balta | 30 | **30 sn** | Ayağının altında şok dalgası, 5 blok yarıçapı, 11 ham hasar |
 | Amansız Savaşçı | **Kan Yemini** | 50 | Kılıç/Balta | 40 | **7 dk 30 sn** | 45 saniye boyunca hasarın %15'i cana döner + Hız 1 |
-| Mağara Adamı | **Bulldozer** | 10 | Kazma | 25 + blok başına 3 | 2 dk 30 sn | **1 dakika boyunca** kazdığın her blok 3x3x3 küple birlikte düşer |
+| Mağara Adamı | **Bulldozer** | 10 | Kazma | **0** + blok başına 3 | 2 dk 30 sn | **1 dakika boyunca** kazdığın her blok 3x3x3 küple birlikte düşer |
 | Mağara Adamı | **Madenci Refleksleri** | 20 | Kazma | 30 | 2 dk | 10 saniye boyunca kazmana **+3 Verimlilik** ekler |
-| Mağara Adamı | **Kaya Patlaması** | 35 | Kazma | 35 | 5 dk | **Maden Bombası** bırakır: 35 blok yarıçapındaki kayayı temizler, cevhere dokunmaz |
+| Mağara Adamı | **Kaya Patlaması** | 35 | Kazma | 35 | 5 dk | **Maden Bombası** bırakır: normal TNT'den 6 kat güçlü patlar, cevhere ve cana dokunmaz |
 | Mağara Adamı | **Maden Feneri** | 50 | Kazma | 30 | **10 dk** | 36 blok yarıçapındaki cevherleri 40 sn parlatır |
+
+**Tabiat Vârisi'nin sırası değişti.** Artık odunculuk (10) → tarımcılık (20) →
+kazıcılık (35) → hayvancılık (50) düzeninde açılır: sınıfın en erken öğrendiği
+iş ormandır, son sözü ise bir sürüyü tek çağrıyla ikiye katlamaktır.
 
 **50. seviyedeki kabiliyet sınıfın son sözüdür**: en güçlü etki, en uzun
 bekleme. On dakikada bir kullanılan bir şeyin gerçekten bir şey yapması
@@ -386,6 +405,14 @@ bir avcı odağının ya da bir kan yemininin bıçağın şekliyle hiçbir ilgi
    kabiliyetin konusuna uygun kendi simgesi vardır; **kuşanılı olan büyülü
    (parlayan)** görünür, seçildiğinde kısa bir ses efekti çalar ve sohbete onay
    mesajı gelir. Menü, sınıfınızın kendi renginde çerçevelenir.
+
+   **Ekrandaki her sayı sizin sayınızdır.** Bekleme süresi, etki süresi, enerji
+   maliyeti, blok başına enerji, blok/yarıçap sınırı ve kabiliyetin kendi etkisi
+   (can dönüş oranı, Verimlilik seviyesi, çağrılan hayvan sayısı…) **odak
+   ağacında harcadığınız rankler işlenmiş hâlde** yazar; herhangi biri
+   varsayılandan farklıysa "Odak ağacıyla güçlendirildi" satırı çıkar. Eskiden
+   burada her zaman varsayılan değerler yazıyordu — yani kabiliyetlerinize
+   baktığınız tek ekran, harcadığınız puanların görünmediği tek ekrandı.
 
    Aynı ekranın altında **"Kabiliyeti Çıkar"** düğmesi vardır: kuşandığınız
    kabiliyeti bırakır ve o an çalışan etkisini sonlandırır. Bekleme süreleri
@@ -473,10 +500,16 @@ dövüşten çıkmanın yoludur, kazanmanın değil.
 
 **Kan Yemini** (Amansız Savaşçı 50) 45 saniye boyunca bir yaratığa verdiğiniz
 hasarın **%15'ini** cana çevirir ve size **Hız 1** verir. Yemin altındayken
-ekranınızın kenarları kızarır ve ölen her yaratığın ruhu size doğru akar (kendi
-sesiyle birlikte). Avcı Odağı bir vuruşun ne kadar sert olduğunu değiştirir,
-Kan Yemini ise bir avın ne kadar sürebileceğini. Canınızın üstüne çıkamaz ve
-yalnızca yaratıklara karşı çalışır.
+**ekranınızın kenarları gerçekten kızarır** ve **çevrenizdeki düşman yaratıklar
+kırmızı parlar**; ölen her yaratığın ruhu da size doğru akar (kendi sesiyle
+birlikte). Avcı Odağı bir vuruşun ne kadar sert olduğunu değiştirir, Kan Yemini
+ise bir avın ne kadar sürebileceğini. Canınızın üstüne çıkamaz ve yalnızca
+yaratıklara karşı çalışır.
+
+Kenar kızarması ve mob parlaması **eşlik mod'unun çizdiği şeylerdir** (bkz.
+"Kabiliyet HUD'u"). Daha önce bunun yerine kameranızın önüne kırmızı parçacıklar
+saçılıyordu; oyunda ürettiği şey ekran kenarında bir kızarma değil, arkanızda
+kırmızı bir izdi — yani anlatmak istediğinin tam tersi.
 
 Odak ağacından can dönüşümünü (**+%5**), Hız seviyesini (**+1**) ve bekleme
 süresini (**-30 sn**) rank rank güçlendirebilirsiniz.
@@ -488,6 +521,10 @@ içinden geçer. Her blok 3 enerji ve kazmanızdan 1 dayanıklılık götürür;
 **enerjiniz biterse kabiliyet orada kapanır**. Bedrock, spawner, ganimet
 sandığı ve envanteri olan hiçbir bloğa dokunmaz.
 
+**Açmak artık bedavadır** (eskiden 25 enerjiydi). Bulldozer'ın gerçek fiyatı
+zaten blok başına ödediğiniz enerji; üstüne bir de açılış bedeli almak, tünele
+girmeden barın dörtte birini götürüyordu.
+
 **Madenci Refleksleri** (Mağara Adamı 20) 10 saniye boyunca elinizdeki kazmaya
 **+3 Verimlilik** ekler. Haste iksiri değil, gerçek büyüdür ve mevcut
 büyünün **üstüne biner**: Verimlilik 3 kazma Verimlilik 6, Verimlilik 5 kazma
@@ -495,26 +532,48 @@ Verimlilik 8 olur. Süre dolduğunda kazmanız tam olduğu hâline döner — ka
 başka bir slota taşısanız, düşürseniz, hatta sunucu yeniden başlasa bile.
 
 **Kaya Patlaması** (Mağara Adamı 35) bulunduğunuz yere bir **Maden Bombası**
-bırakır. Fitili yandıktan sonra patlar ama:
+bırakır. Fitili yandıktan sonra **normal bir TNT gibi, parçacıklı ve gürültülü**
+patlar — ama:
 
 - **Hiçbir oyuncuya ve hiçbir yaratığa zarar vermez.** Yanında durabilirsiniz.
-- **Hiçbir cevhere dokunmaz.** 35 blok yarıçapındaki kayayı temizler, cevherler
-  havada asılı kalır.
+- **Hiçbir cevhere dokunmaz.** Kayayı temizler, cevherler havada asılı kalır.
 - Ortaya çıkan cevherler **5 saniye boyunca parlar**, sonra söner.
 - Kaç blok temizlendiği ve kaç cevher çıktığı size özel olarak yazılır.
 
-Dar bir tünelde kazarken bırakmak için tasarlanmıştır: bir anda kocaman bir
-oda açar ve içindeki her damarı size gösterir. Bekleme süresi 5 dakikadır;
-odak ağacından bekleme süresini kısaltıp patlamanın yarıçapını
+**Gücü, normal bir TNT'nin altı katıdır** — yani altı katı *hacim*: vanilla bir
+TNT taşta yaklaşık 4 bloklık bir çukur açar, bu da **7 blok** yarıçapında bir
+oda açar. Eskiden 35 bloktu ve bir TNT patlamasına hiç benzemiyordu: koca bir
+salonu bir anda yutuyordu. Kraterin kenarı bilerek tırtıklıdır; kusursuz bir
+küre patlama gibi değil hata gibi okunur.
+
+Dar bir tünelde kazarken bırakmak için tasarlanmıştır: bir anda çalışılabilir
+bir oda açar ve içindeki her damarı size gösterir. Bekleme süresi 5 dakikadır;
+odak ağacından bekleme süresini kısaltıp yarıçapı 11 bloğa kadar
 büyütebilirsiniz.
 
-**Doğa Ana'nın Koruyucuları** (Tabiat Vârisi 10) yalnızca **çevrenizde hayvan
+**Doğa Ana'nın Koruyucuları** (Tabiat Vârisi 35) yalnızca **çevrenizde hayvan
 varken** kullanılabilir — çağıracak kimse yoksa enerji de harcamaz, bekleme de
-başlatmaz. Çalıştığında en yakın 6 hayvan (inek, domuz, koyun, at, eşek, kurt,
-kedi, tavuk, panda, kutup ayısı, tavşan, demir golem…) size saldıran yaratığın
-üstüne **koşarak** gider, ona vurur ve onu sizden uzaklaştırır. 10 saniye
-sürer. Amaç öldürmek değil, üstünüzden almaktır. Odak ağacından süresini,
-çağırdığı hayvan sayısını ve bekleme süresini geliştirebilirsiniz.
+başlatmaz. **Aletsizdir**: elinizde ne varsa onunla açılır, çünkü bu bir savaş
+kabiliyeti değil bir yardım çağrısıdır. Çalıştığında en yakın 6 hayvan (inek,
+domuz, koyun, tavuk, panda, kutup ayısı, tavşan, demir golem…) size saldıran
+yaratığın üstüne **koşarak** gider, ona vurur ve onu sizden uzaklaştırır.
+10 saniye sürer. Amaç öldürmek değil, üstünüzden almaktır.
+
+**Yaralanan koruyucularınızı enerjinizle ayakta tutarsınız: 5 enerji = 1 kalp.**
+Koyununuzun 2 kalbi gittiyse 10 enerjiniz eksilir ve o iki kalp geri gelir;
+bunu görsel ve sesli bir efekt de takip eder. Bu olmadan çağrı hiçbir işe
+yaramıyordu — bir koyun yağmacının iki vuruşuna dayanıyor, koruyucular siz
+farkına varmadan ölüyordu.
+
+- **Enerjiniz biterse kabiliyet kapanmaz**, yalnızca iyileştirme durur; kabiliyet
+  süresi dolunca kapanır.
+- **Bütün koruyucularınız ölürse kabiliyet kendiliğinden sona erer** ve size
+  söylenir.
+- **Evcilleştirilmiş at, eşek, kurt ve kedi ile köylüler çağrıya katılmaz.**
+  Kendi kurdunuzu yağmacının üstüne sürmek kurtarmayı yasa çevirirdi.
+
+Odak ağacından süresini, çağırdığı hayvan sayısını ve bekleme süresini
+geliştirebilirsiniz.
 
 **Maden Feneri** özel bir durumdur: yalnızca **geniş ve üstü kapalı bir
 madende** kullanılabilir (dar bir tünelde ya da açık arazide çalışmaz).
@@ -536,8 +595,9 @@ tek seferde hasada hazır hâle getirir — bir kova kemik tozu gibi, ama hiç
 kemik tozu harcamadan. Zaten olgunlaşmış ekinlere dokunmaz, dolayısıyla size
 kaç bitkinin gerçekten büyüdüğünü söyler.
 
-**Sürü Çağrısı** çevrenizdeki 10 blok yarıçapındaki bütün **yetişkin**
-hayvanları tek bir yem harcamadan çiftleşme moduna sokar. Yavrular ve zaten
+**Sürü Çağrısı** (Tabiat Vârisi 50, sınıfın son sözü) çevrenizdeki 10 blok
+yarıçapındaki bütün **yetişkin** hayvanları tek bir yem harcamadan çiftleşme
+moduna sokar. Yavrular ve zaten
 çiftleşme modundaki hayvanlar atlanır, dolayısıyla aynı sürüye tekrar
 kullanmak bir işe yaramaz.
 
@@ -545,7 +605,7 @@ Kabiliyetin kendisi **2 saniye** sürer (hem normal hem yaratıcı modda) ve
 kendiliğinden kapanır: çağrı gittikten sonra açık kalmasının bir işlevi yok.
 Hayvanların çiftleşme penceresi bundan bağımsızdır — vanilla'daki normal
 süresi neyse odur, yani sürünün eşleşmeye vakti olur. Bekleme süresi
-**4 dakikadır**.
+**8 dakikadır**.
 
 ### Enerji
 
@@ -596,16 +656,18 @@ Ekranın sağında kalıcı, renklendirilmiş bir bilgi paneli. Yukarıdan aşa�
 3. **Sınıf ve sınıf seviyesi** — tek satırda, XP ilerlemesiyle birlikte.
 4. **Kabiliyet** — çalışan bir kabiliyet varsa adı ve kalan süresi, yoksa
    seçili olan, o da yoksa "Kabiliyet seçilmedi".
-5. **Ev / Takas durumu** — ikisinden biri açıldıktan sonra görünür; evinizin
-   adını (ya da "Ayarlanmadı") ve takasın açık olup olmadığını gösterir.
-   **Bir takas sürerken** hemen altında "Takas açık: <oyuncu>" satırı çıkar.
+5. **Ev / Takas / Çanta durumu** — üçünden biri açıldıktan sonra görünür;
+   evinizin adını (ya da "Ayarlanmadı"), takasın ve bulut sandığının açık olup
+   olmadığını tek satırda gösterir. **Bir takas sürerken** hemen altında
+   "Takas açık: <oyuncu>" satırı çıkar.
 6. **Başlangıç Görevleri** — yalnızca tamamlanmamış olanlar varken; hepsi
    bitince bu bölüm tamamen kaybolur.
 7. **Görevler** — her tür **kendi başlığı** altında: **Günlük Görevler**
    (sarı), **Haftalık Görevler** (altın), **Kalıcı Görevler** (camgöbeği).
    Başlık altındaki satırlar da aynı renktedir, yani renk ve başlık aynı şeyi
-   söyler. Tamamlanmamış görevler ilerlemeleri ve XP ödülleriyle, tamamlananlar
-   ✔ işaretiyle listelenir. Görevler panelde **kısa adlarıyla** yazılır
+   söyler. Tamamlanmamış görevler ilerlemeleri ve XP ödülleriyle listelenir;
+   **tamamlananlar ✔ işaretiyle ve yeşil renkte** görünür — bitmiş bir görevin
+   türünün renginde durmasının bir anlamı yoktu, önemli olan bitmiş olması. Görevler panelde **kısa adlarıyla** yazılır
    ("40 kütük kır", "8 enderman öldür" — bkz. Görevler bölümü).
 8. En altta `/panel` hatırlatması.
 
@@ -732,12 +794,51 @@ düğmesini aynı ekranda sunar.
 Prestij, seçili sınıfın sınıf seviyesini ve altı becerinin tümünü sıfırlar —
 **ancak Güç düşmez**: sıfırlanmadan önceki Güç kalıcı olarak "biriktirilir" ve
 becerileriniz tekrar seviye atladıkça Güç kaldığı yerden artmaya devam eder.
-Karşılığında kalıcı olarak her prestij rankında +%25 XP kazanımı (hem beceri
-hem sınıf XP'sinde) ve seçili sınıfa özgü kalıcı bir bonus (can/hasar/enerji)
-kazanılır. Prestijli oyuncular liderlik tablosunda ham seviyeden bağımsız
-olarak her zaman önde gösterilir. Prestij yapmak sunucu genelinde bir duyuru,
-bir havai fişek ve ses efektiyle kutlanır; varsayılan maksimum prestij
+**Zenginlik Puanı da asla sıfırlanmaz** — puanın anlamı "dünyadan ne
+çıkardın"dır ve prestij bunu değiştirmez.
+
+Her prestijin karşılığı dörttür:
+
+| Ödül | Ne kadar |
+|---|---|
+| **Kalıcı XP bonusu** | Rank başına **+%50** (hem beceri hem sınıf XP'sinde) |
+| **Zenginlik** | Her prestijde **+1.000.000 Zenginlik Puanı** |
+| **Sınıf bonusu** | Seçili sınıfa özgü kalıcı bir bonus (can / hasar / enerji) |
+| **Kalıcı ödül seçimi** | Her prestijde **bir tane**, aşağıya bakın |
+
+XP bonusu Faz 22'de **%25'ten %50'ye çıkarıldı**: prestij altı beceri seviyesini
+ve bir sınıf seviyesini siliyor, yani saatlerce oyun; rank başına dörtte bir
+fazla XP bunu ödül gibi hissettirecek kadar hızlı geri ödemiyordu. Prestijin
+bütün amacı bir sonraki tırmanışın bir öncekinden hızlı olmasıdır.
+
+Prestijli oyuncular liderlik tablosunda ham seviyeden bağımsız olarak her zaman
+önde gösterilir. Prestij yapmak sunucu genelinde bir duyuru, **hiç kimseye zarar
+vermeyen** bir havai fişek (dar bir madende patladığında sizi öldürmez artık) ve
+ses efektiyle kutlanır; ekranınıza altın bir başlık gelir ve altında yeni XP
+oranınız yazar — görünmeyen bir ödül ödül değildir. Varsayılan maksimum prestij
 sayısı 10'dur.
+
+### Kalıcı ödül seçimi
+
+Prestij yaptığınız anda önünüze **kalıcı bir ödül seçme ekranı** açılır. Dört
+seçenek vardır ve hepsi kalıcıdır, hepsi tekrar tekrar seçilebilir:
+
+| Ödül | Ne verir |
+|---|---|
+| **Dayanıklılık** | +1 kalp maksimum can |
+| **Vahşet** | Yaratıklara +%5 hasar |
+| **Soluk** | +15 maksimum enerji |
+| **Bilgelik** | +%10 beceri XP'si (sinerji becerisinden gelen sınıf XP'si de pay alır) |
+
+**Seçim yapılmadan başka bir MMO ekranı açılmaz.** Ekranı kapatıp `/menü`,
+`/sınıf`, `/kabiliyet`, `/liderlik`, `/madencilik` ya da başka bir komut
+yazarsanız önce yine bu ekran gelir. Ödül prestijin bir parçasıdır; pencereyi
+kapatıp unutmak saatlerce emeğin karşılığını çöpe atmak olurdu.
+
+Hak **saklanmaz, hesaplanır**: "prestij sayınız eksi şimdiye kadar seçtikleriniz".
+Bu yüzden sunucu menünün ortasında çökse, bir yönetici prestijinizi düzenlese ya
+da art arda on kez prestij yapıp hiç bakmasanız bile hak kaybolmaz — her biri
+sırayla karşınıza çıkar.
 
 ---
 
@@ -778,6 +879,19 @@ sabitlendi" yazar.
   yalnızca seçtikleriniz görünür. Size atanmamış bir havuz görevi sabitlenip
   panele *eklenemez*, çünkü atanmamış bir görev zaten hiç ilerlemez — hiç
   hareket etmeyen bir satır olurdu.
+
+### Biten bir görevi panelden kaldırma
+
+Tamamlanmış bir görev, dönemi bitene kadar (kalıcı görevlerde ise sonsuza kadar)
+panelde yeşil bir satır olarak durur. **Görev panosunun "Tamamlanan Görevler"
+sekmesinde o göreve tıklamak onu panelden kalıcı olarak kaldırır.**
+
+Bu **tek yönlüdür**, sabitleme gibi bir aç/kapa değil: "bunu okudum" geri
+alınacak bir durum değildir. Tıklamadan önce açıklama satırı bunu söyler.
+
+Kaldırma yalnızca görev **tamamlanmış hâlde kaldığı sürece** geçerlidir:
+dönemi biten bir günlük görev yeniden atandığında artık tamamlanmış olmadığı
+için panele geri döner — o zaten yeni bir görevdir.
 
 Panelde görevler **kısa adlarıyla** yazılır (`quests.yml` içindeki `kisa-ad`)
 ve bu kısa adlar birer **emir cümlesidir**: "40 kütük kır", "50 cevher kaz",
@@ -946,6 +1060,21 @@ illusioner, çan yankısı, ejderha kanadı — sekiz cue arasından rastgele).
 Yarım saatte bir duyulan bir olay için tek sabit ses, haritadaki en dramatik
 anı bir bildirim zilinden ibaret bırakırdı.
 
+### Efsanevi ve Mistik: ekranı kesen doğuşlar
+
+**Efsanevi** ya da **Mistik** bir boss doğduğunda duyuru sohbette kalmaz:
+ekranınızın ortasına, koordinatlarıyla birlikte bir **başlık** gelir ve normal
+kutlamaların iki katı süre durur.
+
+**Mistik** bunun da üstüne çıkar: kendine ait bir ses çalar ve ekranınıza
+**elder guardian'ın kendi görünüşü** düşer — vanilla'nın bir oyuncuya
+gösterebileceği en gürültülü şey. Bu sunucuda tek bir anlamı vardır, o yüzden
+gördüğünüz an tek kelime okumadan ne doğduğunu bilirsiniz.
+
+Diğer üç nadirlik bilerek yalnızca sohbete duyurulur: yarım saatte bir gelen bir
+boss için ekranı kesmek duyuru olmaktan çıkıp rahatsızlığa dönüşürdü. Efsanevi
+yaklaşık 11 doğuşta bir, Mistik 110 doğuşta bir gelir.
+
 ### Haritada işaret
 
 Boss doğduğu anda **Xaero's Minimap haritanızda bir işaret** olarak belirir:
@@ -994,6 +1123,11 @@ bir eşikten sonra kalıcı Güç/Direnç etkileri de taşır. **Canı yarıya
 düştüğünde kendine yenilenme basar**, savaş sırasında oyuncuya doğru kısa
 ışınlamalar yapar ve **canı çeyreğe düştüğünde bir kez uzağa kaçar** (Hız II
 ile birlikte).
+
+**Zombi, iskelet, boğulmuş ve büyücü bossları kalıcı Hız 2 taşır.** Koşamayan
+bir boss, ilan edilen koordinata gidilip bir kere vurulan ve yürüyerek
+uzaklaşılan bir hedeftir; bu, nadirliğin hız çarpanından ayrı ve türe özgü bir
+ayardır (`bosslar.yml` → `hiz-seviyesi`).
 
 **Beş boss türü** vardır — zombi, iskelet, boğulmuş, büyücü, baltacı — ve her
 birinin **kendine ait 7 isimlik havuzu** (toplam 35 isim) vardır. İsim,
@@ -1081,6 +1215,8 @@ Sınıf seviyeniz **30**'a ulaştığında — ya da **bir kez prestij yaptıysa
   olun. Yanınızda taşıdığınız bir blok değil, bulutta bir hesap gibi düşünün.
 - Pencereyi kapattığınız anda içerik kaydedilir; sunucu çökse bile en son
   gördüğünüz hâliyle durur.
+- **Açtığınızda sohbetinize bir bildirim düşer** (`/ev` ve `/takas` zaten böyle
+  yapıyordu) ve **sağdaki panelde** ev ile takasın yanında durumu görünür.
 
 Ev (15) ve takas (20) ile aynı merdivenin en üst basamağıdır: alabileceğiniz
 en kalıcı şeyi en sona bıraktık.
@@ -1221,6 +1357,9 @@ ve çoğunun kendi parçacık efekti vardır:
 | Takas daveti göndermek / almak | İki tarafa **farklı** cue (kısa onay / çan) |
 | Kabiliyet kuşanmak / çıkarmak | Kısa tık / şalter sesi |
 | Görev tamamlamak | Başarı sesi + totem parçacıkları |
+| **Prestij yapmak** | Kendi ses cue'su, altın başlık, totem ve ışık huzmesi sütunu, **kimseye zarar vermeyen** havai fişek |
+| **Efsanevi/Mistik boss doğuşu** | Ekranın ortasına başlık; Mistik'te ayrıca elder guardian görünüşü ve kendi laneti |
+| Bir kabiliyet çalışırken | Ekran kenarı kabiliyetin renginde, rozeti sol üstte (eşlik mod'u) |
 | `/rtp` ile inmek | Işınlanma sesi + ters portal parçacıkları |
 | Bir dünya bossunun ölmesi | Herkese zafer sesi; **cesedin başında** patlama, totem ve ışık huzmesi — *nerede* olduğunu savaşa gidenlere söylemek için |
 | Tek kişi geceyi uyuması | O dünyadaki herkese çan sesi + duyuru |
@@ -1229,6 +1368,37 @@ Kabiliyetlerin kendi gösterileri de `abilities.yml`'de ayrıntılıdır: her
 kabiliyetin rengi, ana sesi, dört tick sonra çalan **yankı sesi** ve partikül
 **şekli** (saçılma / genişleyen halkalar / yukarı sarılan helis / kubbe) ayrı
 ayrı ayarlanır.
+
+## Kabiliyet HUD'u
+
+Sunucunun zorunlu eşlik mod'u (`hmmo-client`), **çalışan kabiliyetinizi
+ekranınıza çizer**. Sunucu yalnızca "şu kabiliyet açık, rengi bu, ağırlığı bu,
+şu kadar kaldı" der; çizimi mod yapar.
+
+| Ne | Nerede |
+|---|---|
+| **Ekran kenarı, kabiliyetin renginde** | Oyun ekranının dört kenarı, içe doğru soluklaşarak |
+| **Kabiliyet rozeti** (simge + ad + kalan süre) | HUD'un sol üstü |
+| **Aynı rozet** | **Envanteri açtığınızda**, iksir etkilerinin listelendiği sütunda |
+| **Kırmızı parlayan düşmanlar** | Kan Yemini açıkken, çevrenizdeki hostile yaratıklar |
+
+**Kenarın ne kadar koyu olduğu kabiliyetin kademesine bağlıdır**: 10. seviye
+kabiliyetler hafif bir renk verir, 50. seviye olanlar ekranı gerçekten
+boyar (%25 / %45 / %70 / %100). Sunucunun "gücüne göre" sorusuna verebileceği
+en dürüst cevap kademedir — bir madencilik aleti ile bir savaş buff'ının hasar
+sayıları zaten kıyaslanamaz.
+
+**Bunların hepsi yalnızca sunumdur.** Mod'un hiçbir ekranı, komutu, tuş
+bağlaması ya da ayar dosyası yoktur ve oyunun kurallarına karışmaz: bu
+paketleri hiç almayan bir istemci aynı oyunu daha sade bir ekranla oynar.
+Kabiliyetin ne yaptığına her zaman ve yalnızca sunucu karar verir.
+
+**Neden mod?** Sunucu vanilla bir istemcinin ekranına çizemez — "ekranı boya"
+diye bir paket yoktur, ve Minecraft'ın parlama bayrağı yaratığın kendi
+özelliğidir, izleyicinin değil; sunucudan yapılsa görüş mesafesindeki herkes
+için parlardı.
+
+---
 
 ## Envanter menüsü
 
@@ -1239,6 +1409,13 @@ Gücünü/prestijini/sınıfını özetleyen kişisel bir başlık, altında dö
 **Topluluk** (liderlik tabloları, unvanlar, kozmetikler) — her biri ne
 içerdiğini anlatan bir açıklama satırıyla, ve en altta **Rehber** ile
 **Eklenti Hakkında** düğmeleri.
+
+**Uzun açıklamalar artık alt alta sarılır.** Minecraft eşya açıklamalarını
+sarmaz, sağa doğru uzatır; iki cümlelik her açıklama ekranın dışına taşan ince
+bir şerit hâline geliyor ve okunmuyordu. Artık bütün açıklama satırları kelime
+sınırında bölünüp alt alta yazılır — rengini ve kalınlığını da koruyarak.
+Düzeltme tek bir yerde yapıldığı için görev panosundan yetenek ağacına, oyun içi
+rehberden yönetici paneline kadar **bütün ekranları** kapsar.
 
 **Her ekran çerçevelidir ve her düğme ne yaptığını söyler.** Kategori
 ekranlarının hepsi kendi renginde çerçevelenir (İlerleme turuncu, Görevler
@@ -1363,8 +1540,9 @@ yazmak bir düzeltme aracı değil bir işkencedir.
   `ServicesManager` tabanlı erişimci. Diğer eklentiler yalnızca bu modüle bağımlı olur.
 - [`core/`](core) — Eklentinin tam uygulaması (`HalilIbrahimMMOPlugin` ve her bir
   iç sistem). `api` modülüne bağımlıdır.
-- [`clientmod/`](clientmod) — Zorunlu Fabric eşlik mod'u. **Kök derlemeye dâhil
-  değildir**, kendi Gradle wrapper'ı vardır (bkz. "İki ayrı derleme zinciri").
+- [`clientmod/`](clientmod) — Zorunlu Fabric eşlik mod'u: mod doğrulamasına
+  yanıt verir ve kabiliyet HUD'unu çizer. **Kök derlemeye dâhil değildir**,
+  kendi Gradle wrapper'ı vardır (bkz. "İki ayrı derleme zinciri").
 
 ## Derleme
 
@@ -1417,18 +1595,31 @@ kalmasını sağlar — ama şu sonucu da doğurur:
 Elle yaptığınız değişiklikler varsa, silmeden önce yedekleyip yeni dosyayla
 karşılaştırın.
 
-**Bu sürüme (Faz 21) geçerken silinmesi gereken üç dosya:** `abilities.yml`,
-`classes.yml` ve `messages.yml`. Üçü de köklü biçimde değişti. Yeni
-`rehber.yml` kendiliğinden üretilir; veritabanı da kendiliğinden güncellenir.
+**Bu sürüme (Faz 22) geçerken silinmesi gereken altı dosya:** `abilities.yml`,
+`classes.yml`, `messages.yml`, `feedback.yml`, `prestige.yml` ve `bosslar.yml`.
 
-**Mevcut oyuncular için not:** sekiz kabiliyetin kimliği değişti
-(`gece-gorusu` → `b-plani`, `cevher-sezgisi` → `bulldozer`, `damar-kirici` →
-`madenci-refleksleri`, `toprak-sezgisi` → `doga-ana-koruyuculari`; Maden Feneri
-35 → 50, Kaya Patlaması 50 → 35). Kuşanılan kabiliyet zaten kalıcı olarak
-saklanmaz, dolayısıyla veri kaybı yoktur — oyuncular yalnızca bir kez yeniden
-kuşanır. **Silinen kabiliyetlere harcanmış yetenek puanları da kaybolmaz**:
-yapılandırmada karşılığı olmayan bir rank hiçbir şeye sayılmaz, yani puanlar
-kendiliğinden iade edilir.
+> **`prestige.yml` bu listede zorunludur.** Yeni `kalici-oduller` bölümü
+> olmadan eklenti **hiç açılmaz** — eksik bir ödül değeri, hiçbir şey yapmayan
+> bir düğme demek olduğu için bilerek hata sayılır.
+
+`modlar.yml` yalnızca yorum değişikliği aldı, silmek şart değil. Veritabanı
+kendiliğinden güncellenir (iki yeni göç).
+
+**Mevcut oyuncular için not:**
+
+- **Tabiat Vârisi'nin kabiliyet sırası değişti**: Ağaç Kırıcı 50 → 10, Sürü
+  Çağrısı 35 → 50, Doğa Ana'nın Koruyucuları 10 → 35. Sınıf seviyesi 35-49
+  arasındaki bir Tabiat Vârisi, daha önce açık olan Sürü Çağrısı'nı geçici
+  olarak kilitli görür; buna karşılık Ağaç Kırıcı artık 10. seviyede açıktır.
+  Veri kaybı yoktur, yalnızca eşik değişimidir.
+- **Daha önce prestij yapmış her oyuncunun bekleyen bir ödül seçimi olur.**
+  Hak "prestij sayısı eksi seçilmiş ödül" olarak hesaplandığı için geçmişe
+  dönük çalışır: on kez prestij yapmış bir oyuncu on seçim hakkıyla karşılanır.
+  Bu bir kayıp değil, geriye dönük bir kazançtır — ama ilk girişte ödül
+  ekranının açılacağını bilmeleri iyi olur.
+- **`suru-suresi` yeteneği "Sürü Ritmi" oldu** ve artık süre yerine bekleme
+  süresini kısaltıyor. Aynı id ve aynı puan havuzunda kaldığı için harcanmış
+  rankler kaybolmaz.
 
 ## Veritabanı
 
@@ -1441,10 +1632,12 @@ Tüm tablolar `hmmo_` ön ekiyle oluşturulur, böylece birden fazla eklentinin 
 şemayı paylaştığı ortak veritabanlarında çakışma olmaz. Şema değişiklikleri
 sürüm numaralı göç (migration) dosyalarıyla yapılır ve `hmmo_schema_version`
 tablosunda takip edilir; gönderilmiş bir göç asla değiştirilmez veya
-numarası yeniden verilmez. Şu an **16 göç** vardır; en yenileri
-`hmmo_player_backpack` (v15, bulut sandığı) ve `hmmo_player_talent_grants`
-(v16, yöneticinin verdiği ek yetenek puanları). Sürüm yükseltirken veritabanına
-elle dokunmak gerekmez — eksik göçler ilk açılışta kendiliğinden uygulanır.
+numarası yeniden verilmez. Şu an **18 göç** vardır; en yenileri
+`hmmo_player_quest_dismissals` (v17, panelden kaldırılan tamamlanmış görevler)
+ve `hmmo_player_prestige_rewards` (v18, seçilen kalıcı prestij ödülleri —
+seçim başına satır değil, ödül türü başına sayaç). Sürüm yükseltirken
+veritabanına elle dokunmak gerekmez — eksik göçler ilk açılışta kendiliğinden
+uygulanır.
 
 Bulut sandığının içeriği `ItemStack.serializeItemsAsBytes(...)` ile
 serileştirilip **Base64 metin** olarak saklanır: eşyanın taşıyabildiği her
@@ -1466,12 +1659,12 @@ sunucuyu yeniden başlatmadan uygulanabilir.
 | `classes.yml` | Sınıf kataloğu, sinerji becerileri, yetenek ağaçları, iki puan havuzu, sınıf renkleri/çerçeveleri |
 | `quests.yml` | 85 görev: hedef türü, sayı, XP, eğittiği beceri, simge, açıklama ve panel için `kisa-ad` |
 | `collections.yml` | Koleksiyon kataloğu ve tamamlama bonusları |
-| `prestige.yml` | Prestij şartları ve maksimum prestij sayısı |
+| `prestige.yml` | Prestij şartları, maksimum prestij sayısı, prestij zenginlik ödülü ve dört kalıcı ödülün değerleri |
 | `leaderboards.yml` | Tablo başına gösterilecek oyuncu sayısı ve önbellek tazeleme aralığı |
 | `titles.yml` / `cosmetics.yml` | 19 unvan / 14 kozmetik: görünen ad, simge, açılma koşulu, sohbet stili |
 | `feedback.yml` | Cübuk/başlık süreleri, isimli ses efektleri, boss doğuş sesi listesi |
 | `zenginlik.yml` | Zenginlik Puanı değerleri, kilometre taşları, sıralama duyurusu aralığı |
-| `bosslar.yml` | Boss doğuş aralığı ve mesafesi, beş nadirlik, arketipler ve isim havuzları |
+| `bosslar.yml` | Boss doğuş aralığı ve mesafesi, beş nadirlik, arketipler (tür başına `hiz-seviyesi` dâhil) ve isim havuzları |
 | `sunucu.yml` | Tek kişi uykusu ve TAB listesi davranış anahtarları (metinler `messages.yml`'de) |
 | `modlar.yml` | Zorunlu/yasaklı Fabric mod listesi ve doğrulama ayarları |
 | `rehber.yml` | **Oyun içi rehberin bütün metni**: kategoriler, konular, gövde satırları |
@@ -1480,9 +1673,10 @@ sunucuyu yeniden başlatmadan uygulanabilir.
 doldurduğu **şablonları** tutar; bir görevin açıklaması, bir becerinin adı ve
 bir rehber sayfası ise **içeriktir**. Kategori ve konu ekleyebilir, sırayı
 değiştirebilir, hepsini kendi üslubunuzla yeniden yazabilirsiniz — tek bir
-Java sabiti gerekmez. Tek kural: **eşya açıklama satırları alt satıra kaymaz,
-kesilir**; bir satırı 60–70 karakterin altında tutun, uzun bir açıklamayı iki
-satıra bölün. (`GuideConfigTest` bunu derleme zamanında zorlar.)
+Java sabiti gerekmez. Faz 22'den beri **eklenti uzun satırları kelime sınırında
+bölüp alt alta yazar**, dolayısıyla bir satırın taşması artık ekranın dışına
+kaçmaz. Yine de `GuideConfigTest` bir üst sınır zorlar: bir rehber satırını
+60–70 karakterin altında tutmak, sarma sonrası da en okunaklı sonucu verir.
 
 `sunucu.yml` bilerek **yalnızca davranış anahtarı** taşır; TAB listesinin
 başlığı/alt bilgisi, sunucu adresi, uyku duyurusu ve harita adresi gibi
@@ -1550,6 +1744,35 @@ Doğrulama** ekranından görebilirsiniz (salt okunur).
 Eşlik mod'unun kaynak kodu `clientmod/` klasöründedir ve kök derlemeden
 bağımsızdır; ayrıntılar için `clientmod/README.md`.
 
+## Kabiliyet HUD kanalı (`hmmo:hud`)
+
+Faz 22'den beri eşlik mod'u ikinci bir kanal daha dinler. `hmmo:hud`
+**tek yönlüdür**: sunucu söyler, istemci dinler. HUD'un sunucuya
+söyleyebileceği, sunucunun zaten bilmediği bir şey yoktur; istemcinin
+konuşabildiği bir kanal ise doğrulanması gereken bir kanaldır.
+
+| Alan | Ne taşır |
+|---|---|
+| protokol sürümü + mesaj türü | `0` temizle, `1` kabiliyet |
+| kabiliyet id'si, görünen adı, simge materyali | rozeti çizmek için |
+| RGB renk | kabiliyetin `gorsel.renk` değeri |
+| kalan / toplam milisaniye | geri sayım (`-1` = yaratıcı modda süresiz) |
+| yoğunluk (0-100) | kabiliyetin kademesinden türetilir: 10/20/35/50 → %25/%45/%70/%100 |
+| bayraklar | bit 0: düşman yaratıkları parlat (yalnızca Kan Yemini) |
+
+Mesaj **durumsuzdur**: her paket bütün resmi taşır ve en yenisi kazanır.
+Kabiliyet çalışırken sunucu saniyede bir tekrar gönderir, dolayısıyla geç
+katılan, bir paket kaçıran ya da yeniden bağlanan istemci bir saniye içinde
+kendini düzeltir. Sunucu susarsa istemci birkaç saniye sonra HUD'u kendiliğinden
+kapatır — bir bağlantı kopması ana menüde kırmızı bir ekran kenarı bırakmaz.
+
+**Bu kanal hiçbir oyun kuralı taşımaz.** Paketleri hiç almayan bir istemci
+(eski bir mod sürümü, doğrulamayı bir şekilde geçmiş bir oyuncu) aynı oyunu
+daha sade bir ekranla oynar. `modlar.yml`'deki `minimum-versiyon` bu yüzden
+**bilerek 1.0.0'da bırakılmıştır**: yeni sürüm oyuncunun kurulum uygulamasına
+ulaşmadan minimumu yükseltmek, dürüstçe kurulum yapan oyuncuları kapıda
+bırakırdı.
+
 ## Test
 
 `./gradlew test`, hızlı birim/yapılandırma test paketini çalıştırır (harici
@@ -1580,9 +1803,13 @@ kısmı **tasarım kararlarını zorlayan** testlerdir:
   fark edilirdi, bu yüzden derleme zamanında ölçülür.
 - Her kabiliyetin **yalnızca kendi etki türünün istediği alanları** olmalı:
   blok başına enerji yalnızca süpürme kabiliyetlerinde, `hiz-seviyesi` yalnızca
-  Kan Yemini'nde, `hayvan-sayisi` yalnızca koruyucu çağrısında.
+  Kan Yemini'nde, `hayvan-sayisi` ve `enerji-kalp-basi` yalnızca koruyucu
+  çağrısında.
+- **Dört kalıcı prestij ödülünün de pozitif bir değeri olmalı.** Ekran dördünü
+  de koşulsuz gösterir; değeri olmayan bir ödül, ne yaptığı konusunda yalan
+  söyleyen bir düğme olurdu.
 
-Şu an **38 test sınıfında 113 test** vardır ve hepsi geçer.
+Şu an **40 test sınıfında 116 test** vardır ve hepsi geçer.
 
 ## Sunucuya özel ikon paketi
 

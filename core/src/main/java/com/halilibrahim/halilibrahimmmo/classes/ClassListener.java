@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.classes;
 
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
+import com.halilibrahim.halilibrahimmmo.prestige.PrestigeRewardService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -24,12 +25,16 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public final class ClassListener implements Listener {
     private final JavaPlugin plugin; private final ClassService classes; private final AbilityService abilities; private final EnergyService energy; private final SkillService skills;
-    public ClassListener(JavaPlugin plugin, ClassService classes, AbilityService abilities, EnergyService energy, SkillService skills) {
-        this.plugin = plugin; this.classes = classes; this.abilities = abilities; this.energy = energy; this.skills = skills;
+    private final PrestigeRewardService prestigeRewards;
+    public ClassListener(JavaPlugin plugin, ClassService classes, AbilityService abilities, EnergyService energy, SkillService skills, PrestigeRewardService prestigeRewards) {
+        this.plugin = plugin; this.classes = classes; this.abilities = abilities; this.energy = energy; this.skills = skills; this.prestigeRewards = prestigeRewards;
     }
     @EventHandler public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        classes.load(player.getUniqueId(), player.getName()).thenAccept(ignored -> player.getScheduler().run(plugin, task -> classes.applyPlayerEffects(player), null));
+        classes.load(player.getUniqueId(), player.getName()).thenAccept(ignored -> player.getScheduler().run(plugin, task -> {
+            classes.applyPlayerEffects(player);
+            prestigeRewards.applyPlayerEffects(player);
+        }, null));
     }
     /**
      * The selected class's MAX_HEALTH modifier is lost on death together with
@@ -43,13 +48,16 @@ public final class ClassListener implements Listener {
         Player player = event.getPlayer();
         player.getScheduler().runDelayed(plugin, task -> {
             classes.applyPlayerEffects(player);
+            prestigeRewards.applyPlayerEffects(player);
             energy.reconcile(player);
         }, null, 1L);
     }
     @EventHandler public void onQuit(PlayerQuitEvent event) { classes.evict(event.getPlayer().getUniqueId()); }
     @EventHandler(ignoreCancelled = true) public void onDamage(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player player) || !(event.getEntity() instanceof LivingEntity) || event.getEntity() instanceof Player) return;
-        double pveDamageBonus = classes.modifiers(player.getUniqueId()).pveDamageBonus() + skills.milestoneModifiers(player.getUniqueId()).pveDamageBonus();
+        double pveDamageBonus = classes.modifiers(player.getUniqueId()).pveDamageBonus()
+                + skills.milestoneModifiers(player.getUniqueId()).pveDamageBonus()
+                + prestigeRewards.damageBonus(player.getUniqueId());
         event.setDamage(event.getDamage() * (1.0D + pveDamageBonus));
         abilities.handleEntityDamage(event, energy);
     }

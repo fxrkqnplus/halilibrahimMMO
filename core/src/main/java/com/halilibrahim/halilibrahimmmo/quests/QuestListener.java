@@ -44,6 +44,7 @@ public final class QuestListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         quests.loadAll(event.getPlayer().getUniqueId());
         quests.loadPins(event.getPlayer().getUniqueId());
+        quests.loadDismissals(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
