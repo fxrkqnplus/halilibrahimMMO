@@ -53,6 +53,23 @@ public interface MessageService extends PluginService {
     void send(Audience audience, MessageKey key);
 
     /**
+     * {@link #send} with placeholders whose values are already-built
+     * {@link Component}s rather than strings.
+     *
+     * <p>Deliberately narrow, and it exists for exactly one kind of value: text
+     * <strong>the client</strong> has to translate. A creature's name is a
+     * translatable component - the game itself knows what a pig is called in
+     * every language - and a string placeholder can only ever carry the English
+     * registry id or a Turkish list this project would then have to maintain
+     * against every Minecraft update.</p>
+     *
+     * <p>Safe where {@code Placeholder.parsed} would not be: an already-built
+     * component cannot inject further MiniMessage tags, so a player's own data
+     * still cannot smuggle markup into a template.</p>
+     */
+    void send(Audience audience, MessageKey key, Map<String, String> placeholders, Map<String, Component> components);
+
+    /**
      * Sends a rendered, prefixed message to every currently online player -
      * for server-wide announcements (e.g. a prestige milestone), never used
      * for routine per-player feedback.

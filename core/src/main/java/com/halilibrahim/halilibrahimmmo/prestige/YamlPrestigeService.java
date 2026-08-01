@@ -1,5 +1,6 @@
 package com.halilibrahim.halilibrahimmmo.prestige;
 
+import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
@@ -10,6 +11,7 @@ import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -37,11 +39,13 @@ public final class YamlPrestigeService implements PrestigeService {
     private final ClassService classes;
     private final BankedPowerService bankedPower;
     private final ReputationService reputation;
+    private final AbilityService abilities;
     private final AtomicReference<PrestigeSettings> settings = new AtomicReference<>();
 
     public YamlPrestigeService(
             JavaPlugin plugin, ProfileService profiles, ProgressionService progression,
-            SkillService skills, ClassService classes, BankedPowerService bankedPower, ReputationService reputation
+            SkillService skills, ClassService classes, BankedPowerService bankedPower,
+            ReputationService reputation, AbilityService abilities
     ) {
         this.plugin = plugin;
         this.profiles = profiles;
@@ -50,6 +54,7 @@ public final class YamlPrestigeService implements PrestigeService {
         this.classes = classes;
         this.bankedPower = bankedPower;
         this.reputation = reputation;
+        this.abilities = abilities;
     }
 
     @Override public void enable() { reload(); }
@@ -114,8 +119,36 @@ public final class YamlPrestigeService implements PrestigeService {
                             // this player has taken out of the world, and a
                             // prestige does not undo any of it.
                             .thenCompose(ignoredReset -> reputation.award(playerId, settings().reputationReward()))
-                            .thenApply(ignoredAward -> new PrestigeResult(PrestigeResult.Status.PRESTIGED, updated.prestige(), Optional.empty())));
+                            .thenApply(ignoredAward -> {
+                                unequipAbility(playerId);
+                                return new PrestigeResult(PrestigeResult.Status.PRESTIGED, updated.prestige(), Optional.empty());
+                            }));
         });
+    }
+
+    /**
+     * A prestige takes the equipped ability off.
+     *
+     * <p>Prestige resets the selected class to level 1, so every ability that
+     * class has is locked again the instant it finishes - leaving one equipped
+     * would mean a player walks away wearing something they can no longer use,
+     * and the ability screen would show a highlighted icon it refuses to
+     * activate. Done <em>here</em> rather than in the two screens that call
+     * prestige, because there are two of them and this is not the kind of thing
+     * one of them is allowed to forget.</p>
+     *
+     * <p>{@code unequip} rather than {@code clearSelection}: the switch-cooldown
+     * record is deliberately kept, so prestiging is not a free way around it.
+     * The chain resolves on a database thread, so the player-touching half hops
+     * onto their own region - and a player who logged out mid-prestige simply
+     * has nothing equipped to take off.</p>
+     */
+    private void unequipAbility(UUID playerId) {
+        Player player = plugin.getServer().getPlayer(playerId);
+        if (player == null) {
+            return;
+        }
+        player.getScheduler().run(plugin, task -> abilities.unequip(player), null);
     }
 
     @Override

@@ -194,6 +194,11 @@ kabiliyet:
   enerji-bitti: "<yellow><simge:enerji> Enerjin tükendi,</yellow> <white><kabiliyet></white> <gray><sayi> blokta sona erdi.</gray>"
   # Cagriya cevap veren butun hayvanlar dustugunde kabiliyet kendiliginden biter.
   koruyucu-dustu: "<red><simge:uyari> Bütün koruyucuların düştü;</red> <white><kabiliyet></white> <gray>sona erdi.</gray>"
+  # Bir koruyucunun kalpleri enerjinle doldugu an. <hayvan> yaratigin KENDI
+  # cevrilmis adidir (istemci kendi dilinde gosterir), bu yuzden burada hayvan
+  # ismi listesi tutulmaz - Minecraft yeni bir hayvan eklerse kendiliginden
+  # dogru yazar.
+  koruyucu-iyilestirildi: "<green><simge:can> <hayvan> <white>+<kalp></white> kalp iyileşti.</green> <gray>(-<enerji> Enerji)</gray>"
   kuruldu: "<green><kabiliyet> kuruldu.</green> <gray><sure> içinde uygun bir blok kır.</gray>"
   etkin: "<green><kabiliyet> etkin.</green> <gray><sure> boyunca PvE hasarın güçlendi.</gray>"
   etkin-genel: "<green><kabiliyet> etkin.</green> <gray><sure> sürecek.</gray>"
@@ -211,6 +216,20 @@ kabiliyet:
   maden-bombasi-sonuc: "<dark_purple><simge:madencilik> Maden Bombası patladı.</dark_purple> <gray><white><blok></white> blok temizlendi, <white><sayi></white> cevher ortaya çıktı ve 5 saniye boyunca parlıyor.</gray>"
   maden-gerekli: "<red><simge:uyari> <kabiliyet> yalnızca geniş, üstü kapalı bir madende kullanılabilir.</red>"
   hayvan-gerekli: "<red><simge:uyari> <kabiliyet> için çevrende çağırabileceğin bir hayvan olmalı.</red>"
+  gece-gerekli: "<red><simge:uyari> <kabiliyet> yalnızca geceleri çağrılabilir.</red> <gray>Gün batımını bekle.</gray>"
+  etkin-asil-kurt: "<dark_red><bold><simge:kabiliyet> <kabiliyet></bold></dark_red> <gray>uyandı.</gray> <white><sure></white> <gray>boyunca zırh giyemezsin; canavarlar sana yaklaşmaz, kurtlar seninle avlanır, geri kalan her şey kaçar.</gray>"
+  olumle-bitti: "<yellow><simge:uyari> Öldün;</yellow> <gray>çalışan kabiliyetin sona erdi. Kuşandığın kabiliyet üzerinde kalır.</gray>"
+  # ----- Kombo merdiveni (Kan Yemini ve Asil Kurt) -----
+  # Ekranın altında, istemci mod'unun cizdigi satir. Basamak, kabiliyet
+  # basladigindan beri VERILEN TOPLAM HASAR ile yukselir - oldurulen yaratik
+  # sayisiyla degil, cunku bir tavukla bir ravager ayni sey degildir.
+  # <hasar> o ana kadarki toplam hasardir. Son iki basamak ekranda titrer.
+  kombo-1: "Güzel!"
+  kombo-2: "Devam et. (<hasar>)"
+  kombo-3: "Durmayı aklından bile geçirme. (<hasar>)"
+  kombo-4: "HIZINI KESME! (<hasar>)"
+  kombo-5: "AKLINI MI KAÇIRDIN?! (<hasar>)"
+  kombo-6: "HEPSİNİ ÖLDÜR!? (<hasar>)"
   kazma-gerekli: "<red><simge:uyari> <kabiliyet> için elinde bir kazma tutmalısın.</red>"
   yanlis-sinif: "<red><kabiliyet> kabiliyetini kullanmak için doğru sınıfa sahip olmalısın.</red>"
   tetiklendi: "<green><kabiliyet> tetiklendi.</green>"

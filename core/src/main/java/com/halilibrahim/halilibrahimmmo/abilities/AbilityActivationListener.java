@@ -7,9 +7,11 @@ import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -240,6 +242,22 @@ public final class AbilityActivationListener implements Listener {
         abilities.restoreEfficiency(event.getPlayer());
         lastActivationAttempt.remove(event.getPlayer().getUniqueId());
         pendingActivations.remove(event.getPlayer().getUniqueId());
+    }
+
+    /**
+     * Dying ends the ability outright.
+     *
+     * <p>Every visible half of an ability was already gone at this point -
+     * potion effects are wiped by the death, the tool is on the ground - but the
+     * plugin's own state was not, so a player who died mid-ability respawned
+     * with the buff still armed and the countdown still running against a fight
+     * they had lost. {@code MONITOR}: this is bookkeeping after the fact, and it
+     * must not depend on anything else's decision about the death.</p>
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        abilities.endOnDeath(event.getEntity());
+        pendingActivations.remove(event.getEntity().getUniqueId());
     }
 
     /**

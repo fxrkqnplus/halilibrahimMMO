@@ -318,7 +318,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             classServiceReference.set(classService);
             PrestigeService prestigeService = startService(
                     new YamlPrestigeService(this, profileService, progressionService, skillService, classService,
-                            bankedPowerService, reputationService), PrestigeService.class
+                            bankedPowerService, reputationService, abilityService), PrestigeService.class
             );
             // After PrestigeService, which owns prestige.yml and therefore the
             // reward values, and before EnergyService, which sums one of them

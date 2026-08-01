@@ -27,6 +27,18 @@ public final class AbilityHudRenderer {
     private static final int BADGE_ICON_SIZE = 16;
     private static final int BADGE_PADDING = 4;
 
+    /** One heartbeat, in milliseconds - what the pulsing tint breathes to. */
+    private static final double PULSE_PERIOD_MILLIS = 900.0D;
+    /** How far the pulse swings either side of the steady value, as a share of it. */
+    private static final double PULSE_SWING = 0.35D;
+
+    /** How far the combo line sits above the bottom of the screen. */
+    private static final int COMBO_BOTTOM_MARGIN = 46;
+    /** How far a shaking combo line is thrown either way, in pixels. */
+    private static final int COMBO_SHAKE_PIXELS = 2;
+    /** From this rung upward the line shakes. Mirrors {@code ComboLadder.SHAKING_TIER} on the server. */
+    private static final int COMBO_SHAKING_TIER = 5;
+
     private final AbilityHudState state;
 
     public AbilityHudRenderer(AbilityHudState state) {
@@ -45,9 +57,26 @@ public final class AbilityHudRenderer {
         if (!state.isActive() || state.intensity() <= 0) {
             return;
         }
+        // Two independent multipliers, and they answer two different questions.
+        // The fade says how much of the ability is left: it falls across the
+        // whole activation and is already nothing in the final second, so an
+        // ability visibly runs out instead of blinking off. The pulse says the
+        // ability is a frenzy: it breathes around whatever the fade currently
+        // allows, so a dying Kan Yemini beats fainter rather than beating on at
+        // full strength until the instant it stops.
+        double strength = state.fade();
+        if (state.pulses()) {
+            double phase = System.currentTimeMillis() % (long) PULSE_PERIOD_MILLIS / PULSE_PERIOD_MILLIS;
+            strength *= 1.0D + PULSE_SWING * Math.sin(phase * 2 * Math.PI);
+        }
+        if (strength <= 0.01D) {
+            return;
+        }
         int width = extractor.guiWidth();
         int height = extractor.guiHeight();
-        int depth = (int) (Math.min(width, height) * VIGNETTE_DEPTH);
+        // The pulse widens the band as well as brightening it, which is what
+        // makes it read as the tint closing in rather than as a flicker.
+        int depth = (int) (Math.min(width, height) * VIGNETTE_DEPTH * Math.min(1.35D, Math.max(0.4D, strength)));
         if (depth < VIGNETTE_BANDS) {
             return;
         }
@@ -56,7 +85,7 @@ public final class AbilityHudRenderer {
         for (int index = 0; index < VIGNETTE_BANDS; index++) {
             // The outermost band is the strongest; each step inward fades.
             double falloff = 1.0D - (double) index / VIGNETTE_BANDS;
-            int alpha = (int) (VIGNETTE_MAXIMUM_ALPHA * falloff * falloff * state.intensity() / 100.0D);
+            int alpha = (int) (VIGNETTE_MAXIMUM_ALPHA * falloff * falloff * state.intensity() / 100.0D * strength);
             if (alpha <= 0) {
                 continue;
             }
@@ -104,6 +133,37 @@ public final class AbilityHudRenderer {
         extractor.text(minecraft.font, name, textX, y + BADGE_PADDING, 0xFF000000 | state.colorRgb());
         extractor.text(minecraft.font, timer, textX, y + BADGE_PADDING + 10, 0xFFC8C8C8);
         return height;
+    }
+
+    /**
+     * The frenzy line, centred low on the screen where a player's eye already
+     * is during a fight.
+     *
+     * <p>The words and the rung both come from the server - they are Turkish
+     * content and belong in {@code messages.yml}, not compiled into a mod. All
+     * this decides is where to put the line and how hard to shake it: from the
+     * top two rungs it jitters a couple of pixels each frame, which is the
+     * difference between a label and a shout.</p>
+     */
+    public void renderCombo(GuiGraphicsExtractor extractor) {
+        String line = state.comboLine();
+        if (line.isEmpty()) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        Component text = Component.literal(line);
+        int width = minecraft.font.width(text);
+        int x = (extractor.guiWidth() - width) / 2;
+        int y = extractor.guiHeight() - COMBO_BOTTOM_MARGIN;
+        if (state.comboTier() >= COMBO_SHAKING_TIER) {
+            long now = System.currentTimeMillis();
+            x += (int) (now / 40 % (COMBO_SHAKE_PIXELS * 2 + 1)) - COMBO_SHAKE_PIXELS;
+            y += (int) (now / 55 % (COMBO_SHAKE_PIXELS * 2 + 1)) - COMBO_SHAKE_PIXELS;
+        }
+        // Drawn in the ability's own colour, which is what ties it to the screen
+        // edge it belongs to; the fade takes it down with everything else.
+        int alpha = (int) (255 * Math.max(0.15D, state.fade()));
+        extractor.text(minecraft.font, text, x, y, (alpha << 24) | state.colorRgb());
     }
 
     /** {@code m:ss} past a minute, plain seconds below it - the shape a countdown is read in. */
