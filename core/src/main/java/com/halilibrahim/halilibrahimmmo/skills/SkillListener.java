@@ -5,8 +5,8 @@ import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
 import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
 import com.halilibrahim.halilibrahimmmo.exploit.PlacedBlockTracker;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthAwardHandler;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationAwardHandler;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
@@ -28,8 +28,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * Bridges valid player actions into persistent skills and ephemeral energy
  * state.
  *
- * <p>Zenginlik Puanı is awarded from here too rather than from a listener of
- * its own, deliberately: wealth answers to exactly the same four gates skill XP
+ * <p>Saygınlık Puanı is awarded from here too rather than from a listener of
+ * its own, deliberately: reputation answers to exactly the same four gates skill XP
  * does - the MMO must be activated, the gamemode must be a real one, the block
  * must be world-generated rather than player-placed, and the break rate must be
  * plausible - and a second listener would have had to reproduce all four and
@@ -46,14 +46,14 @@ public final class SkillListener implements Listener {
     private final BlockBreakRateLimiter breakRateLimiter;
     private final PlacedBlockTracker placedBlocks;
     private final SkillAwardHandler awards;
-    private final WealthService wealth;
-    private final WealthAwardHandler wealthAwards;
+    private final ReputationService reputation;
+    private final ReputationAwardHandler reputationAwards;
 
     public SkillListener(
             JavaPlugin plugin, SkillService skills, AbilityService abilities, EnergyService energy,
             ActivationService activation, BlockBreakRateLimiter breakRateLimiter,
             PlacedBlockTracker placedBlocks, SkillAwardHandler awards,
-            WealthService wealth, WealthAwardHandler wealthAwards
+            ReputationService reputation, ReputationAwardHandler reputationAwards
     ) {
         this.plugin = plugin;
         this.skills = skills;
@@ -63,8 +63,8 @@ public final class SkillListener implements Listener {
         this.breakRateLimiter = breakRateLimiter;
         this.placedBlocks = placedBlocks;
         this.awards = awards;
-        this.wealth = wealth;
-        this.wealthAwards = wealthAwards;
+        this.reputation = reputation;
+        this.reputationAwards = reputationAwards;
     }
 
     @EventHandler
@@ -108,8 +108,8 @@ public final class SkillListener implements Listener {
             applyBlockMilestones(player, event);
             skills.awardBlock(player.getUniqueId(), player.getName(), event.getBlock().getType())
                     .thenAccept(result -> awards.handle(player, result));
-            wealth.awardBlock(player.getUniqueId(), event.getBlock().getType())
-                    .thenAccept(award -> wealthAwards.handle(player, award));
+            reputation.awardBlock(player.getUniqueId(), event.getBlock().getType())
+                    .thenAccept(award -> reputationAwards.handle(player, award));
         }
     }
 
@@ -184,8 +184,8 @@ public final class SkillListener implements Listener {
                 && SkillAwardHandler.isGameplayGameMode(killer)) {
             skills.awardMob(killer.getUniqueId(), killer.getName(), event.getEntity().getType())
                     .thenAccept(result -> awards.handle(killer, result));
-            wealth.awardEntity(killer.getUniqueId(), event.getEntity().getType())
-                    .thenAccept(award -> wealthAwards.handle(killer, award));
+            reputation.awardEntity(killer.getUniqueId(), event.getEntity().getType())
+                    .thenAccept(award -> reputationAwards.handle(killer, award));
         }
     }
 

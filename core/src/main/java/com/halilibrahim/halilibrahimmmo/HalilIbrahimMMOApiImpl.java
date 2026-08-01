@@ -22,7 +22,7 @@ import com.halilibrahim.halilibrahimmmo.collections.CollectionDefinition;
 import com.halilibrahim.halilibrahimmmo.collections.CollectionService;
 import com.halilibrahim.halilibrahimmmo.boss.BossService;
 import com.halilibrahim.halilibrahimmmo.config.ConfigService;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticDefinition;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticService;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
@@ -76,7 +76,7 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
     private final TitleService titles;
     private final CosmeticService cosmetics;
     private final FeedbackService feedback;
-    private final WealthService wealth;
+    private final ReputationService reputation;
     private final BossService bosses;
     private final ModVerificationService modVerification;
     private final ServerInfoService serverInfo;
@@ -99,7 +99,7 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
             TitleService titles,
             CosmeticService cosmetics,
             FeedbackService feedback,
-            WealthService wealth,
+            ReputationService reputation,
             BossService bosses,
             ModVerificationService modVerification,
             ServerInfoService serverInfo,
@@ -121,7 +121,7 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
         this.titles = titles;
         this.cosmetics = cosmetics;
         this.feedback = feedback;
-        this.wealth = wealth;
+        this.reputation = reputation;
         this.bosses = bosses;
         this.modVerification = modVerification;
         this.serverInfo = serverInfo;
@@ -158,7 +158,7 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
             titles.reload();
             cosmetics.reload();
             feedback.reload();
-            wealth.reload();
+            reputation.reload();
             bosses.reload();
             serverInfo.reload();
             // Must follow serverInfo: the TAB refresh loop is restarted against

@@ -7,7 +7,7 @@ import java.math.RoundingMode;
  * Renders large counters in a compact, glanceable form: {@code 12600} becomes
  * {@code 12.6K} and {@code 1050000} becomes {@code 1.05M}.
  *
- * <p>Zenginlik Puanı totals reach seven and eight figures in ordinary play, and
+ * <p>Saygınlık Puanı totals reach seven and eight figures in ordinary play, and
  * a raw {@code 12600000} on a sidebar line or a leaderboard entry is a number
  * nobody reads - it is a width the eye has to count digits through. The unit
  * suffixes are deliberately <em>not</em> routed through {@link MessageKey}: K/M/B

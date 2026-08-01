@@ -47,7 +47,7 @@ public final class PlayerProfileMenu implements GuiView {
 
     private static final int HEADER_SLOT = 4;
     private static final int POWER_SLOT = 10;
-    private static final int WEALTH_SLOT = 11;
+    private static final int REPUTATION_SLOT = 11;
     private static final int CLASS_SLOT = 12;
     private static final int TITLE_SLOT = 14;
     private static final int COSMETIC_SLOT = 15;
@@ -90,22 +90,22 @@ public final class PlayerProfileMenu implements GuiView {
         // fragments would let a slow rank query redraw over a finished row.
         CompletableFuture<PlayerProfile> profileFuture = services.profiles().load(targetId, targetName);
         CompletableFuture<PlayerClassProgress> classFuture = services.classes().load(targetId, targetName);
-        CompletableFuture<Long> wealthFuture = services.wealth().load(targetId);
+        CompletableFuture<Long> reputationFuture = services.reputation().load(targetId);
         CompletableFuture<Set<String>> titlesFuture = services.titles().unlockedIds(targetId);
         CompletableFuture<Set<String>> cosmeticsFuture = services.cosmetics().unlockedIds(targetId);
         CompletableFuture<Void> skillsLoaded = CompletableFuture.allOf(services.skills().definitions().stream()
                 .map(definition -> services.skills().load(targetId, definition.id()))
                 .toArray(CompletableFuture[]::new));
 
-        CompletableFuture.allOf(profileFuture, classFuture, wealthFuture, titlesFuture, cosmeticsFuture, skillsLoaded)
+        CompletableFuture.allOf(profileFuture, classFuture, reputationFuture, titlesFuture, cosmeticsFuture, skillsLoaded)
                 .thenCompose(ignored -> {
                     PlayerProfile profile = profileFuture.join();
-                    long wealth = wealthFuture.join();
+                    long reputation = reputationFuture.join();
                     int power = services.progression().cachedGlobalLevel(targetId);
                     return services.leaderboards().powerRank(profile.prestige(), power)
-                            .thenCompose(powerRank -> services.leaderboards().wealthRank(wealth)
-                                    .thenCompose(wealthRank -> skillRanks()
-                                            .thenApply(ranks -> new Standings(power, powerRank, wealth, wealthRank, ranks))));
+                            .thenCompose(powerRank -> services.leaderboards().reputationRank(reputation)
+                                    .thenCompose(reputationRank -> skillRanks()
+                                            .thenApply(ranks -> new Standings(power, powerRank, reputation, reputationRank, ranks))));
                 })
                 .thenAccept(standings -> viewer.getScheduler().run(services.plugin(), task -> render(
                         inventory, viewer, profileFuture.join(), classFuture.join(),
@@ -147,9 +147,9 @@ public final class PlayerProfileMenu implements GuiView {
                 services.messages().render(MessageKey.GUI_PLAYER_PROFILE_POWER_ITEM, Map.of("guc", Integer.toString(standings.power()))),
                 List.of(services.messages().render(MessageKey.GUI_PLAYER_PROFILE_RANK_LORE, Map.of("sira", Integer.toString(standings.powerRank()))))));
 
-        inventory.setItem(WEALTH_SLOT, GuiItems.of(Material.DIAMOND,
-                services.messages().render(MessageKey.GUI_PLAYER_PROFILE_WEALTH_ITEM, Map.of("zenginlik", NumberFormatter.compact(standings.wealth()))),
-                List.of(services.messages().render(MessageKey.GUI_PLAYER_PROFILE_RANK_LORE, Map.of("sira", Integer.toString(standings.wealthRank()))))));
+        inventory.setItem(REPUTATION_SLOT, GuiItems.of(Material.DIAMOND,
+                services.messages().render(MessageKey.GUI_PLAYER_PROFILE_REPUTATION_ITEM, Map.of("sayginlik", NumberFormatter.compact(standings.reputation()))),
+                List.of(services.messages().render(MessageKey.GUI_PLAYER_PROFILE_RANK_LORE, Map.of("sira", Integer.toString(standings.reputationRank()))))));
 
         inventory.setItem(CLASS_SLOT, classItem(classDefinition, classProgress, classId));
         inventory.setItem(TITLE_SLOT, unlockedItem(Material.NAME_TAG, MessageKey.GUI_PLAYER_PROFILE_TITLES_ITEM,
@@ -308,6 +308,6 @@ public final class PlayerProfileMenu implements GuiView {
     }
 
     /** Everything that needed a database round trip, gathered before a single item is painted. */
-    private record Standings(int power, int powerRank, long wealth, int wealthRank, Map<String, Integer> skillRanks) {
+    private record Standings(int power, int powerRank, long reputation, int reputationRank, Map<String, Integer> skillRanks) {
     }
 }

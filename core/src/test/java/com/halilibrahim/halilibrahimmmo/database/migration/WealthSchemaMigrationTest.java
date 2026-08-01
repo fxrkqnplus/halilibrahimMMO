@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-/** Pins the Zenginlik Puanı migration's version - a shipped migration's number must never move. */
+/** Pins the Saygınlık Puanı migration's version - a shipped migration's number must never move. */
 final class WealthSchemaMigrationTest {
 
     @Test

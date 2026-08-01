@@ -76,8 +76,8 @@ public enum IconPack {
     BILGI("bilgi", "⚙"),
     /** Celebration/fanfare accent. */
     KUTLAMA("kutlama", "✹"),
-    /** Zenginlik Puanı. */
-    ZENGINLIK("zenginlik", "❈"),
+    /** Saygınlık Puanı. */
+    SAYGINLIK("sayginlik", "❈"),
     /** A world boss. */
     BOSS("boss", "☬");
 

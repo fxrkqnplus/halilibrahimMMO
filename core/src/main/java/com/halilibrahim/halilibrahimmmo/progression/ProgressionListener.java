@@ -6,7 +6,7 @@ import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.prestige.BankedPowerService;
 import com.halilibrahim.halilibrahimmmo.prestige.PrestigeRewardService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -28,7 +28,7 @@ public final class ProgressionListener implements Listener {
     private final ActivationService activation;
     private final BankedPowerService bankedPower;
     private final PrestigeRewardService prestigeRewards;
-    private final WealthService wealth;
+    private final ReputationService reputation;
 
     public ProgressionListener(
             ProfileService profiles,
@@ -37,7 +37,7 @@ public final class ProgressionListener implements Listener {
             ActivationService activation,
             BankedPowerService bankedPower,
             PrestigeRewardService prestigeRewards,
-            WealthService wealth
+            ReputationService reputation
     ) {
         this.profiles = profiles;
         this.feedback = feedback;
@@ -45,7 +45,7 @@ public final class ProgressionListener implements Listener {
         this.activation = activation;
         this.bankedPower = bankedPower;
         this.prestigeRewards = prestigeRewards;
-        this.wealth = wealth;
+        this.reputation = reputation;
     }
 
     public void close() {
@@ -62,7 +62,7 @@ public final class ProgressionListener implements Listener {
         // reward is written on by ClassListener once the class effects it has to
         // coexist with have been applied.
         prestigeRewards.load(player.getUniqueId());
-        wealth.load(player.getUniqueId());
+        reputation.load(player.getUniqueId());
     }
 
     @EventHandler
@@ -73,6 +73,6 @@ public final class ProgressionListener implements Listener {
         activation.evict(event.getPlayer().getUniqueId());
         bankedPower.evict(event.getPlayer().getUniqueId());
         prestigeRewards.evict(event.getPlayer().getUniqueId());
-        wealth.evict(event.getPlayer().getUniqueId());
+        reputation.evict(event.getPlayer().getUniqueId());
     }
 }

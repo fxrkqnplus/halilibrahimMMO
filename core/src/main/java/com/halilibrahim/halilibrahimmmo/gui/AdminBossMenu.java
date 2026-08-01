@@ -123,7 +123,7 @@ public final class AdminBossMenu implements GuiView {
 
     /**
      * A name is free text, which a menu cannot collect - the same reason
-     * {@code /ev} and the admin wealth field take theirs from chat.
+     * {@code /ev} and the admin reputation field take theirs from chat.
      */
     private void promptForName(Player player) {
         services.chatPrompts().await(player, MessageKey.ADMIN_BOSS_NAME_PROMPT, reply -> {

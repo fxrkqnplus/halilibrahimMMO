@@ -14,7 +14,7 @@ final class PrestigeConfigTest {
         YamlConfiguration yaml = load();
         assertTrue(yaml.getInt("maksimum-prestij") > 0);
         assertTrue(yaml.getInt("gerekli-beceri-seviyesi") > 0);
-        assertTrue(yaml.getLong("prestij-zenginlik-odulu") >= 0);
+        assertTrue(yaml.getLong("prestij-sayginlik-odulu") >= 0);
     }
 
     /**

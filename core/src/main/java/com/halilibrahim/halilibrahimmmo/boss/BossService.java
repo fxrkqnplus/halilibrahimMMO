@@ -22,6 +22,24 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface BossService extends PluginService {
 
+    /**
+     * How often each living boss re-evaluates what it is doing and repaints its
+     * health bar.
+     *
+     * <p>Half a second is chosen by the bar rather than by the behaviour: a
+     * health bar that lags a fight by two seconds reads as broken. Every
+     * behaviour decision is independently gated on its own millisecond interval
+     * and does not care how often it is asked.</p>
+     */
+    long BEHAVIOUR_PERIOD_TICKS = 10L;
+
+    /**
+     * {@link #BEHAVIOUR_PERIOD_TICKS} as a fraction of a second, so a
+     * per-second rate in {@code bosslar.yml} can be scaled to one pass without
+     * that conversion being written out - and re-derived - at each call site.
+     */
+    double BEHAVIOUR_PERIOD_SECONDS = BEHAVIOUR_PERIOD_TICKS / 20.0D;
+
     BossSettings settings();
 
     /** Whether this creature is a world boss - i.e. carries the boss tag. */

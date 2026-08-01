@@ -111,11 +111,11 @@ public interface FeedbackService extends PluginService {
     void celebrateWithFirework(Player player);
 
     /**
-     * The Zenginlik Puanı milestone cue for the player who crossed it. Only the
+     * The Saygınlık Puanı milestone cue for the player who crossed it. Only the
      * sound and personal chat line live here - the server-wide announcement is
      * a broadcast the caller sends, because it is addressed to everyone else.
      */
-    void celebrateWealthMilestone(Player player, long newTotal);
+    void celebrateReputationMilestone(Player player, long newTotal);
 
     /** Plays the class-selection sound cue only - the confirmation chat message is sent separately by the caller. */
     void celebrateClassSelected(Player player);

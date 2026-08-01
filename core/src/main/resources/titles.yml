@@ -6,7 +6,7 @@
 #   QUEST_COMPLETED      (gorev-id)
 #   COLLECTION_COMPLETED (koleksiyon-id)
 #   SKILL_LEVEL          (beceri-id + seviye)
-#   WEALTH               (zenginlik) - Zenginlik Puanı eşiği
+#   REPUTATION               (saygınlık) - Saygınlık Puanı eşiği
 # "sohbet-stili" sohbette ve sağ taraftaki panelde unvanın rengini/kalınlığını
 # belirler: ALTIN, MOR_KALIN, KIRMIZI_KALIN, YESIL_KALIN, MAVI, BEYAZ_KALIN.
 unvanlar:
@@ -131,44 +131,44 @@ unvanlar:
       tur: COLLECTION_COMPLETED
       koleksiyon-id: degerli-madenler
 
-  # ----- Zenginlik Puanı -----
-  # Zenginlik harcanmaz; bu unvanlar yalnızca dünyadan ne çıkardığını gösterir.
+  # ----- Saygınlık Puanı -----
+  # Saygınlık harcanmaz; bu unvanlar yalnızca dünyadan ne çıkardığını gösterir.
   varlikli:
     gorunen-ad: "Varlıklı"
     esya: COPPER_INGOT
     sohbet-stili: MAVI
     kosul:
-      tur: WEALTH
-      zenginlik: 50000
+      tur: REPUTATION
+      sayginlik: 50000
 
   zengin:
     gorunen-ad: "Zengin"
     esya: GOLD_INGOT
     sohbet-stili: ALTIN
     kosul:
-      tur: WEALTH
-      zenginlik: 250000
+      tur: REPUTATION
+      sayginlik: 250000
 
   servet-sahibi:
     gorunen-ad: "Servet Sahibi"
     esya: DIAMOND
     sohbet-stili: ALTIN
     kosul:
-      tur: WEALTH
-      zenginlik: 1000000
+      tur: REPUTATION
+      sayginlik: 1000000
 
   hazine-krali:
     gorunen-ad: "Hazine Kralı"
     esya: DIAMOND_BLOCK
     sohbet-stili: MOR_KALIN
     kosul:
-      tur: WEALTH
-      zenginlik: 5000000
+      tur: REPUTATION
+      sayginlik: 5000000
 
   efsanevi-zengin:
     gorunen-ad: "Efsanevi Zengin"
     esya: NETHERITE_BLOCK
     sohbet-stili: KIRMIZI_KALIN
     kosul:
-      tur: WEALTH
-      zenginlik: 25000000
+      tur: REPUTATION
+      sayginlik: 25000000

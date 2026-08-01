@@ -52,11 +52,11 @@ public final class LeaderboardRepository {
                     ORDER BY 2 DESC
                     LIMIT ?
                     """;
-            case WEALTH -> """
-                    SELECT p.player_name, w.wealth_points, 0
+            case REPUTATION -> """
+                    SELECT p.player_name, w.reputation_points, 0
                     FROM hmmo_player_wealth w
                     JOIN hmmo_player_profiles p ON p.player_id = w.player_id
-                    ORDER BY w.wealth_points DESC
+                    ORDER BY w.reputation_points DESC
                     LIMIT ?
                     """;
         };
@@ -163,13 +163,13 @@ public final class LeaderboardRepository {
         });
     }
 
-    /** One player's standing on the Zenginlik board, tie-broken the same way the board itself orders. */
-    CompletableFuture<Integer> rankOfWealth(long wealth) {
+    /** One player's standing on the Saygınlık board, tie-broken the same way the board itself orders. */
+    CompletableFuture<Integer> rankOfReputation(long reputation) {
         return database.execute(connection -> {
             try (PreparedStatement statement = connection.prepareStatement("""
-                    SELECT COUNT(*) + 1 FROM hmmo_player_wealth WHERE wealth_points > ?
+                    SELECT COUNT(*) + 1 FROM hmmo_player_wealth WHERE reputation_points > ?
                     """)) {
-                statement.setLong(1, wealth);
+                statement.setLong(1, reputation);
                 return readCount(statement);
             }
         });

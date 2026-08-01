@@ -26,7 +26,7 @@ public interface LeaderboardService extends PluginService {
      */
     CompletableFuture<Integer> powerRank(int prestige, long power);
 
-    CompletableFuture<Integer> wealthRank(long wealth);
+    CompletableFuture<Integer> reputationRank(long reputation);
 
     CompletableFuture<Integer> skillRank(String skillId, int level, long experience);
 }

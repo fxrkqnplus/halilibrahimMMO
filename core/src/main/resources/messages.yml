@@ -12,7 +12,7 @@
 #  onu alır. Kullanılabilir adlar:
 #    guc prestij sinif seviye xp kabiliyet enerji can gorev koleksiyon
 #    gunluk liderlik unvan kozmetik madencilik odunculuk kazicilik avcilik
-#    tarimcilik hayvancilik tamam eksik ok uyari bilgi kutlama zenginlik boss
+#    tarimcilik hayvancilik tamam eksik ok uyari bilgi kutlama saygınlık boss
 #  Örnek: "<gold><simge:guc> Güç:</gold> <white><seviye></white>"
 #
 #  Bu dosyayı değiştirdikten sonra /haliladmin panelindeki "Yeniden Yükle"
@@ -32,7 +32,10 @@ genel:
 canta:
   baslik: "<dark_aqua>Bulut Sandığı</dark_aqua>"
   kilitli: "<red><simge:uyari> Bulut sandığı <white><seviye>. sınıf seviyesinde</white> açılır.</red> <gray>(Prestij yaptıysan seviyeden bağımsız olarak zaten açıktır.)</gray>"
-  acildi: "<dark_aqua><simge:koleksiyon> Bulut sandığın açıldı.</dark_aqua> <gray>İçindekiler ölümde kaybolmaz; pencereyi kapattığında kaydedilir.</gray>"
+  # Sandik HER acildiginda gorunur, bu yuzden kasitli olarak tek kelimelik:
+  # anlatinin tamami uzerine gelindiginde cikan ipucuna tasindi. Iki satirlik
+  # bir aciklamayi gunde otuz kere okumak bilgi degil gurultudur.
+  acildi: "<hover:show_text:'<gray>İçindekiler ölümde kaybolmaz.<newline>Pencereyi kapattığında kaydedilir.<newline><dark_gray>Kapasite: <white><kapasite></white> slot</dark_gray>'><aqua><simge:koleksiyon> Bulut Sandığı</aqua></hover>"
 
 # Ekranda gorunen HER sure bu dort parcadan birlestirilir: once gun, sonra
 # saat, dakika ve saniye - sifir olan birimler hic yazilmaz. Ornegin 130
@@ -59,18 +62,18 @@ yonetici:
   boss-isim-sorusu: "<gold><simge:boss> Bossun adını sohbete yaz.</gold> <gray>En fazla 32 karakter. Vazgeçmek için <white>iptal</white> yaz.</gray>"
   boss-isim-ayarlandi: "<green><simge:tamam> Bir sonraki boss <white><isim></white> adıyla çağırılacak.</green>"
   boss-isim-gecersiz: "<red>Geçersiz isim. En az 1, en fazla 32 karakter olmalı.</red>"
-  # Yonetici panelinden zenginlik ayarlama akisi: dugmeye tiklaninca ekran
+  # Yonetici panelinden saygınlık ayarlama akisi: dugmeye tiklaninca ekran
   # kapanir, admin sohbete sayiyi yazar. Bu, tikla-arttir satirlarinin
-  # yetmedigi tek alan (zenginlik totalleri milyonlara ciker).
-  zenginlik-sor: "<gold><simge:zenginlik> Yeni zenginlik puanını sohbete yaz.</gold> <gray>Sadece sayı, örn: <white>250000</white></gray>"
-  zenginlik-ayarlandi: "<green><simge:tamam> <oyuncu> oyuncusunun zenginliği <white><zenginlik></white> olarak ayarlandı.</green>"
-  zenginlik-gecersiz: "<red>Bu bir sayı değil:</red> <white><deger></white>"
+  # yetmedigi tek alan (saygınlık totalleri milyonlara ciker).
+  sayginlik-sor: "<gold><simge:sayginlik> Yeni saygınlık puanını sohbete yaz.</gold> <gray>Sadece sayı, örn: <white>250000</white></gray>"
+  sayginlik-ayarlandi: "<green><simge:tamam> <oyuncu> oyuncusunun saygınlığı <white><sayginlik></white> olarak ayarlandı.</green>"
+  sayginlik-gecersiz: "<red>Bu bir sayı değil:</red> <white><deger></white>"
   oyuncu:
     bilgi: "<gold><oyuncu></gold> <dark_gray>•</dark_gray> <gray>Güç:</gray> <white><seviye></white> <dark_gray>|</dark_gray> <gray>Prestij:</gray> <white><prestij></white> <dark_gray>|</dark_gray> <gray>Sınıf:</gray> <white><sinif></white> <dark_gray>|</dark_gray> <gray>Beceriler:</gray> <white><beceriler></white>"
     bilgi-sinifsiz: "<gold><oyuncu></gold> <dark_gray>•</dark_gray> <gray>Güç:</gray> <white><seviye></white> <dark_gray>|</dark_gray> <gray>Prestij:</gray> <white><prestij></white> <dark_gray>|</dark_gray> <gray>Sınıf:</gray> <white>Seçilmedi</white> <dark_gray>|</dark_gray> <gray>Beceriler:</gray> <white><beceriler></white>"
 
 # Bir arayuz oyuncudan sohbete tek satir yazmasini istediginde kullanilir
-# (su an yalnizca yonetici panelindeki zenginlik alani). Yazilan satir
+# (su an yalnizca yonetici panelindeki saygınlık alani). Yazilan satir
 # sohbete DUSMEZ, dogrudan arayuze gider.
 sohbet-giris:
   iptal-ipucu: "<gray>Vazgeçmek için <white>iptal</white> yaz.</gray>"
@@ -92,9 +95,9 @@ sidebar:
   oyuncu: "<gray>Oyuncu:</gray> <white><oyuncu></white>"
   oyuncu-etiket: "<gray>Oyuncu:</gray> "
   sinif-yok: "<gray><simge:sinif> Sınıf:</gray> <white>Seçilmedi</white>"
-  # Güç, prestij ve zenginlik tek satırı paylaşır: panelde toplam 15 satır var
+  # Güç, prestij ve saygınlık tek satırı paylaşır: panelde toplam 15 satır var
   # ve bu üç sayı zaten birlikte okunuyor.
-  guc: "<gray><simge:guc></gray> <gold><seviye></gold> <dark_gray>|</dark_gray> <gray><simge:prestij></gray> <light_purple><prestij></light_purple> <dark_gray>|</dark_gray> <gray><simge:zenginlik></gray> <blue><zenginlik></blue>"
+  guc: "<gray><simge:guc></gray> <gold><seviye></gold> <dark_gray>|</dark_gray> <gray><simge:prestij></gray> <light_purple><prestij></light_purple> <dark_gray>|</dark_gray> <gray><simge:sayginlik></gray> <blue><sayginlik></blue>"
   aktivasyon-onerisi: "<yellow><simge:ok> Başlamak için /mmo aktif yaz!</yellow>"
   sinif-onerisi: "<yellow><simge:ok> Sınıf seçmek için /sınıf yaz!</yellow>"
   sinif-seviye: "<aqua><simge:sinif> <sinif></aqua> <gray>Sv.</gray><aqua><seviye></aqua> <dark_gray>(<xp>/<gereken>)</dark_gray>"
@@ -164,7 +167,7 @@ harita:
 #  buradan değiştirebilirsiniz.
 #  Sunucu adı ve adresi doğrudan aşağıdaki metinlerin içindedir.
 tab:
-  baslik: "<newline><gradient:#7C3AED:#3B82F6><bold><simge:kutlama> HALİL İBRAHİM MMO</bold></gradient><newline><gray>Türkiye'nin beceri odaklı hayatta kalma sunucusu</gray><newline><dark_gray>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</dark_gray><newline><gray>Çevrimiçi:</gray> <white><cevrimici></white><dark_gray>/</dark_gray><gray><maksimum></gray>"
+  baslik: "<newline><gradient:#7C3AED:#3B82F6><bold><simge:kutlama> HALİL İBRAHİM SOFRASI</bold></gradient><newline><gray>Beceri odaklı hayatta kalma sunucusu.</gray><newline><dark_gray>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</dark_gray><newline><gray>Çevrimiçi:</gray> <white><cevrimici></white><dark_gray>/</dark_gray><gray><maksimum></gray>"
   altbilgi-saglikli: "<dark_gray>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</dark_gray><newline><gray>TPS:</gray> <green><tps></green> <dark_gray>|</dark_gray> <gray>Ping:</gray> <green><ping> ms</green><newline><yellow><bold>oyna.fxrkqn.org</bold></yellow><newline><gray>Canlı harita:</gray> <aqua>/harita</aqua><newline>"
   altbilgi-yogun: "<dark_gray>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</dark_gray><newline><gray>TPS:</gray> <yellow><tps></yellow> <dark_gray>|</dark_gray> <gray>Ping:</gray> <yellow><ping> ms</yellow><newline><yellow><bold>oyna.fxrkqn.org</bold></yellow><newline><gray>Canlı harita:</gray> <aqua>/harita</aqua><newline>"
   altbilgi-yavas: "<dark_gray>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</dark_gray><newline><gray>TPS:</gray> <red><tps></red> <dark_gray>|</dark_gray> <gray>Ping:</gray> <red><ping> ms</red><newline><yellow><bold>oyna.fxrkqn.org</bold></yellow><newline><gray>Canlı harita:</gray> <aqua>/harita</aqua><newline>"
@@ -240,7 +243,7 @@ hayvancilik:
   ikiz-dogum: "<green><simge:hayvancilik> İkiz doğum!</green> <gray>Sürüne bir yavru daha katıldı.</gray>"
 
 prestij:
-  basarili: "<green>Prestij yaptın! Yeni prestij seviyen: <prestij>.</green> <gray>Sınıf seviyen ve altı becerin sıfırlandı; karşılığında kalıcı +%50/rank XP bonusu, sınıfa özel kalıcı bir bonus, 1.000.000 Zenginlik Puanı ve seçeceğin kalıcı bir ödül kazandın.</gray>"
+  basarili: "<green>Prestij yaptın! Yeni prestij seviyen: <prestij>.</green> <gray>Sınıf seviyen ve altı becerin sıfırlandı; karşılığında kalıcı +%50/rank XP bonusu, sınıfa özel kalıcı bir bonus, 1.000.000 Saygınlık Puanı ve seçeceğin kalıcı bir ödül kazandın.</gray>"
   seviye-gerekli: "<red>Prestij için gerekli şartların tümünü sağlamalısın.</red>"
   maksimum: "<yellow>Maksimum prestij sayısına ulaştın: <maksimum>.</yellow>"
   duyuru: "<gold><bold><simge:prestij> <oyuncu> prestij yaptı! Yeni prestij: <prestij></bold></gold>"
@@ -289,7 +292,7 @@ rtp:
   yasak-dunya: "<red><simge:uyari> Rastgele ışınlanma yalnızca normal dünyada çalışır.</red>"
   bulunamadi: "<red>Güvenli bir nokta bulunamadı. Lütfen tekrar dene.</red>"
 
-# Zenginlik Puani - harcanmaz, yalnizca artar. Kilometre taslari hem oyuncuya
+# Sayginlik Puani - harcanmaz, yalnizca artar. Kilometre taslari hem oyuncuya
 # ozel olarak hem de tum sunucuya duyurulur.
 # Dunya bosslari. Her nadirligin kendi rengi ve kendi metni vardir - bir
 # nadirligin rengini degistirmek icin yalnizca bu satirlari duzenlemek yeter.
@@ -334,6 +337,12 @@ boss:
   kafa-epik: "<light_purple><isim>'nin Kafası</light_purple>"
   kafa-efsanevi: "<gold><isim>'nin Kafası</gold>"
   kafa-mistik: "<gradient:#FF00E4:#00FFFF><isim>'nin Kafası</gradient>"
+  # Kafanin uzerindeki aciklama satiri: bu bossu kimin dusurdugu. Bir kupa,
+  # kimin kazandigini soylemedigi surece yalnizca bir esyadir.
+  kafa-olduren: "<gray>Öldüren: <white><oyuncu></white></gray>"
+  # Boss bir lav birikintisine dustuyse ya da baska bir yaratik onu bitirdiyse
+  # yazacak bir isim yoktur; kafa yine de duser.
+  kafa-sahipsiz: "<dark_gray>Öldüren: bilinmiyor</dark_gray>"
   # ----- Xaero's Minimap harita noktası -----
   # Bu satır sohbete gönderilir ama Xaero's Minimap onu yakalayıp haritaya bir
   # işaret koyar. BİÇİMİ BOZMAYIN: mod, mesajın tamamını kendi kalıbıyla
@@ -346,34 +355,67 @@ boss:
   # bırakmanız yeterlidir; sunucu tarafında başka hiçbir şey değişmez.
   harita-noktasi: "xaero-waypoint:<isim>:<kisaltma>:<x>:<y>:<z>:<renk>:false:0:gui.xaero_default"
 
-zenginlik:
-  kilometre-tasi: "<blue><simge:zenginlik> Zenginlik kilometre taşı!</blue> <gray>Toplam puanın:</gray> <white><zenginlik></white>"
-  kilometre-tasi-duyuru: "<blue><bold><simge:zenginlik> <oyuncu> <esik> zenginlik puanına ulaştı!</bold></blue>"
-  # ----- Zenginlik sıralaması duyuruları -----
-  # Bunlar "siralama-duyuru-araligi-dakika" (zenginlik.yml) periyoduyla, her
+sayginlik:
+  kilometre-tasi: "<blue><simge:sayginlik> Saygınlık kilometre taşı!</blue> <gray>Toplam puanın:</gray> <white><sayginlik></white>"
+  kilometre-tasi-duyuru: "<blue><bold><simge:sayginlik> <oyuncu> <esik> saygınlık puanına ulaştı!</bold></blue>"
+  # ----- Saygınlık sıralaması duyuruları -----
+  # Bunlar "siralama-duyuru-araligi-dakika" (sayginlik.yml) periyoduyla, her
   # turda EN FAZLA BİR TANE olmak üzere tüm sunucuya gider. İki çeşit vardır:
   #   siralama-gecis-*   : bir oyuncu tam olarak bir kişiyi geçti.
   #                        <oyuncu> yükselen, <rakip> geçilen kişi,
-  #                        <sira> yeni sıra, <zenginlik> yeni puan.
+  #                        <sira> yeni sıra, <sayginlik> yeni puan.
   #   siralama-yukselis-*: bir oyuncu birkaç basamak birden tırmandı.
   #                        <basamak> kaç sıra yükseldiği.
   # Aynı cümlenin sürekli tekrarlanmaması için her turda rastgele biri seçilir;
   # istediğiniz kadarını kendi üslubunuzla değiştirebilirsiniz.
-  siralama-gecis-1: "<blue><simge:zenginlik> <oyuncu> aman tanımıyor!</blue> <gray><rakip>, <oyuncu> adlı oyuncunun gölgesinde kalarak <sira>. sıraya düştü.</gray>"
-  siralama-gecis-2: "<blue><simge:zenginlik> <oyuncu>, <rakip> adlı oyuncuyu geride bıraktı</blue> <gray>ve zenginlikte <sira>. sıraya yerleşti.</gray>"
-  siralama-gecis-3: "<blue><simge:zenginlik> Sıralama değişti:</blue> <white><oyuncu></white> <gray><rakip> adlı oyuncunun yerini aldı ve artık <sira>. sırada.</gray>"
-  siralama-gecis-4: "<blue><simge:zenginlik> <oyuncu> kervanı çevirdi!</blue> <gray><rakip> bir basamak geriledi, <sira>. sıra artık <oyuncu> adlı oyuncunun.</gray>"
-  siralama-gecis-5: "<blue><simge:zenginlik> <rakip> arkasına baktığında <oyuncu> adlı oyuncuyu göremedi</blue> <gray>- çünkü çoktan önüne geçmişti. Yeni sıra: <sira>.</gray>"
-  siralama-gecis-6: "<blue><simge:zenginlik> <oyuncu>, <rakip> adlı oyuncunun servetini aştı</blue> <gray>ve <zenginlik> puanla <sira>. sıraya çıktı.</gray>"
-  siralama-gecis-7: "<blue><simge:zenginlik> El değiştirdi!</blue> <gray><sira>. sıra artık <oyuncu> adlı oyuncunun; <rakip> bir basamak aşağıda.</gray>"
-  siralama-gecis-8: "<blue><simge:zenginlik> <oyuncu> sessiz sedasız çalıştı</blue> <gray>ve <rakip> adlı oyuncuyu geçerek <sira>. sıraya oturdu.</gray>"
-  siralama-yukselis-1: "<blue><simge:zenginlik> <oyuncu> önünde engel tanımıyor!</blue> <gray>Yükselişlerinin ardı arkası kesilmeyerek zenginlikte <sira>. sıraya ulaştı.</gray>"
-  siralama-yukselis-2: "<blue><simge:zenginlik> <oyuncu> tek turda <basamak> basamak birden tırmandı</blue> <gray>ve <sira>. sıraya yerleşti.</gray>"
-  siralama-yukselis-3: "<blue><simge:zenginlik> Kimse <oyuncu> adlı oyuncuyu durduramıyor:</blue> <gray><basamak> sıra birden yükselerek <sira>. sıraya çıktı.</gray>"
-  siralama-yukselis-4: "<blue><simge:zenginlik> <oyuncu> merdivenleri ikişer ikişer çıkıyor!</blue> <gray><basamak> basamak yükseldi, artık <sira>. sırada.</gray>"
-  siralama-yukselis-5: "<blue><simge:zenginlik> <oyuncu> adlı oyuncunun serveti <zenginlik> puana ulaştı</blue> <gray>ve <basamak> sıra birden atlayarak <sira>. sıraya geldi.</gray>"
-  siralama-yukselis-6: "<blue><simge:zenginlik> Tablo <oyuncu> yüzünden yeniden yazıldı:</blue> <gray><basamak> basamak yukarı, doğruca <sira>. sıraya.</gray>"
-  siralama-yukselis-7: "<blue><simge:zenginlik> <oyuncu> nefes almadan çalışıyor</blue> <gray>- <basamak> sıra yükselip <sira>. sıraya kuruldu.</gray>"
+  siralama-gecis-1: "<blue><simge:sayginlik> <oyuncu> aman tanımıyor!</blue> <gray><rakip>, <oyuncu> adlı oyuncunun gölgesinde kalarak <sira>. sıraya düştü.</gray>"
+  siralama-gecis-2: "<blue><simge:sayginlik> <oyuncu>, <rakip> adlı oyuncuyu geride bıraktı</blue> <gray>ve saygınlıkta <sira>. sıraya yerleşti.</gray>"
+  siralama-gecis-3: "<blue><simge:sayginlik> Sıralama değişti:</blue> <white><oyuncu></white> <gray><rakip> adlı oyuncunun yerini aldı ve artık <sira>. sırada.</gray>"
+  siralama-gecis-4: "<blue><simge:sayginlik> <oyuncu> kervanı çevirdi!</blue> <gray><rakip> bir basamak geriledi, <sira>. sıra artık <oyuncu> adlı oyuncunun.</gray>"
+  siralama-gecis-5: "<blue><simge:sayginlik> <rakip> arkasına baktığında <oyuncu> adlı oyuncuyu göremedi</blue> <gray>- çünkü çoktan önüne geçmişti. Yeni sıra: <sira>.</gray>"
+  siralama-gecis-6: "<blue><simge:sayginlik> <oyuncu>, <rakip> adlı oyuncunun servetini aştı</blue> <gray>ve <sayginlik> puanla <sira>. sıraya çıktı.</gray>"
+  siralama-gecis-7: "<blue><simge:sayginlik> El değiştirdi!</blue> <gray><sira>. sıra artık <oyuncu> adlı oyuncunun; <rakip> bir basamak aşağıda.</gray>"
+  siralama-gecis-8: "<blue><simge:sayginlik> <oyuncu> sessiz sedasız çalıştı</blue> <gray>ve <rakip> adlı oyuncuyu geçerek <sira>. sıraya oturdu.</gray>"
+  siralama-yukselis-1: "<blue><simge:sayginlik> <oyuncu> önünde engel tanımıyor!</blue> <gray>Yükselişlerinin ardı arkası kesilmeyerek saygınlıkta <sira>. sıraya ulaştı.</gray>"
+  siralama-yukselis-2: "<blue><simge:sayginlik> <oyuncu> tek turda <basamak> basamak birden tırmandı</blue> <gray>ve <sira>. sıraya yerleşti.</gray>"
+  siralama-yukselis-3: "<blue><simge:sayginlik> Kimse <oyuncu> adlı oyuncuyu durduramıyor:</blue> <gray><basamak> sıra birden yükselerek <sira>. sıraya çıktı.</gray>"
+  siralama-yukselis-4: "<blue><simge:sayginlik> <oyuncu> merdivenleri ikişer ikişer çıkıyor!</blue> <gray><basamak> basamak yükseldi, artık <sira>. sırada.</gray>"
+  siralama-yukselis-5: "<blue><simge:sayginlik> <oyuncu> adlı oyuncunun serveti <sayginlik> puana ulaştı</blue> <gray>ve <basamak> sıra birden atlayarak <sira>. sıraya geldi.</gray>"
+  siralama-yukselis-6: "<blue><simge:sayginlik> Tablo <oyuncu> yüzünden yeniden yazıldı:</blue> <gray><basamak> basamak yukarı, doğruca <sira>. sıraya.</gray>"
+  siralama-yukselis-7: "<blue><simge:sayginlik> <oyuncu> nefes almadan çalışıyor</blue> <gray>- <basamak> sıra yükselip <sira>. sıraya kuruldu.</gray>"
+  # ----- Ölüm cezası -----
+  # Ölmek saygınlığa mal olur ve bedel, ölmeden ÖNCEKİ puana göre belirlenir.
+  # Bu üç satır yalnızca ölen oyuncunun KENDİ sohbetine gider; kimse başkasının
+  # kaybını görmez - ölüm zaten yeterince kötü bir an.
+  #   <kayip>     kaybedilen puan (kısaltılmış: 2.5K, 1.05M)
+  #   <sayginlik> kayıptan SONRA kalan toplam
+  # Sebep başına ayrı şablon, çünkü ceza da sebebe göre değişiyor: kendi
+  # hatanla ölmek en ucuz, bir oyuncunun elinden ölmek en pahalıdır.
+  kayip-kendi: "<red><simge:uyari> Kendi hatanla öldün.</red> <gray>Saygınlığından</gray> <white><kayip></white> <gray>puan gitti. Kalan:</gray> <white><sayginlik></white>"
+  kayip-yaratik: "<red><simge:uyari> Bir yaratık seni indirdi.</red> <gray>Saygınlığından</gray> <white><kayip></white> <gray>puan gitti. Kalan:</gray> <white><sayginlik></white>"
+  kayip-oyuncu: "<red><simge:uyari> Bir oyuncu seni öldürdü.</red> <gray>Saygınlığından</gray> <white><kayip></white> <gray>puan gitti. Kalan:</gray> <white><sayginlik></white>"
+  # ----- Eğilim duyuruları (35-40 dakikada bir, turda EN FAZLA BİR TANE) -----
+  # Eklenti her turda çevrimiçi herkesin puanını bir önceki turla karşılaştırır
+  # ve YALNIZCA en çok kıpırdayan tek kişiyi duyurur. Yönü de o belirler:
+  # yükselen için "yukselis", düşen için "dusus" satırlarından rastgele biri.
+  # Bu, sıralama duyurularının (yukarıdaki siralama-*) ARASINA girer.
+  #   <oyuncu>    kişinin adı
+  #   <degisim>   turdaki net değişimin büyüklüğü
+  #   <dusus>     düşüşlerde ölümlerle giden toplam puan
+  #   <sayginlik> güncel toplam
+  egilim-yukselis-1: "<blue><simge:sayginlik> <oyuncu> son yarım saatte durmadı!</blue> <gray>Saygınlığı</gray> <white><degisim></white> <gray>puan arttı. Toplam:</gray> <white><sayginlik></white>"
+  egilim-yukselis-2: "<blue><simge:sayginlik> <oyuncu> arayı açıyor.</blue> <gray>Bu turda</gray> <white><degisim></white> <gray>puan kazandı.</gray>"
+  egilim-yukselis-3: "<blue><simge:sayginlik> Herkes <oyuncu> adlı oyuncuya baksın:</blue> <gray>üst üste</gray> <white><degisim></white> <gray>puan topladı.</gray>"
+  egilim-yukselis-4: "<blue><simge:sayginlik> <oyuncu> yükselişte!</blue> <gray>Saygınlığı</gray> <white><degisim></white> <gray>puan birden kabardı. Yakalayabilene aşk olsun.</gray>"
+  egilim-yukselis-5: "<blue><simge:sayginlik> <oyuncu> boş durmuyor.</blue> <gray>Yarım saatte</gray> <white><degisim></white> <gray>puan - toplamı</gray> <white><sayginlik></white> <gray>oldu.</gray>"
+  egilim-yukselis-6: "<blue><simge:sayginlik> <oyuncu> adlı oyuncunun adı dilden düşmüyor.</blue> <gray>Son turda</gray> <white><degisim></white> <gray>puan daha ekledi.</gray>"
+  egilim-dusus-1: "<red><simge:uyari> <oyuncu> yerden yere çakılmaya devam ediyor!</red> <gray>Saygınlığı tamı tamına</gray> <white><dusus></white> <gray>puan düştü!</gray>"
+  egilim-dusus-2: "<red><simge:uyari> <oyuncu> kendine gelmekte zorlanıyor.</red> <gray>Saygınlığını toparlaması için bir şeyler yapması lazım. Eksilen saygınlık puanı:</gray> <white><dusus></white>"
+  egilim-dusus-3: "<red><simge:uyari> <oyuncu> için kötü bir yarım saat oldu.</red> <gray>Elinden</gray> <white><dusus></white> <gray>puan gitti; geriye</gray> <white><sayginlik></white> <gray>kaldı.</gray>"
+  egilim-dusus-4: "<red><simge:uyari> <oyuncu> nereye baksa ölüyor.</red> <gray>Bu turda</gray> <white><dusus></white> <gray>puan kaybetti.</gray>"
+  egilim-dusus-5: "<red><simge:uyari> Birisi <oyuncu> adlı oyuncuya bir el atsın.</red> <gray>Saygınlığı</gray> <white><dusus></white> <gray>puan geriledi.</gray>"
+  egilim-dusus-6: "<red><simge:uyari> <oyuncu> dibi görmekte kararlı.</red> <gray>Yarım saatte</gray> <white><dusus></white> <gray>puan eridi.</gray>"
+  egilim-dusus-7: "<red><simge:uyari> <oyuncu> ne yaptıysa ters gitti.</red> <gray>Kaybettiği saygınlık:</gray> <white><dusus></white> <dark_gray>•</dark_gray> <gray>kalan:</gray> <white><sayginlik></white>"
 
 # Sinif seviyesi belirli bir esige gelince acilan komutlar. Bu mesajlar
 # yalnizca acilan oyuncunun kendi sohbetine gider, duyuru degildir.
@@ -440,7 +482,7 @@ geribildirim:
   # bir oran, soylenmedigi surece gorunmez.
   prestij-bossbar: "<gradient:#FFD700:#FF8C00><bold><simge:prestij> PRESTİJ <prestij></bold></gradient> <dark_gray>|</dark_gray> <yellow>Kalıcı XP bonusun: +%<xp></yellow>"
   prestij-baslik: "<gradient:#FFD700:#FFFFFF:#FFD700><bold><simge:prestij> PRESTİJ <prestij> <simge:prestij></bold></gradient>"
-  prestij-altbaslik: "<yellow>Kalıcı <white>+%<xp></white> XP</yellow> <dark_gray>•</dark_gray> <light_purple>+1.000.000 Zenginlik</light_purple> <dark_gray>•</dark_gray> <aqua>Ödülünü seç</aqua>"
+  prestij-altbaslik: "<yellow>Kalıcı <white>+%<xp></white> XP</yellow> <dark_gray>•</dark_gray> <light_purple>+1.000.000 Saygınlık</light_purple> <dark_gray>•</dark_gray> <aqua>Ödülünü seç</aqua>"
   kabiliyet-acildi-bossbar: "<white><simge:kabiliyet> Yeni kabiliyet açıldı - <kabiliyet></white>"
   kabiliyet-acildi-baslik: "<white>Yeni Kabiliyet!</white>"
   kabiliyet-acildi-altbaslik: "<gray><kabiliyet></gray>"
@@ -518,8 +560,8 @@ gui:
     duzenle-sinif-seviye-aciklama: "<gray>Sol tık +1, Shift+Sol +10 <dark_gray>|</dark_gray> Sağ tık -1, Shift+Sağ -10</gray>"
     duzenle-sinif-xp-oge: "<light_purple><sinif> XP <xp></light_purple>"
     duzenle-sinif-xp-aciklama: "<gray>Sol tık +50 XP, Shift+Sol +500 XP <dark_gray>|</dark_gray> XP azaltmak için seviyeyi ayarla</gray>"
-    duzenle-zenginlik-oge: "<blue><simge:zenginlik> Zenginlik <zenginlik></blue>"
-    duzenle-zenginlik-aciklama: "<gray>Tıkla, yeni değeri sohbete yaz. <dark_gray>Yazdığın sayı toplamın YERİNE geçer (eklenmez).</dark_gray></gray>"
+    duzenle-sayginlik-oge: "<blue><simge:sayginlik> Saygınlık <sayginlik></blue>"
+    duzenle-sayginlik-aciklama: "<gray>Tıkla, yeni değeri sohbete yaz. <dark_gray>Yazdığın sayı toplamın YERİNE geçer (eklenmez).</dark_gray></gray>"
     duzenle-sinifsiz-oge: "<red>Sınıf seçilmedi</red>"
     duzenle-sinif-zorla-oge: "<gold>Sınıfı Zorla Ayarla</gold>"
     duzenle-sinif-zorla-aciklama: "<gray>Bekleme süresi olmadan bir sınıf ata veya sınıfı temizle.</gray>"
@@ -583,7 +625,7 @@ gui:
     gunluk: "<white><simge:gunluk> Macera Günlüğüm</white>"
     gunluk-aciklama: "<gray>Tamamladığın görev ve koleksiyonların kaydı <dark_gray>•</dark_gray> Açmak için tıkla</gray>"
     liderlik: "<gold><simge:liderlik> Liderlik Tablosu</gold>"
-    liderlik-aciklama: "<gray>Güç, zenginlik, prestij ve beceri sıralamaları <dark_gray>•</dark_gray> Açmak için tıkla</gray>"
+    liderlik-aciklama: "<gray>Güç, saygınlık, prestij ve beceri sıralamaları <dark_gray>•</dark_gray> Açmak için tıkla</gray>"
     unvan: "<gold><simge:unvan> Unvanlarım</gold>"
     unvan-aciklama: "<gray>Açtığın unvanlar ve kilitli olanların şartları <dark_gray>•</dark_gray> Açmak için tıkla</gray>"
     kozmetik: "<light_purple><simge:kozmetik> Kozmetiklerim</light_purple>"
@@ -630,7 +672,7 @@ gui:
     baslik-oge: "<gradient:#7C3AED:#3B82F6><bold><oyuncu></bold></gradient>"
     baslik-aciklama: "<gray><simge:prestij> Prestij <white><prestij></white> <dark_gray>|</dark_gray> <simge:sinif> <white><sinif></white></gray>"
     guc-oge: "<gold><simge:guc> Güç: <white><guc></white></gold>"
-    zenginlik-oge: "<blue><simge:zenginlik> Zenginlik: <white><zenginlik></white></blue>"
+    sayginlik-oge: "<blue><simge:sayginlik> Saygınlık: <white><sayginlik></white></blue>"
     sira-aciklama: "<gray>Sıralama: <white>#<sira></white></gray>"
     sinif-oge: "<red><simge:sinif> <sinif></red>"
     sinif-aciklama: "<gray>Sınıf seviyesi <white><seviye></white> <dark_gray>|</dark_gray> <simge:xp> <white><xp></white> XP</gray>"
@@ -819,7 +861,7 @@ gui:
     baslik: "<dark_gray>Prestij</dark_gray>"
     bilgi-oge: "<gold>Prestij Durumun</gold>"
     bilgi-aciklama: "<gray>Prestij <white><prestij>/<maksimum></white></gray>"
-    bilgi-aciklama-detay: "<gray>Sınıf seviyen ve altı becerin 1. seviyeye sıfırlanır. Karşılığında rank başına kalıcı +%50 XP bonusu, sınıfına özel kalıcı bir bonus, 1.000.000 Zenginlik Puanı ve seçeceğin kalıcı bir ödül kazanırsın. Güç düşmez.</gray>"
+    bilgi-aciklama-detay: "<gray>Sınıf seviyen ve altı becerin 1. seviyeye sıfırlanır. Karşılığında rank başına kalıcı +%50 XP bonusu, sınıfına özel kalıcı bir bonus, 1.000.000 Saygınlık Puanı ve seçeceğin kalıcı bir ödül kazanırsın. Güç düşmez.</gray>"
     onayla-oge: "<light_purple>Prestij Yap</light_purple>"
     onayla-aciklama: "<gray>Sınıf seviyen ve altı becerin sıfırlanır, karşılığında kalıcı bonuslar kazanılır <dark_gray>•</dark_gray> Onaylamak için tıkla</gray>"
 
@@ -905,14 +947,13 @@ gui:
     seviye: "<yellow><simge:guc> Güç</yellow>"
     seviye-aciklama: "<gray>Tüm beceri seviyelerinin toplamı. Prestij her zaman ham seviyeyi geçer.</gray>"
     prestij: "<light_purple><simge:prestij> Prestij</light_purple>"
-    prestij-aciklama: "<gray>Prestij şartların ve onay ekranı <dark_gray>•</dark_gray> Açmak için tıkla</gray>"
     prestij-aciklama: "<gray>Kaç kez prestij yapıldığı.</gray>"
     gorev: "<aqua><simge:gorev> Görev Tamamlama</aqua>"
     gorev-aciklama: "<gray>Tamamlanan toplam görev sayısı.</gray>"
     koleksiyon: "<blue><simge:koleksiyon> Koleksiyon</blue>"
     koleksiyon-aciklama: "<gray>Koleksiyonlarda toplanan ayrı öge sayısı.</gray>"
-    zenginlik: "<blue><simge:zenginlik> Zenginlik</blue>"
-    zenginlik-aciklama: "<gray>Dünyadan çıkarılan toplam Zenginlik Puanı.</gray>"
+    sayginlik: "<blue><simge:sayginlik> Saygınlık</blue>"
+    sayginlik-aciklama: "<gray>Dünyadan çıkarılan toplam Saygınlık Puanı.</gray>"
     beceri-basligi: "<white><bold>Beceri Tabloları</bold></white>"
     yetenek-oge: "<green><yetenek></green>"
     yetenek-aciklama: "<gray><yetenek> becerisinde en yüksek seviyeler.</gray>"
@@ -920,7 +961,7 @@ gui:
     detay-baslik-prestij: "<dark_gray>Prestij Liderlik Tablosu</dark_gray>"
     detay-baslik-gorev: "<dark_gray>Görev Tamamlama Liderlik Tablosu</dark_gray>"
     detay-baslik-koleksiyon: "<dark_gray>Koleksiyon Liderlik Tablosu</dark_gray>"
-    detay-baslik-zenginlik: "<dark_gray><simge:zenginlik> Zenginlik Liderlik Tablosu</dark_gray>"
+    detay-baslik-sayginlik: "<dark_gray><simge:sayginlik> Saygınlık Liderlik Tablosu</dark_gray>"
     detay-baslik-yetenek: "<dark_gray><yetenek> Liderlik Tablosu</dark_gray>"
     detay-baslik-oge: "<gold><bold><simge:liderlik> Sıralama</bold></gold>"
     detay-baslik-aciklama: "<gray>Şu anda <white><sayi></white> oyuncu listeleniyor.</gray>"
@@ -935,7 +976,7 @@ gui:
     oge-prestij: "<gray>Prestij <white><prestij></white></gray>"
     oge-gorev: "<gray><sayi> görev tamamlandı</gray>"
     oge-koleksiyon: "<gray><sayi> öge toplandı</gray>"
-    oge-zenginlik: "<blue><simge:zenginlik> <zenginlik></blue> <gray>zenginlik puanı</gray>"
+    oge-sayginlik: "<blue><simge:sayginlik> <sayginlik></blue> <gray>saygınlık puanı</gray>"
     bos-oge: "<gray>Bu liderlik tablosunda henüz kimse yok.</gray>"
 
   # Kilitli bir unvan/kozmetigin ADI GOSTERILMEZ; yerine yalnizca onu neyin
@@ -946,7 +987,7 @@ gui:
     gorev: "<gray>Gereken:</gray> <white><gorev> görevini tamamla</white>"
     koleksiyon: "<gray>Gereken:</gray> <white><koleksiyon> koleksiyonunu tamamla</white>"
     beceri: "<gray>Gereken:</gray> <white><beceri> becerisinde <seviye>. seviye</white>"
-    zenginlik: "<gray>Gereken:</gray> <white><zenginlik> zenginlik puanı</white>"
+    sayginlik: "<gray>Gereken:</gray> <white><sayginlik> saygınlık puanı</white>"
 
   unvan:
     baslik: "<dark_gray><simge:unvan> Unvanlarım</dark_gray>"

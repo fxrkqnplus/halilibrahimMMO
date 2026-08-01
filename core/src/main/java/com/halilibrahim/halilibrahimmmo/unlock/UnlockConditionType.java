@@ -7,6 +7,6 @@ public enum UnlockConditionType {
     QUEST_COMPLETED,
     COLLECTION_COMPLETED,
     SKILL_LEVEL,
-    /** A Zenginlik Puanı total - the one condition that rewards what a player has taken out of the world, not how far they levelled. */
-    WEALTH
+    /** A Saygınlık Puanı total - the one condition that rewards what a player has taken out of the world, not how far they levelled. */
+    REPUTATION
 }

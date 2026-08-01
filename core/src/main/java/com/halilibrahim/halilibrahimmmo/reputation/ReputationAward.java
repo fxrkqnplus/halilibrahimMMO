@@ -1,7 +1,7 @@
-package com.halilibrahim.halilibrahimmmo.wealth;
+package com.halilibrahim.halilibrahimmmo.reputation;
 
 /**
- * One completed Zenginlik Puanı award.
+ * One completed Saygınlık Puanı award.
  *
  * @param granted           how many points were actually added
  * @param newTotal          the player's total afterwards
@@ -9,7 +9,7 @@ package com.halilibrahim.halilibrahimmmo.wealth;
  *                          {@code 0} if it crossed none - the only thing that
  *                          turns a routine award into an announcement
  */
-public record WealthAward(long granted, long newTotal, long crossedMilestone) {
+public record ReputationAward(long granted, long newTotal, long crossedMilestone) {
 
     public boolean reachedMilestone() {
         return crossedMilestone > 0;

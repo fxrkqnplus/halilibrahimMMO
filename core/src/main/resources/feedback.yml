@@ -42,6 +42,14 @@ sesler:
     ses: ENTITY_ELDER_GUARDIAN_CURSE
     ses-seviyesi: 1.0
     ton: 1.0
+  # Mistik doguşun ikinci cue'su: elder guardian lanetiyle AYNI ANDA calar.
+  # Tek basina lanet sesi bir uyari gibi duyuluyordu; bunun altina serilen
+  # derin ejderha ugultusu onu bir olaya cevirir. Iki ses birlikte tasarlandi,
+  # birini degistirirken digerini de dinleyin.
+  boss-mistik-ikincil:
+    ses: ENTITY_ENDER_DRAGON_GROWL
+    ses-seviyesi: 1.0
+    ton: 0.5
   kabiliyet-secildi:
     ses: UI_BUTTON_CLICK
     ses-seviyesi: 0.9
@@ -108,8 +116,8 @@ sesler:
     ses: UI_TOAST_CHALLENGE_COMPLETE
     ses-seviyesi: 1.0
     ton: 0.9
-  # Zenginlik Puani bir kilometre tasini asti.
-  zenginlik-kilometre-tasi:
+  # Sayginlik Puani bir kilometre tasini asti.
+  sayginlik-kilometre-tasi:
     ses: BLOCK_AMETHYST_BLOCK_CHIME
     ses-seviyesi: 1.0
     ton: 1.2

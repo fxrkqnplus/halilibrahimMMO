@@ -50,12 +50,12 @@ public final class UnlockConditionParser {
                 }
                 yield new UnlockCondition(type, level, skillId, 0L);
             }
-            case WEALTH -> {
-                long wealth = kosul.getLong("zenginlik", 0L);
-                if (wealth <= 0) {
-                    throw new IllegalArgumentException("WEALTH condition requires a positive zenginlik: " + contextId);
+            case REPUTATION -> {
+                long reputation = kosul.getLong("sayginlik", 0L);
+                if (reputation <= 0) {
+                    throw new IllegalArgumentException("REPUTATION condition requires a positive sayginlik: " + contextId);
                 }
-                yield new UnlockCondition(type, 0, "", wealth);
+                yield new UnlockCondition(type, 0, "", reputation);
             }
         };
     }

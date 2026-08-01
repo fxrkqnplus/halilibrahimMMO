@@ -40,7 +40,7 @@ public final class LeaderboardMenu implements GuiView {
     };
     private static final LeaderboardCategory[] CATEGORIES = {
             LeaderboardCategory.GLOBAL_LEVEL, LeaderboardCategory.PRESTIGE, LeaderboardCategory.QUEST_COMPLETIONS,
-            LeaderboardCategory.COLLECTION_ENTRIES, LeaderboardCategory.WEALTH
+            LeaderboardCategory.COLLECTION_ENTRIES, LeaderboardCategory.REPUTATION
     };
 
     private final GuiServices services;
@@ -117,7 +117,7 @@ public final class LeaderboardMenu implements GuiView {
             case PRESTIGE -> Material.NETHER_STAR;
             case QUEST_COMPLETIONS -> Material.FILLED_MAP;
             case COLLECTION_ENTRIES -> Material.ENDER_CHEST;
-            case WEALTH -> Material.DIAMOND;
+            case REPUTATION -> Material.DIAMOND;
         };
     }
 
@@ -127,7 +127,7 @@ public final class LeaderboardMenu implements GuiView {
             case PRESTIGE -> MessageKey.GUI_LEADERBOARD_CATEGORY_PRESTIGE;
             case QUEST_COMPLETIONS -> MessageKey.GUI_LEADERBOARD_CATEGORY_QUESTS;
             case COLLECTION_ENTRIES -> MessageKey.GUI_LEADERBOARD_CATEGORY_COLLECTIONS;
-            case WEALTH -> MessageKey.GUI_LEADERBOARD_CATEGORY_WEALTH;
+            case REPUTATION -> MessageKey.GUI_LEADERBOARD_CATEGORY_REPUTATION;
         };
     }
 
@@ -137,7 +137,7 @@ public final class LeaderboardMenu implements GuiView {
             case PRESTIGE -> MessageKey.GUI_LEADERBOARD_CATEGORY_PRESTIGE_LORE;
             case QUEST_COMPLETIONS -> MessageKey.GUI_LEADERBOARD_CATEGORY_QUESTS_LORE;
             case COLLECTION_ENTRIES -> MessageKey.GUI_LEADERBOARD_CATEGORY_COLLECTIONS_LORE;
-            case WEALTH -> MessageKey.GUI_LEADERBOARD_CATEGORY_WEALTH_LORE;
+            case REPUTATION -> MessageKey.GUI_LEADERBOARD_CATEGORY_REPUTATION_LORE;
         };
     }
 

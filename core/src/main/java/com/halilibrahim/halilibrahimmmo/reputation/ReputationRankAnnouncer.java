@@ -1,4 +1,4 @@
-package com.halilibrahim.halilibrahimmmo.wealth;
+package com.halilibrahim.halilibrahimmmo.reputation;
 
 import com.halilibrahim.halilibrahimmmo.api.leaderboards.LeaderboardCategory;
 import com.halilibrahim.halilibrahimmmo.leaderboards.LeaderboardEntry;
@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Announces movement on the Zenginlik leaderboard: who overtook whom, and who
+ * Announces movement on the Saygınlık leaderboard: who overtook whom, and who
  * is climbing through the standings without stopping.
  *
  * <p><strong>Why this is a timer and not a hook on the award path.</strong> A
@@ -37,36 +37,36 @@ import java.util.concurrent.ThreadLocalRandom;
  * entirely below that cut is invisible here; that is deliberate, since a change
  * nobody can see on the leaderboard is not one worth announcing either.</p>
  */
-public final class WealthRankAnnouncer {
+public final class ReputationRankAnnouncer {
 
     private static final MessageKey[] TAKEOVER_TEMPLATES = {
-            MessageKey.WEALTH_RANK_TAKEOVER_1, MessageKey.WEALTH_RANK_TAKEOVER_2,
-            MessageKey.WEALTH_RANK_TAKEOVER_3, MessageKey.WEALTH_RANK_TAKEOVER_4,
-            MessageKey.WEALTH_RANK_TAKEOVER_5, MessageKey.WEALTH_RANK_TAKEOVER_6,
-            MessageKey.WEALTH_RANK_TAKEOVER_7, MessageKey.WEALTH_RANK_TAKEOVER_8
+            MessageKey.REPUTATION_RANK_TAKEOVER_1, MessageKey.REPUTATION_RANK_TAKEOVER_2,
+            MessageKey.REPUTATION_RANK_TAKEOVER_3, MessageKey.REPUTATION_RANK_TAKEOVER_4,
+            MessageKey.REPUTATION_RANK_TAKEOVER_5, MessageKey.REPUTATION_RANK_TAKEOVER_6,
+            MessageKey.REPUTATION_RANK_TAKEOVER_7, MessageKey.REPUTATION_RANK_TAKEOVER_8
     };
     private static final MessageKey[] CLIMB_TEMPLATES = {
-            MessageKey.WEALTH_RANK_CLIMB_1, MessageKey.WEALTH_RANK_CLIMB_2, MessageKey.WEALTH_RANK_CLIMB_3,
-            MessageKey.WEALTH_RANK_CLIMB_4, MessageKey.WEALTH_RANK_CLIMB_5, MessageKey.WEALTH_RANK_CLIMB_6,
-            MessageKey.WEALTH_RANK_CLIMB_7
+            MessageKey.REPUTATION_RANK_CLIMB_1, MessageKey.REPUTATION_RANK_CLIMB_2, MessageKey.REPUTATION_RANK_CLIMB_3,
+            MessageKey.REPUTATION_RANK_CLIMB_4, MessageKey.REPUTATION_RANK_CLIMB_5, MessageKey.REPUTATION_RANK_CLIMB_6,
+            MessageKey.REPUTATION_RANK_CLIMB_7
     };
     private static final long TICKS_PER_MILLISECOND_DIVISOR = 50L;
 
     private final JavaPlugin plugin;
     private final MessageService messages;
     private final LeaderboardService leaderboards;
-    private final WealthService wealth;
+    private final ReputationService reputation;
     /** The previous sweep's standings, by player name - the board carries no id. */
     private final Map<String, Integer> previousRanks = new HashMap<>();
     private ScheduledTask task;
 
-    public WealthRankAnnouncer(
-            JavaPlugin plugin, MessageService messages, LeaderboardService leaderboards, WealthService wealth
+    public ReputationRankAnnouncer(
+            JavaPlugin plugin, MessageService messages, LeaderboardService leaderboards, ReputationService reputation
     ) {
         this.plugin = plugin;
         this.messages = messages;
         this.leaderboards = leaderboards;
-        this.wealth = wealth;
+        this.reputation = reputation;
     }
 
     /**
@@ -76,7 +76,7 @@ public final class WealthRankAnnouncer {
      * everyone with news that is not new.
      */
     public void start() {
-        long periodTicks = Math.max(20L, wealth.settings().rankAnnouncementIntervalMillis() / TICKS_PER_MILLISECOND_DIVISOR);
+        long periodTicks = Math.max(20L, reputation.settings().rankAnnouncementIntervalMillis() / TICKS_PER_MILLISECOND_DIVISOR);
         task = plugin.getServer().getGlobalRegionScheduler()
                 .runAtFixedRate(plugin, ignored -> sweep(), periodTicks, periodTicks);
     }
@@ -95,7 +95,7 @@ public final class WealthRankAnnouncer {
             // only make the next sweep announce stale news.
             return;
         }
-        leaderboards.top(LeaderboardCategory.WEALTH).thenAccept(entries ->
+        leaderboards.top(LeaderboardCategory.REPUTATION).thenAccept(entries ->
                 plugin.getServer().getGlobalRegionScheduler().run(plugin, ignored -> announce(entries)));
     }
 
@@ -135,7 +135,7 @@ public final class WealthRankAnnouncer {
                     "oyuncu", climber.playerName(),
                     "rakip", displaced,
                     "sira", Integer.toString(climber.rank()),
-                    "zenginlik", NumberFormatter.compact(climber.primaryValue())
+                    "sayginlik", NumberFormatter.compact(climber.primaryValue())
             ));
             return;
         }
@@ -143,7 +143,7 @@ public final class WealthRankAnnouncer {
                 "oyuncu", climber.playerName(),
                 "sira", Integer.toString(climber.rank()),
                 "basamak", Integer.toString(climb),
-                "zenginlik", NumberFormatter.compact(climber.primaryValue())
+                "sayginlik", NumberFormatter.compact(climber.primaryValue())
         ));
     }
 

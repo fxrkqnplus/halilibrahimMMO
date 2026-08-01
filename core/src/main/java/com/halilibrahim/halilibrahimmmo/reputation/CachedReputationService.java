@@ -1,4 +1,4 @@
-package com.halilibrahim.halilibrahimmmo.wealth;
+package com.halilibrahim.halilibrahimmmo.reputation;
 
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
 import org.bukkit.Material;
@@ -26,17 +26,17 @@ import java.util.concurrent.atomic.AtomicReference;
  * per-player serial update chain that keeps two awards in the same tick from
  * overwriting each other.
  */
-public final class CachedWealthService implements WealthService {
+public final class CachedReputationService implements ReputationService {
 
-    private static final String FILE_NAME = "zenginlik.yml";
+    private static final String FILE_NAME = "sayginlik.yml";
 
     private final JavaPlugin plugin;
-    private final WealthRepository repository;
-    private final AtomicReference<WealthSettings> settings = new AtomicReference<>();
+    private final ReputationRepository repository;
+    private final AtomicReference<ReputationSettings> settings = new AtomicReference<>();
     private final ConcurrentHashMap<UUID, Long> cache = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<UUID, CompletableFuture<Optional<WealthAward>>> updateChains = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, CompletableFuture<Optional<ReputationAward>>> updateChains = new ConcurrentHashMap<>();
 
-    public CachedWealthService(JavaPlugin plugin, WealthRepository repository) {
+    public CachedReputationService(JavaPlugin plugin, ReputationRepository repository) {
         this.plugin = plugin;
         this.repository = repository;
     }
@@ -61,15 +61,15 @@ public final class CachedWealthService implements WealthService {
         try {
             settings.set(parse(YamlConfiguration.loadConfiguration(file)));
         } catch (RuntimeException exception) {
-            throw new LifecycleException("zenginlik.yml could not be loaded.", exception);
+            throw new LifecycleException("sayginlik.yml could not be loaded.", exception);
         }
     }
 
     @Override
-    public WealthSettings settings() {
-        WealthSettings value = settings.get();
+    public ReputationSettings settings() {
+        ReputationSettings value = settings.get();
         if (value == null) {
-            throw new IllegalStateException("WealthService.enable() has not run yet.");
+            throw new IllegalStateException("ReputationService.enable() has not run yet.");
         }
         return value;
     }
@@ -92,19 +92,61 @@ public final class CachedWealthService implements WealthService {
     }
 
     @Override
-    public CompletableFuture<Optional<WealthAward>> award(UUID playerId, long amount) {
+    public CompletableFuture<Optional<ReputationAward>> award(UUID playerId, long amount) {
         if (amount <= 0) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
         synchronized (updateChains) {
-            CompletableFuture<Optional<WealthAward>> previous =
+            CompletableFuture<Optional<ReputationAward>> previous =
                     updateChains.getOrDefault(playerId, CompletableFuture.completedFuture(Optional.empty()));
-            CompletableFuture<Optional<WealthAward>> next = previous
+            CompletableFuture<Optional<ReputationAward>> next = previous
                     .handle((ignoredValue, ignoredThrowable) -> null)
                     .thenCompose(ignored -> awardNow(playerId, amount));
             updateChains.put(playerId, next);
             next.whenComplete((ignored, throwable) -> updateChains.remove(playerId, next));
             return next;
+        }
+    }
+
+    /**
+     * The mirror image of {@link #award}, down to the chain it rides.
+     *
+     * <p>Written as its own method rather than as a negative award because the
+     * two are genuinely different: an award produces a {@link ReputationAward}
+     * carrying a milestone that may have been crossed, and a loss can only ever
+     * cross one downward - which is not an event this server announces. What it
+     * returns instead is what was actually taken, so the player can be told a
+     * number that matches their own total rather than the one the table asked
+     * for.</p>
+     */
+    @Override
+    public CompletableFuture<Long> deduct(UUID playerId, long amount) {
+        if (amount <= 0) {
+            return CompletableFuture.completedFuture(0L);
+        }
+        synchronized (updateChains) {
+            CompletableFuture<Optional<ReputationAward>> previous =
+                    updateChains.getOrDefault(playerId, CompletableFuture.completedFuture(Optional.empty()));
+            CompletableFuture<Long> taken = new CompletableFuture<>();
+            CompletableFuture<Optional<ReputationAward>> next = previous
+                    .handle((ignoredValue, ignoredThrowable) -> null)
+                    .thenCompose(ignored -> load(playerId).thenCompose(currentTotal -> {
+                        long removed = Math.min(currentTotal, amount);
+                        long newTotal = currentTotal - removed;
+                        return repository.save(playerId, newTotal).thenApply(saved -> {
+                            cache.put(playerId, newTotal);
+                            taken.complete(removed);
+                            return Optional.<ReputationAward>empty();
+                        });
+                    }));
+            updateChains.put(playerId, next);
+            next.whenComplete((ignored, throwable) -> {
+                updateChains.remove(playerId, next);
+                if (throwable != null) {
+                    taken.completeExceptionally(throwable);
+                }
+            });
+            return taken;
         }
     }
 
@@ -117,9 +159,9 @@ public final class CachedWealthService implements WealthService {
     public CompletableFuture<Long> adminSetTotal(UUID playerId, long total) {
         long clamped = Math.max(0L, total);
         synchronized (updateChains) {
-            CompletableFuture<Optional<WealthAward>> previous =
+            CompletableFuture<Optional<ReputationAward>> previous =
                     updateChains.getOrDefault(playerId, CompletableFuture.completedFuture(Optional.empty()));
-            CompletableFuture<Optional<WealthAward>> next = previous
+            CompletableFuture<Optional<ReputationAward>> next = previous
                     .handle((ignoredValue, ignoredThrowable) -> null)
                     .thenCompose(ignored -> repository.save(playerId, clamped).thenApply(saved -> {
                         cache.put(playerId, clamped);
@@ -131,29 +173,29 @@ public final class CachedWealthService implements WealthService {
         }
     }
 
-    private CompletableFuture<Optional<WealthAward>> awardNow(UUID playerId, long amount) {
+    private CompletableFuture<Optional<ReputationAward>> awardNow(UUID playerId, long amount) {
         return load(playerId).thenCompose(previousTotal -> {
             long newTotal = previousTotal + amount;
             return repository.save(playerId, newTotal).thenApply(ignored -> {
                 cache.put(playerId, newTotal);
-                return Optional.of(new WealthAward(
+                return Optional.of(new ReputationAward(
                         amount, newTotal, settings().crossedMilestone(previousTotal, newTotal)));
             });
         });
     }
 
     @Override
-    public CompletableFuture<Optional<WealthAward>> awardBlock(UUID playerId, Material material) {
+    public CompletableFuture<Optional<ReputationAward>> awardBlock(UUID playerId, Material material) {
         return award(playerId, settings().blockValue(material));
     }
 
     @Override
-    public CompletableFuture<Optional<WealthAward>> awardEntity(UUID playerId, EntityType entityType) {
+    public CompletableFuture<Optional<ReputationAward>> awardEntity(UUID playerId, EntityType entityType) {
         return award(playerId, settings().entityValue(entityType));
     }
 
     @Override
-    public CompletableFuture<Optional<WealthAward>> awardQuest(UUID playerId, String questId) {
+    public CompletableFuture<Optional<ReputationAward>> awardQuest(UUID playerId, String questId) {
         return award(playerId, settings().questValue(questId));
     }
 
@@ -162,14 +204,14 @@ public final class CachedWealthService implements WealthService {
         cache.remove(playerId);
     }
 
-    private WealthSettings parse(YamlConfiguration yaml) {
+    private ReputationSettings parse(YamlConfiguration yaml) {
         Map<Material, Long> blockValues = new LinkedHashMap<>();
         ConfigurationSection blocks = yaml.getConfigurationSection("bloklar");
         if (blocks != null) {
             for (String rawName : blocks.getKeys(false)) {
                 Material material = Material.matchMaterial(rawName);
                 if (material == null) {
-                    throw new IllegalArgumentException("Invalid block material in zenginlik.yml: " + rawName);
+                    throw new IllegalArgumentException("Invalid block material in sayginlik.yml: " + rawName);
                 }
                 blockValues.put(material, requirePositive(blocks.getLong(rawName), rawName));
             }
@@ -191,11 +233,11 @@ public final class CachedWealthService implements WealthService {
         long defaultEntityValue = yaml.getLong("varsayilan-varlik", 0);
         long defaultQuestValue = yaml.getLong("varsayilan-gorev", 0);
         if (defaultEntityValue < 0 || defaultQuestValue < 0) {
-            throw new IllegalArgumentException("Default wealth values cannot be negative.");
+            throw new IllegalArgumentException("Default reputation values cannot be negative.");
         }
         List<Long> milestones = new ArrayList<>(yaml.getLongList("kilometre-taslari"));
         if (milestones.isEmpty()) {
-            throw new IllegalArgumentException("zenginlik.yml must define at least one kilometre-taslari entry.");
+            throw new IllegalArgumentException("sayginlik.yml must define at least one kilometre-taslari entry.");
         }
         for (long milestone : milestones) {
             requirePositive(milestone, "kilometre-taslari");
@@ -205,14 +247,19 @@ public final class CachedWealthService implements WealthService {
         if (rankAnnouncementMinutes < 1) {
             throw new IllegalArgumentException("siralama-duyuru-araligi-dakika must be positive.");
         }
-        return new WealthSettings(Map.copyOf(blockValues), Map.copyOf(entityValues), defaultEntityValue,
+        long trendMinimum = yaml.getLong("egilim-duyuru-en-az-dakika", 35);
+        long trendMaximum = yaml.getLong("egilim-duyuru-en-fazla-dakika", 40);
+        if (trendMinimum < 1 || trendMaximum < trendMinimum) {
+            throw new IllegalArgumentException("egilim-duyuru minute band is invalid.");
+        }
+        return new ReputationSettings(Map.copyOf(blockValues), Map.copyOf(entityValues), defaultEntityValue,
                 Map.copyOf(questValues), defaultQuestValue, List.copyOf(milestones),
-                rankAnnouncementMinutes * 60_000L);
+                rankAnnouncementMinutes * 60_000L, trendMinimum, trendMaximum);
     }
 
     private long requirePositive(long value, String context) {
         if (value <= 0) {
-            throw new IllegalArgumentException("Wealth value must be positive: " + context);
+            throw new IllegalArgumentException("Reputation value must be positive: " + context);
         }
         return value;
     }
@@ -221,7 +268,7 @@ public final class CachedWealthService implements WealthService {
         try {
             return EntityType.valueOf(raw.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException exception) {
-            throw new IllegalArgumentException("Invalid entity type in zenginlik.yml: " + raw, exception);
+            throw new IllegalArgumentException("Invalid entity type in sayginlik.yml: " + raw, exception);
         }
     }
 }

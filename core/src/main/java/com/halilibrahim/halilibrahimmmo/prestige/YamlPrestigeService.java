@@ -8,7 +8,7 @@ import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -36,12 +36,12 @@ public final class YamlPrestigeService implements PrestigeService {
     private final SkillService skills;
     private final ClassService classes;
     private final BankedPowerService bankedPower;
-    private final WealthService wealth;
+    private final ReputationService reputation;
     private final AtomicReference<PrestigeSettings> settings = new AtomicReference<>();
 
     public YamlPrestigeService(
             JavaPlugin plugin, ProfileService profiles, ProgressionService progression,
-            SkillService skills, ClassService classes, BankedPowerService bankedPower, WealthService wealth
+            SkillService skills, ClassService classes, BankedPowerService bankedPower, ReputationService reputation
     ) {
         this.plugin = plugin;
         this.profiles = profiles;
@@ -49,7 +49,7 @@ public final class YamlPrestigeService implements PrestigeService {
         this.skills = skills;
         this.classes = classes;
         this.bankedPower = bankedPower;
-        this.wealth = wealth;
+        this.reputation = reputation;
     }
 
     @Override public void enable() { reload(); }
@@ -63,10 +63,10 @@ public final class YamlPrestigeService implements PrestigeService {
             YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
             int maximum = yaml.getInt("maksimum-prestij", 0);
             int minimumSkillLevel = yaml.getInt("gerekli-beceri-seviyesi", 0);
-            long wealthReward = yaml.getLong("prestij-zenginlik-odulu", 0);
+            long reputationReward = yaml.getLong("prestij-sayginlik-odulu", 0);
             if (maximum < 1 || minimumSkillLevel < 1) throw new IllegalArgumentException("Maximum prestige and required skill level must be positive.");
-            if (wealthReward < 0) throw new IllegalArgumentException("Prestige wealth reward cannot be negative.");
-            settings.set(new PrestigeSettings(maximum, minimumSkillLevel, wealthReward, parseRewardValues(yaml)));
+            if (reputationReward < 0) throw new IllegalArgumentException("Prestige reputation reward cannot be negative.");
+            settings.set(new PrestigeSettings(maximum, minimumSkillLevel, reputationReward, parseRewardValues(yaml)));
         } catch (RuntimeException exception) {
             throw new LifecycleException("prestige.yml could not be loaded.", exception);
         }
@@ -110,10 +110,10 @@ public final class YamlPrestigeService implements PrestigeService {
                     .thenCompose(ignored -> profiles.update(playerId, playerName, PrestigeRules::apply))
                     .thenCompose(updated -> skills.resetAll(playerId)
                             .thenCompose(ignoredReset -> resetSelectedClassLevel(playerId, playerName, selectedClass))
-                            // Wealth is added, never reset: the score records what
+                            // Reputation is added, never reset: the score records what
                             // this player has taken out of the world, and a
                             // prestige does not undo any of it.
-                            .thenCompose(ignoredReset -> wealth.award(playerId, settings().wealthReward()))
+                            .thenCompose(ignoredReset -> reputation.award(playerId, settings().reputationReward()))
                             .thenApply(ignoredAward -> new PrestigeResult(PrestigeResult.Status.PRESTIGED, updated.prestige(), Optional.empty())));
         });
     }

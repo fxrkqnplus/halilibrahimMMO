@@ -30,7 +30,6 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.Vector;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -63,24 +62,8 @@ import java.util.function.Consumer;
 public final class YamlBossService implements BossService {
 
     private static final String FILE_NAME = "bosslar.yml";
-    /**
-     * How often each living boss re-evaluates whether to heal, blink or run,
-     * and repaints its health bar. Half a second is chosen by the bar rather
-     * than by the behaviour: a health bar that lags a fight by two seconds
-     * reads as broken, while every behaviour decision is independently gated on
-     * its own millisecond interval and does not care how often it is asked.
-     */
-    private static final long BEHAVIOUR_PERIOD_TICKS = 10L;
     /** How close a player must be to see a boss's health bar. */
     private static final double BAR_VIEW_RADIUS = 96.0D;
-    private static final double FLEE_HEALTH_RATIO = 0.25D;
-    private static final double HEAL_HEALTH_RATIO = 0.50D;
-    private static final long HEAL_INTERVAL_MILLIS = 30_000L;
-    private static final long TELEPORT_INTERVAL_MILLIS = 12_000L;
-    /** How far a fleeing boss throws itself, and how far a blinking one repositions. */
-    private static final int FLEE_DISTANCE = 16;
-    private static final int BLINK_DISTANCE = 6;
-    private static final double TARGET_SEARCH_RADIUS = 32.0D;
     /** Attempts made to find standing room before giving up on this spawn cycle. */
     private static final int SPAWN_ATTEMPTS = 12;
 
@@ -550,11 +533,31 @@ public final class YamlBossService implements BossService {
             mob.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, PotionEffect.INFINITE_DURATION,
                     archetype.speedLevel() - 1, false, false));
         }
+        applyIntelligence(mob, tier.intelligence());
         makeSunproof(mob);
         // FLASH is a coloured particle on this server version and throws
         // outright without a Color payload - which is what killed the whole
         // spawn, after the creature had already been created. See BossRarity.
         mob.getWorld().spawnParticle(Particle.FLASH, mob.getLocation().add(0, 1, 0), 1, rarity.auraColor());
+    }
+
+    /**
+     * The half of a boss's cleverness that vanilla already knows how to do.
+     *
+     * <p>{@link BossBrain} handles everything the game has no goal for -
+     * roaming, kiting, raiding, mending. This is the small set of vanilla
+     * switches worth flipping in the same direction, so the two halves never
+     * disagree: a zombie whose brain is allowed to break doors should also break
+     * them the way the game itself would, and a boss that is meant to walk the
+     * map must not be quietly deleted for having walked too far from a player.
+     * A creature whose type has no such switch simply relies on the brain.</p>
+     */
+    private void applyIntelligence(Mob mob, BossIntelligence mind) {
+        if (mind.breaksDoors() && mob instanceof Zombie zombie) {
+            zombie.setCanBreakDoors(true);
+        }
+        // A boss without its own AI running would only be a very healthy statue.
+        mob.setAware(true);
     }
 
     /**
@@ -605,9 +608,13 @@ public final class YamlBossService implements BossService {
     }
 
     /**
-     * The per-boss behaviour tick: heal, blink, or run. Only ever runs on the
-     * boss's own entity scheduler, so touching its health, position and effects
-     * from here is safe.
+     * The per-boss behaviour tick. Only ever runs on the boss's own entity
+     * scheduler, so touching its health, position and effects from here is safe.
+     *
+     * <p>This method owns the bar and the bookkeeping; every decision about what
+     * the creature actually does belongs to {@link BossBrain}, which is a
+     * genuinely different job - one is presentation and lifecycle, the other is
+     * a state machine over the world around the boss.</p>
      */
     private void behave(Mob mob) {
         BossState state = activeBosses.get(mob.getUniqueId());
@@ -623,70 +630,7 @@ public final class YamlBossService implements BossService {
         if (tier == null) {
             return;
         }
-        AttributeInstance maximum = mob.getAttribute(Attribute.MAX_HEALTH);
-        double ratio = maximum == null ? 1.0D : mob.getHealth() / maximum.getValue();
-        long now = System.currentTimeMillis();
-
-        if (tier.drinksPotions() && ratio <= HEAL_HEALTH_RATIO && now - state.lastHealMillis() >= HEAL_INTERVAL_MILLIS) {
-            mob.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 100, 2));
-            mob.getWorld().spawnParticle(Particle.HEART, mob.getLocation().add(0, 1, 0), 8, 0.4D, 0.4D, 0.4D, 0.0D);
-            state.markHealed(now);
-        }
-        // Running takes priority over repositioning: a boss at a quarter health
-        // is trying to get away, not to close the distance.
-        if (tier.flees() && ratio <= FLEE_HEALTH_RATIO && !state.hasFled()) {
-            blink(mob, FLEE_DISTANCE, true);
-            mob.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 200, 2));
-            state.markFled();
-            return;
-        }
-        if (tier.teleports() && now - state.lastTeleportMillis() >= TELEPORT_INTERVAL_MILLIS) {
-            blink(mob, BLINK_DISTANCE, false);
-            state.markTeleported(now);
-        }
-    }
-
-    /**
-     * Moves the boss {@code distance} blocks away from - or toward - the nearest
-     * player, landing on solid ground. A blink that finds nowhere to land simply
-     * does not happen, which is much better than dropping a boss into a wall.
-     */
-    private void blink(Mob mob, int distance, boolean away) {
-        Player nearest = nearestPlayer(mob);
-        if (nearest == null) {
-            return;
-        }
-        Vector direction = nearest.getLocation().toVector().subtract(mob.getLocation().toVector());
-        if (direction.lengthSquared() == 0) {
-            return;
-        }
-        direction = direction.normalize().multiply(away ? -distance : distance);
-        World world = mob.getWorld();
-        int x = mob.getLocation().getBlockX() + direction.getBlockX();
-        int z = mob.getLocation().getBlockZ() + direction.getBlockZ();
-        if (!world.isChunkLoaded(x >> 4, z >> 4)) {
-            return;
-        }
-        int y = world.getHighestBlockYAt(x, z);
-        if (y <= world.getMinHeight() || !world.getBlockAt(x, y + 1, z).getType().isAir()) {
-            return;
-        }
-        Location destination = new Location(world, x + 0.5D, y + 1.0D, z + 0.5D);
-        world.spawnParticle(Particle.PORTAL, mob.getLocation().add(0, 1, 0), 30, 0.4D, 0.8D, 0.4D, 0.4D);
-        mob.teleportAsync(destination);
-    }
-
-    private Player nearestPlayer(Mob mob) {
-        Player nearest = null;
-        double best = Double.MAX_VALUE;
-        for (Player player : mob.getWorld().getPlayers()) {
-            double distance = player.getLocation().distanceSquared(mob.getLocation());
-            if (distance < best && distance <= TARGET_SEARCH_RADIUS * TARGET_SEARCH_RADIUS) {
-                best = distance;
-                nearest = player;
-            }
-        }
-        return nearest;
+        BossBrain.tick(mob, state, tier);
     }
 
     private BossSettings parse(YamlConfiguration yaml) {
@@ -728,9 +672,17 @@ public final class YamlBossService implements BossService {
         double speed = section.getDouble("hiz-carpani", 0);
         long classExperience = section.getLong("sinif-xp", 0);
         int vanillaExperience = section.getInt("oyun-xp", 0);
-        long wealth = section.getLong("zenginlik", 0);
-        if (weight <= 0 || health < 1 || damage < 1 || speed < 1 || classExperience <= 0 || vanillaExperience <= 0 || wealth <= 0) {
+        long reputation = section.getLong("sayginlik", 0);
+        if (weight <= 0 || health < 1 || damage < 1 || speed < 1 || classExperience <= 0 || vanillaExperience <= 0 || reputation <= 0) {
             throw new IllegalArgumentException("Invalid numeric settings for boss rarity: " + rarity.name());
+        }
+        BossIntelligence intelligence = parseIntelligence(section, rarity);
+        double regen = section.getDouble("can-yenileme-orani-saniyede", 0.01D);
+        double fleeRatio = section.getDouble("kacis-can-orani", 0.25D);
+        double recoveryRatio = section.getDouble("toparlanma-orani", 0.6D);
+        int escapes = section.getInt("kacis-hakki", 0);
+        if (regen < 0 || fleeRatio <= 0 || fleeRatio >= 1 || recoveryRatio <= fleeRatio || recoveryRatio > 1 || escapes < 0) {
+            throw new IllegalArgumentException("Invalid recovery settings for boss rarity: " + rarity.name());
         }
         Map<BossWeaponType, Material> weapons = new EnumMap<>(BossWeaponType.class);
         ConfigurationSection weaponSection = section.getConfigurationSection("silahlar");
@@ -762,9 +714,31 @@ public final class YamlBossService implements BossService {
         if (loot.isEmpty()) {
             throw new IllegalArgumentException("Every boss rarity must drop something: " + rarity.name());
         }
-        return new BossRaritySettings(weight, health, damage, speed, classExperience, vanillaExperience, wealth,
-                section.getBoolean("kacar", false), section.getBoolean("isinlanir", false),
-                section.getBoolean("iksir-icer", false), Map.copyOf(weapons), List.copyOf(armour), List.copyOf(loot));
+        return new BossRaritySettings(weight, health, damage, speed, classExperience, vanillaExperience, reputation,
+                intelligence, regen, fleeRatio, recoveryRatio, escapes, section.getBoolean("isinlanir", false),
+                Map.copyOf(weapons), List.copyOf(armour), List.copyOf(loot));
+    }
+
+    /**
+     * The rarity's intelligence level, defaulting to the one its own tier
+     * implies rather than to the dullest.
+     *
+     * <p>A configuration file written before this system existed has no
+     * {@code zeka} key at all. Falling back to {@code SERSEM} would silently
+     * give such a server five tiers of identical, thoughtless bosses with
+     * nothing in the log to say why, so the fallback is derived from the rarity
+     * instead - which is exactly what the shipped file spells out anyway.</p>
+     */
+    private BossIntelligence parseIntelligence(ConfigurationSection section, BossRarity rarity) {
+        String raw = section.getString("zeka");
+        if (raw == null || raw.isBlank()) {
+            return BossIntelligence.forRarity(rarity);
+        }
+        try {
+            return BossIntelligence.valueOf(raw.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Unknown boss zeka level for " + rarity.name() + ": " + raw, exception);
+        }
     }
 
     private BossLootEntry parseLoot(Map<?, ?> raw, BossRarity rarity) {
@@ -817,70 +791,4 @@ public final class YamlBossService implements BossService {
         return section;
     }
 
-    /** Transient per-boss behaviour state; lost on restart along with the behaviour loop itself. */
-    private static final class BossState {
-
-        private final BossRarity rarity;
-        private final BossBar bossBar;
-        private final String name;
-        private final Set<UUID> viewers = ConcurrentHashMap.newKeySet();
-        private volatile long lastHealMillis;
-        private volatile long lastTeleportMillis;
-        private volatile boolean fled;
-        private volatile boolean engaged;
-
-        private BossState(BossRarity rarity, String name, BossBar bossBar) {
-            this.rarity = rarity;
-            this.name = name;
-            this.bossBar = bossBar;
-        }
-
-        BossRarity rarity() {
-            return rarity;
-        }
-
-        BossBar bossBar() {
-            return bossBar;
-        }
-
-        String name() {
-            return name;
-        }
-
-        Set<UUID> viewers() {
-            return viewers;
-        }
-
-        long lastHealMillis() {
-            return lastHealMillis;
-        }
-
-        long lastTeleportMillis() {
-            return lastTeleportMillis;
-        }
-
-        boolean hasFled() {
-            return fled;
-        }
-
-        void markHealed(long now) {
-            lastHealMillis = now;
-        }
-
-        void markTeleported(long now) {
-            lastTeleportMillis = now;
-        }
-
-        void markFled() {
-            fled = true;
-        }
-
-        boolean isEngaged() {
-            return engaged;
-        }
-
-        void markEngaged() {
-            engaged = true;
-        }
-    }
 }

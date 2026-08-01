@@ -132,6 +132,7 @@ import com.halilibrahim.halilibrahimmmo.quests.QuestDiscoveryListener;
 import com.halilibrahim.halilibrahimmmo.quests.QuestListener;
 import com.halilibrahim.halilibrahimmmo.quests.QuestRepository;
 import com.halilibrahim.halilibrahimmmo.quests.QuestService;
+import com.halilibrahim.halilibrahimmmo.server.ProtectedDeathLogListener;
 import com.halilibrahim.halilibrahimmmo.server.ServerInfoService;
 import com.halilibrahim.halilibrahimmmo.server.SleepListener;
 import com.halilibrahim.halilibrahimmmo.server.TabListService;
@@ -163,11 +164,13 @@ import com.halilibrahim.halilibrahimmmo.trade.InMemoryTradeService;
 import com.halilibrahim.halilibrahimmmo.trade.TradeListener;
 import com.halilibrahim.halilibrahimmmo.trade.TradeService;
 import com.halilibrahim.halilibrahimmmo.unlock.UnlockContextLoader;
-import com.halilibrahim.halilibrahimmmo.wealth.CachedWealthService;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthAwardHandler;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthRankAnnouncer;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthRepository;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
+import com.halilibrahim.halilibrahimmmo.reputation.CachedReputationService;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationAwardHandler;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationDeathListener;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationRankAnnouncer;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationTrendAnnouncer;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationRepository;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -196,7 +199,8 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
     private ProgressionListener progressionListener;
     private HusbandryListener husbandryListener;
     private QuestDiscoveryListener questDiscoveryListener;
-    private WealthRankAnnouncer wealthRankAnnouncer;
+    private ReputationRankAnnouncer reputationRankAnnouncer;
+    private ReputationTrendAnnouncer reputationTrendAnnouncer;
     private Runnable placeholderTeardown;
     private Runnable luckPermsTeardown;
 
@@ -241,8 +245,8 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             BankedPowerService bankedPowerService = startService(
                     new CachedBankedPowerService(new BankedPowerRepository(databaseService)), BankedPowerService.class
             );
-            WealthService wealthService = startService(
-                    new CachedWealthService(this, new WealthRepository(databaseService)), WealthService.class
+            ReputationService reputationService = startService(
+                    new CachedReputationService(this, new ReputationRepository(databaseService)), ReputationService.class
             );
             // Kept as the concrete type as well: the firework's persistent-data
             // key belongs to the implementation that writes it, not to the
@@ -314,7 +318,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             classServiceReference.set(classService);
             PrestigeService prestigeService = startService(
                     new YamlPrestigeService(this, profileService, progressionService, skillService, classService,
-                            bankedPowerService, wealthService), PrestigeService.class
+                            bankedPowerService, reputationService), PrestigeService.class
             );
             // After PrestigeService, which owns prestige.yml and therefore the
             // reward values, and before EnergyService, which sums one of them
@@ -357,7 +361,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             LeaderboardService leaderboardService = startService(
                     new CachedLeaderboardService(this, new LeaderboardRepository(databaseService, skillService)), LeaderboardService.class
             );
-            UnlockContextLoader unlockContextLoader = new UnlockContextLoader(profileService, skillService, questService, collectionService, wealthService);
+            UnlockContextLoader unlockContextLoader = new UnlockContextLoader(profileService, skillService, questService, collectionService, reputationService);
             TitleService titleService = startService(
                     new CachedTitleService(this, new TitleRepository(databaseService), unlockContextLoader), TitleService.class
             );
@@ -367,7 +371,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             SidebarService sidebarService = startService(
                     new ScoreboardSidebarService(this, messageService, profileService, classService, progressionService,
                             activationService, abilityService, questService, titleService, onboardingService,
-                            homeService, tradeService, backpackService, wealthService), SidebarService.class
+                            homeService, tradeService, backpackService, reputationService), SidebarService.class
             );
             // After TitleService (entry names carry the equipped title) and
             // ProgressionService (each entry shows its owner's Güç).
@@ -377,19 +381,25 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             OnboardingRewarder onboardingRewarder = new OnboardingRewarder(
                     this, onboardingService, profileService, classService, messageService, sidebarService, classAwardHandler
             );
-            WealthAwardHandler wealthAwardHandler = new WealthAwardHandler(this, messageService, feedbackService, sidebarService);
-            this.wealthRankAnnouncer = new WealthRankAnnouncer(this, messageService, leaderboardService, wealthService);
-            wealthRankAnnouncer.start();
+            ReputationAwardHandler reputationAwardHandler = new ReputationAwardHandler(this, messageService, feedbackService, sidebarService);
+            this.reputationRankAnnouncer = new ReputationRankAnnouncer(this, messageService, leaderboardService, reputationService);
+            reputationRankAnnouncer.start();
+            // The second, slower half of the same system: rank changes are what
+            // the announcer above says, momentum is what this one says.
+            this.reputationTrendAnnouncer = new ReputationTrendAnnouncer(this, reputationService, messageService);
+            reputationTrendAnnouncer.start();
+            getServer().getPluginManager().registerEvents(
+                    new ReputationDeathListener(this, reputationService, reputationTrendAnnouncer, messageService), this);
             YamlBossService bossService = new YamlBossService(this, messageService, feedbackService);
             startService(bossService, BossService.class);
             getServer().getPluginManager().registerEvents(new BossListener(this, bossService, profileService, classService,
-                    classAwardHandler, wealthService, wealthAwardHandler, feedbackService, messageService), this);
+                    classAwardHandler, reputationService, reputationAwardHandler, feedbackService, messageService), this);
             BlockBreakRateLimiter breakRateLimiter = new BlockBreakRateLimiter();
             getServer().getPluginManager().registerEvents(placedBlockTracker, this);
-            this.progressionListener = new ProgressionListener(profileService, feedbackService, breakRateLimiter, activationService, bankedPowerService, prestigeRewardService, wealthService);
+            this.progressionListener = new ProgressionListener(profileService, feedbackService, breakRateLimiter, activationService, bankedPowerService, prestigeRewardService, reputationService);
             getServer().getPluginManager().registerEvents(progressionListener, this);
             SkillAwardHandler skillAwardHandler = new SkillAwardHandler(this, skillService, feedbackService, progressionService, messageService);
-            getServer().getPluginManager().registerEvents(new SkillListener(this, skillService, abilityService, energyService, activationService, breakRateLimiter, placedBlockTracker, skillAwardHandler, wealthService, wealthAwardHandler), this);
+            getServer().getPluginManager().registerEvents(new SkillListener(this, skillService, abilityService, energyService, activationService, breakRateLimiter, placedBlockTracker, skillAwardHandler, reputationService, reputationAwardHandler), this);
             this.husbandryListener = new HusbandryListener(this, skillService, activationService, messageService, skillAwardHandler);
             getServer().getPluginManager().registerEvents(husbandryListener, this);
             husbandryListener.start();
@@ -401,7 +411,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             QuestCompletionHandler questCompletionHandler = new QuestCompletionHandler(
                     this, questService, profileService, classService, skillService, titleService, cosmeticService,
                     feedbackService, messageService, journalService, sidebarService, skillAwardHandler, classAwardHandler,
-                    wealthService, wealthAwardHandler
+                    reputationService, reputationAwardHandler
             );
             getServer().getPluginManager().registerEvents(
                     new QuestListener(questService, abilityService, breakRateLimiter, placedBlockTracker, activationService, questCompletionHandler), this
@@ -421,6 +431,9 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new CosmeticListener(this, cosmeticService), this);
             getServer().getPluginManager().registerEvents(new GuiListener(), this);
             getServer().getPluginManager().registerEvents(new SleepListener(serverInfoService, messageService), this);
+            // Console-only moderation trail; depends on the logger alone, so it
+            // is registered next to the other server-behaviour listeners.
+            getServer().getPluginManager().registerEvents(new ProtectedDeathLogListener(pluginLogger), this);
             // Both a service (so it clears its pending prompts on shutdown) and
             // a listener (so it can claim the answer out of chat).
             ChatPromptService chatPromptService = startService(new ChatPromptService(this, messageService), ChatPromptService.class);
@@ -432,7 +445,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             this.api = new HalilIbrahimMMOApiImpl(
                     this, configService, messageService, pluginLogger, profileService, progressionService, skillService,
                     abilityService, classService, prestigeService, questService, collectionService, leaderboardService,
-                    titleService, cosmeticService, feedbackService, wealthService, bossService, modVerificationService,
+                    titleService, cosmeticService, feedbackService, reputationService, bossService, modVerificationService,
                     serverInfoService, tabListService
             );
             getServer().getServicesManager().register(HalilIbrahimMMOAPI.class, api, this, ServicePriority.Normal);
@@ -449,7 +462,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     classService, prestigeService, prestigeRewardService, questService, collectionService, journalService,
                     leaderboardService, titleService, cosmeticService, feedbackService, sidebarService, configService,
                     api, activationService, pluginLogger, onboardingService, onboardingRewarder, homeService, tradeService,
-                    wealthService, bossService, modVerificationService, chatPromptService,
+                    reputationService, bossService, modVerificationService, chatPromptService,
                     guideService, backpackService
             );
             // The trade screen lives in the GUI layer, which needs the trade
@@ -502,9 +515,13 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             questDiscoveryListener.close();
             questDiscoveryListener = null;
         }
-        if (wealthRankAnnouncer != null) {
-            wealthRankAnnouncer.close();
-            wealthRankAnnouncer = null;
+        if (reputationRankAnnouncer != null) {
+            reputationRankAnnouncer.close();
+            reputationRankAnnouncer = null;
+        }
+        if (reputationTrendAnnouncer != null) {
+            reputationTrendAnnouncer.close();
+            reputationTrendAnnouncer = null;
         }
 
         for (int i = enabledServices.size() - 1; i >= 0; i--) {
