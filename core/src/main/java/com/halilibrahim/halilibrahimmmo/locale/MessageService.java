@@ -22,6 +22,13 @@ public interface MessageService extends PluginService {
     Component render(MessageKey key);
 
     /**
+     * {@link #render} with placeholders whose values are already-built
+     * {@link Component}s - see the matching {@code send} overload for why this
+     * narrow door exists and why it is safe.
+     */
+    Component render(MessageKey key, Map<String, String> placeholders, Map<String, Component> components);
+
+    /**
      * Renders an admin-authored MiniMessage string that is <em>content</em>
      * rather than a template - a guide page's body line, today the only caller.
      *

@@ -44,6 +44,24 @@ public interface PrestigeRewardService extends PluginService {
      */
     CompletableFuture<Boolean> choose(UUID playerId, PrestigeRewardType type, int prestige);
 
+    /**
+     * How many prestige ranks this player has not yet taken a <em>crate</em>
+     * for.
+     *
+     * <p>Counted separately from the permanent choice and derived the same way,
+     * so the two cannot drift: a player who picked a permanent reward and then
+     * logged out before taking their items still owes themselves the crate.</p>
+     */
+    int pendingPhysicalChoices(UUID playerId, int prestige);
+
+    /**
+     * Takes one crate.
+     *
+     * @return {@code false} when there was nothing to take, so a second click
+     *         arriving before the screen repaints cannot claim two
+     */
+    CompletableFuture<Boolean> claimPhysical(UUID playerId, int prestige);
+
     /** Extra maximum health from this player's picks, in half-heart points. */
     double healthBonus(UUID playerId);
 

@@ -44,5 +44,24 @@ public enum SkillMilestoneEffectType {
     /** Breaking one of this skill's own blocks also clears the 3x3 around it; {@code value} is the maximum extra blocks. */
     EXCAVATION,
     /** Chance for a fully-grown crop this skill owns to replant itself; {@code value} is a 0-1 chance. */
-    AUTO_REPLANT
+    AUTO_REPLANT;
+
+    /**
+     * Whether a player may switch this milestone off again.
+     *
+     * <p>Only the members that <em>do something</em> when the player acts are
+     * toggleable - felling a tree, clearing a 3x3, replanting a crop, doubling
+     * a drop, refunding feed, twinning a calf. Every one of those can be exactly
+     * the wrong thing at the wrong moment: a player laying a one-block path does
+     * not want a 3x3, and somebody clearing a sapling farm does not want the
+     * whole grove to come down. A stat bonus has no such moment - nobody has
+     * ever wanted less maximum health - so those are not offered, because an
+     * off switch nobody would ever use is a screen full of noise.</p>
+     */
+    public boolean isToggleable() {
+        return switch (this) {
+            case TREE_FELLING, BREED_REFUND, BREED_TWIN, DOUBLE_DROP, EXCAVATION, AUTO_REPLANT -> true;
+            case MAX_HEALTH, PVE_DAMAGE_MULTIPLIER, MAX_ENERGY, HASTE, SPEED -> false;
+        };
+    }
 }

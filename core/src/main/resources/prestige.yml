@@ -30,6 +30,50 @@ prestij-sayginlik-odulu: 1000000
 #              gelen sinif XP'si de bu artistan pay alir, cunku o XP becerinin
 #              verdigi miktarla aynadan gecer; dogrudan sinifa yazilan gorev
 #              odulleri etkilenmez.
+# ----- FIZIKSEL PRESTIJ ODULU (Faz 23) -----
+# Kalici odulun YANINDA, her prestijde bir de bunlardan biri ALINMAK ZORUNDADIR.
+# Kalici odul sonsuza kadar buyuyen bir sayidir ve o anda hicbir sey hissettirmez;
+# bu ise elle tutulur, hemen kullanilir bir sey. Ikisi de zorunlu, ekran once
+# kaliciyi sonra sandigi acar.
+#
+# Bu bolum TAMAMEN yapilandirmadir: yeni bir sandik eklemek icin kod
+# degistirmeniz gerekmez. Iki kural vardir ve ikisi de dosyayi yuklemeyi
+# engeller: en az IKI sandik olmali (tek secenek secim degildir) ve her sandik
+# en az bir esya icermeli (bos sandik yalan soyleyen bir dugmedir).
+#   gorunen-ad : ekranda gorunen ad
+#   simge      : sandigi temsil eden Bukkit Material
+#   esyalar    : { esya: <Material>, adet: <sayi> } listesi
+fiziksel-oduller:
+  savas-sandigi:
+    gorunen-ad: "Savaş Sandığı"
+    simge: NETHERITE_SWORD
+    esyalar:
+      - { esya: ENCHANTED_GOLDEN_APPLE, adet: 4 }
+      - { esya: TOTEM_OF_UNDYING, adet: 2 }
+      - { esya: NETHERITE_INGOT, adet: 2 }
+  maden-sandigi:
+    gorunen-ad: "Maden Sandığı"
+    simge: DIAMOND_PICKAXE
+    esyalar:
+      - { esya: DIAMOND_BLOCK, adet: 6 }
+      - { esya: ANCIENT_DEBRIS, adet: 4 }
+      - { esya: EXPERIENCE_BOTTLE, adet: 32 }
+  doga-sandigi:
+    gorunen-ad: "Doğa Sandığı"
+    simge: OAK_SAPLING
+    esyalar:
+      - { esya: BONE_BLOCK, adet: 16 }
+      - { esya: GOLDEN_CARROT, adet: 32 }
+      - { esya: LEAD, adet: 8 }
+      - { esya: NAME_TAG, adet: 2 }
+  kasif-sandigi:
+    gorunen-ad: "Kâşif Sandığı"
+    simge: FILLED_MAP
+    esyalar:
+      - { esya: ENDER_PEARL, adet: 16 }
+      - { esya: FIREWORK_ROCKET, adet: 64 }
+      - { esya: GOLDEN_APPLE, adet: 8 }
+
 kalici-oduller:
   CAN: 2
   HASAR: 0.05

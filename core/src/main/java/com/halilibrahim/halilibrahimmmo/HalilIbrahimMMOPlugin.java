@@ -44,6 +44,8 @@ import com.halilibrahim.halilibrahimmmo.backpack.DatabaseBackpackService;
 import com.halilibrahim.halilibrahimmmo.command.BackpackCommand;
 import com.halilibrahim.halilibrahimmmo.command.GuideCommand;
 import com.halilibrahim.halilibrahimmmo.database.migration.BackpackSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.BackpackUpgradeSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.PrestigePhysicalRewardSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PrestigeRewardSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.QuestDismissalSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.TalentGrantSchemaMigration;
@@ -144,6 +146,7 @@ import com.halilibrahim.halilibrahimmmo.skills.CachedSkillService;
 import com.halilibrahim.halilibrahimmmo.skills.FarmingListener;
 import com.halilibrahim.halilibrahimmmo.skills.HusbandryListener;
 import com.halilibrahim.halilibrahimmmo.skills.SkillAwardHandler;
+import com.halilibrahim.halilibrahimmmo.skills.MilestoneToggles;
 import com.halilibrahim.halilibrahimmmo.skills.SkillListener;
 import com.halilibrahim.halilibrahimmmo.skills.SkillRepository;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
@@ -201,6 +204,13 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
     private QuestDiscoveryListener questDiscoveryListener;
     private ReputationRankAnnouncer reputationRankAnnouncer;
     private ReputationTrendAnnouncer reputationTrendAnnouncer;
+    /**
+     * Forward reference to the backpack, read by {@code ClassService} to count
+     * the feature points its widenings have already cost. The backpack is built
+     * after the class service (it needs a class level to know whether it is
+     * unlocked), so this is the same one-way bridge the synergy bridge uses.
+     */
+    private final AtomicReference<BackpackService> backpackServiceReference = new AtomicReference<>();
     private Runnable placeholderTeardown;
     private Runnable luckPermsTeardown;
 
@@ -313,7 +323,17 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     yamlAbilityService.mineBombKey(), yamlAbilityService.mineBombOwnerKey(),
                     yamlAbilityService.mineBombAbilityKey()), this);
             ClassService classService = startService(
-                    new YamlClassService(this, profileService, new ClassRepository(databaseService), abilityService, skillService, progressionService), ClassService.class
+                    new YamlClassService(this, profileService, new ClassRepository(databaseService), abilityService,
+                            skillService, progressionService,
+                            // The cloud chest's widenings are bought out of the
+                            // feature pool. Read through a reference rather than
+                            // a field because the backpack itself depends on
+                            // this service - the same forward-reference bridge
+                            // the synergy bridge already uses.
+                            playerId -> {
+                                BackpackService backpacks = backpackServiceReference.get();
+                                return backpacks == null ? 0 : backpacks.upgrades(playerId);
+                            }), ClassService.class
             );
             classServiceReference.set(classService);
             PrestigeService prestigeService = startService(
@@ -354,6 +374,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     new DatabaseBackpackService(this, new BackpackRepository(databaseService), profileService,
                             classService, messageService), BackpackService.class
             );
+            backpackServiceReference.set(backpackService);
             getServer().getPluginManager().registerEvents(new BackpackListener(backpackService), this);
             CollectionService collectionService = startService(
                     new CachedCollectionService(this, new CollectionRepository(databaseService)), CollectionService.class
@@ -399,8 +420,11 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             this.progressionListener = new ProgressionListener(profileService, feedbackService, breakRateLimiter, activationService, bankedPowerService, prestigeRewardService, reputationService);
             getServer().getPluginManager().registerEvents(progressionListener, this);
             SkillAwardHandler skillAwardHandler = new SkillAwardHandler(this, skillService, feedbackService, progressionService, messageService);
-            getServer().getPluginManager().registerEvents(new SkillListener(this, skillService, abilityService, energyService, activationService, breakRateLimiter, placedBlockTracker, skillAwardHandler, reputationService, reputationAwardHandler), this);
-            this.husbandryListener = new HusbandryListener(this, skillService, activationService, messageService, skillAwardHandler);
+            // Reads and writes the player's own PersistentDataContainer, so it
+            // needs nothing but the plugin instance and has no lifecycle.
+            MilestoneToggles milestoneToggles = new MilestoneToggles(this);
+            getServer().getPluginManager().registerEvents(new SkillListener(this, skillService, abilityService, energyService, activationService, breakRateLimiter, placedBlockTracker, skillAwardHandler, reputationService, reputationAwardHandler, milestoneToggles), this);
+            this.husbandryListener = new HusbandryListener(this, skillService, activationService, messageService, skillAwardHandler, milestoneToggles);
             getServer().getPluginManager().registerEvents(husbandryListener, this);
             husbandryListener.start();
             getServer().getPluginManager().registerEvents(new FarmingListener(this, skillService, activationService, skillAwardHandler), this);
@@ -463,7 +487,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     leaderboardService, titleService, cosmeticService, feedbackService, sidebarService, configService,
                     api, activationService, pluginLogger, onboardingService, onboardingRewarder, homeService, tradeService,
                     reputationService, bossService, modVerificationService, chatPromptService,
-                    guideService, backpackService
+                    guideService, backpackService, milestoneToggles
             );
             // The trade screen lives in the GUI layer, which needs the trade
             // service to build - so the service is told how to draw itself only
@@ -557,7 +581,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
     }
 
     private void runPendingMigrations(DatabaseService databaseService) {
-        List<Migration> migrations = List.of(new CoreSchemaMigration(), new PlayerProfileSchemaMigration(), new SkillSchemaMigration(), new ClassSchemaMigration(), new QuestSchemaMigration(), new TitleCosmeticSchemaMigration(), new ClassProgressSchemaMigration(), new PlayerActivationSchemaMigration(), new QuestAssignmentSchemaMigration(), new OnboardingSchemaMigration(), new PrestigeBankedPowerSchemaMigration(), new PlayerHomeSchemaMigration(), new WealthSchemaMigration(), new QuestPinSchemaMigration(), new BackpackSchemaMigration(), new TalentGrantSchemaMigration(), new QuestDismissalSchemaMigration(), new PrestigeRewardSchemaMigration());
+        List<Migration> migrations = List.of(new CoreSchemaMigration(), new PlayerProfileSchemaMigration(), new SkillSchemaMigration(), new ClassSchemaMigration(), new QuestSchemaMigration(), new TitleCosmeticSchemaMigration(), new ClassProgressSchemaMigration(), new PlayerActivationSchemaMigration(), new QuestAssignmentSchemaMigration(), new OnboardingSchemaMigration(), new PrestigeBankedPowerSchemaMigration(), new PlayerHomeSchemaMigration(), new WealthSchemaMigration(), new QuestPinSchemaMigration(), new BackpackSchemaMigration(), new TalentGrantSchemaMigration(), new QuestDismissalSchemaMigration(), new PrestigeRewardSchemaMigration(), new BackpackUpgradeSchemaMigration(), new PrestigePhysicalRewardSchemaMigration());
         MigrationRunner migrationRunner = new MigrationRunner(databaseService, pluginLogger, migrations);
 
         try {

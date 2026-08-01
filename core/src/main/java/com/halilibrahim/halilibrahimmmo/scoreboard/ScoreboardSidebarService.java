@@ -496,6 +496,14 @@ public final class ScoreboardSidebarService implements SidebarService {
      * are written to be read in a menu tooltip.</p>
      */
     private void addQuestSection(List<SidebarLine> lines, UUID playerId) {
+        // Nothing from the three pools reaches the panel until the starting
+        // list is finished. A new player was otherwise handed a tutorial and
+        // three quest types in the same fifteen lines, with no way to tell
+        // which of them was the one meant for them - and the onboarding block
+        // directly above this one is already saying exactly that.
+        if (!OnboardingTask.allCompleted(onboarding.cachedCompleted(playerId))) {
+            return;
+        }
         Map<String, QuestProgress> progress = quests.cachedAll(playerId);
         Set<String> dismissed = quests.cachedDismissals(playerId);
         Map<QuestType, List<QuestDefinition>> shown = new EnumMap<>(QuestType.class);

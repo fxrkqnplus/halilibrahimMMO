@@ -3,6 +3,7 @@ package com.halilibrahim.halilibrahimmmo.gui;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import com.halilibrahim.halilibrahimmmo.skills.SkillMilestoneEffect;
+import com.halilibrahim.halilibrahimmmo.skills.SkillMilestoneEffectType;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -10,6 +11,8 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +26,8 @@ public final class SkillMilestoneInfoMenu implements GuiView {
 
     private final GuiServices services;
     private final String skillId;
+    /** Which pedestals are currently offering an on/off switch, and for what. */
+    private final Map<Integer, SkillMilestoneEffectType> slotToToggle = new LinkedHashMap<>();
 
     public SkillMilestoneInfoMenu(GuiServices services, String skillId) {
         this.services = services;
@@ -47,11 +52,32 @@ public final class SkillMilestoneInfoMenu implements GuiView {
         if (definition == null) {
             return;
         }
+        int reached = services.skills().cached(player.getUniqueId(), skillId).map(progress -> progress.level()).orElse(1);
+        slotToToggle.clear();
         for (int i = 0; i < TIER_LEVELS.length; i++) {
             SkillMilestoneEffect effect = definition.milestones().get(TIER_LEVELS[i]);
+            boolean unlocked = reached >= TIER_LEVELS[i];
+            List<Component> lore = new ArrayList<>();
+            lore.add(effectLore(effect));
+            // The off switch is offered only once the tier is actually earned,
+            // and only for the milestones that DO something when the player
+            // acts - see SkillMilestoneEffectType#isToggleable for why a stat
+            // bonus has no such switch.
+            if (unlocked && effect.type().isToggleable()) {
+                boolean enabled = services.milestoneToggles().isEnabled(player, effect.type());
+                slotToToggle.put(TIER_SLOTS[i], effect.type());
+                lore.add(services.messages().render(enabled
+                        ? MessageKey.GUI_SKILL_MILESTONE_TOGGLE_ON : MessageKey.GUI_SKILL_MILESTONE_TOGGLE_OFF));
+                lore.add(services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TOGGLE_HINT));
+                inventory.setItem(TIER_SLOTS[i], GuiItems.of(enabled ? effectIcon(effect) : Material.GRAY_DYE,
+                        services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_ITEM,
+                                Map.of("seviye", Integer.toString(TIER_LEVELS[i]))),
+                        lore, enabled));
+                continue;
+            }
             inventory.setItem(TIER_SLOTS[i], GuiItems.of(effectIcon(effect),
                     services.messages().render(MessageKey.GUI_SKILL_MILESTONE_TIER_ITEM, Map.of("seviye", Integer.toString(TIER_LEVELS[i]))),
-                    List.of(effectLore(effect))
+                    lore
             ));
         }
     }
@@ -107,6 +133,16 @@ public final class SkillMilestoneInfoMenu implements GuiView {
     public void handleClick(Player player, int slot, ItemStack clicked, ClickType click) {
         if (slot == BACK_SLOT) {
             GuiManager.open(player, new SkillDetailMenu(services, skillId));
+            return;
         }
+        SkillMilestoneEffectType type = slotToToggle.get(slot);
+        if (type == null) {
+            return;
+        }
+        boolean enabled = services.milestoneToggles().toggle(player, type);
+        services.messages().send(player, enabled
+                ? MessageKey.SKILL_MILESTONE_ENABLED : MessageKey.SKILL_MILESTONE_DISABLED);
+        services.feedback().celebrateTalentUnlocked(player);
+        GuiManager.open(player, new SkillMilestoneInfoMenu(services, skillId));
     }
 }

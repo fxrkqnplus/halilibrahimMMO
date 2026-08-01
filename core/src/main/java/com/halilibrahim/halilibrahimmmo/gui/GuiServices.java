@@ -20,6 +20,7 @@ import com.halilibrahim.halilibrahimmmo.home.HomeService;
 import com.halilibrahim.halilibrahimmmo.logging.PluginLogger;
 import com.halilibrahim.halilibrahimmmo.modcheck.ModVerificationService;
 import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingRewarder;
+import com.halilibrahim.halilibrahimmmo.skills.MilestoneToggles;
 import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingService;
 import com.halilibrahim.halilibrahimmmo.trade.TradeService;
 import com.halilibrahim.halilibrahimmmo.prestige.PrestigeRewardService;
@@ -69,6 +70,7 @@ public record GuiServices(
         ModVerificationService modVerification,
         ChatPromptService chatPrompts,
         GuideService guide,
-        BackpackService backpacks
+        BackpackService backpacks,
+        MilestoneToggles milestoneToggles
 ) {
 }

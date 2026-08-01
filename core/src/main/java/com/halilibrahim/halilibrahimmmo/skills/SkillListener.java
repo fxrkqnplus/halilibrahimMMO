@@ -7,6 +7,7 @@ import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
 import com.halilibrahim.halilibrahimmmo.exploit.PlacedBlockTracker;
 import com.halilibrahim.halilibrahimmmo.reputation.ReputationAwardHandler;
 import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
+import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
@@ -48,13 +49,15 @@ public final class SkillListener implements Listener {
     private final SkillAwardHandler awards;
     private final ReputationService reputation;
     private final ReputationAwardHandler reputationAwards;
+    private final MilestoneToggles toggles;
 
     public SkillListener(
             JavaPlugin plugin, SkillService skills, AbilityService abilities, EnergyService energy,
             ActivationService activation, BlockBreakRateLimiter breakRateLimiter,
             PlacedBlockTracker placedBlocks, SkillAwardHandler awards,
-            ReputationService reputation, ReputationAwardHandler reputationAwards
+            ReputationService reputation, ReputationAwardHandler reputationAwards, MilestoneToggles toggles
     ) {
+        this.toggles = toggles;
         this.plugin = plugin;
         this.skills = skills;
         this.abilities = abilities;
@@ -129,14 +132,33 @@ public final class SkillListener implements Listener {
             return;
         }
         UUID playerId = player.getUniqueId();
-        int excavationLimit = (int) skills.milestoneValue(playerId, skillId, SkillMilestoneEffectType.EXCAVATION);
-        if (excavationLimit > 0) {
+        int excavationLimit = (int) milestoneValue(player, skillId, SkillMilestoneEffectType.EXCAVATION);
+        // A shovel, and only a shovel. Wide dig is the kazıcılık line's whole
+        // payoff and kazıcılık is the shovel's job; firing it off a pickaxe or a
+        // bare hand meant a player laying a path or clearing one gravel block
+        // took eight more with it, which is the exact opposite of a reward.
+        if (excavationLimit > 0 && Tag.ITEMS_SHOVELS.isTagged(player.getInventory().getItemInMainHand().getType())) {
             abilities.excavate(event, skillId, excavationLimit);
         }
         if (event.isDropItems()) {
-            doubleDropIfLucky(player, event, skills.milestoneValue(playerId, skillId, SkillMilestoneEffectType.DOUBLE_DROP));
+            doubleDropIfLucky(player, event, milestoneValue(player, skillId, SkillMilestoneEffectType.DOUBLE_DROP));
         }
-        replantIfLucky(player, event, skills.milestoneValue(playerId, skillId, SkillMilestoneEffectType.AUTO_REPLANT));
+        replantIfLucky(player, event, milestoneValue(player, skillId, SkillMilestoneEffectType.AUTO_REPLANT));
+    }
+
+    /**
+     * A milestone's value, or zero when the player has switched that feature
+     * off.
+     *
+     * <p>Read through here rather than straight off the service so the toggle
+     * cannot be forgotten at one call site: an unlocked-but-disabled feature is
+     * indistinguishable from one that was never unlocked, which is exactly what
+     * every consumer already handles.</p>
+     */
+    private double milestoneValue(Player player, String skillId, SkillMilestoneEffectType type) {
+        return toggles.isEnabled(player, type)
+                ? skills.milestoneValue(player.getUniqueId(), skillId, type)
+                : 0.0D;
     }
 
     /** Duplicates the block's own drop table rather than granting a fixed item, so enchantments and block state still decide what falls. */
@@ -203,6 +225,9 @@ public final class SkillListener implements Listener {
      * quest progress.</p>
      */
     private void fellTreeIfUnlocked(Player player, BlockBreakEvent event) {
+        if (!toggles.isEnabled(player, SkillMilestoneEffectType.TREE_FELLING)) {
+            return;
+        }
         int limit = skills.milestoneModifiers(player.getUniqueId()).treeFellingLimit();
         if (limit <= 0 || !TreeShape.isNaturalTreeRoot(event.getBlock())) {
             return;

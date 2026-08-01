@@ -21,14 +21,25 @@ import java.util.UUID;
 public final class BackpackHolder implements InventoryHolder {
 
     private final UUID ownerId;
+    private final int capacity;
     private Inventory inventory;
 
-    public BackpackHolder(UUID ownerId) {
+    public BackpackHolder(UUID ownerId, int capacity) {
         this.ownerId = ownerId;
+        this.capacity = capacity;
     }
 
     public UUID ownerId() {
         return ownerId;
+    }
+
+    /**
+     * How many of the window's slots this player actually owns. The rest are
+     * whole rows Minecraft insisted on - a chest inventory is a multiple of nine
+     * - and are refused by {@code BackpackListener}.
+     */
+    public int capacity() {
+        return capacity;
     }
 
     void bind(Inventory inventory) {

@@ -9,9 +9,26 @@ sinif-degistirme-bekleme-gun: 7
 # Bir yetenegin hangi havuzdan odendigi "etki.tur" degerinden belirlenir, ayrica
 # yazilmaz - kabiliyete ozel her tur zaten bir "kabiliyet" alani ister, digerleri
 # istemez. Kabiliyet puani bilerek daha nadirdir.
+# ----- YETENEK PUANI EKONOMISI (Faz 23'te oturtuldu) -----
+# Iki havuz da AYNI iki kaynaktan beslenir - Guc ve prestij - ve aralarindaki
+# oran her iki kaynakta da AYNIDIR:
+#
+#     Ozellik puani her zaman kabiliyet puaninin TAM IKI KATI hizda gelir.
+#       Guc'ten : 30 Guc'te 1 ozellik  /  60 Guc'te 1 kabiliyet
+#       Prestij : her prestijde 4 ozellik / 2 kabiliyet
+#
+# Bu oran kasitli olarak her yerde ayni tutuldu: "kabiliyet puani daha nadirdir"
+# cumlesinin tek bir sayisi olmali, iki kaynakta iki farkli orani degil.
+# Oyuncu ekranda bu iki satiri okur (odak agacindaki puan sayaclarina gelince),
+# yani buradaki her degisiklik oyuna dogrudan yansiyip yazili olarak gorunur.
+#
+# Faz 23'te kazanim BIR TIK ZORLASTIRILDI: 25/40 -> 30/60. Alti becerinin
+# hepsi 100 olan, hic prestij yapmamis bir oyuncu (600 Guc) artik 24 ozellik +
+# 15 kabiliyet degil, 20 ozellik + 10 kabiliyet puanina sahip. Ustune bulut
+# sandiginin iki genisletmesi de ozellik puanindan odenir.
 yetenek-puani:
-  ozellik-seviye-basina: 25
-  kabiliyet-seviye-basina: 40
+  ozellik-seviye-basina: 30
+  kabiliyet-seviye-basina: 60
   prestij-basina-ozellik: 4
   prestij-basina-kabiliyet: 2
 

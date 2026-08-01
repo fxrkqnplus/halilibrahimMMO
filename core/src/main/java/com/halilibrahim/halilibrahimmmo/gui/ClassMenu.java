@@ -1,10 +1,12 @@
 package com.halilibrahim.halilibrahimmmo.gui;
 
+import com.halilibrahim.halilibrahimmmo.backpack.BackpackService;
 import com.halilibrahim.halilibrahimmmo.classes.ClassLevelProgress;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassProgress;
 import com.halilibrahim.halilibrahimmmo.classes.TalentNodeDefinition;
 import com.halilibrahim.halilibrahimmmo.classes.TalentPointCategory;
+import com.halilibrahim.halilibrahimmmo.classes.TalentPointSettings;
 import com.halilibrahim.halilibrahimmmo.classes.TalentSpendResult;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
@@ -43,7 +45,9 @@ public final class ClassMenu implements GuiView {
     private static final int FEATURE_POINTS_SLOT = 15;
     private static final int ABILITY_POINTS_SLOT = 16;
     private static final int FEATURE_SECTION_SLOT = 19;
-    private static final int[] FEATURE_SLOTS = {20, 21, 22, 23, 24, 25};
+    private static final int[] FEATURE_SLOTS = {20, 21, 22, 23, 24};
+    /** The last slot of the Özellik row, which is not a class talent - see {@link #backpackUpgradeItem}. */
+    private static final int BACKPACK_UPGRADE_SLOT = 25;
     private static final int ABILITY_SECTION_SLOT = 28;
     private static final int[] ABILITY_SLOTS = {29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43};
     private static final int BACK_SLOT = 53;
@@ -52,6 +56,13 @@ public final class ClassMenu implements GuiView {
     private final TalentEffectLore talentLore;
     private final Map<Integer, String> slotToClassId = new LinkedHashMap<>();
     private final Map<Integer, String> slotToTalentId = new LinkedHashMap<>();
+    /**
+     * What the render resolved, kept so a click can check affordability without
+     * a second round trip. A view is rebuilt per open and only ever shown to the
+     * player it was built for, so this cannot leak between players.
+     */
+    private volatile PlayerProfile cachedProfile;
+    private volatile PlayerClassProgress cachedProgress;
 
     public ClassMenu(GuiServices services) {
         this.services = services;
@@ -130,6 +141,9 @@ public final class ClassMenu implements GuiView {
         Map<String, Integer> ranks = progress.talentRanks().getOrDefault(selected.id(), Map.of());
         placeTalents(inventory, ranks, talentsOf(selected, TalentPointCategory.OZELLIK), FEATURE_SLOTS, Material.BOOK);
         placeTalents(inventory, ranks, talentsOf(selected, TalentPointCategory.KABILIYET), ABILITY_SLOTS, Material.ENCHANTED_BOOK);
+        inventory.setItem(BACKPACK_UPGRADE_SLOT, backpackUpgradeItem(player));
+        this.cachedProfile = profile;
+        this.cachedProgress = progress;
     }
 
     /** Alphabetical inside a pool, so a talent stays in the same place between opens. */
@@ -183,17 +197,91 @@ public final class ClassMenu implements GuiView {
                 ))));
     }
 
+    /**
+     * A point counter, and - hovered - the rule that produced it.
+     *
+     * <p>The cadence numbers are read out of {@code classes.yml} rather than
+     * written into the template, so a server that retunes the economy retunes
+     * what the screen says about it in the same edit. "Where do these come
+     * from" was previously only answerable from the handbook, which is one
+     * screen too far from the button that spends them.</p>
+     */
     private ItemStack pointsItem(
             PlayerProfile profile, PlayerClassProgress progress, TalentPointCategory category,
             Material icon, MessageKey name, MessageKey lore
     ) {
         int total = services.classes().pointsFor(profile, category);
         int available = services.classes().availablePoints(profile, progress, category);
+        TalentPointSettings points = services.classes().settings().talentPoints();
+        boolean feature = category == TalentPointCategory.OZELLIK;
         return GuiItems.of(icon, services.messages().render(name),
-                List.of(services.messages().render(lore, Map.of(
-                        "kalan", Integer.toString(available),
-                        "toplam", Integer.toString(total)
+                List.of(
+                        services.messages().render(lore, Map.of(
+                                "kalan", Integer.toString(available),
+                                "toplam", Integer.toString(total)
+                        )),
+                        services.messages().render(feature
+                                        ? MessageKey.GUI_CLASS_FEATURE_POINTS_SOURCE
+                                        : MessageKey.GUI_CLASS_ABILITY_POINTS_SOURCE,
+                                Map.of(
+                                        "guc", Integer.toString(feature
+                                                ? points.levelsPerFeaturePoint() : points.levelsPerAbilityPoint()),
+                                        "prestij", Integer.toString(feature
+                                                ? points.featurePointsPerPrestige() : points.abilityPointsPerPrestige())
+                                )),
+                        services.messages().render(MessageKey.GUI_CLASS_POINTS_RATIO_NOTE)
+                ));
+    }
+
+    /**
+     * The one thing in the Özellik block that is not a class talent: widening
+     * the cloud chest.
+     *
+     * <p>It lives here rather than in its own screen because it competes for
+     * the same points as everything else in this block - a player deciding
+     * between two more hearts and seven more slots should be looking at both at
+     * once. It is not a talent because it is not per class: ranks are stored per
+     * (player, class, talent) and a capacity that vanished on a class change
+     * would be indefensible.</p>
+     */
+    private ItemStack backpackUpgradeItem(Player player) {
+        int owned = services.backpacks().upgrades(player.getUniqueId());
+        int capacity = services.backpacks().capacity(player.getUniqueId());
+        if (owned >= BackpackService.MAXIMUM_UPGRADES) {
+            return GuiItems.of(Material.ENDER_CHEST,
+                    services.messages().render(MessageKey.GUI_BACKPACK_UPGRADE_ITEM),
+                    List.of(services.messages().render(MessageKey.GUI_BACKPACK_UPGRADE_MAXED, Map.of(
+                            "kapasite", Integer.toString(capacity)
+                    ))), true);
+        }
+        return GuiItems.of(Material.ENDER_CHEST,
+                services.messages().render(MessageKey.GUI_BACKPACK_UPGRADE_ITEM),
+                List.of(services.messages().render(MessageKey.GUI_BACKPACK_UPGRADE_LORE, Map.of(
+                        "kapasite", Integer.toString(capacity),
+                        "mevcut", Integer.toString(owned),
+                        "maksimum", Integer.toString(BackpackService.MAXIMUM_UPGRADES),
+                        "slot", Integer.toString(BackpackService.SLOTS_PER_UPGRADE)
                 ))));
+    }
+
+    private void buyBackpackUpgrade(Player player, PlayerProfile profile, PlayerClassProgress progress) {
+        if (services.backpacks().upgrades(player.getUniqueId()) >= BackpackService.MAXIMUM_UPGRADES) {
+            services.messages().send(player, MessageKey.BACKPACK_UPGRADE_MAXED);
+            return;
+        }
+        if (services.classes().availablePoints(profile, progress, TalentPointCategory.OZELLIK) <= 0) {
+            services.messages().send(player, MessageKey.BACKPACK_UPGRADE_NO_POINTS);
+            return;
+        }
+        services.backpacks().purchaseUpgrade(player.getUniqueId()).thenAccept(ignored ->
+                player.getScheduler().run(services.plugin(), task -> {
+                    services.feedback().celebrateTalentUnlocked(player);
+                    services.messages().send(player, MessageKey.BACKPACK_UPGRADED, Map.of(
+                            "kapasite", Integer.toString(services.backpacks().capacity(player.getUniqueId()))
+                    ));
+                    services.sidebar().refresh(player);
+                    GuiManager.open(player, new ClassMenu(services));
+                }, null));
     }
 
     @Override
@@ -208,6 +296,10 @@ public final class ClassMenu implements GuiView {
         // cooldown and the class-level reset are spelled out.
         if (slotToClassId.containsKey(slot)) {
             GuiManager.open(player, new ClassIntroMenu(services, true));
+            return;
+        }
+        if (slot == BACKPACK_UPGRADE_SLOT && cachedProfile != null && cachedProgress != null) {
+            buyBackpackUpgrade(player, cachedProfile, cachedProgress);
             return;
         }
         String talentId = slotToTalentId.get(slot);

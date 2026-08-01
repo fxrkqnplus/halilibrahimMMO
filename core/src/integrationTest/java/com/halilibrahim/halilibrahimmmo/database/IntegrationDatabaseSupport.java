@@ -13,6 +13,8 @@ import com.halilibrahim.halilibrahimmmo.database.migration.PrestigeRewardSchemaM
 import com.halilibrahim.halilibrahimmmo.database.migration.QuestDismissalSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.PlayerHomeSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.BackpackSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.BackpackUpgradeSchemaMigration;
+import com.halilibrahim.halilibrahimmmo.database.migration.PrestigePhysicalRewardSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.QuestPinSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.TalentGrantSchemaMigration;
 import com.halilibrahim.halilibrahimmmo.database.migration.WealthSchemaMigration;
@@ -56,7 +58,7 @@ public final class IntegrationDatabaseSupport {
                 new ClassProgressSchemaMigration(), new PlayerActivationSchemaMigration(), new QuestAssignmentSchemaMigration(),
                 new OnboardingSchemaMigration(), new PrestigeBankedPowerSchemaMigration(),
                 new PlayerHomeSchemaMigration(), new WealthSchemaMigration(), new QuestPinSchemaMigration(), new BackpackSchemaMigration(), new TalentGrantSchemaMigration(),
-                new QuestDismissalSchemaMigration(), new PrestigeRewardSchemaMigration()
+                new QuestDismissalSchemaMigration(), new PrestigeRewardSchemaMigration(), new BackpackUpgradeSchemaMigration(), new PrestigePhysicalRewardSchemaMigration()
         );
     }
 

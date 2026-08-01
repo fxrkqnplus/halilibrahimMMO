@@ -36,6 +36,14 @@ canta:
   # anlatinin tamami uzerine gelindiginde cikan ipucuna tasindi. Iki satirlik
   # bir aciklamayi gunde otuz kere okumak bilgi degil gurultudur.
   acildi: "<hover:show_text:'<gray>İçindekiler ölümde kaybolmaz.<newline>Pencereyi kapattığında kaydedilir.<newline><dark_gray>Kapasite: <white><kapasite></white> slot</dark_gray>'><aqua><simge:koleksiyon> Bulut Sandığı</aqua></hover>"
+  # Sandik 18 slotla acilir; iki genisletmenin her biri +7 slot verir (18 -> 25
+  # -> 32). Minecraft 25 slotluk bir sandik yapamadigi icin pencere her zaman
+  # tam satirdir ve satin alinmamis slotlar bu panelle kapatilir.
+  kilitli-slot: "<red>Kilitli Slot</red>"
+  kilitli-slot-aciklama: "<gray>Odak ağacından <white>+<slot> slot</white> satın alarak açılır.</gray>"
+  genisletildi: "<green><simge:kutlama> Bulut sandığın genişledi!</green> <gray>Yeni kapasite:</gray> <white><kapasite></white> <gray>slot.</gray>"
+  genisletme-dolu: "<yellow>Bulut sandığın zaten en geniş hâlinde.</yellow>"
+  genisletme-puan-yok: "<red>Bunun için bir özellik puanına ihtiyacın var.</red>"
 
 # Ekranda gorunen HER sure bu dort parcadan birlestirilir: once gun, sonra
 # saat, dakika ve saniye - sifir olan birimler hic yazilmaz. Ornegin 130
@@ -245,6 +253,12 @@ kabiliyet:
   geri-sayim-enerji: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <aqua><simge:enerji> Enerji <white><mevcut></white><gray>/</gray><white><maksimum></white></aqua>"
   geri-sayim-yaratici: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <light_purple>Yaratıcı mod</light_purple> <dark_gray>•</dark_gray> <gray>Kapatmak için çift sağ tıkla</gray>"
 
+# Beceri kilometre taslarinin acma/kapama bildirimi. Tercih oyuncunun kendi
+# kayitli verisinde durur, sunucu yeniden baslasa da unutulmaz.
+beceri:
+  kilometre-tasi-acildi: "<green><simge:tamam> Kilometre taşı özelliği açıldı.</green>"
+  kilometre-tasi-kapatildi: "<yellow><simge:eksik> Kilometre taşı özelliği kapatıldı.</yellow> <gray>İstediğin zaman aynı ekrandan geri açabilirsin.</gray>"
+
 sinif:
   secildi: "<green><sinif> sınıfını seçtin.</green>"
   zaten-secili: "<yellow><sinif> zaten seçili sınıfın.</yellow>"
@@ -278,6 +292,10 @@ prestij:
   # MMO ekranlari yerine odul ekrani acilir.
   odul-secildi: "<gold><simge:kutlama> Kalıcı ödülünü seçtin:</gold> <white><odul></white>"
   odul-bekliyor: "<yellow><simge:uyari> Önce prestij ödülünü seçmelisin.</yellow>"
+  # Prestijin ikinci yarisi: elle tutulur bir sandik. Kalici odul kadar
+  # zorunludur; kapi once kaliciyi, sonra bunu acar.
+  fiziksel-secildi: "<gold><simge:kutlama> Prestij sandığını aldın:</gold> <white><odul></white>"
+  fiziksel-bekliyor: "<yellow><simge:uyari> Bir de prestij sandığı seçmelisin.</yellow>"
 
 gorev:
   tamamlandi: "<green><simge:gorev> <gorev> görevini tamamladın!</green> <gray>(+<xp> XP)</gray>"
@@ -288,6 +306,8 @@ gorev:
   sabit-dolu: "<red>Bu bölüme en fazla <white><sayi></white> görev sabitleyebilirsin.</red> <gray>Önce birini kaldır.</gray>"
   # Tamamlanmis bir goreve tiklamak onu panelden kalici olarak kaldirir.
   kaldirildi: "<gray><simge:tamam> <white><gorev></white> panelden kaldırıldı.</gray> <dark_gray>Bu görev bir daha panele eklenmez.</dark_gray>"
+  # Kilitli bir gorev sekmesine tiklandiginda.
+  baslangic-gerekli: "<red><simge:uyari> Önce Başlangıç Görevleri'ni bitirmelisin.</red> <gray>Günlük, haftalık ve kalıcı görevler o zaman açılır ve panele sabitlenebilir.</gray>"
 
 # "/ev" ("/home") komutu - sinif seviyesi 15'te ya da ilk prestijde acilir.
 ev:
@@ -747,8 +767,15 @@ gui:
     kademe-aciklama-yem-iadesi: "<gray><simge:hayvancilik> Çiftleştirme yeminin %<yuzde> ihtimalle geri dönmesi</gray>"
     kademe-aciklama-ikiz: "<gray><simge:hayvancilik> Her çiftleştirmede %<yuzde> ihtimalle ikinci bir yavru doğar</gray>"
     kademe-aciklama-cift-dusme: "<gray><simge:xp> Bu becerinin bloklarından %<yuzde> ihtimalle iki kat düşme</gray>"
-    kademe-aciklama-genis-kazi: "<gray><simge:kazicilik> Geniş kazı: bu becerinin bir bloğunu kırdığında çevresindeki 3x3 alan da kazılır (en fazla <deger> blok)</gray>"
+    kademe-aciklama-genis-kazi: "<gray><simge:kazicilik> Geniş kazı: <white>kürekle</white> bu becerinin bir bloğunu kırdığında çevresindeki 3x3 alan da kazılır (en fazla <deger> blok)</gray>"
     kademe-aciklama-oto-ekim: "<gray><simge:tarimcilik> Hasat ettiğin olgun ekin %<yuzde> ihtimalle kendini yeniden eker</gray>"
+    # Acilan kilometre taslarindan "bir sey YAPANLAR" (agac devirme, genis kazi,
+    # otomatik ekim, cift dusme, yem iadesi, ikiz) istege bagli kapatilabilir:
+    # her biri bazen tam olarak istenmeyen seydir. Istatistik bonuslarinda
+    # boyle bir dugme yoktur - kimse daha az can istemez.
+    acik: "<green><simge:tamam> Açık</green>"
+    kapali: "<red><simge:eksik> Kapalı</red>"
+    degistir-ipucu: "<dark_gray>Açıp kapatmak için tıkla</dark_gray>"
 
   # Kabiliyet ekrani: her sinifin tam olarak DORT kabiliyeti var ve bunlar
   # 10/20/35/50. sinif seviyelerinde acilir. Ekran bu dort kademeyi bir
@@ -838,6 +865,15 @@ gui:
     ozellik-puani-aciklama: "<gray>Kalan <white><kalan></white>/<white><toplam></white> <dark_gray>•</dark_gray> Can, hasar ve enerji yeteneklerinde harcanır</gray>"
     kabiliyet-puani-oge: "<light_purple><simge:kabiliyet> Kabiliyet Puanı</light_purple>"
     kabiliyet-puani-aciklama: "<gray>Kalan <white><kalan></white>/<white><toplam></white> <dark_gray>•</dark_gray> Yalnızca kabiliyet yeteneklerinde harcanır</gray>"
+    # Puan sayaclarinin uzerine gelindiginde NASIL kazanildigi da yaziyor.
+    # Sayilar classes.yml'deki gercek degerlerden gelir, elle yazilmaz.
+    ozellik-puani-kaynak: "<yellow><simge:bilgi> Nasıl kazanılır:</yellow> <gray>her <white><guc></white> Güç seviyesinde <white>1</white> puan <dark_gray>•</dark_gray> her prestijde <white><prestij></white> puan</gray>"
+    kabiliyet-puani-kaynak: "<yellow><simge:bilgi> Nasıl kazanılır:</yellow> <gray>her <white><guc></white> Güç seviyesinde <white>1</white> puan <dark_gray>•</dark_gray> her prestijde <white><prestij></white> puan</gray>"
+    puan-orani-notu: "<dark_gray>Özellik puanı, kabiliyet puanının tam iki katı hızda gelir.</dark_gray>"
+    # Bulut sandigi genisletmesi: odak agacinin Ozellik blogundaki dugme.
+    canta-genislet: "<aqua><simge:koleksiyon> Bulut Sandığını Genişlet</aqua>"
+    canta-genislet-aciklama: "<gray>Kapasite <white><kapasite></white> slot <dark_gray>(<mevcut>/<maksimum> genişletme)</dark_gray><newline><gray>1 özellik puanı karşılığında <white>+<slot> slot</white> <dark_gray>• satın almak için tıkla</dark_gray></gray>"
+    canta-genislet-dolu: "<green><simge:tamam> En geniş hâlinde: <white><kapasite></white> slot</green>"
 
   # ----- Sinif secim ekrani (/mmo ve /sinif) -----
   # DIKKAT: Esya aciklama satirlari ALT SATIRA KAYMAZ, kesilir. Her "aciklama-*"
@@ -887,6 +923,16 @@ gui:
   # Her prestijden sonra acilan kalici odul secim ekrani. Secim yapilana kadar
   # butun MMO ekranlari yerine bu acilir - odul, prestijin kendisinin bir
   # parcasidir ve pencereyi kapatip unutmak onu carcur etmek olurdu.
+  # Kalici odul secildikten hemen sonra acilan ikinci ekran: elle tutulur
+  # odul sandigi. Sandiklarin kendisi prestige.yml'de tanimlidir.
+  prestij-fiziksel:
+    baslik: "<dark_gray><simge:koleksiyon> Ödül Sandığını Seç</dark_gray>"
+    ust: "<gold><simge:koleksiyon> Prestij Sandığı</gold>"
+    ust-aciklama: "<gray>Prestij <white><prestij></white> <dark_gray>•</dark_gray> Bekleyen sandık hakkın: <white><hak></white></gray>"
+    ust-ipucu: "<dark_gray>Kalıcı ödülün yanında bir de bu sandıklardan birini almalısın.</dark_gray>"
+    icerik: "<gray><dark_gray>•</dark_gray> <white><adet>x</white> <esya></gray>"
+    sec-ipucu: "<green>Almak için tıkla</green>"
+
   prestij-odul:
     baslik: "<dark_gray><simge:prestij> Kalıcı Ödülünü Seç</dark_gray>"
     ust-oge: "<gold><simge:prestij> Prestij Ödülü</gold>"
@@ -927,8 +973,21 @@ gui:
     bolum-kalici: "<aqua><simge:gorev> Kalıcı Görevler</aqua>"
     bolum-kalici-aciklama: "<gray>Tek seferlik, hiç sıfırlanmaz.</gray>"
     bolum-tamamlanan: "<green><simge:tamam> Tamamlanan Görevler</green>"
-    bolum-tamamlanan-aciklama: "<gray>Bu dönemde bitirdiğin görevler.</gray>"
+    bolum-tamamlanan-aciklama: "<gray>Bitirdiğin görevler ve başlangıç adımları.</gray>"
     bolum-bos: "<dark_gray>Bu bölümde şu an görev yok.</dark_gray>"
+    # ----- Baslangic bolumu (Faz 23) -----
+    # Panonun ILK sekmesi. Bu dort adim bitmeden gunluk/haftalik/kalici
+    # sekmeleri kilitli kalir ve panelde hicbir gorev gorunmez.
+    bolum-baslangic: "<green><simge:kutlama> Başlangıç Görevleri</green>"
+    bolum-baslangic-aciklama: "<gray>Sunucuyu tanıman için dört adım. Diğer bölümler bunlar bitince açılır.</gray>"
+    baslangic-menu: "<white>Ana menüyü aç</white>"
+    baslangic-beceriler: "<white>Becerilerini incele</white>"
+    baslangic-kabiliyetler: "<white>Kabiliyetlerini incele</white>"
+    baslangic-beceri-komutu: "<white>Bir beceri komutu kullan <dark_gray>(/madencilik, /avcılık vb.)</dark_gray></white>"
+    baslangic-bekliyor: "<dark_gray>Henüz yapılmadı</dark_gray>"
+    sekme-kilitli: "<red><simge:uyari> Başlangıç görevlerini bitirmeden açılmaz.</red>"
+    bilgi-baslangic-kapisi: "<yellow><simge:uyari> Başlangıç görevlerini bitir; günlük, haftalık ve kalıcı görevler o zaman açılır.</yellow>"
+    oge-odul-xp: "<gold><simge:xp> Ödül: <white>+<xp> XP</white></gold>"
 
   # Takas tezgahi: sol yari senin teklifin, sag yari karsi tarafin.
   takas:

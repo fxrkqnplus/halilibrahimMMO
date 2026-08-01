@@ -29,27 +29,47 @@ public final class PrestigeRewardGate implements GuiManager.OpenGuard {
 
     @Override
     public boolean redirect(Player player, GuiView requested) {
-        if (requested instanceof PrestigeRewardMenu) {
+        if (requested instanceof PrestigeRewardMenu || requested instanceof PrestigePhysicalRewardMenu) {
             return false;
         }
         if (!hasPendingChoice(player)) {
             return false;
         }
-        services.messages().send(player, MessageKey.PRESTIGE_REWARD_PENDING);
-        GuiManager.open(player, new PrestigeRewardMenu(services));
+        send(player);
         return true;
     }
 
-    /** Also used by the two commands that open a raw inventory instead of a {@link GuiView}. */
+    /**
+     * Also used by the commands that open a raw inventory instead of a
+     * {@link GuiView}.
+     *
+     * <p>A prestige owes the player <em>two</em> choices, and either one being
+     * outstanding holds the door: the permanent bonus, and the crate of items.
+     * Both are derived from the rank rather than stored, so neither can be lost
+     * to a crash or a closed window.</p>
+     */
     public boolean hasPendingChoice(Player player) {
         return services.profiles().cached(player.getUniqueId())
-                .map(profile -> services.prestigeRewards().pendingChoices(player.getUniqueId(), profile.prestige()) > 0)
+                .map(profile -> services.prestigeRewards().pendingChoices(player.getUniqueId(), profile.prestige()) > 0
+                        || services.prestigeRewards().pendingPhysicalChoices(player.getUniqueId(), profile.prestige()) > 0)
                 .orElse(false);
     }
 
-    /** Opens the reward screen and says why, for a caller that is not a {@link GuiView}. */
+    /**
+     * Opens whichever half is still owed, permanent first.
+     *
+     * <p>Order matters: the permanent bonus is the decision worth thinking
+     * about and the crate is the celebration, so the thinking comes first and
+     * the payout closes the sequence.</p>
+     */
     public void send(Player player) {
-        services.messages().send(player, MessageKey.PRESTIGE_REWARD_PENDING);
-        GuiManager.open(player, new PrestigeRewardMenu(services));
+        int prestige = services.profiles().cached(player.getUniqueId()).map(profile -> profile.prestige()).orElse(0);
+        if (services.prestigeRewards().pendingChoices(player.getUniqueId(), prestige) > 0) {
+            services.messages().send(player, MessageKey.PRESTIGE_REWARD_PENDING);
+            GuiManager.open(player, new PrestigeRewardMenu(services));
+            return;
+        }
+        services.messages().send(player, MessageKey.PRESTIGE_PHYSICAL_PENDING);
+        GuiManager.open(player, new PrestigePhysicalRewardMenu(services));
     }
 }

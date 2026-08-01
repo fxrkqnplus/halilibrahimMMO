@@ -108,12 +108,17 @@ public final class MiniMessageService implements MessageService {
     public void send(
             Audience audience, MessageKey key, Map<String, String> placeholders, Map<String, Component> components
     ) {
+        audience.sendMessage(prefixed(render(key, placeholders, components)));
+    }
+
+    @Override
+    public Component render(MessageKey key, Map<String, String> placeholders, Map<String, Component> components) {
         String template = templates.getOrDefault(key, key.path());
         TagResolver.Builder resolverBuilder = TagResolver.builder();
         resolverBuilder.resolver(ICON_TAGS);
         placeholders.forEach((name, value) -> resolverBuilder.resolver(Placeholder.unparsed(name, value)));
         components.forEach((name, value) -> resolverBuilder.resolver(Placeholder.component(name, value)));
-        audience.sendMessage(prefixed(miniMessage.deserialize(template, resolverBuilder.build())));
+        return miniMessage.deserialize(template, resolverBuilder.build());
     }
 
     @Override

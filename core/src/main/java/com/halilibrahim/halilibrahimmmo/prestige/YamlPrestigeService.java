@@ -10,12 +10,17 @@ import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -71,7 +76,8 @@ public final class YamlPrestigeService implements PrestigeService {
             long reputationReward = yaml.getLong("prestij-sayginlik-odulu", 0);
             if (maximum < 1 || minimumSkillLevel < 1) throw new IllegalArgumentException("Maximum prestige and required skill level must be positive.");
             if (reputationReward < 0) throw new IllegalArgumentException("Prestige reputation reward cannot be negative.");
-            settings.set(new PrestigeSettings(maximum, minimumSkillLevel, reputationReward, parseRewardValues(yaml)));
+            settings.set(new PrestigeSettings(maximum, minimumSkillLevel, reputationReward,
+                    parseRewardValues(yaml), parsePhysicalRewards(yaml)));
         } catch (RuntimeException exception) {
             throw new LifecycleException("prestige.yml could not be loaded.", exception);
         }
@@ -93,6 +99,52 @@ public final class YamlPrestigeService implements PrestigeService {
             values.put(type, value);
         }
         return Map.copyOf(values);
+    }
+
+    /**
+     * The crates, and the two things that make the choice real: there must be
+     * at least two of them, and every one must actually contain something.
+     *
+     * <p>A single crate is not a choice, and an empty crate is a button that
+     * lies about what it does - the same reasoning that makes every permanent
+     * reward's value mandatory. Both fail the load rather than shipping a
+     * screen that wastes a player's prestige.</p>
+     */
+    private Map<String, PrestigePhysicalReward> parsePhysicalRewards(YamlConfiguration yaml) {
+        ConfigurationSection section = yaml.getConfigurationSection("fiziksel-oduller");
+        if (section == null) {
+            throw new IllegalArgumentException("prestige.yml must declare a fiziksel-oduller section.");
+        }
+        Map<String, PrestigePhysicalReward> rewards = new LinkedHashMap<>();
+        for (String rawId : section.getKeys(false)) {
+            String id = rawId.toLowerCase(Locale.ROOT);
+            ConfigurationSection entry = section.getConfigurationSection(rawId);
+            if (entry == null || !id.matches("[a-z0-9_-]+") || rewards.containsKey(id)) {
+                throw new IllegalArgumentException("Invalid or duplicate physical prestige reward: " + rawId);
+            }
+            String displayName = entry.getString("gorunen-ad", "");
+            Material icon = Material.matchMaterial(entry.getString("simge", ""));
+            if (displayName.isBlank() || icon == null) {
+                throw new IllegalArgumentException("Physical prestige reward needs gorunen-ad and a known simge: " + id);
+            }
+            List<Map.Entry<Material, Integer>> contents = new ArrayList<>();
+            for (Map<?, ?> raw : entry.getMapList("esyalar")) {
+                Material material = Material.matchMaterial(String.valueOf(raw.get("esya")));
+                int amount = raw.get("adet") instanceof Number number ? number.intValue() : 0;
+                if (material == null || amount < 1) {
+                    throw new IllegalArgumentException("Invalid item entry in physical prestige reward: " + id);
+                }
+                contents.add(Map.entry(material, amount));
+            }
+            if (contents.isEmpty()) {
+                throw new IllegalArgumentException("A physical prestige reward must contain something: " + id);
+            }
+            rewards.put(id, new PrestigePhysicalReward(id, displayName, icon, List.copyOf(contents)));
+        }
+        if (rewards.size() < 2) {
+            throw new IllegalArgumentException("prestige.yml must offer at least two physical rewards to choose between.");
+        }
+        return Map.copyOf(rewards);
     }
 
     @Override
