@@ -29,6 +29,7 @@ kategoriler:
   baslangic:
     gorunen-ad: "<green><bold>Başlangıç</bold></green>"
     simge: OAK_SAPLING
+    model: rehber-baslangic
     ozet: "Sunucuya yeni geldiysen buradan başla."
     konular:
       - baslik: "<green>1. Adım - MMO'yu aç</green>"
@@ -73,6 +74,7 @@ kategoriler:
   siniflar:
     gorunen-ad: "<red><bold>Sınıflar</bold></red>"
     simge: DIAMOND_SWORD
+    model: rehber-siniflar
     ozet: "Üç sınıf, üç oynanış. Sınıfının mantığı."
     konular:
       - baslik: "<yellow>Sınıf ne işe yarar?</yellow>"
@@ -157,6 +159,7 @@ kategoriler:
   beceriler:
     gorunen-ad: "<gold><bold>Beceriler</bold></gold>"
     simge: IRON_PICKAXE
+    model: rehber-beceriler
     ozet: "Altı beceri, nasıl arttığı ve ne kazandırdığı."
     konular:
       - baslik: "<gold>Altı beceri</gold>"
@@ -229,6 +232,7 @@ kategoriler:
   kabiliyetler:
     gorunen-ad: "<light_purple><bold>Kabiliyetler</bold></light_purple>"
     simge: BLAZE_POWDER
+    model: rehber-kabiliyetler
     ozet: "Nasıl kuşanılır, nasıl çalıştırılır, ne yaparlar."
     konular:
       - baslik: "<light_purple>Nasıl kullanılır?</light_purple>"
@@ -282,6 +286,7 @@ kategoriler:
   enerji:
     gorunen-ad: "<aqua><bold>Enerji</bold></aqua>"
     simge: GLOWSTONE_DUST
+    model: rehber-enerji
     ozet: "Kabiliyetlerin yakıtı ve üç kuralı."
     konular:
       - baslik: "<aqua>Üç kural</aqua>"
@@ -321,6 +326,7 @@ kategoriler:
   odak-agaci:
     gorunen-ad: "<blue><bold>Odak Ağacı</bold></blue>"
     simge: ENCHANTED_BOOK
+    model: rehber-odak-agaci
     ozet: "İki ayrı puan havuzu ve ne satın aldıkları."
     konular:
       - baslik: "<blue>İki ayrı havuz</blue>"
@@ -366,6 +372,7 @@ kategoriler:
   gorevler:
     gorunen-ad: "<yellow><bold>Görevler</bold></yellow>"
     simge: WRITABLE_BOOK
+    model: rehber-gorevler
     ozet: "85 görev, üç tür ve panele sabitleme."
     konular:
       - baslik: "<yellow>Üç görev türü</yellow>"
@@ -419,6 +426,7 @@ kategoriler:
   sayginlik:
     gorunen-ad: "<blue><bold>Saygınlık Puanı</bold></blue>"
     simge: DIAMOND
+    model: rehber-sayginlik
     ozet: "Para değil, itibar. Nasıl artar?"
     konular:
       - baslik: "<blue>Saygınlık nedir?</blue>"
@@ -459,6 +467,7 @@ kategoriler:
   prestij:
     gorunen-ad: "<light_purple><bold>Prestij</bold></light_purple>"
     simge: NETHER_STAR
+    model: rehber-prestij
     ozet: "Ne ister, ne alır, ne verir."
     konular:
       - baslik: "<light_purple>Prestij mantığı</light_purple>"
@@ -505,6 +514,7 @@ kategoriler:
   bosslar:
     gorunen-ad: "<dark_red><bold>Dünya Bossları</bold></dark_red>"
     simge: WITHER_SKELETON_SKULL
+    model: rehber-bosslar
     ozet: "30 dakikada bir doğan, adı olan yaratıklar."
     konular:
       - baslik: "<dark_red>Boss nedir?</dark_red>"
@@ -546,6 +556,7 @@ kategoriler:
   komutlar:
     gorunen-ad: "<white><bold>Komutlar</bold></white>"
     simge: COMMAND_BLOCK
+    model: rehber-komutlar
     ozet: "Bütün komutlar ve ne açtıkları."
     konular:
       - baslik: "<white>Ana ekranlar</white>"
@@ -590,6 +601,7 @@ kategoriler:
   ozellikler:
     gorunen-ad: "<dark_aqua><bold>Ek Özellikler</bold></dark_aqua>"
     simge: ENDER_CHEST
+    model: rehber-ozellikler
     ozet: "Ev, takas, çanta, unvan, kozmetik ve daha fazlası."
     konular:
       - baslik: "<dark_aqua>Bulut Sandığı (/çanta)</dark_aqua>"

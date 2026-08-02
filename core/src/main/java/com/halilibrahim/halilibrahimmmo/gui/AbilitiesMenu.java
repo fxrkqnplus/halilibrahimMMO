@@ -116,7 +116,7 @@ public final class AbilitiesMenu implements GuiView {
                         "seviye", Integer.toString(progress.level()),
                         "acik", Long.toString(unlocked),
                         "toplam", Integer.toString(definitions.size())
-                ))));
+                ))), classDefinition.model());
     }
 
     /**
@@ -187,7 +187,7 @@ public final class AbilitiesMenu implements GuiView {
         lore.add(services.messages().render(selected
                 ? MessageKey.GUI_ABILITY_SELECTED_MARKER
                 : MessageKey.GUI_ABILITY_EQUIP_HINT));
-        return GuiItems.of(definition.icon(), abilityName(definition), lore, selected);
+        return GuiItems.of(definition.icon(), abilityName(definition), lore, selected, definition.model());
     }
 
     /**

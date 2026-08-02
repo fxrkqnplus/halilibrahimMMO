@@ -105,7 +105,8 @@ public final class LeaderboardMenu implements GuiView {
                     List.of(
                             services.messages().render(MessageKey.GUI_LEADERBOARD_SKILL_LORE, Map.of("yetenek", definition.displayName())),
                             services.messages().render(MessageKey.GUI_LEADERBOARD_OPEN_HINT)
-                    )
+                    ),
+                    definition.model()
             ));
         }
     }

@@ -8,6 +8,7 @@ kozmetikler:
   yildiz-tozu:
     gorunen-ad: "Yıldız Tozu"
     esya: NETHER_STAR
+    model: kozmetik-isik
     efekt: END_ROD
     kosul:
       tur: LEVEL
@@ -16,6 +17,7 @@ kozmetikler:
   alev-cemberi:
     gorunen-ad: "Alev Çemberi"
     esya: BLAZE_POWDER
+    model: kozmetik-ates
     efekt: FLAME
     kosul:
       tur: PRESTIGE
@@ -24,6 +26,7 @@ kozmetikler:
   yildirim-izi:
     gorunen-ad: "Yıldırım İzi"
     esya: LIGHTNING_ROD
+    model: kozmetik-ates
     efekt: ELECTRIC_SPARK
     kosul:
       tur: PRESTIGE
@@ -33,6 +36,7 @@ kozmetikler:
   usta-avci:
     gorunen-ad: "Usta Avcı"
     esya: BOW
+    model: kozmetik-ates
     efekt: CRIT
     kosul:
       tur: SKILL_LEVEL
@@ -42,6 +46,7 @@ kozmetikler:
   kalp-yagmuru:
     gorunen-ad: "Kalp Yağmuru"
     esya: LEAD
+    model: kozmetik-kalp
     efekt: HEART
     kosul:
       tur: SKILL_LEVEL
@@ -51,6 +56,7 @@ kozmetikler:
   bahar-esintisi:
     gorunen-ad: "Bahar Esintisi"
     esya: BONE_MEAL
+    model: kozmetik-doga
     efekt: HAPPY_VILLAGER
     kosul:
       tur: SKILL_LEVEL
@@ -60,6 +66,7 @@ kozmetikler:
   yaprak-firtinasi:
     gorunen-ad: "Yaprak Fırtınası"
     esya: CHERRY_LEAVES
+    model: kozmetik-doga
     efekt: CHERRY_LEAVES
     kosul:
       tur: SKILL_LEVEL
@@ -69,6 +76,7 @@ kozmetikler:
   toz-bulutu:
     gorunen-ad: "Toz Bulutu"
     esya: GRAVEL
+    model: kozmetik-su
     efekt: DUST_PLUME
     kosul:
       tur: SKILL_LEVEL
@@ -79,6 +87,7 @@ kozmetikler:
   deniz-kopugu:
     gorunen-ad: "Deniz Köpüğü"
     esya: PRISMARINE_CRYSTALS
+    model: kozmetik-su
     efekt: BUBBLE_POP
     kosul:
       tur: COLLECTION_COMPLETED
@@ -87,6 +96,7 @@ kozmetikler:
   ruh-isigi:
     gorunen-ad: "Ruh Işığı"
     esya: SOUL_LANTERN
+    model: kozmetik-ruh
     efekt: SCULK_SOUL
     kosul:
       tur: QUEST_COMPLETED
@@ -95,6 +105,7 @@ kozmetikler:
   ejderha-nefesi:
     gorunen-ad: "Ejderha Nefesi"
     esya: DRAGON_BREATH
+    model: kozmetik-ates
     efekt: DRAGON_BREATH
     kosul:
       tur: QUEST_COMPLETED
@@ -104,6 +115,7 @@ kozmetikler:
   altin-sagnagi:
     gorunen-ad: "Altın Sağanağı"
     esya: GOLD_NUGGET
+    model: kozmetik-isik
     efekt: WAX_ON
     kosul:
       tur: REPUTATION
@@ -112,6 +124,7 @@ kozmetikler:
   kutsal-hale:
     gorunen-ad: "Kutsal Hâle"
     esya: TOTEM_OF_UNDYING
+    model: kozmetik-isik
     efekt: TOTEM_OF_UNDYING
     kosul:
       tur: REPUTATION
@@ -120,6 +133,7 @@ kozmetikler:
   boyut-yirtigi:
     gorunen-ad: "Boyut Yırtığı"
     esya: ENDER_EYE
+    model: kozmetik-ruh
     efekt: PORTAL
     kosul:
       tur: REPUTATION

@@ -313,7 +313,7 @@ public final class QuestsMenu implements GuiView {
         }
         MessageKey nameKey = progress.completed() ? MessageKey.GUI_QUEST_ITEM_COMPLETED : MessageKey.GUI_QUEST_ITEM;
         return GuiItems.of(definition.icon(), services.messages().render(nameKey, Map.of("gorev", definition.displayName())),
-                lore, progress.completed() || pinned);
+                lore, progress.completed() || pinned, definition.model());
     }
 
     private String skillName(String skillId) {

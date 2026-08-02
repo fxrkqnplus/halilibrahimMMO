@@ -7,6 +7,7 @@ import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ItemModels;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
@@ -414,6 +415,10 @@ public final class YamlClassService implements ClassService {
             if (icon == null) {
                 throw new IllegalArgumentException("Class must declare a known simge material: " + id);
             }
+            // Optional: names a texture the server resource pack ships.
+            // Absent leaves the icon exactly as it was, which is what lets a
+            // server keep its unregenerated YAML and still run this version.
+            NamespacedKey model = ItemModels.parse(section);
             Material frame = Material.matchMaterial(section.getString("cerceve", ""));
             if (frame == null) {
                 throw new IllegalArgumentException("Class must declare a known cerceve material: " + id);
@@ -452,7 +457,7 @@ public final class YamlClassService implements ClassService {
             if (prestigeSynergyLevel < 1 || prestigeSynergyLevel > skillCap) {
                 throw new IllegalArgumentException("Class prestij-sinerji-seviyesi must be within the skill level range: " + id);
             }
-            definitions.put(id, new PlayerClassDefinition(id, displayName, Set.copyOf(synergySkillIds), barColor, icon, frame, Map.copyOf(nodes), prestigeEffectType, prestigeEffectValue, prestigeSynergyLevel));
+            definitions.put(id, new PlayerClassDefinition(id, displayName, Set.copyOf(synergySkillIds), barColor, icon, model, frame, Map.copyOf(nodes), prestigeEffectType, prestigeEffectValue, prestigeSynergyLevel));
         }
         if (definitions.isEmpty()) throw new IllegalArgumentException("classes.yml must define classes.");
         return new ClassSettings(Math.multiplyExact(cooldownDays, 86_400_000L), talentPoints, classLevelCurve, synergyBonus, Map.copyOf(definitions));

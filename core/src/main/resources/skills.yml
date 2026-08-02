@@ -172,6 +172,7 @@ beceriler:
   kazicilik:
     gorunen-ad: "Kazıcılık"
     simge: IRON_SHOVEL
+    model: kazicilik
     # Kazicilik toprak/kum/cakil isidir: odulleri de kurekle yapilan isi
     # hizlandirir. 75'te acilan genis kazi bu becerinin imza ozelligidir.
     kilometre-taslari:
@@ -198,6 +199,7 @@ beceriler:
   odunculuk:
     gorunen-ad: "Odunculuk"
     simge: IRON_AXE
+    model: odunculuk
     # 25. seviyede acilan TREE_FELLING ozelligi: bir agacin toprakla temas
     # eden KOK kutugunu kestiginde agacin tamami devrilir (bagli tum kutukler
     # birden duser). Govdenin ortasindan kesmek bunu tetiklemez. 75'te ayni
@@ -225,6 +227,7 @@ beceriler:
   madencilik:
     gorunen-ad: "Madencilik"
     simge: IRON_PICKAXE
+    model: madencilik
     # Madenciligin imzasi Acele: kazma hizi dogrudan bu becerinin konusudur.
     kilometre-taslari:
       25: { tur: DOUBLE_DROP, deger: 0.08 }
@@ -259,6 +262,7 @@ beceriler:
   avcilik:
     gorunen-ad: "Avcılık"
     simge: IRON_SWORD
+    model: avcilik
     # Ekstra can YALNIZCA burada var: dovusun icinde ayakta kalmak avciligin
     # kendi konusu. deger yarim-kalp puanidir, yani 2 = 1 kalp, 6 = 3 kalp.
     kilometre-taslari:
@@ -317,6 +321,7 @@ beceriler:
   tarimcilik:
     gorunen-ad: "Tarımcılık"
     simge: WHEAT
+    model: tarimcilik
     # Tarim hem blok hem eylem kaynagi olan tek beceridir: hasat bloklarindan
     # ve tarlanin etrafindaki islerden ayni anda XP kazanir.
     # Tarimin imzasi otomatik ekim: 50'de hasadin yarisi kendini yeniden eker,
@@ -361,6 +366,7 @@ beceriler:
   hayvancilik:
     gorunen-ad: "Hayvancılık"
     simge: LEAD
+    model: hayvancilik
     # 25. seviyede acilan BREED_REFUND ozelligi: bir yavru dogduktan sonra
     # %15 ihtimalle ciftlestirme yemi oyuncuya geri doner (iki ebeveyn icin
     # harcanan iki adet birden). 50'de ikiz dogum acilir; 75 ve 100 ayni iki

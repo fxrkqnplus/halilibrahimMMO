@@ -1,6 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.skills;
 
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ItemModels;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
@@ -416,6 +417,10 @@ public final class CachedSkillService implements SkillService {
             if (icon == null) {
                 throw new IllegalArgumentException("Skill must declare a known simge material: " + id);
             }
+            // Optional: names a texture the server resource pack ships.
+            // Absent leaves the icon exactly as it was, which is what lets a
+            // server keep its unregenerated YAML and still run this version.
+            NamespacedKey model = ItemModels.parse(section);
             Map<Integer, SkillMilestoneEffect> milestones = parseMilestones(section, id);
             Map<SkillAction, SkillActionReward> actionRewards = parseActions(section, id, actionOwners);
             SkillSource source = SkillSource.valueOf(section.getString("kaynak.tur", "").toUpperCase(Locale.ROOT));
@@ -453,7 +458,7 @@ public final class CachedSkillService implements SkillService {
                 entityRewards = Map.copyOf(parsed);
                 materialRewards = Map.of();
             }
-            definitions.put(id, new SkillDefinition(id, displayName, icon, source, materialRewards, entityRewards, defaultEntityReward, actionRewards, milestones));
+            definitions.put(id, new SkillDefinition(id, displayName, icon, model, source, materialRewards, entityRewards, defaultEntityReward, actionRewards, milestones));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("skills.yml must define at least one skill.");

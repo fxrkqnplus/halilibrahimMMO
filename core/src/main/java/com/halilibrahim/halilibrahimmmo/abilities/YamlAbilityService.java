@@ -13,6 +13,7 @@ import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import com.halilibrahim.halilibrahimmmo.skills.TreeShape;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ItemModels;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -2469,6 +2470,10 @@ public final class YamlAbilityService implements AbilityService {
             if (icon == null) {
                 throw new IllegalArgumentException("Ability must declare a known simge material: " + id);
             }
+            // Optional: names a texture the server resource pack ships.
+            // Absent leaves the icon exactly as it was, which is what lets a
+            // server keep its unregenerated YAML and still run this version.
+            NamespacedKey model = ItemModels.parse(section);
             String classId = section.getString("sinif", "").toLowerCase(Locale.ROOT);
             if (classId.isBlank()) {
                 throw new IllegalArgumentException("Ability must declare its owning class: " + id);
@@ -2584,7 +2589,7 @@ public final class YamlAbilityService implements AbilityService {
                     // No extra numeric fields required beyond duration/energy/cooldown.
                 }
             }
-            definitions.put(id, new AbilityDefinition(id, displayName, description, icon, skillId, requiredLevel, energyCost,
+            definitions.put(id, new AbilityDefinition(id, displayName, description, icon, model, skillId, requiredLevel, energyCost,
                     cooldownMillis, activeMillis, effect, limit, multiplier, tool, classId, mode, energyPerHit, energyPerBlock, visual));
         }
         if (definitions.isEmpty()) {

@@ -89,6 +89,7 @@ kabiliyetler:
     gorunen-ad: "Doğa Ana'nın Koruyucuları"
     aciklama: "Yalnızca çevrende hayvan varken kullanılabilir. En yakın 6 hayvan (inek, domuz, koyun, tavuk, panda, demir golem...) sana saldıran yaratığın üstüne koşar, ona vurur ve onu senden uzaklaştırır. Yaralanan her koruyucuyu enerjinle iyileştirirsin: 5 enerji = 1 kalp. Enerjin bitse bile kabiliyet kapanmaz, süre bitince kapanır. Bütün koruyucular ölürse kendiliğinden sona erer. Evcilleştirilmiş at, eşek, kurt, kedi ve köylüler çağrıya katılmaz."
     simge: LEAD
+    model: kabiliyet-doga-ana-koruyuculari
     beceri: kazicilik
     sinif: tabiat-varisi
     gerekli-seviye: 35
@@ -124,6 +125,7 @@ kabiliyetler:
     gorunen-ad: "Filiz Patlaması"
     aciklama: "Çevrendeki 7 blok yarıçapındaki bütün olmamış ekinler kademe kademe, dalga dalga büyür. Hiç kemik tozu harcamazsın. Son ekin de olgunlaştığı anda kabiliyet kendiliğinden kapanır."
     simge: BONE_MEAL
+    model: kabiliyet-filiz-patlamasi
     beceri: tarimcilik
     sinif: tabiat-varisi
     # Faz 23: sinifin ilk basamagi (eski 20 -> 10).
@@ -154,6 +156,7 @@ kabiliyetler:
     gorunen-ad: "Sürü Çağrısı"
     aciklama: "Çevrendeki 10 blok yarıçapındaki bütün yetişkin hayvanlar tek bir yem harcamadan çiftleşme moduna girer. Bir sürüyü tek çağrıyla ikiye katlar."
     simge: WHEAT
+    model: kabiliyet-suru-cagrisi
     beceri: hayvancilik
     sinif: tabiat-varisi
     # Faz 23: 50 -> 20. Sinifin son sozu artik Asil Kurt.
@@ -184,6 +187,7 @@ kabiliyetler:
     gorunen-ad: "Asil Kurt"
     aciklama: "YALNIZCA GECELERİ çağrılabilir. Açıldığı anda tüm sunucu kurt ulumasını duyar. 1 dakika boyunca zırhın çıkar ve giyemezsin; Hız, Dayanıklılık ve Güç alırsın; hiçbir canavar sana saldırmaz; çevrendeki kurtlar ve köpekler senin saldırdığın hedefe atılır; seni gören inek, koyun, at, kedi, köylü, domuz ve tavuk kaçar. Ekranın Kan Yemini gibi kızarır ve kombo merdiveni işler."
     simge: BONE
+    model: kabiliyet-asil-kurt
     beceri: odunculuk
     sinif: tabiat-varisi
     # Sinifin son sozu.
@@ -222,6 +226,7 @@ kabiliyetler:
     gorunen-ad: "B Planı"
     aciklama: "5 saniye boyunca hiçbir yaratık seni göremez: sana nişan almış olanlar hedefini kaybeder, yenisi de seni bulamaz. Aynı süre boyunca Görünmezlik ve Hız 2 alırsın. Kaybedilmiş bir dövüşten çıkmanın yolu."
     simge: ENDER_PEARL
+    model: kabiliyet-b-plani
     beceri: avcilik
     sinif: avci
     gerekli-seviye: 10
@@ -246,6 +251,7 @@ kabiliyetler:
     gorunen-ad: "Avcı Odağı"
     aciklama: "Etkinken verdiğin PvE hasarı %50 artar (yalnızca yaratıklara karşı - PvP'de geçerli değildir). Her isabetli vuruşta enerji tüketir; enerjin biterse ya da en fazla 30 saniye sonra kendiliğinden sona erer."
     simge: IRON_SWORD
+    model: kabiliyet-avci-odagi
     beceri: avcilik
     sinif: avci
     gerekli-seviye: 20
@@ -276,6 +282,7 @@ kabiliyetler:
     gorunen-ad: "Yıkıcı Darbe"
     aciklama: "Ayağının altında bir patlama yaratır: 5 blok yarıçapındaki tüm yaratıkları çok uzağa savurur ve ağır hasar verir. Sok dalgasi atildigi an biter."
     simge: TNT
+    model: kabiliyet-yikici-darbe
     beceri: avcilik
     sinif: avci
     gerekli-seviye: 35
@@ -308,6 +315,7 @@ kabiliyetler:
     gorunen-ad: "Kan Yemini"
     aciklama: "45 saniye boyunca bir yaratığa verdiğin hasarın %15'i sana can olarak geri döner ve Hız 1 alırsın. Ekranının kenarları kızarır; yemin altındayken ölen her yaratığın ruhu sana akar. Sınıfın en güçlü kabiliyeti."
     simge: NETHERITE_SWORD
+    model: kabiliyet-kan-yemini
     beceri: avcilik
     sinif: avci
     gerekli-seviye: 50
@@ -343,6 +351,7 @@ kabiliyetler:
     gorunen-ad: "Bulldozer"
     aciklama: "Açması bedavadır. 1 dakika boyunca kazdığın HER blok, merkezinde durduğu 3x3x3 küple birlikte düşer. Her blok 3 enerji ve kazmandan 1 dayanıklılık götürür; enerjin biterse kabiliyet orada kapanır. Enerji kabiliyet açıkken hiç yenilenmez."
     simge: GOLDEN_PICKAXE
+    model: kabiliyet-bulldozer
     beceri: madencilik
     sinif: madenci
     gerekli-seviye: 10
@@ -374,6 +383,7 @@ kabiliyetler:
     gorunen-ad: "Madenci Refleksleri"
     aciklama: "10 saniye boyunca elindeki kazmaya +3 Verimlilik ekler. Kazmanda zaten Verimlilik varsa üstüne biner (Verimlilik 3 kazma → Verimlilik 6). Süre dolunca kazman tam olduğu hâline döner."
     simge: IRON_PICKAXE
+    model: kabiliyet-madenci-refleksleri
     beceri: madencilik
     sinif: madenci
     gerekli-seviye: 20
@@ -402,6 +412,7 @@ kabiliyetler:
     gorunen-ad: "Kaya Patlaması"
     aciklama: "Bulunduğun yere bir Maden Bombası bırakır. Normal bir TNT'den 6 kat güçlü patlar ama hiçbir cevhere, oyuncuya veya yaratığa zarar vermez. Ortaya çıkan cevherler 5 saniye boyunca parlar ve kaç tane çıktığı sana yazılır."
     simge: TNT
+    model: kabiliyet-kaya-patlamasi
     beceri: madencilik
     sinif: madenci
     gerekli-seviye: 35
@@ -436,6 +447,7 @@ kabiliyetler:
     gorunen-ad: "Maden Feneri"
     aciklama: "Yalnızca geniş, üstü kapalı bir madende kullanılabilir: 36 blok yarıçapındaki tüm cevherler 40 saniye boyunca duvarların ardından bile parlar. Süre dolmadan kırdığın cevherin parıltısı anında söner. Sınıfın en güçlü kabiliyeti."
     simge: GLOWSTONE
+    model: kabiliyet-maden-feneri
     beceri: madencilik
     sinif: madenci
     gerekli-seviye: 50

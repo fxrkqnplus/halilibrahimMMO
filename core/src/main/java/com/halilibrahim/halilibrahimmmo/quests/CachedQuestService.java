@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.quests;
 
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ItemModels;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -396,6 +397,10 @@ public final class CachedQuestService implements QuestService {
             if (icon == null) {
                 throw new IllegalArgumentException("Quest must declare a known simge material: " + id);
             }
+            // Optional: names a texture the server resource pack ships.
+            // Absent leaves the icon exactly as it was, which is what lets a
+            // server keep its unregenerated YAML and still run this version.
+            NamespacedKey model = ItemModels.parse(section);
             QuestType type = QuestType.valueOf(section.getString("tur", "").toUpperCase(Locale.ROOT));
             String skillId = section.getString("beceri", "").toLowerCase(Locale.ROOT);
             if (!skills.settings().definitions().containsKey(skillId)) {
@@ -440,7 +445,7 @@ public final class CachedQuestService implements QuestService {
             if (target < 1 || reward <= 0) {
                 throw new IllegalArgumentException("Quest target and XP reward must be positive: " + id);
             }
-            definitions.put(id, new QuestDefinition(id, displayName, shortName, description, icon, type, skillId, objectiveType,
+            definitions.put(id, new QuestDefinition(id, displayName, shortName, description, icon, model, type, skillId, objectiveType,
                     materials, entityTypes, structures, items, deed, dimension, target, reward));
         }
         if (definitions.isEmpty()) {

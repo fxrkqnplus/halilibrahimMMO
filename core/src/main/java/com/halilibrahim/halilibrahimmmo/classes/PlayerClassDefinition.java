@@ -1,6 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.classes;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 
 import java.util.Map;
 import java.util.Set;
@@ -44,7 +45,7 @@ import java.util.Set;
  */
 public record PlayerClassDefinition(
         String id, String displayName, Set<String> synergySkillIds, ClassBarColor barColor, Material icon,
-        Material frame, Map<String, TalentNodeDefinition> talents,
+        NamespacedKey model, Material frame, Map<String, TalentNodeDefinition> talents,
         ClassEffectType prestigeEffectType, double prestigeEffectValuePerRank,
         int prestigeSynergyLevel
 ) {

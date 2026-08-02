@@ -94,7 +94,8 @@ public final class SkillsMenu implements GuiView {
                 definition.icon(),
                 services.messages().render(MessageKey.GUI_SKILL_ITEM, Map.of("yetenek", definition.displayName())),
                 lore,
-                synergy
+                synergy,
+                definition.model()
         );
     }
 

@@ -5,6 +5,7 @@ import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -29,6 +30,20 @@ public final class GuiItems {
     }
 
     /**
+     * Overloads that only add a pack model, so a call site can gain one by
+     * appending a single argument rather than padding out to the widest form.
+     * A definition without a {@code model:} line passes {@code null} here and
+     * the item is built exactly as before.
+     */
+    public static ItemStack of(Material material, Component name, NamespacedKey model) {
+        return of(material, name, List.of(), false, model);
+    }
+
+    public static ItemStack of(Material material, Component name, List<Component> lore, NamespacedKey model) {
+        return of(material, name, lore, false, model);
+    }
+
+    /**
      * Same as {@link #of(Material, Component, List)}, with a purely cosmetic
      * enchant glint when {@code glowing}.
      *
@@ -39,11 +54,35 @@ public final class GuiItems {
      * in the plugin builds its tooltips through this one method.</p>
      */
     public static ItemStack of(Material material, Component name, List<Component> lore, boolean glowing) {
+        return of(material, name, lore, glowing, null);
+    }
+
+    /**
+     * Same again, additionally pointing the item at a texture the server's
+     * resource pack supplies.
+     *
+     * <p>{@code model} names an item model definition the pack ships at
+     * {@code assets/hmmo/items/&lt;path&gt;.json}. It is always optional: a
+     * {@code null} key - which is what every entry without a {@code model:} line
+     * in its YAML produces - leaves the item exactly as it was, so a server that
+     * never regenerates its config files and a player whose pack failed to apply
+     * both keep seeing the plain {@link Material}. That fallback is the whole
+     * reason the material is still chosen per entry rather than replaced by a
+     * single placeholder.</p>
+     *
+     * <p>Uses the {@code item_model} data component rather than
+     * {@code setCustomModelData}, which has been deprecated since 1.21.5.</p>
+     */
+    public static ItemStack of(Material material, Component name, List<Component> lore,
+                               boolean glowing, NamespacedKey model) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         meta.displayName(undecorate(name));
         meta.lore(LoreWrapper.wrapAll(lore).stream().map(GuiItems::undecorate).toList());
         meta.setEnchantmentGlintOverride(glowing);
+        if (model != null) {
+            meta.setItemModel(model);
+        }
         item.setItemMeta(meta);
         return item;
     }

@@ -56,6 +56,9 @@ public final class PaketUretici {
     private static final int ICON_SHEET_COLUMNS = 8;
     private static final int GLYPH_SIZE = 8;
 
+    /** Must stay in step with {@code resourcepack.ItemModels.PREFIX} on the server side. */
+    private static final String PREFIX = "simge/";
+
     private static Path root;
 
     public static void main(String[] args) throws Exception {
@@ -179,6 +182,8 @@ public final class PaketUretici {
         files.put("assets/" + NAMESPACE + "/textures/font/simgeler.png", icons.png());
         files.put("assets/" + NAMESPACE + "/font/simgeler.json", icons.fontJson().getBytes(StandardCharsets.UTF_8));
 
+        ItemTextures.build(root, palette, files);
+
         Path out = root.resolve("cikti");
         Files.createDirectories(out);
         String zipName = "hmmo-paket-" + version + ".zip";
@@ -220,6 +225,7 @@ public final class PaketUretici {
         IconSheet icons = IconSheet.build(root.resolve("simgeler.json"), palette);
         files.put("assets/" + NAMESPACE + "/textures/font/simgeler.png", icons.png());
         files.put("assets/" + NAMESPACE + "/font/simgeler.json", icons.fontJson().getBytes(StandardCharsets.UTF_8));
+        ItemTextures.build(root, palette, files);
 
         String sha1 = sha1Hex(deterministicZip(files));
         if (sha1.equals(previous[1])) {
@@ -448,6 +454,16 @@ public final class PaketUretici {
     /** The 28 icon glyphs, laid out on one texture and described by one font file. */
     record IconSheet(byte[] png, String fontJson) {
 
+        /** @return icon id to its mask rows, so the item textures can reuse the same drawings. */
+        static Map<String, List<String>> masks(Path file) throws IOException {
+            Map<String, List<String>> out = new LinkedHashMap<>();
+            for (Map.Entry<String, String> entry
+                    : Json.nestedObjects(Files.readString(file, StandardCharsets.UTF_8), "simgeler").entrySet()) {
+                out.put(entry.getKey(), Json.stringArray(entry.getValue(), "maske"));
+            }
+            return out;
+        }
+
         static IconSheet build(Path file, Palette palette) throws IOException {
             String json = Files.readString(file, StandardCharsets.UTF_8);
             Map<String, String> entries = Json.nestedObjects(json, "simgeler");
@@ -581,6 +597,127 @@ public final class PaketUretici {
             StringBuilder out = new StringBuilder();
             value.codePoints().forEach(cp -> out.append(String.format(Locale.ROOT, "\\u%04X", cp)));
             return out.toString();
+        }
+    }
+
+    // -------------------------------------------------------------- item textures
+
+    /**
+     * The GUI item icons: a 16x16 plate with one of {@link IconSheet}'s own 8x8
+     * masks centred on it.
+     *
+     * <p>Composing rather than drawing is what keeps ~60 textures maintainable
+     * by hand: the emblems are the <em>same</em> masks the font uses, so fixing
+     * an icon fixes both its glyph and its item texture, and the two can never
+     * drift apart. Variety comes from the plate - shape, fill and border - not
+     * from sixty separate drawings.</p>
+     */
+    static final class ItemTextures {
+
+        private static final int TILE = 16;
+        private static final int EMBLEM_OFFSET = (TILE - GLYPH_SIZE) / 2;
+
+        private ItemTextures() {
+        }
+
+        static void build(Path root, Palette palette, Map<String, byte[]> files) throws IOException {
+            Path manifest = root.resolve("esya-modelleri.json");
+            if (!Files.isRegularFile(manifest)) {
+                return;
+            }
+            Map<String, List<String>> masks = IconSheet.masks(root.resolve("simgeler.json"));
+            Map<String, String> models = Json.nestedObjects(Files.readString(manifest, StandardCharsets.UTF_8), "modeller");
+
+            for (Map.Entry<String, String> entry : models.entrySet()) {
+                String id = entry.getKey();
+                String body = entry.getValue();
+                String emblemId = Json.requireString(body, "simge");
+                List<String> mask = masks.get(emblemId);
+                if (mask == null) {
+                    throw new IOException(id + ": 'simge' bilinmeyen bir maskeyi gosteriyor: " + emblemId);
+                }
+
+                BufferedImage tile = new BufferedImage(TILE, TILE, BufferedImage.TYPE_INT_ARGB);
+                drawPlate(tile, palette, Json.requireString(body, "plaka"),
+                        Json.requireString(body, "zemin"), Json.requireString(body, "kenar"));
+                drawEmblem(tile, palette, mask, Json.optionalString(body, "simge-renk"));
+
+                files.put("assets/" + NAMESPACE + "/textures/item/" + PREFIX + id + ".png", png(tile));
+                files.put("assets/" + NAMESPACE + "/models/item/" + PREFIX + id + ".json", ("""
+                        {
+                          "parent": "minecraft:item/generated",
+                          "textures": { "layer0": "%s:item/%s%s" }
+                        }
+                        """.formatted(NAMESPACE, PREFIX, id)).getBytes(StandardCharsets.UTF_8));
+                files.put("assets/" + NAMESPACE + "/items/" + PREFIX + id + ".json", ("""
+                        {
+                          "model": { "type": "minecraft:model", "model": "%s:item/%s%s" }
+                        }
+                        """.formatted(NAMESPACE, PREFIX, id)).getBytes(StandardCharsets.UTF_8));
+            }
+        }
+
+        private static void drawPlate(BufferedImage tile, Palette palette, String shape, String fill, String edge) {
+            if ("yok".equals(shape)) {
+                return;
+            }
+            int fillArgb = palette.color(fill);
+            int edgeArgb = palette.color(edge);
+            for (int y = 0; y < TILE; y++) {
+                for (int x = 0; x < TILE; x++) {
+                    if (!inside(shape, x, y)) {
+                        continue;
+                    }
+                    tile.setRGB(x, y, onEdge(shape, x, y) ? edgeArgb : fillArgb);
+                }
+            }
+        }
+
+        /** Plate silhouettes, kept to integer maths so the output is bit-stable. */
+        private static boolean inside(String shape, int x, int y) {
+            return switch (shape) {
+                case "kare" -> true;
+                // A 16x16 disc: squared distance from the centre of the tile.
+                case "yuvarlak" -> {
+                    int dx = 2 * x - (TILE - 1);
+                    int dy = 2 * y - (TILE - 1);
+                    yield dx * dx + dy * dy <= (TILE - 1) * (TILE - 1);
+                }
+                // Square shoulders, tapering to a point at the bottom.
+                case "kalkan" -> y <= 9 || Math.abs(2 * x - (TILE - 1)) <= 2 * (TILE - 1 - y) + 1;
+                default -> throw new IllegalArgumentException("Bilinmeyen plaka sekli: " + shape);
+            };
+        }
+
+        private static boolean onEdge(String shape, int x, int y) {
+            return !inside(shape, x - 1, y) || !inside(shape, x + 1, y)
+                    || !inside(shape, x, y - 1) || !inside(shape, x, y + 1)
+                    || x == 0 || y == 0 || x == TILE - 1 || y == TILE - 1;
+        }
+
+        private static void drawEmblem(BufferedImage tile, Palette palette, List<String> mask, String flatColor) {
+            Integer flat = flatColor == null ? null : palette.color(flatColor);
+            for (int y = 0; y < GLYPH_SIZE; y++) {
+                String row = mask.get(y);
+                for (int x = 0; x < row.length() && x < GLYPH_SIZE; x++) {
+                    char key = row.charAt(x);
+                    if (key == '.') {
+                        continue;
+                    }
+                    int argb;
+                    if (flat != null) {
+                        argb = flat;
+                    } else if (key == 'G') {
+                        // Gradient emblems collapse to the identity gradient's
+                        // midpoint here: an 8-pixel ramp inside a plate reads as
+                        // noise, and the plate's border already carries colour.
+                        argb = lerp(palette.gradientStart("kimlik"), palette.gradientEnd("kimlik"), 0.5);
+                    } else {
+                        argb = palette.color(String.valueOf(key));
+                    }
+                    tile.setRGB(EMBLEM_OFFSET + x, EMBLEM_OFFSET + y, argb);
+                }
+            }
         }
     }
 

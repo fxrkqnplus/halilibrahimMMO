@@ -85,6 +85,7 @@ gorevler:
     kisa-ad: "500 kütük kes"
     aciklama: "Ormanlarda 500 kütük kes. Hangi ağaç türü olduğu fark etmez."
     simge: OAK_LOG
+    model: gorev-odunculuk
     tur: PERMANENT
     beceri: odunculuk
     hedef:
@@ -98,6 +99,7 @@ gorevler:
     kisa-ad: "50 nadir cevher kaz"
     aciklama: "Dünyanın en derin katmanlarından 50 nadir cevher çıkar: elmas, zümrüt ya da antik döküntü."
     simge: DIAMOND_PICKAXE
+    model: gorev-madencilik
     tur: PERMANENT
     beceri: madencilik
     hedef:
@@ -111,6 +113,7 @@ gorevler:
     kisa-ad: "32 antik döküntü kaz"
     aciklama: "Nether'ın derinliklerinden 32 antik döküntü çıkar. Kazma kadar sabır da gerekecek."
     simge: NETHERITE_SCRAP
+    model: gorev-madencilik
     tur: PERMANENT
     beceri: madencilik
     hedef:
@@ -132,6 +135,7 @@ gorevler:
     kisa-ad: "Bir köy keşfet"
     aciklama: "Dünyayı gez ve herhangi bir köy bul. İçine girmen yeterli."
     simge: EMERALD
+    model: gorev-tarimcilik
     tur: PERMANENT
     beceri: tarimcilik
     hedef:
@@ -145,6 +149,7 @@ gorevler:
     kisa-ad: "Denizin Kalbini çıkar"
     aciklama: "Bir hazine haritasının peşine düş, gömülü sandığı kaz ve içindeki Denizin Kalbi'ni al."
     simge: HEART_OF_THE_SEA
+    model: gorev-kazicilik
     tur: PERMANENT
     beceri: kazicilik
     hedef:
@@ -158,6 +163,7 @@ gorevler:
     kisa-ad: "2 maden sandığı aç"
     aciklama: "Yer altındaki eski maden ocaklarından birini bul ve orada bırakılmış raylı sandıklardan 2 tanesini aç. Kendi koyduğun vagon sayılmaz."
     simge: CHEST_MINECART
+    model: gorev-madencilik
     tur: PERMANENT
     beceri: madencilik
     hedef:
@@ -171,6 +177,7 @@ gorevler:
     kisa-ad: "Batık gemi keşfet"
     aciklama: "Okyanusun dibinde ya da kıyıda bir batık gemi bul."
     simge: OAK_BOAT
+    model: gorev-kazicilik
     tur: PERMANENT
     beceri: kazicilik
     hedef:
@@ -184,6 +191,7 @@ gorevler:
     kisa-ad: "Gezgin tüccarı bul"
     aciklama: "Haritada dolaşan gezgin tüccarı bul ve onunla konuş. Nerede olduğunu kimse söyleyemez."
     simge: LEAD
+    model: gorev-hayvancilik
     tur: PERMANENT
     beceri: hayvancilik
     hedef:
@@ -197,6 +205,7 @@ gorevler:
     kisa-ad: "8 yağmacı öldür"
     aciklama: "Bir yağmacı karakolu bul ve kulesini savunan 8 yağmacıyı temizle."
     simge: CROSSBOW
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -210,6 +219,7 @@ gorevler:
     kisa-ad: "8 intikamcı öldür"
     aciklama: "Kara meşe ormanlarının derinliğindeki konağı bul ve odalarını tutan 8 intikamcıyı öldür."
     simge: DARK_OAK_DOOR
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -223,6 +233,7 @@ gorevler:
     kisa-ad: "12 alev çubuğu topla"
     aciklama: "Bir nether kalesi bul ve blaze'lerden 12 alev çubuğu topla."
     simge: BLAZE_ROD
+    model: gorev-madencilik
     tur: PERMANENT
     beceri: madencilik
     hedef:
@@ -236,6 +247,7 @@ gorevler:
     kisa-ad: "5 piglin vahşisi öldür"
     aciklama: "Nether'daki bir bastion kalıntısını bul ve hazinesini koruyan 5 piglin vahşisini öldür."
     simge: GOLDEN_AXE
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -250,6 +262,7 @@ gorevler:
     kisa-ad: "64 prizmarin kır"
     aciklama: "Denizin dibindeki anıtı bul ve duvarlarından 64 prizmarin blok sök. Nefesine dikkat et."
     simge: PRISMARINE
+    model: gorev-madencilik
     tur: PERMANENT
     beceri: madencilik
     hedef:
@@ -263,6 +276,7 @@ gorevler:
     kisa-ad: "Kalıntı plağını çıkar"
     aciklama: "Toprağa gömülü antik kalıntıları bul ve fırçanla yalnızca oradan çıkan 'relic' plağını gün yüzüne çıkar."
     simge: BRUSH
+    model: gorev-kazicilik
     tur: PERMANENT
     beceri: kazicilik
     hedef:
@@ -276,6 +290,7 @@ gorevler:
     kisa-ad: "4 yankı parçası al"
     aciklama: "Derin karanlıkta uyuyan Kadim Şehir'i bul ve sandıklarından 4 yankı parçası çıkar. Sessiz ol."
     simge: ECHO_SHARD
+    model: gorev-madencilik
     tur: PERMANENT
     beceri: madencilik
     hedef:
@@ -289,6 +304,7 @@ gorevler:
     kisa-ad: "4 deneme anahtarı al"
     aciklama: "Yer altındaki deneme odalarını bul ve deneme doğurucularını yenerek 4 anahtar kazan."
     simge: TRIAL_KEY
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -302,6 +318,7 @@ gorevler:
     kisa-ad: "20 gümüş balığı ez"
     aciklama: "End portalını barındıran kaleyi bul ve koridorlarındaki 20 gümüş balığını temizle."
     simge: ENDER_EYE
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -317,6 +334,7 @@ gorevler:
     kisa-ad: "3 evoker öldür"
     aciklama: "Ormandaki konağı bul ve içindeki büyücülerden (evoker) 3 tanesini öldür."
     simge: TOTEM_OF_UNDYING
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -330,6 +348,7 @@ gorevler:
     kisa-ad: "Yaşlı muhafız öldür"
     aciklama: "Denizin dibindeki anıtı bul ve içindeki Elder Guardian'ı öldür."
     simge: SPONGE
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -343,6 +362,7 @@ gorevler:
     kisa-ad: "10 altın bloğu kır"
     aciklama: "Bir bastion kalıntısı bul ve oradan 10 altın bloğu kaz. Piglinler bundan hoşlanmayacak."
     simge: GOLD_BLOCK
+    model: gorev-madencilik
     tur: PERMANENT
     beceri: madencilik
     hedef:
@@ -357,6 +377,7 @@ gorevler:
     kisa-ad: "8 piglin takası yap"
     aciklama: "Nether'da piglinlere altın vererek 8 kez takas yap."
     simge: GOLD_INGOT
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -370,6 +391,7 @@ gorevler:
     kisa-ad: "10 blaze öldür"
     aciklama: "Bir nether kalesi bul ve içindeki 10 blaze'i öldür."
     simge: BLAZE_ROD
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -384,6 +406,7 @@ gorevler:
     kisa-ad: "10 wither iskeleti kes"
     aciklama: "Nether kalesinde 10 wither iskeleti öldür. Kafatasları için de iyi bir fırsat."
     simge: WITHER_SKELETON_SKULL
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -398,6 +421,7 @@ gorevler:
     kisa-ad: "Ghast'ı ateşiyle öldür"
     aciklama: "Bir ghast'ın attığı ateş topunu geri yolla ve onu kendi ateşiyle öldür."
     simge: GHAST_TEAR
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -411,6 +435,7 @@ gorevler:
     kisa-ad: "100 enderman öldür"
     aciklama: "End'e geç ve orada toplam 100 enderman öldür. Gözlerine bakmayı unutma."
     simge: ENDER_PEARL
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -425,6 +450,7 @@ gorevler:
     kisa-ad: "20 shulker öldür"
     aciklama: "End şehirlerinde 20 shulker öldür."
     simge: SHULKER_SHELL
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -439,6 +465,7 @@ gorevler:
     kisa-ad: "Wither'ı öldür"
     aciklama: "Wither'ı çağır ve öldür. Yanına yalnız gitme."
     simge: NETHER_STAR
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -452,6 +479,7 @@ gorevler:
     kisa-ad: "Warden'ı öldür"
     aciklama: "Kadim Şehir'in bekçisini uyandır ve öldür. Bu sunucudaki en zor işlerden biri."
     simge: ECHO_SHARD
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -466,6 +494,7 @@ gorevler:
     kisa-ad: "10 eşya büyüle"
     aciklama: "Büyü masasında 10 eşya büyüle."
     simge: ENCHANTING_TABLE
+    model: gorev-madencilik
     tur: PERMANENT
     beceri: madencilik
     hedef:
@@ -479,6 +508,7 @@ gorevler:
     kisa-ad: "50 balık tut"
     aciklama: "Oltanı at ve 50 kez balık çıkar."
     simge: FISHING_ROD
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -492,6 +522,7 @@ gorevler:
     kisa-ad: "5 hayvan evcilleştir"
     aciklama: "5 hayvan evcilleştir - kurt, kedi, at, papağan, hepsi sayılır."
     simge: BONE
+    model: gorev-hayvancilik
     tur: PERMANENT
     beceri: hayvancilik
     hedef:
@@ -505,6 +536,7 @@ gorevler:
     kisa-ad: "30 köylü takası yap"
     aciklama: "Köylülerle 30 kez ticaret yap."
     simge: EMERALD_BLOCK
+    model: gorev-tarimcilik
     tur: PERMANENT
     beceri: tarimcilik
     hedef:
@@ -522,6 +554,7 @@ gorevler:
     kisa-ad: "100 hayvan çiftleştir"
     aciklama: "Ahırını büyüt: toplam 100 kez hayvan çiftleştir."
     simge: HAY_BLOCK
+    model: gorev-hayvancilik
     tur: PERMANENT
     beceri: hayvancilik
     hedef:
@@ -535,6 +568,7 @@ gorevler:
     kisa-ad: "150 koyun kırp"
     aciklama: "Makasını kuşan ve 150 koyun kırp."
     simge: SHEARS
+    model: gorev-hayvancilik
     tur: PERMANENT
     beceri: hayvancilik
     hedef:
@@ -548,6 +582,7 @@ gorevler:
     kisa-ad: "1000 ekin hasat et"
     aciklama: "Tarlanı büyüt: toplam 1000 olgun ekin hasat et. Olmamış ekinler sayılmaz."
     simge: WHEAT
+    model: gorev-tarimcilik
     tur: PERMANENT
     beceri: tarimcilik
     hedef:
@@ -561,6 +596,7 @@ gorevler:
     kisa-ad: "256 nether mantarı"
     aciklama: "Nether'da 256 nether mantarı hasat et. Ruh kumu olmadan olmaz."
     simge: NETHER_WART
+    model: gorev-tarimcilik
     tur: PERMANENT
     beceri: tarimcilik
     hedef:
@@ -575,6 +611,7 @@ gorevler:
     kisa-ad: "200 nether sapı kes"
     aciklama: "Nether'ın dev mantar ormanlarından 200 sap kes."
     simge: CRIMSON_STEM
+    model: gorev-odunculuk
     tur: PERMANENT
     beceri: odunculuk
     hedef:
@@ -589,6 +626,7 @@ gorevler:
     kisa-ad: "800 kum kaz"
     aciklama: "Çölleri ve plajları tara: toplam 800 kum ya da kızıl kum kaz."
     simge: SAND
+    model: gorev-kazicilik
     tur: PERMANENT
     beceri: kazicilik
     hedef:
@@ -603,6 +641,7 @@ gorevler:
     kisa-ad: "Müzik diski bul"
     aciklama: "Herhangi bir müzik diski edin. Creeper'ın vurduğu bir iskelet ya da bir zindan sandığı işini görür."
     simge: MUSIC_DISC_CAT
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -619,6 +658,7 @@ gorevler:
     kisa-ad: "İsim etiketi bul"
     aciklama: "Bir isim etiketi edin. Balık tutarak ya da sandıklardan çıkabilir."
     simge: NAME_TAG
+    model: gorev-hayvancilik
     tur: PERMANENT
     beceri: hayvancilik
     hedef:
@@ -632,6 +672,7 @@ gorevler:
     kisa-ad: "Ejderha yumurtası al"
     aciklama: "Ejderha yumurtasını ele geçir. Bu sunucudaki en zor görevlerden biri."
     simge: DRAGON_EGG
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -645,6 +686,7 @@ gorevler:
     kisa-ad: "Elytra bul"
     aciklama: "End şehirlerindeki gemilerden bir elytra al."
     simge: ELYTRA
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -658,6 +700,7 @@ gorevler:
     kisa-ad: "Ölümsüzlük totemi al"
     aciklama: "Bir evoker öldür ve düşürdüğü totemi al."
     simge: TOTEM_OF_UNDYING
+    model: gorev-avcilik
     tur: PERMANENT
     beceri: avcilik
     hedef:
@@ -674,6 +717,7 @@ gorevler:
     kisa-ad: "50 cevher kaz"
     aciklama: "Sıradan bir maden turu: 50 kömür, demir ya da bakır cevheri kır."
     simge: IRON_ORE
+    model: gorev-madencilik
     tur: DAILY
     beceri: madencilik
     hedef:
@@ -687,6 +731,7 @@ gorevler:
     kisa-ad: "20 yaratık öldür"
     aciklama: "Herhangi 20 yaratığı avla - düşman ya da barışçıl, hepsi sayılır."
     simge: IRON_SWORD
+    model: gorev-avcilik
     tur: DAILY
     beceri: avcilik
     hedef:
@@ -700,6 +745,7 @@ gorevler:
     kisa-ad: "40 kütük kır"
     aciklama: "Baltanı kap ve 40 kütük kes."
     simge: IRON_AXE
+    model: gorev-odunculuk
     tur: DAILY
     beceri: odunculuk
     hedef:
@@ -713,6 +759,7 @@ gorevler:
     kisa-ad: "30 değerli cevher kaz"
     aciklama: "30 altın, lapis ya da redstone cevheri çıkar."
     simge: GOLD_INGOT
+    model: gorev-madencilik
     tur: DAILY
     beceri: madencilik
     hedef:
@@ -726,6 +773,7 @@ gorevler:
     kisa-ad: "15 zombi öldür"
     aciklama: "15 zombi, çöl zombisi ya da boğulmuş öldür."
     simge: ROTTEN_FLESH
+    model: gorev-avcilik
     tur: DAILY
     beceri: avcilik
     hedef:
@@ -739,6 +787,7 @@ gorevler:
     kisa-ad: "15 iskelet öldür"
     aciklama: "15 iskelet, buz iskeleti ya da wither iskeleti öldür."
     simge: BONE
+    model: gorev-avcilik
     tur: DAILY
     beceri: avcilik
     hedef:
@@ -752,6 +801,7 @@ gorevler:
     kisa-ad: "80 toprak kaz"
     aciklama: "Küreğinle 80 toprak, çakıl ya da kum bloğu kaz."
     simge: IRON_SHOVEL
+    model: gorev-kazicilik
     tur: DAILY
     beceri: kazicilik
     hedef:
@@ -765,6 +815,7 @@ gorevler:
     kisa-ad: "15 örümcek öldür"
     aciklama: "15 örümcek ya da mağara örümceği öldür."
     simge: STRING
+    model: gorev-avcilik
     tur: DAILY
     beceri: avcilik
     hedef:
@@ -778,6 +829,7 @@ gorevler:
     kisa-ad: "30 nether cevheri kaz"
     aciklama: "Nether'a in ve 30 nether cevheri ya da kızıl gövde kır."
     simge: NETHER_QUARTZ_ORE
+    model: gorev-madencilik
     tur: DAILY
     beceri: madencilik
     hedef:
@@ -792,6 +844,7 @@ gorevler:
     kisa-ad: "10 creeper öldür"
     aciklama: "10 creeper öldür - patlamadan önce yetiş."
     simge: GUNPOWDER
+    model: gorev-avcilik
     tur: DAILY
     beceri: avcilik
     hedef:
@@ -805,6 +858,7 @@ gorevler:
     kisa-ad: "10 elmas/zümrüt kaz"
     aciklama: "10 elmas ya da zümrüt cevheri bul ve çıkar."
     simge: DIAMOND
+    model: gorev-madencilik
     tur: DAILY
     beceri: madencilik
     hedef:
@@ -818,6 +872,7 @@ gorevler:
     kisa-ad: "60 ekin hasat et"
     aciklama: "Tarlanda 60 olgunlaşmış ekin biç."
     simge: WHEAT
+    model: gorev-tarimcilik
     tur: DAILY
     beceri: tarimcilik
     hedef:
@@ -831,6 +886,7 @@ gorevler:
     kisa-ad: "10 balık tut"
     aciklama: "Oltanı at ve 10 kez balık çıkar."
     simge: COD
+    model: gorev-avcilik
     tur: DAILY
     beceri: avcilik
     hedef:
@@ -844,6 +900,7 @@ gorevler:
     kisa-ad: "5 köylü takası yap"
     aciklama: "Bir köylüyle 5 kez ticaret yap."
     simge: EMERALD
+    model: gorev-tarimcilik
     tur: DAILY
     beceri: tarimcilik
     hedef:
@@ -857,6 +914,7 @@ gorevler:
     kisa-ad: "3 eşya büyüle"
     aciklama: "Büyü masasında 3 eşya büyüle."
     simge: LAPIS_LAZULI
+    model: gorev-madencilik
     tur: DAILY
     beceri: madencilik
     hedef:
@@ -870,6 +928,7 @@ gorevler:
     kisa-ad: "8 enderman öldür"
     aciklama: "8 enderman öldür. Nereye baktığına dikkat et."
     simge: ENDER_PEARL
+    model: gorev-avcilik
     tur: DAILY
     beceri: avcilik
     hedef:
@@ -886,6 +945,7 @@ gorevler:
     kisa-ad: "10 hayvan çiftleştir"
     aciklama: "Bugün ahırında 10 kez hayvan çiftleştir."
     simge: WHEAT
+    model: gorev-hayvancilik
     tur: DAILY
     beceri: hayvancilik
     hedef:
@@ -899,6 +959,7 @@ gorevler:
     kisa-ad: "20 koyun kırp"
     aciklama: "Bugün 20 koyun kırp."
     simge: WHITE_WOOL
+    model: gorev-hayvancilik
     tur: DAILY
     beceri: hayvancilik
     hedef:
@@ -912,6 +973,7 @@ gorevler:
     kisa-ad: "2 hayvan evcilleştir"
     aciklama: "Bugün 2 hayvan evcilleştir - kurt, kedi, at, hepsi sayılır."
     simge: BONE
+    model: gorev-hayvancilik
     tur: DAILY
     beceri: hayvancilik
     hedef:
@@ -925,6 +987,7 @@ gorevler:
     kisa-ad: "128 ekin hasat et"
     aciklama: "Bugün tarlandan 128 olgun buğday, havuç, patates ya da pancar hasat et."
     simge: GOLDEN_HOE
+    model: gorev-tarimcilik
     tur: DAILY
     beceri: tarimcilik
     hedef:
@@ -938,6 +1001,7 @@ gorevler:
     kisa-ad: "64 kabak/karpuz kır"
     aciklama: "Bugün 64 balkabağı ya da karpuz topla."
     simge: PUMPKIN
+    model: gorev-tarimcilik
     tur: DAILY
     beceri: tarimcilik
     hedef:
@@ -951,6 +1015,7 @@ gorevler:
     kisa-ad: "64 kil kaz"
     aciklama: "Bugün nehir yataklarından 64 kil çıkar."
     simge: CLAY
+    model: gorev-kazicilik
     tur: DAILY
     beceri: kazicilik
     hedef:
@@ -964,6 +1029,7 @@ gorevler:
     kisa-ad: "120 kütük kes"
     aciklama: "Bugün 120 kütük kes. Ağaç türü fark etmez."
     simge: IRON_AXE
+    model: gorev-odunculuk
     tur: DAILY
     beceri: odunculuk
     hedef:
@@ -980,6 +1046,7 @@ gorevler:
     kisa-ad: "40 hayvan çiftleştir"
     aciklama: "Bir hafta boyunca 40 kez hayvan çiftleştir."
     simge: HAY_BLOCK
+    model: gorev-hayvancilik
     tur: WEEKLY
     beceri: hayvancilik
     hedef:
@@ -993,6 +1060,7 @@ gorevler:
     kisa-ad: "80 koyun kırp"
     aciklama: "Bir hafta boyunca 80 koyun kırp."
     simge: SHEARS
+    model: gorev-hayvancilik
     tur: WEEKLY
     beceri: hayvancilik
     hedef:
@@ -1006,6 +1074,7 @@ gorevler:
     kisa-ad: "400 ekin hasat et"
     aciklama: "Bir hafta boyunca 400 olgun ekin hasat et."
     simge: WHEAT
+    model: gorev-tarimcilik
     tur: WEEKLY
     beceri: tarimcilik
     hedef:
@@ -1019,6 +1088,7 @@ gorevler:
     kisa-ad: "1000 toprak kaz"
     aciklama: "Bir hafta boyunca 1000 toprak, kum ya da çakıl kaz."
     simge: IRON_SHOVEL
+    model: gorev-kazicilik
     tur: WEEKLY
     beceri: kazicilik
     hedef:
@@ -1032,6 +1102,7 @@ gorevler:
     kisa-ad: "500 kütük kes"
     aciklama: "Bir hafta boyunca 500 kütük kes."
     simge: OAK_LOG
+    model: gorev-odunculuk
     tur: WEEKLY
     beceri: odunculuk
     hedef:
@@ -1045,6 +1116,7 @@ gorevler:
     kisa-ad: "5 maden sandığı aç"
     aciklama: "Bir hafta boyunca terk edilmiş madenlerde 5 raylı sandık bul ve aç."
     simge: CHEST_MINECART
+    model: gorev-madencilik
     tur: WEEKLY
     beceri: madencilik
     hedef:
@@ -1058,6 +1130,7 @@ gorevler:
     kisa-ad: "100 zombi öldür"
     aciklama: "Bir hafta boyunca 100 zombi, çöl zombisi ya da boğulmuş öldür."
     simge: ZOMBIE_HEAD
+    model: gorev-avcilik
     tur: WEEKLY
     beceri: avcilik
     hedef:
@@ -1071,6 +1144,7 @@ gorevler:
     kisa-ad: "80 değerli cevher kaz"
     aciklama: "Derinlerden 80 değerli cevher çıkar: elmas, zümrüt, altın ya da antik döküntü."
     simge: NETHERITE_SCRAP
+    model: gorev-madencilik
     tur: WEEKLY
     beceri: madencilik
     hedef:
@@ -1084,6 +1158,7 @@ gorevler:
     kisa-ad: "300 kütük kes"
     aciklama: "Bir hafta boyunca 300 kütük kes."
     simge: DARK_OAK_LOG
+    model: gorev-odunculuk
     tur: WEEKLY
     beceri: odunculuk
     hedef:
@@ -1097,6 +1172,7 @@ gorevler:
     kisa-ad: "60 nether yaratığı kes"
     aciklama: "Nether'ın 60 sakinini avla: blaze, ghast, piglin ya da hoglin."
     simge: BLAZE_ROD
+    model: gorev-avcilik
     tur: WEEKLY
     beceri: avcilik
     hedef:
@@ -1111,6 +1187,7 @@ gorevler:
     kisa-ad: "250 cevher kaz"
     aciklama: "Mağaraları tara ve 250 sıradan cevher kır."
     simge: TORCH
+    model: gorev-madencilik
     tur: WEEKLY
     beceri: madencilik
     hedef:
@@ -1124,6 +1201,7 @@ gorevler:
     kisa-ad: "30 yağmacı öldür"
     aciklama: "30 yağmacı, ravager, evoker ya da vindicator öldür."
     simge: OMINOUS_BOTTLE
+    model: gorev-avcilik
     tur: WEEKLY
     beceri: avcilik
     hedef:
@@ -1137,6 +1215,7 @@ gorevler:
     kisa-ad: "50 mağma/balçık öldür"
     aciklama: "50 mağma küpü ya da balçık öldür."
     simge: MAGMA_CREAM
+    model: gorev-avcilik
     tur: WEEKLY
     beceri: avcilik
     hedef:
@@ -1150,6 +1229,7 @@ gorevler:
     kisa-ad: "400 yumuşak blok kaz"
     aciklama: "Küreğinle 400 yumuşak blok kaz: toprak, çakıl, kum ya da kil."
     simge: CLAY_BALL
+    model: gorev-kazicilik
     tur: WEEKLY
     beceri: kazicilik
     hedef:
@@ -1163,6 +1243,7 @@ gorevler:
     kisa-ad: "300 ekin hasat et"
     aciklama: "Bir hafta boyunca 300 olgunlaşmış ekin biç."
     simge: HAY_BLOCK
+    model: gorev-tarimcilik
     tur: WEEKLY
     beceri: tarimcilik
     hedef:
@@ -1176,6 +1257,7 @@ gorevler:
     kisa-ad: "60 balık tut"
     aciklama: "Bir hafta boyunca 60 kez balık çıkar."
     simge: FISHING_ROD
+    model: gorev-avcilik
     tur: WEEKLY
     beceri: avcilik
     hedef:
@@ -1189,6 +1271,7 @@ gorevler:
     kisa-ad: "20 eşya büyüle"
     aciklama: "Bir hafta boyunca 20 eşya büyüle."
     simge: ENCHANTED_BOOK
+    model: gorev-madencilik
     tur: WEEKLY
     beceri: madencilik
     hedef:
@@ -1202,6 +1285,7 @@ gorevler:
     kisa-ad: "40 köylü takası yap"
     aciklama: "Bir hafta boyunca köylülerle 40 kez ticaret yap."
     simge: EMERALD_BLOCK
+    model: gorev-tarimcilik
     tur: WEEKLY
     beceri: tarimcilik
     hedef:
@@ -1215,6 +1299,7 @@ gorevler:
     kisa-ad: "60 End yaratığı öldür"
     aciklama: "End'de 60 enderman ya da shulker öldür."
     simge: CHORUS_FRUIT
+    model: gorev-avcilik
     tur: WEEKLY
     beceri: avcilik
     hedef:

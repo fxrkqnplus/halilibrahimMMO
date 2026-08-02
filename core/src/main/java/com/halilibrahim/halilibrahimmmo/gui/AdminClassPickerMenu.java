@@ -50,7 +50,8 @@ public final class AdminClassPickerMenu implements GuiView {
         for (PlayerClassDefinition definition : services.classes().definitions()) {
             slotToClassId.put(slot, definition.id());
             inventory.setItem(slot++, GuiItems.of(definition.icon(),
-                    services.messages().render(MessageKey.GUI_ADMIN_CLASS_PICKER_ITEM, Map.of("sinif", definition.displayName()))));
+                    services.messages().render(MessageKey.GUI_ADMIN_CLASS_PICKER_ITEM, Map.of("sinif", definition.displayName())),
+                    definition.model()));
         }
     }
 

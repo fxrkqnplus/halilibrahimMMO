@@ -14,6 +14,7 @@ unvanlar:
   gezgin:
     gorunen-ad: "Gezgin"
     esya: COMPASS
+    model: unvan-ilerleme
     sohbet-stili: MAVI
     kosul:
       tur: LEVEL
@@ -22,6 +23,7 @@ unvanlar:
   efsane:
     gorunen-ad: "Efsane"
     esya: NETHER_STAR
+    model: unvan-efsane
     sohbet-stili: MOR_KALIN
     kosul:
       tur: PRESTIGE
@@ -30,6 +32,7 @@ unvanlar:
   kurulus-babasi:
     gorunen-ad: "Kuruluş Babası"
     esya: BEACON
+    model: unvan-ilerleme
     sohbet-stili: MOR_KALIN
     kosul:
       tur: PRESTIGE
@@ -39,6 +42,7 @@ unvanlar:
   usta-madenci:
     gorunen-ad: "Usta Madenci"
     esya: DIAMOND_PICKAXE
+    model: unvan-beceri
     sohbet-stili: BEYAZ_KALIN
     kosul:
       tur: SKILL_LEVEL
@@ -48,6 +52,7 @@ unvanlar:
   orman-bekcisi:
     gorunen-ad: "Orman Bekçisi"
     esya: IRON_AXE
+    model: unvan-beceri
     sohbet-stili: YESIL_KALIN
     kosul:
       tur: SKILL_LEVEL
@@ -57,6 +62,7 @@ unvanlar:
   bereketli-eller:
     gorunen-ad: "Bereketli Eller"
     esya: WHEAT
+    model: unvan-beceri
     sohbet-stili: YESIL_KALIN
     kosul:
       tur: SKILL_LEVEL
@@ -66,6 +72,7 @@ unvanlar:
   suru-sahibi:
     gorunen-ad: "Sürü Sahibi"
     esya: LEAD
+    model: unvan-beceri
     sohbet-stili: BEYAZ_KALIN
     kosul:
       tur: SKILL_LEVEL
@@ -75,6 +82,7 @@ unvanlar:
   toprak-ustasi:
     gorunen-ad: "Toprak Ustası"
     esya: DIAMOND_SHOVEL
+    model: unvan-beceri
     sohbet-stili: BEYAZ_KALIN
     kosul:
       tur: SKILL_LEVEL
@@ -84,6 +92,7 @@ unvanlar:
   amansiz:
     gorunen-ad: "Amansız"
     esya: NETHERITE_SWORD
+    model: unvan-beceri
     sohbet-stili: KIRMIZI_KALIN
     kosul:
       tur: SKILL_LEVEL
@@ -94,6 +103,7 @@ unvanlar:
   gorev-eri:
     gorunen-ad: "Görev Eri"
     esya: WRITTEN_BOOK
+    model: unvan-gorev
     sohbet-stili: YESIL_KALIN
     kosul:
       tur: QUEST_COMPLETED
@@ -102,6 +112,7 @@ unvanlar:
   kasif:
     gorunen-ad: "Kâşif"
     esya: FILLED_MAP
+    model: unvan-gorev
     sohbet-stili: MAVI
     kosul:
       tur: QUEST_COMPLETED
@@ -110,6 +121,7 @@ unvanlar:
   derin-karanlik:
     gorunen-ad: "Derin Karanlık"
     esya: SCULK_SHRIEKER
+    model: unvan-gorev
     sohbet-stili: MOR_KALIN
     kosul:
       tur: QUEST_COMPLETED
@@ -118,6 +130,7 @@ unvanlar:
   ejderha-katili:
     gorunen-ad: "Ejderha Katili"
     esya: DRAGON_EGG
+    model: unvan-gorev
     sohbet-stili: KIRMIZI_KALIN
     kosul:
       tur: QUEST_COMPLETED
@@ -126,6 +139,7 @@ unvanlar:
   hazine-avcisi:
     gorunen-ad: "Hazine Avcısı"
     esya: CHEST
+    model: unvan-gorev
     sohbet-stili: ALTIN
     kosul:
       tur: COLLECTION_COMPLETED
@@ -136,6 +150,7 @@ unvanlar:
   varlikli:
     gorunen-ad: "Varlıklı"
     esya: COPPER_INGOT
+    model: unvan-sayginlik
     sohbet-stili: MAVI
     kosul:
       tur: REPUTATION
@@ -144,6 +159,7 @@ unvanlar:
   zengin:
     gorunen-ad: "Zengin"
     esya: GOLD_INGOT
+    model: unvan-sayginlik
     sohbet-stili: ALTIN
     kosul:
       tur: REPUTATION
@@ -152,6 +168,7 @@ unvanlar:
   servet-sahibi:
     gorunen-ad: "Servet Sahibi"
     esya: DIAMOND
+    model: unvan-sayginlik
     sohbet-stili: ALTIN
     kosul:
       tur: REPUTATION
@@ -160,6 +177,7 @@ unvanlar:
   hazine-krali:
     gorunen-ad: "Hazine Kralı"
     esya: DIAMOND_BLOCK
+    model: unvan-sayginlik
     sohbet-stili: MOR_KALIN
     kosul:
       tur: REPUTATION
@@ -168,6 +186,7 @@ unvanlar:
   efsanevi-zengin:
     gorunen-ad: "Efsanevi Zengin"
     esya: NETHERITE_BLOCK
+    model: unvan-sayginlik
     sohbet-stili: KIRMIZI_KALIN
     kosul:
       tur: REPUTATION

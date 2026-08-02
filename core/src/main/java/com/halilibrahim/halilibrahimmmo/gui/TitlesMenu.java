@@ -108,7 +108,8 @@ public final class TitlesMenu implements GuiView {
                 services.messages().render(MessageKey.GUI_TITLE_ITEM, Map.of("unvan", definition.displayName())),
                 List.of(services.messages().render(equippedNow
                         ? MessageKey.GUI_TITLE_ITEM_LORE_EQUIPPED : MessageKey.GUI_TITLE_ITEM_LORE_UNLOCKED)),
-                equippedNow
+                equippedNow,
+                definition.model()
         );
     }
 

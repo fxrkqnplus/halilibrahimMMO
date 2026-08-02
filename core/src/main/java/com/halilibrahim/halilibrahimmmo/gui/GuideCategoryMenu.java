@@ -60,7 +60,8 @@ public final class GuideCategoryMenu implements GuiView {
         inventory.setItem(HEADER_SLOT, GuiItems.of(
                 category.icon(),
                 services.messages().renderText(category.title()),
-                List.of(services.messages().renderText(category.summary()))
+                List.of(services.messages().renderText(category.summary())),
+                category.model()
         ));
         List<GuideEntry> entries = category.entries();
         for (int index = 0; index < entries.size() && index < ENTRY_SLOTS.length; index++) {

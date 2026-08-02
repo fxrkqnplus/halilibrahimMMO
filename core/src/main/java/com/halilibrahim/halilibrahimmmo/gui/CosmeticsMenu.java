@@ -100,7 +100,8 @@ public final class CosmeticsMenu implements GuiView {
                 services.messages().render(MessageKey.GUI_COSMETIC_ITEM, Map.of("kozmetik", definition.displayName())),
                 List.of(services.messages().render(equippedNow
                         ? MessageKey.GUI_COSMETIC_ITEM_LORE_EQUIPPED : MessageKey.GUI_COSMETIC_ITEM_LORE_UNLOCKED)),
-                equippedNow
+                equippedNow,
+                definition.model()
         );
     }
 

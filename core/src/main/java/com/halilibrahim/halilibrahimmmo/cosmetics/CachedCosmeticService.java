@@ -5,7 +5,9 @@ import com.halilibrahim.halilibrahimmmo.unlock.UnlockCondition;
 import com.halilibrahim.halilibrahimmmo.unlock.UnlockConditionParser;
 import com.halilibrahim.halilibrahimmmo.unlock.UnlockConditions;
 import com.halilibrahim.halilibrahimmmo.unlock.UnlockContextLoader;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ItemModels;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -233,9 +235,13 @@ public final class CachedCosmeticService implements CosmeticService {
             if (icon == null) {
                 throw new IllegalArgumentException("Invalid cosmetic icon material: " + id);
             }
+            // Optional: names a texture the server resource pack ships.
+            // Absent leaves the icon exactly as it was, which is what lets a
+            // server keep its unregenerated YAML and still run this version.
+            NamespacedKey model = ItemModels.parse(section);
             Particle effect = Particle.valueOf(section.getString("efekt", "").toUpperCase(Locale.ROOT));
             UnlockCondition condition = UnlockConditionParser.parse(requiredSection(section, "kosul"), id);
-            definitions.put(id, new CosmeticDefinition(id, displayName, icon, effect, condition));
+            definitions.put(id, new CosmeticDefinition(id, displayName, icon, model, effect, condition));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("cosmetics.yml must define at least one cosmetic.");

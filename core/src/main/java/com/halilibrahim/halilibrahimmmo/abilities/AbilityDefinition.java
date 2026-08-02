@@ -1,6 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.abilities;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 
 /**
  * Immutable configured ability definition. {@code limit} and
@@ -32,6 +33,7 @@ public record AbilityDefinition(
         String displayName,
         String description,
         Material icon,
+        NamespacedKey model,
         String skillId,
         int requiredLevel,
         int energyCost,

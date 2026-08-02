@@ -113,6 +113,7 @@ siniflar:
     sinerji-beceriler: [avcilik]
     bossbar-rengi: KIRMIZI
     simge: DIAMOND_SWORD
+    model: sinif-avci
     cerceve: RED_STAINED_GLASS_PANE
     prestij-etkisi: { tur: PVE_DAMAGE_MULTIPLIER, deger-basina: 0.02 }
     yetenekler:
@@ -144,6 +145,7 @@ siniflar:
     sinerji-beceriler: [madencilik]
     bossbar-rengi: MAVI
     simge: DIAMOND_PICKAXE
+    model: sinif-madenci
     cerceve: BLUE_STAINED_GLASS_PANE
     prestij-etkisi: { tur: MAX_ENERGY, deger-basina: 3 }
     yetenekler:
@@ -175,6 +177,7 @@ siniflar:
     sinerji-beceriler: [odunculuk, kazicilik, tarimcilik, hayvancilik]
     bossbar-rengi: YESIL
     simge: IRON_AXE
+    model: sinif-tabiat-varisi
     cerceve: GREEN_STAINED_GLASS_PANE
     prestij-etkisi: { tur: MAX_HEALTH, deger-basina: 1 }
     # Dort beceriyi birden besledigi icin her birinden 100 degil 30 istenir.

@@ -1,6 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.skills;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.EntityType;
 
 import java.util.Map;
@@ -35,6 +36,7 @@ public record SkillDefinition(
         String id,
         String displayName,
         Material icon,
+        NamespacedKey model,
         SkillSource source,
         Map<Material, SkillRewardEntry> materialRewards,
         Map<EntityType, SkillRewardEntry> entityRewards,

@@ -139,7 +139,8 @@ public final class ClassIntroMenu implements GuiView {
                     definition.icon(),
                     services.messages().render(MessageKey.GUI_CLASS_ITEM, Map.of("sinif", definition.displayName())),
                     lore,
-                    current
+                    current,
+                    definition.model()
             ));
             // The pedestal under each icon is that class's own frame colour, so
             // the three choices are told apart by colour before a word is read.

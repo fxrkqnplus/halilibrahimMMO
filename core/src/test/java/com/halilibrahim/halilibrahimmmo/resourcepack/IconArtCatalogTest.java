@@ -218,6 +218,69 @@ final class IconArtCatalogTest {
         assertTrue(wrong.isEmpty(), "Gradient problems: " + wrong);
     }
 
+    /**
+     * Every {@code model:} an owner can write in a bundled YAML must exist in
+     * the generator's manifest.
+     *
+     * <p>This is the only place a typo can be caught. A wrong model key shows
+     * the missing-model cube in game and logs absolutely nothing server-side,
+     * so without this test the failure mode is "an icon looks broken and nobody
+     * knows why".</p>
+     */
+    @Test
+    void everyModelReferencedByAShippedYamlExists() throws IOException {
+        Set<String> known = new TreeSet<>(models().keySet());
+        Path resources = Path.of("src", "main", "resources");
+
+        List<String> unknown = new ArrayList<>();
+        for (String file : List.of("skills.yml", "classes.yml", "abilities.yml",
+                "quests.yml", "rehber.yml", "titles.yml", "cosmetics.yml")) {
+            Path yaml = resources.resolve(file);
+            assertTrue(Files.isRegularFile(yaml), "Missing bundled resource: " + yaml);
+            Matcher matcher = Pattern.compile("^\\s+model:\\s*(\\S+)\\s*$", Pattern.MULTILINE)
+                    .matcher(Files.readString(yaml, StandardCharsets.UTF_8));
+            while (matcher.find()) {
+                if (!known.contains(matcher.group(1))) {
+                    unknown.add(file + " -> " + matcher.group(1));
+                }
+            }
+        }
+        assertTrue(unknown.isEmpty(),
+                "These YAML 'model:' values have no entry in tools/kaynak-paketi/esya-modelleri.json, "
+                        + "so they would render as the missing-model cube with nothing in the log: " + unknown);
+    }
+
+    /** Every authored texture must name an emblem the icon masks actually define. */
+    @Test
+    void everyModelEmblemIsAKnownIconMask() throws IOException {
+        Set<String> masks = icons().keySet();
+        List<String> wrong = new ArrayList<>();
+        for (Map.Entry<String, String> entry : models().entrySet()) {
+            Matcher matcher = Pattern.compile("\"simge\"\\s*:\\s*\"([a-z0-9_-]+)\"").matcher(entry.getValue());
+            if (!matcher.find()) {
+                wrong.add(entry.getKey() + ": no 'simge'");
+            } else if (!masks.contains(matcher.group(1))) {
+                wrong.add(entry.getKey() + " -> " + matcher.group(1));
+            }
+        }
+        assertTrue(wrong.isEmpty(), "Item models pointing at an unknown icon mask: " + wrong);
+    }
+
+    /** @return model id to its raw JSON body. */
+    private static Map<String, String> models() throws IOException {
+        String json = read("esya-modelleri.json");
+        int at = json.indexOf("\"modeller\"");
+        assertTrue(at > 0, "esya-modelleri.json is missing the 'modeller' object.");
+        int open = json.indexOf('{', at);
+
+        Map<String, String> out = new LinkedHashMap<>();
+        Matcher matcher = Pattern.compile("\"([a-z0-9-]+)\"\\s*:\\s*\\{([^}]*)}").matcher(json.substring(open + 1));
+        while (matcher.find()) {
+            out.put(matcher.group(1), matcher.group(2));
+        }
+        return out;
+    }
+
     private static List<String> maskRows(String body) {
         int at = body.indexOf("\"maske\"");
         assertTrue(at > 0, "Icon entry is missing 'maske': " + body);

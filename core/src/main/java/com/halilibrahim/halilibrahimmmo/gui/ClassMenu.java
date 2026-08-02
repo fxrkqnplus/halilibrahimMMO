@@ -111,7 +111,8 @@ public final class ClassMenu implements GuiView {
                     services.messages().render(MessageKey.GUI_CLASS_ITEM, Map.of("sinif", definition.displayName())),
                     List.of(services.messages().render(isSelected
                             ? MessageKey.GUI_CLASS_ITEM_LORE_SELECTED : MessageKey.GUI_CLASS_ITEM_LORE_UNSELECTED)),
-                    isSelected
+                    isSelected,
+                    definition.model()
             ));
         }
 
@@ -194,7 +195,7 @@ public final class ClassMenu implements GuiView {
                         "seviye", Integer.toString(level.level()),
                         "xp", Long.toString(level.experience()),
                         "gereken", Long.toString(required)
-                ))));
+                ))), selected.model());
     }
 
     /**

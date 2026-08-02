@@ -83,7 +83,8 @@ public final class GuideMenu implements GuiView {
                             Component.empty(),
                             services.messages().render(MessageKey.GUI_GUIDE_CATEGORY_COUNT,
                                     Map.of("sayi", Integer.toString(category.entries().size())))
-                    )
+                    ),
+                    category.model()
             ));
         }
         if (fromMenu) {

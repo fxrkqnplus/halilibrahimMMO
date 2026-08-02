@@ -1,7 +1,9 @@
 package com.halilibrahim.halilibrahimmmo.guide;
 
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ItemModels;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -88,7 +90,11 @@ public final class YamlGuideService implements GuideService {
             if (icon == null) {
                 throw new IllegalArgumentException("Guide category must declare a known simge material: " + id);
             }
-            parsed.put(id, new GuideCategory(id, title, icon, summary, parseEntries(section, id)));
+            // Optional: names a texture the server resource pack ships.
+            // Absent leaves the icon exactly as it was, which is what lets a
+            // server keep its unregenerated YAML and still run this version.
+            NamespacedKey model = ItemModels.parse(section);
+            parsed.put(id, new GuideCategory(id, title, icon, model, summary, parseEntries(section, id)));
         }
         if (parsed.isEmpty()) {
             throw new IllegalArgumentException("rehber.yml must define at least one category.");

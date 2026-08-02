@@ -85,7 +85,8 @@ public final class SkillDetailMenu implements GuiView {
                         "seviye", Integer.toString(progress.level()),
                         "xp", Long.toString(progress.experience()),
                         "sinif", className
-                )))
+                ))),
+                definition.model()
         ));
         inventory.setItem(PROGRESS_SLOT, GuiItems.of(Material.EXPERIENCE_BOTTLE,
                 services.messages().render(MessageKey.GUI_SKILL_DETAIL_PROGRESS_ITEM),

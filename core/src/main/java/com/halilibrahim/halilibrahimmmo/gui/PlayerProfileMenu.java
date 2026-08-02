@@ -175,7 +175,8 @@ public final class PlayerProfileMenu implements GuiView {
                     )),
                     List.of(services.messages().render(MessageKey.GUI_PLAYER_PROFILE_RANK_LORE, Map.of(
                             "sira", Integer.toString(standings.skillRanks().getOrDefault(definition.id(), 0))
-                    )))));
+                    ))),
+                    definition.model()));
         }
 
         inventory.setItem(TRADE_SLOT, tradeButton(viewer));
@@ -191,7 +192,7 @@ public final class PlayerProfileMenu implements GuiView {
                 List.of(services.messages().render(MessageKey.GUI_PLAYER_PROFILE_CLASS_LORE, Map.of(
                         "seviye", Integer.toString(levelProgress.level()),
                         "xp", Long.toString(levelProgress.experience())
-                ))));
+                ))), classDefinition.model());
     }
 
     /**

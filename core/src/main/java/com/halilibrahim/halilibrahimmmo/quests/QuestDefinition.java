@@ -1,6 +1,7 @@
 package com.halilibrahim.halilibrahimmmo.quests;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.generator.structure.Structure;
@@ -42,6 +43,7 @@ public record QuestDefinition(
         String shortName,
         String description,
         Material icon,
+        NamespacedKey model,
         QuestType type,
         String skillId,
         QuestObjectiveType objectiveType,

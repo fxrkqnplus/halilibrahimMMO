@@ -5,7 +5,9 @@ import com.halilibrahim.halilibrahimmmo.unlock.UnlockCondition;
 import com.halilibrahim.halilibrahimmmo.unlock.UnlockConditionParser;
 import com.halilibrahim.halilibrahimmmo.unlock.UnlockConditions;
 import com.halilibrahim.halilibrahimmmo.unlock.UnlockContextLoader;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ItemModels;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -224,9 +226,13 @@ public final class CachedTitleService implements TitleService {
             if (icon == null) {
                 throw new IllegalArgumentException("Invalid title icon material: " + id);
             }
+            // Optional: names a texture the server resource pack ships.
+            // Absent leaves the icon exactly as it was, which is what lets a
+            // server keep its unregenerated YAML and still run this version.
+            NamespacedKey model = ItemModels.parse(section);
             UnlockCondition condition = UnlockConditionParser.parse(requiredSection(section, "kosul"), id);
             TitleChatStyle chatStyle = TitleChatStyle.valueOf(section.getString("sohbet-stili", "").toUpperCase(Locale.ROOT));
-            definitions.put(id, new TitleDefinition(id, displayName, icon, condition, chatStyle));
+            definitions.put(id, new TitleDefinition(id, displayName, icon, model, condition, chatStyle));
         }
         if (definitions.isEmpty()) {
             throw new IllegalArgumentException("titles.yml must define at least one title.");

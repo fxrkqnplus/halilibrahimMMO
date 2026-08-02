@@ -128,7 +128,8 @@ public final class AdminPlayerEditMenu implements GuiView {
             // icon is the only thing that makes a row findable without reading.
             inventory.setItem(levelSlot++, GuiItems.of(definition.icon(),
                     services.messages().render(MessageKey.GUI_ADMIN_EDIT_SKILL_LEVEL_ITEM, Map.of("beceri", definition.displayName(), "seviye", Integer.toString(level))),
-                    List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_SKILL_LEVEL_LORE))));
+                    List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_SKILL_LEVEL_LORE)),
+                    definition.model()));
             slotToSkillXpId.put(xpSlot, definition.id());
             inventory.setItem(xpSlot++, GuiItems.of(Material.GLOWSTONE_DUST,
                     services.messages().render(MessageKey.GUI_ADMIN_EDIT_SKILL_XP_ITEM, Map.of("beceri", definition.displayName(), "xp", Long.toString(xp))),

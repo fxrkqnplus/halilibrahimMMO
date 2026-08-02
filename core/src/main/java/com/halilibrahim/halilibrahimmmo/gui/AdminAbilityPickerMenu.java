@@ -104,7 +104,7 @@ public final class AdminAbilityPickerMenu implements GuiView {
             inventory.setItem(slot, GuiItems.of(definition.icon(),
                     services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_DESCRIPTION,
                             Map.of("kabiliyet", definition.displayName())),
-                    lore, definition.id().equals(equipped)));
+                    lore, definition.id().equals(equipped), definition.model()));
         }
     }
 

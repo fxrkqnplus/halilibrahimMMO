@@ -67,7 +67,9 @@ final class PlayerClassProgressTest {
     }
 
     private static PlayerClassDefinition definition(String id, Map<String, TalentNodeDefinition> talents) {
-        return new PlayerClassDefinition(id, id, Set.of(), ClassBarColor.YESIL, null, null, talents,
+        // icon, model and frame are all null: this test is about talent ranks
+        // and never renders anything.
+        return new PlayerClassDefinition(id, id, Set.of(), ClassBarColor.YESIL, null, null, null, talents,
                 ClassEffectType.MAX_HEALTH, 1, 100);
     }
 
