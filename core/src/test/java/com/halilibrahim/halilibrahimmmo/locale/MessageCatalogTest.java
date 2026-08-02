@@ -40,7 +40,14 @@ final class MessageCatalogTest {
      * GUI title or an action bar line - places the pack may draw freely because
      * nothing measures their width. See {@link #privateUseGlyphsStayOutOfLore()}.
      */
-    private static final Set<String> PRIVATE_USE_ALLOWED = Set.of();
+    private static final Set<String> PRIVATE_USE_ALLOWED = Set.of(
+            // The four menu backgrounds. Container titles are the one surface
+            // where a multi-cell glyph is safe: nothing measures their width.
+            "gui.arkaplan.satir-3",
+            "gui.arkaplan.satir-4",
+            "gui.arkaplan.satir-5",
+            "gui.arkaplan.satir-6"
+    );
 
     @Test
     void everyMessageKeyHasExactlyOneMatchingEntry() {

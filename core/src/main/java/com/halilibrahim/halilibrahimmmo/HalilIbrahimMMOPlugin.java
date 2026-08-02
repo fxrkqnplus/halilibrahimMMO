@@ -116,6 +116,8 @@ import com.halilibrahim.halilibrahimmmo.modcheck.ModCheckListener;
 import com.halilibrahim.halilibrahimmmo.modcheck.ModCheckProtocol;
 import com.halilibrahim.halilibrahimmmo.modcheck.ModVerificationService;
 import com.halilibrahim.halilibrahimmmo.modcheck.PluginMessageModVerificationService;
+import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ResourcePackSettings;
 import com.halilibrahim.halilibrahimmmo.resourcepack.ActionBarGlyphs;
 import com.halilibrahim.halilibrahimmmo.resourcepack.PaperResourcePackService;
 import com.halilibrahim.halilibrahimmmo.resourcepack.ResourcePackListener;
@@ -519,6 +521,26 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
             // place, rather than at every command that opens something.
             PrestigeRewardGate prestigeRewardGate = new PrestigeRewardGate(guiServices);
             GuiManager.bindGuard(prestigeRewardGate);
+            // The riskiest thing in the resource pack, and the only part gated
+            // twice: the title-glyph technique depends on where Minecraft draws
+            // a container title, which the server cannot see. Default off, one
+            // bind point, and switchable without touching anything else.
+            GuiManager.bindBackgrounds(size -> {
+                ResourcePackSettings pack = resourcePackService.settings();
+                if (!pack.usable() || !pack.guiBackgrounds()) {
+                    return net.kyori.adventure.text.Component.empty();
+                }
+                MessageKey key = switch (size) {
+                    case 27 -> MessageKey.GUI_BACKGROUND_27;
+                    case 36 -> MessageKey.GUI_BACKGROUND_36;
+                    case 45 -> MessageKey.GUI_BACKGROUND_45;
+                    case 54 -> MessageKey.GUI_BACKGROUND_54;
+                    // A size the pack has no panel for draws nothing rather than
+                    // the wrong-sized one.
+                    default -> null;
+                };
+                return key == null ? net.kyori.adventure.text.Component.empty() : messageService.render(key);
+            });
 
             registerCommands(messageService, sidebarService, guiServices, activationService, homeService, tradeService,
                     feedbackService, backpackService, prestigeRewardGate);
@@ -538,6 +560,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
         // Cleared before anything else so a reload cannot inherit a supplier
         // pointing at the previous ResourcePackService instance.
         ActionBarGlyphs.unbind();
+        GuiManager.unbindBackgrounds();
         getServer().getServicesManager().unregisterAll(this);
         getServer().getMessenger().unregisterOutgoingPluginChannel(this, ModCheckProtocol.CHANNEL);
         getServer().getMessenger().unregisterIncomingPluginChannel(this, ModCheckProtocol.CHANNEL);

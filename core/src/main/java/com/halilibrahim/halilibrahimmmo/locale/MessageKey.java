@@ -843,7 +843,12 @@ public enum MessageKey {
     GUI_ADMIN_RESOURCEPACK_ENTRY_APPLIED("gui.yonetici.kaynak-paketi-oyuncu-uygulandi"),
     GUI_ADMIN_RESOURCEPACK_ENTRY_PENDING("gui.yonetici.kaynak-paketi-oyuncu-bekliyor"),
     GUI_ADMIN_RESOURCEPACK_ENTRY_EXEMPT("gui.yonetici.kaynak-paketi-oyuncu-muaf"),
-    GUI_ADMIN_RESOURCEPACK_ENTRY_LORE("gui.yonetici.kaynak-paketi-oyuncu-aciklama");
+    GUI_ADMIN_RESOURCEPACK_ENTRY_LORE("gui.yonetici.kaynak-paketi-oyuncu-aciklama"),
+
+    GUI_BACKGROUND_27("gui.arkaplan.satir-3"),
+    GUI_BACKGROUND_36("gui.arkaplan.satir-4"),
+    GUI_BACKGROUND_45("gui.arkaplan.satir-5"),
+    GUI_BACKGROUND_54("gui.arkaplan.satir-6");
 
     private final String path;
 

@@ -1,8 +1,11 @@
 package com.halilibrahim.halilibrahimmmo.gui;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+
+import java.util.function.IntFunction;
 
 /** Opens a {@link GuiView} for a player, binding it to a fresh {@link GuiHolder}-owned inventory. */
 public final class GuiManager {
@@ -36,6 +39,20 @@ public final class GuiManager {
      */
     private static volatile OpenGuard guard = NONE;
 
+    /** Draws nothing until bound, so an unbound server behaves exactly as before. */
+    private static final IntFunction<Component> NO_BACKGROUND = size -> Component.empty();
+
+    /**
+     * Prepends a resource-pack background to every screen's title.
+     *
+     * <p>Bound in the same shape as {@link #bindGuard}, and for the same reason:
+     * there are 35 {@code GuiView}s and prepending a background at each one's
+     * {@code title()} would be 35 places to forget it. The technique itself is
+     * why it belongs here rather than in {@code messages.yml} - the background
+     * is chosen by the screen's <em>size</em>, which only this method knows.</p>
+     */
+    private static volatile IntFunction<Component> background = NO_BACKGROUND;
+
     private GuiManager() {
         throw new UnsupportedOperationException("GuiManager is a static utility class");
     }
@@ -44,12 +61,22 @@ public final class GuiManager {
         guard = newGuard == null ? NONE : newGuard;
     }
 
+    public static void bindBackgrounds(IntFunction<Component> newBackground) {
+        background = newBackground == null ? NO_BACKGROUND : newBackground;
+    }
+
+    /** Restores the default so a reload cannot inherit a stale renderer. */
+    public static void unbindBackgrounds() {
+        background = NO_BACKGROUND;
+    }
+
     public static void open(Player player, GuiView view) {
         if (guard.redirect(player, view)) {
             return;
         }
         GuiHolder holder = new GuiHolder(view);
-        Inventory inventory = Bukkit.createInventory(holder, view.size(), view.title());
+        Component title = background.apply(view.size()).append(view.title());
+        Inventory inventory = Bukkit.createInventory(holder, view.size(), title);
         holder.bind(inventory);
         player.openInventory(inventory);
         view.populate(player, inventory);

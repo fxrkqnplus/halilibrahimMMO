@@ -628,6 +628,27 @@ public final class PaketUretici {
         private static final int CELL_WIDTH = 5;
         private static final int CAP_WIDTH = 3;
 
+        /** Signed space advances live at U+F0nn; see {@link #spaceProvider()}. */
+        private static final int SPACE_FIRST = 0xF000;
+        /** The four menu panel backgrounds, one per chest size in use. */
+        private static final int PANEL_FIRST = 0xF100;
+
+        /**
+         * A chest GUI panel is 176 wide; a row of slots is 18 tall and the
+         * player-inventory strip below is identical across sizes.
+         */
+        private static final int PANEL_WIDTH = 176;
+        private static final int PANEL_BASE_HEIGHT = 114;
+        private static final int ROW_HEIGHT = 18;
+
+        /**
+         * {@code AbstractContainerScreen} draws the title at (leftPos+8, topPos+6)
+         * and the default font puts the baseline 7px below a glyph's top, so the
+         * baseline sits 13px below the panel's top edge. A background glyph with
+         * this ascent therefore starts exactly at the panel's top edge.
+         */
+        private static final int TITLE_BASELINE = 13;
+
         private Panel() {
         }
 
@@ -643,22 +664,103 @@ public final class PaketUretici {
             drawCap(strip, 3 * pitch, palette.color("E"), false);
 
             files.put("assets/" + NAMESPACE + "/textures/font/pano.png", png(strip));
-            files.put("assets/" + NAMESPACE + "/font/pano.json", ("""
-                    {
-                      "providers": [
-                        {
-                          "type": "bitmap",
-                          "file": "%s:font/pano.png",
-                          "height": %d,
-                          "ascent": 7,
-                          "chars": ["\\u%04X\\u%04X\\u%04X\\u%04X"]
-                        }
-                      ]
-                    }
-                    """.formatted(NAMESPACE, BAR_HEIGHT, CELL_EMPTY, CELL_FULL, CAP_LEFT, CAP_RIGHT))
-                    .getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder providers = new StringBuilder();
+            providers.append("""
+                            {
+                              "type": "bitmap",
+                              "file": "%s:font/pano.png",
+                              "height": %d,
+                              "ascent": 7,
+                              "chars": ["\\u%04X\\u%04X\\u%04X\\u%04X"]
+                            }"""
+                    .formatted(NAMESPACE, BAR_HEIGHT, CELL_EMPTY, CELL_FULL, CAP_LEFT, CAP_RIGHT));
+            providers.append(",\n").append(spaceProvider());
+            for (int rows = 3; rows <= 6; rows++) {
+                BufferedImage panel = panel(palette, rows);
+                files.put("assets/" + NAMESPACE + "/textures/font/panel_" + rows + ".png", png(panel));
+                providers.append(",\n").append("""
+                                {
+                                  "type": "bitmap",
+                                  "file": "%s:font/panel_%d.png",
+                                  "height": %d,
+                                  "ascent": %d,
+                                  "chars": ["\\u%04X"]
+                                }"""
+                        .formatted(NAMESPACE, rows, panel.getHeight(), TITLE_BASELINE, PANEL_FIRST + (rows - 3)));
+            }
+
+            files.put("assets/" + NAMESPACE + "/font/pano.json",
+                    ("{\n  \"providers\": [\n" + providers.toString().indent(4) + "  ]\n}\n")
+                            .getBytes(StandardCharsets.UTF_8));
 
             bossBars(palette, files);
+        }
+
+        /**
+         * Signed advances at U+F000.., in powers of two so any offset is a short
+         * binary composition. Negative space is what lets a title glyph paint the
+         * whole panel: pull the pen back to the panel's left edge, draw, pull
+         * back again, then let the real title render where it always did.
+         */
+        private static String spaceProvider() {
+            StringBuilder advances = new StringBuilder();
+            for (int bit = 0; bit < 9; bit++) {
+                int magnitude = 1 << bit;
+                if (bit > 0) {
+                    advances.append(",\n");
+                }
+                advances.append("    \"\\u%04X\": %d,\n".formatted(SPACE_FIRST + bit, -magnitude));
+                advances.append("    \"\\u%04X\": %d".formatted(SPACE_FIRST + 9 + bit, magnitude));
+            }
+            return """
+                    {
+                      "type": "space",
+                      "advances": {
+                    %s
+                      }
+                    }""".formatted(advances);
+        }
+
+        /**
+         * One menu background. Deliberately geometric rather than a redrawn
+         * chest: a flat ground, a two-tone frame in the identity gradient and a
+         * darker well behind the slot grid, so a menu reads as this server's
+         * screen rather than as a chest someone painted over.
+         */
+        private static BufferedImage panel(Palette palette, int rows) {
+            int height = PANEL_BASE_HEIGHT + rows * ROW_HEIGHT;
+            BufferedImage image = new BufferedImage(PANEL_WIDTH, height, BufferedImage.TYPE_INT_ARGB);
+
+            int ground = palette.color("Z");
+            int well = palette.color("z");
+            int frameStart = palette.gradientStart("kimlik");
+            int frameEnd = palette.gradientEnd("kimlik");
+
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < PANEL_WIDTH; x++) {
+                    image.setRGB(x, y, ground);
+                }
+            }
+            // The slot grid sits at x=7..168, starting 17px down; darkening just
+            // that area makes the clickable region obvious without drawing 54
+            // individual slots.
+            for (int y = 17; y < 17 + rows * ROW_HEIGHT && y < height; y++) {
+                for (int x = 7; x < PANEL_WIDTH - 7; x++) {
+                    image.setRGB(x, y, well);
+                }
+            }
+            for (int x = 0; x < PANEL_WIDTH; x++) {
+                int argb = lerp(frameStart, frameEnd, x / (double) (PANEL_WIDTH - 1));
+                image.setRGB(x, 0, argb);
+                image.setRGB(x, height - 1, argb);
+            }
+            for (int y = 0; y < height; y++) {
+                int argb = lerp(frameStart, frameEnd, y / (double) (height - 1));
+                image.setRGB(0, y, argb);
+                image.setRGB(PANEL_WIDTH - 1, y, argb);
+            }
+            return image;
         }
 
         /** A cell is a filled block with a one-pixel darker outline, vertically centred. */

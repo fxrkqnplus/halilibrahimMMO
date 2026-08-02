@@ -1103,6 +1103,30 @@ gui:
     oge-aciklama-kusanik: "<green><simge:tamam> Kuşanıldı</green>"
     oge-aciklama-kilitli: "<red><simge:eksik> Henüz açılmadı</red>"
 
+  # --------------------------------------------------------------------
+  #  MENU ARKA PLANLARI - kaynak paketi olmadan ANLAMSIZDIR
+  # --------------------------------------------------------------------
+  #  Minecraft menu basligini panelin sol ust kosesinden 8 piksel iceride
+  #  cizer. Buradaki diziler once kalemi o 8 pikseli geri cekiyor, sonra
+  #  panelin tamamini kaplayan tek bir glyph basiyor, sonra kalemi 177
+  #  piksel geri alip gercek basligi yaziyor.
+  #
+  #  Kod noktalari YAML kacis dizisiyle yaziliyor ( gibi) cunku
+  #  gorunmez karakterler bir diff'te okunamaz ve kolayca bozulur.
+  #    .. = -1,-2,-4,-8,-16,-32,-64,-128,-256 piksel
+  #    .. = 3/4/5/6 satirlik panel arka plani
+  #  -8   = 
+  #  -177 = -128 -32 -16 -1 = 
+  #
+  #  Bu bolum yalnizca kaynak-paketi.yml'de "arayuz-arkaplani: true" iken
+  #  kullanilir ve varsayilani false'tur: teknigin ekrandaki yeri
+  #  Minecraft surumune baglidir ve sunucu tarafindan dogrulanamaz.
+  arkaplan:
+    satir-3: "<font:hmmo:pano></font>"
+    satir-4: "<font:hmmo:pano></font>"
+    satir-5: "<font:hmmo:pano></font>"
+    satir-6: "<font:hmmo:pano></font>"
+
 # =====================================================================
 #  Zorunlu Fabric mod doğrulaması (modlar.yml)
 #  Bu metinler oyuncunun ATILMA ekranında görünür; chat öneki eklenmez.
