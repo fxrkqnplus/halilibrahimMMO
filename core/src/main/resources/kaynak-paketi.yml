@@ -1,0 +1,84 @@
+# ==========================================================================
+#  HalilIbrahimMMO - Sunucuya özel kaynak paketi
+# ==========================================================================
+#  Sunucuya giren her oyuncuya kaynak paketi gönderilir; kabul etmeyen ya da
+#  indiremeyen oyuncu atılır. Paket, sunucunun kendi görünümüdür: 28 simge,
+#  menü arka planları, eşya dokuları, boss çubukları ve eylem çubuğundaki
+#  piksel barlar oradan gelir.
+#
+#  PAKET BU EKLENTİNİN İÇİNDE DEĞİLDİR. Siz bir web sunucusuna yüklersiniz,
+#  buraya yalnızca adresini ve SHA-1 özetini yazarsınız.
+#
+#  ┌──────────────────────────────────────────────────────────────────────┐
+#  │  SIRA ÖNEMLİ. Ters sırada yaparsanız SUNUCUYA KİMSE GİREMEZ:         │
+#  │    1. Paketi üretin, SHA-1'i not alın                                │
+#  │    2. Sürüm taşıyan bir dosya adıyla web sunucusuna yükleyin         │
+#  │    3. Adresi tarayıcıda açıp indiğini ve özetin tuttuğunu doğrulayın │
+#  │    4. Ancak şimdi "adres" ve "sha1" alanlarını doldurun              │
+#  │    5. "etkin: true" yapın, ama önce "zorunlu: false" ile deneyin     │
+#  └──────────────────────────────────────────────────────────────────────┘
+#
+#  VAR OLAN BİR ADRESE ASLA YENİ DOSYA KOYMAYIN. İstemci paketi SHA-1'e
+#  göre önbelleğe alır; eski adreste yeni baytlar bulursa özet tutmaz ve
+#  herkes kapıda kalır. Her yeni paket sürümü YENİ bir dosya adı alır.
+#
+#  Paketi üretmek için (proje kökünde):
+#    tools\kaynak-paketi\kaynak-paketi-uret.ps1
+#  Script size aşağıya yapıştırılacak "adres" ve "sha1" satırlarını basar.
+# ==========================================================================
+
+kaynak-paketi:
+  # Varsayılan olarak KAPALI gelir ve bu bilinçlidir: bu dosya bir kez
+  # kopyalanır, bir daha üzerine yazılmaz (ship-and-copy kuralı), yani
+  # "etkin: true" ile gönderilseydi paketi olmayan her yeni sunucu ilk
+  # oyuncusunu kapıda çevirirdi.
+  #
+  # GÜVENLİK AĞI: "etkin: true" ama adres/sha1 boş ya da bozuksa eklenti
+  # bunu fark eder, konsola hata basar ve KAPALI gibi davranır. Bir yazım
+  # hatası hiçbir zaman sunucuyu boşaltamaz.
+  etkin: false
+
+  # Zip dosyasının tam adresi. http de https de kabul edilir; yerel testte
+  # "http://127.0.0.1:8080/hmmo-paket-1.0.0.zip" gayet iyi çalışır.
+  adres: ""
+
+  # Zip'in SHA-1 özeti: 40 haneli onaltılık. Büyük/küçük harf fark etmez.
+  # Üretici script bunu size hazır verir; elle hesaplamayın.
+  sha1: ""
+
+  # true  : oyuncunun ekranında "reddet" seçeneği pasifleşir, reddeden ya da
+  #         indiremeyen atılır.
+  # false : paket yine gönderilir ama reddeden oyuncu içeride kalır; sohbette
+  #         ekranının sade görüneceği söylenir.
+  #
+  # AÇILIŞ HAFTASI İÇİN false KULLANIN. Paket tamamen kozmetiktir; web
+  # sunucunuz düşerse "true" oyunun kendisi sapasağlamken herkesi kapıda
+  # bırakır.
+  zorunlu: true
+
+  # İndirme bu kadar saniye boyunca HİÇ İLERLEMEZSE oyuncu atılır.
+  # Sayaç her ilerleme bildiriminde sıfırlanır, yani yavaş bağlantı
+  # cezalandırılmaz - yalnızca gerçekten durmuş bir indirme kesilir.
+  zaman-asimi-saniye: 60
+
+  # Girişten sonra paketin gönderilmesi için beklenen tik (20 tik = 1 saniye).
+  gecikme-tik: 20
+
+  # Bu izne sahip oyuncular paketi reddetse de ASLA atılmaz. Paket yine de
+  # gönderilir (zorlamadan), böylece yönetici sunucuyu oyuncunun gördüğü
+  # gibi görür.
+  #
+  # DİKKAT: iznin varsayılanı "op" - yani sunucu sahibi kendiliğinden muaftır.
+  # Atılma davranışını test ederken OP OLMAYAN bir hesap kullanın, yoksa
+  # her şey çalışıyormuş gibi görünür. (Aynı tuzak hmmo.mod.bypass'ta da var.)
+  bypass-izni: "hmmo.paket.bypass"
+
+  # Menü başlıklarına çizilen özel arka planlar. Paketin en kırılgan parçası:
+  # başlığın ekrandaki yeri Minecraft sürümüne bağlıdır. Menülerde yamuk bir
+  # şey görürseniz önce YALNIZCA bunu kapatın, paketin tamamını değil.
+  arayuz-arkaplani: false
+
+  # Eylem çubuğundaki piksel enerji/bekleme barları. Kapalıyken eylem çubuğu
+  # paket öncesiyle bayt bayt aynı görünür; barlar zaten sayıların yanına
+  # eklenen bir görsel, tek başına bilgi taşımıyorlar.
+  eylem-cubugu-barlari: true

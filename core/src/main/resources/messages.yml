@@ -25,6 +25,10 @@ onek: "<gradient:#7C3AED:#3B82F6><simge:kutlama> HalilIbrahimMMO</gradient> <dar
 genel:
   yetkisiz: "<red>Bu komutu kullanmak için yetkiniz yok.</red>"
   sadece-oyuncu: "<red>Bu komut yalnızca oyuncular tarafından kullanılabilir.</red>"
+  # Bir ayarin acik/kapali oldugunu yazan ekranlar bu iki kelimeyi kullanir.
+  # Rengi yoktur: cagiran sablon neyse onu alir.
+  evet: "Evet"
+  hayir: "Hayır"
 
 # ----- Bulut sandigi (/canta) -----
 # Icerik veritabaninda durur, oyuncunun envanterinde degil - bu yuzden olum,
@@ -559,6 +563,18 @@ gui:
     modcheck-oyuncu-bekliyor: "<yellow>? <oyuncu></yellow>"
     modcheck-oyuncu-muaf: "<gray>- <oyuncu></gray>"
     modcheck-oyuncu-aciklama: "<gray>İstemci: <white><marka></white> <dark_gray>|</dark_gray> Bildirilen mod: <white><sayi></white></gray>"
+    # Kaynak paketi ekrani da mod dogrulamasi gibi SALT OKUNURDUR. Ozette
+    # yalnizca host ve ozetin ilk 8 hanesi yazar; tam adres bilerek yoktur -
+    # bir aciklama satiri, yoneticinin arkasinda duran herkese goruntulenir.
+    kaynak-paketi-oge: "<light_purple>Kaynak Paketi</light_purple>"
+    kaynak-paketi-aciklama: "<gray>Çevrimiçi oyuncuların sunucu kaynak paketini yükleyip yüklemediğini gösterir.</gray>"
+    kaynak-paketi-baslik: "<dark_gray>Kaynak Paketi Durumu</dark_gray>"
+    kaynak-paketi-kapali: "<red>Kaynak paketi şu anda kapalı.</red><newline><gray>kaynak-paketi.yml içinde adres ve sha1 doldurulup <white>etkin: true</white> yapılmalı.</gray>"
+    kaynak-paketi-ozet: "<gray>Sunucu: <white><host></white> <dark_gray>|</dark_gray> Özet: <white><ozet></white> <dark_gray>|</dark_gray> Zorunlu: <white><zorunlu></white></gray><newline><gray>Yüklendi: <green><uygulandi></green> <dark_gray>|</dark_gray> Bekliyor: <yellow><bekliyor></yellow></gray>"
+    kaynak-paketi-oyuncu-uygulandi: "<green><simge:tamam> <oyuncu></green>"
+    kaynak-paketi-oyuncu-bekliyor: "<yellow>? <oyuncu></yellow>"
+    kaynak-paketi-oyuncu-muaf: "<gray>- <oyuncu></gray>"
+    kaynak-paketi-oyuncu-aciklama: "<gray>Son bildirim: <white><durum></white></gray>"
     boss-oge: "<gold><simge:boss> Dünya Bossu Çağır</gold>"
     boss-aciklama: "<gray>Nadirliğini ve istersen adını seçerek bir boss çağır <dark_gray>•</dark_gray> Açmak için tıkla</gray>"
     # ----- Boss cagirma ekrani -----
@@ -1101,3 +1117,21 @@ modcheck:
   gecersiz-cevap: "<red>Mod listeniz okunamadı.</red><newline><gray>İstemciniz beklenmeyen bir yanıt gönderdi.</gray>"
   kurulum-yonergesi: "<yellow>Modları kurmak için mod kurulum uygulamasını tekrar çalıştırın.</yellow>"
   dogrulandi: "<green>Mod kontrolü tamam, iyi oyunlar!</green>"
+
+# =====================================================================
+#  Sunucuya ozel kaynak paketi (kaynak-paketi.yml)
+#  "istem" oyuncunun indirme onay ekraninda gorunur.
+#  Atilma metinleri chat onegi ALMAZ; kisa ve eyleme donuk tutun.
+#  Paket kozmetiktir - hicbir metin oyuncuyu hile yapmakla suclamaz,
+#  cunku burada basarisiz olan neredeyse her zaman aginin kendisidir.
+# =====================================================================
+kaynak-paketi:
+  istem: "<gradient:#7C3AED:#3B82F6><bold>Halil İbrahim Sofrası</bold></gradient><newline><gray>Sunucunun kendi görünümü için kaynak paketi gerekiyor.</gray><newline><gray>Menüler, simgeler ve göstergeler bu paketle gelir.</gray>"
+  uygulandi: "<green><simge:tamam> Kaynak paketi yüklendi.</green>"
+  zorunlu-degil-uyari: "<yellow><simge:uyari> Kaynak paketi yüklenmedi.</yellow> <gray>Oynayabilirsin, ama menüler ve simgeler sade görünecek.</gray>"
+  reddedildi: "<red>Bu sunucu kendi kaynak paketiyle oynanır.</red><newline><gray>Paketi reddettiniz. Girişte çıkan pencerede <white>Kabul Et</white> demeniz gerekiyor.</gray>"
+  indirilemedi: "<red>Kaynak paketi indirilemedi.</red><newline><gray>Bağlantınızı kontrol edip tekrar deneyin; sorun sürerse birkaç dakika sonra tekrar girin.</gray>"
+  gecersiz-adres: "<red>Kaynak paketi adresi geçersiz.</red><newline><gray>Bu bir sunucu ayarı hatasıdır, sizde bir sorun yok. Lütfen yetkiliye bildirin.</gray>"
+  zaman-asimi: "<red>Kaynak paketi indirmesi tamamlanmadı.</red><newline><gray>İndirme durdu. Tekrar girmeyi deneyin.</gray>"
+  birakildi: "<red>Kaynak paketi uygulanmadı.</red><newline><gray>İstemciniz paketi bıraktı. Tekrar girmeyi deneyin.</gray>"
+  yonerge: "<yellow>Sorun sürerse: Seçenekler → Kaynak Paketleri → Sunucu Paketleri bölümünden <white>Etkin</white> olduğundan emin olun.</yellow>"

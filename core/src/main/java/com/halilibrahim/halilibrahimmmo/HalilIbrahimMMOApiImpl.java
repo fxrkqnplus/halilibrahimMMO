@@ -31,6 +31,7 @@ import com.halilibrahim.halilibrahimmmo.leaderboards.LeaderboardService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.logging.PluginLogger;
 import com.halilibrahim.halilibrahimmmo.modcheck.ModVerificationService;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ResourcePackService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestDefinition;
@@ -79,6 +80,7 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
     private final ReputationService reputation;
     private final BossService bosses;
     private final ModVerificationService modVerification;
+    private final ResourcePackService resourcePack;
     private final ServerInfoService serverInfo;
     private final TabListService tabList;
 
@@ -102,6 +104,7 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
             ReputationService reputation,
             BossService bosses,
             ModVerificationService modVerification,
+            ResourcePackService resourcePack,
             ServerInfoService serverInfo,
             TabListService tabList
     ) {
@@ -124,6 +127,7 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
         this.reputation = reputation;
         this.bosses = bosses;
         this.modVerification = modVerification;
+        this.resourcePack = resourcePack;
         this.serverInfo = serverInfo;
         this.tabList = tabList;
     }
@@ -168,6 +172,10 @@ public final class HalilIbrahimMMOApiImpl implements HalilIbrahimMMOAPI {
             // Reloading the mod list deliberately does not re-verify players who are
             // already online; it only changes what the next join is judged against.
             modVerification.reload();
+            // Same rule, and here it matters more: re-sending a pack mid-session
+            // forces a full client resource reload and freezes everyone for
+            // seconds. Only the next join is judged against the new settings.
+            resourcePack.reload();
             logger.info("Yapilandirma ve mesajlar basariyla yeniden yuklendi.");
             return true;
         } catch (Exception exception) {

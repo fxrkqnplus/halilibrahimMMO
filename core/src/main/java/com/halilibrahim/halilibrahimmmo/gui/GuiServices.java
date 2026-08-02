@@ -28,6 +28,7 @@ import com.halilibrahim.halilibrahimmmo.prestige.PrestigeService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestService;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ResourcePackService;
 import com.halilibrahim.halilibrahimmmo.scoreboard.SidebarService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import com.halilibrahim.halilibrahimmmo.titles.TitleService;
@@ -68,6 +69,7 @@ public record GuiServices(
         ReputationService reputation,
         BossService bosses,
         ModVerificationService modVerification,
+        ResourcePackService resourcePack,
         ChatPromptService chatPrompts,
         GuideService guide,
         BackpackService backpacks,

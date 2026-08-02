@@ -26,3 +26,6 @@ permissions:
   hmmo.mod.bypass:
     description: "Zorunlu Fabric mod doğrulamasından muaf tutulma izni. Bu izne sahip oyuncuya mod listesi sorulmaz ve asla atılmaz."
     default: op
+  hmmo.paket.bypass:
+    description: "Zorunlu kaynak paketinden muaf tutulma izni. Bu izne sahip oyuncuya paket yine gönderilir (zorlamadan), ama reddetse veya indiremese de asla atılmaz."
+    default: op

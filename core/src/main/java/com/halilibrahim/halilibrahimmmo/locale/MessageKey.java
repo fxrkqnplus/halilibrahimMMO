@@ -820,7 +820,30 @@ public enum MessageKey {
     GUI_ADMIN_MODCHECK_ENTRY_VERIFIED("gui.yonetici.modcheck-oyuncu-dogrulandi"),
     GUI_ADMIN_MODCHECK_ENTRY_PENDING("gui.yonetici.modcheck-oyuncu-bekliyor"),
     GUI_ADMIN_MODCHECK_ENTRY_EXEMPT("gui.yonetici.modcheck-oyuncu-muaf"),
-    GUI_ADMIN_MODCHECK_ENTRY_LORE("gui.yonetici.modcheck-oyuncu-aciklama");
+    GUI_ADMIN_MODCHECK_ENTRY_LORE("gui.yonetici.modcheck-oyuncu-aciklama"),
+
+    GENERAL_YES("genel.evet"),
+    GENERAL_NO("genel.hayir"),
+
+    RESOURCEPACK_PROMPT("kaynak-paketi.istem"),
+    RESOURCEPACK_APPLIED("kaynak-paketi.uygulandi"),
+    RESOURCEPACK_OPTIONAL_WARNING("kaynak-paketi.zorunlu-degil-uyari"),
+    RESOURCEPACK_KICK_DECLINED("kaynak-paketi.reddedildi"),
+    RESOURCEPACK_KICK_FAILED("kaynak-paketi.indirilemedi"),
+    RESOURCEPACK_KICK_INVALID_URL("kaynak-paketi.gecersiz-adres"),
+    RESOURCEPACK_KICK_TIMEOUT("kaynak-paketi.zaman-asimi"),
+    RESOURCEPACK_KICK_DISCARDED("kaynak-paketi.birakildi"),
+    RESOURCEPACK_HINT("kaynak-paketi.yonerge"),
+
+    GUI_ADMIN_RESOURCEPACK_ITEM("gui.yonetici.kaynak-paketi-oge"),
+    GUI_ADMIN_RESOURCEPACK_LORE("gui.yonetici.kaynak-paketi-aciklama"),
+    GUI_ADMIN_RESOURCEPACK_TITLE("gui.yonetici.kaynak-paketi-baslik"),
+    GUI_ADMIN_RESOURCEPACK_DISABLED("gui.yonetici.kaynak-paketi-kapali"),
+    GUI_ADMIN_RESOURCEPACK_SUMMARY("gui.yonetici.kaynak-paketi-ozet"),
+    GUI_ADMIN_RESOURCEPACK_ENTRY_APPLIED("gui.yonetici.kaynak-paketi-oyuncu-uygulandi"),
+    GUI_ADMIN_RESOURCEPACK_ENTRY_PENDING("gui.yonetici.kaynak-paketi-oyuncu-bekliyor"),
+    GUI_ADMIN_RESOURCEPACK_ENTRY_EXEMPT("gui.yonetici.kaynak-paketi-oyuncu-muaf"),
+    GUI_ADMIN_RESOURCEPACK_ENTRY_LORE("gui.yonetici.kaynak-paketi-oyuncu-aciklama");
 
     private final String path;
 

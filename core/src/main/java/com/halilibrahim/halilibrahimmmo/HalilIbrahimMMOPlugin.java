@@ -116,6 +116,9 @@ import com.halilibrahim.halilibrahimmmo.modcheck.ModCheckListener;
 import com.halilibrahim.halilibrahimmmo.modcheck.ModCheckProtocol;
 import com.halilibrahim.halilibrahimmmo.modcheck.ModVerificationService;
 import com.halilibrahim.halilibrahimmmo.modcheck.PluginMessageModVerificationService;
+import com.halilibrahim.halilibrahimmmo.resourcepack.PaperResourcePackService;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ResourcePackListener;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ResourcePackService;
 import com.halilibrahim.halilibrahimmmo.logging.PluginLogger;
 import com.halilibrahim.halilibrahimmmo.onboarding.CachedOnboardingService;
 import com.halilibrahim.halilibrahimmmo.onboarding.OnboardingRepository;
@@ -236,6 +239,18 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     ModVerificationService.class
             );
             registerModCheckChannel(modVerificationService);
+
+            // The second join-time gate, and deliberately after the mod check:
+            // a player who is missing the companion mod should be told about
+            // the mod, not made to download a pack first. Same reasoning as
+            // above for sitting before the database - it depends only on config
+            // plus locale, and a player who must be turned away should be
+            // turned away whether or not the database is healthy.
+            ResourcePackService resourcePackService = startService(
+                    new PaperResourcePackService(this, messageService, pluginLogger),
+                    ResourcePackService.class
+            );
+            getServer().getPluginManager().registerEvents(new ResourcePackListener(resourcePackService), this);
 
             DatabaseService databaseService = startService(
                     new HikariDatabaseService(configService.coreConfig().databaseSettings(), getDataFolder().toPath(), pluginLogger),
@@ -470,7 +485,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     this, configService, messageService, pluginLogger, profileService, progressionService, skillService,
                     abilityService, classService, prestigeService, questService, collectionService, leaderboardService,
                     titleService, cosmeticService, feedbackService, reputationService, bossService, modVerificationService,
-                    serverInfoService, tabListService
+                    resourcePackService, serverInfoService, tabListService
             );
             getServer().getServicesManager().register(HalilIbrahimMMOAPI.class, api, this, ServicePriority.Normal);
 
@@ -486,7 +501,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     classService, prestigeService, prestigeRewardService, questService, collectionService, journalService,
                     leaderboardService, titleService, cosmeticService, feedbackService, sidebarService, configService,
                     api, activationService, pluginLogger, onboardingService, onboardingRewarder, homeService, tradeService,
-                    reputationService, bossService, modVerificationService, chatPromptService,
+                    reputationService, bossService, modVerificationService, resourcePackService, chatPromptService,
                     guideService, backpackService, milestoneToggles
             );
             // The trade screen lives in the GUI layer, which needs the trade

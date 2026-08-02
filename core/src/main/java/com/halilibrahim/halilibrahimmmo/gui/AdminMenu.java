@@ -30,6 +30,10 @@ public final class AdminMenu implements GuiView {
     private static final int DEBUG_SLOT = 21;
     private static final int ONLINE_PLAYERS_SLOT = 23;
     private static final int ALL_PLAYERS_SLOT = 25;
+    // Four evenly spaced icons on this row. The resource pack sits next to the
+    // mod check on purpose: they are the plugin's two join-time gates and an
+    // admin diagnosing "why can nobody get in" should find both in one glance.
+    private static final int RESOURCEPACK_SLOT = 28;
     private static final int BOSS_SLOT = 30;
     private static final int VERSION_SLOT = 32;
     private static final int MODCHECK_SLOT = 34;
@@ -103,6 +107,11 @@ public final class AdminMenu implements GuiView {
                 services.messages().render(MessageKey.GUI_ADMIN_MODCHECK_ITEM),
                 List.of(services.messages().render(MessageKey.GUI_ADMIN_MODCHECK_LORE))
         ));
+        inventory.setItem(RESOURCEPACK_SLOT, GuiItems.of(
+                Material.MAP,
+                services.messages().render(MessageKey.GUI_ADMIN_RESOURCEPACK_ITEM),
+                List.of(services.messages().render(MessageKey.GUI_ADMIN_RESOURCEPACK_LORE))
+        ));
         inventory.setItem(CREDITS_SLOT, GuiItems.of(
                 Material.NETHER_STAR,
                 services.messages().render(MessageKey.GUI_ADMIN_CREDITS_ITEM),
@@ -127,6 +136,7 @@ public final class AdminMenu implements GuiView {
             case ONLINE_PLAYERS_SLOT -> GuiManager.open(player, new AdminOnlinePlayersMenu(services));
             case ALL_PLAYERS_SLOT -> GuiManager.open(player, new AdminAllPlayersMenu(services));
             case MODCHECK_SLOT -> GuiManager.open(player, new AdminModCheckMenu(services));
+            case RESOURCEPACK_SLOT -> GuiManager.open(player, new AdminResourcePackMenu(services));
             // A screen rather than a button since Faz 21: staff running an
             // event need to choose the tier, and sometimes the name.
             case BOSS_SLOT -> GuiManager.open(player, new AdminBossMenu(services));
