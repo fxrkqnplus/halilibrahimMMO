@@ -2157,7 +2157,7 @@ kısmı **tasarım kararlarını zorlayan** testlerdir:
   de koşulsuz gösterir; değeri olmayan bir ödül, ne yaptığı konusunda yalan
   söyleyen bir düğme olurdu.
 
-Şu an **43 test sınıfında 124 test** vardır ve hepsi geçer.
+Şu an **48 test sınıfında 177 test** vardır ve hepsi geçer.
 
 ## Sunucuya özel ikon paketi
 
@@ -2167,10 +2167,31 @@ bir etiket yazdığınız her yerde ilgili simge basılır. İkonlar panelde,
 menülerde, boss cübuklarında ve sohbet mesajlarında kullanılır. Simgenin
 kendi rengi yoktur — etrafındaki MiniMessage renk etiketi neyse onu alır,
 böylece aynı simge panelde altın, menüde gri görünebilir. Kullanılabilir
-adların tam listesi `messages.yml` başlığındaki yorumdadır. Tüm simgeler
-kasıtlı olarak Minecraft'ın varsayılan yazı tipinin kapsadığı Unicode
-aralığından seçilmiştir; ayrıca bir kaynak paketi (resource pack) kurmanız
-gerekmez.
+adların tam listesi `messages.yml` başlığındaki yorumdadır.
+
+Tüm simgeler kasıtlı olarak Minecraft'ın varsayılan yazı tipinin kapsadığı
+Unicode aralığından seçilmiştir ve bu seçim **hâlâ geçerlidir** — ama artık
+farklı bir sebeple. Faz 24'ten beri sunucunun kendi kaynak paketi var ve bu
+28 simgenin hepsini kendi piksel sanatıyla yeniden çiziyor. Kod noktaları
+değişmediği için paketi henüz uygulanmamış bir istemci de bir şey kaybetmez:
+simgeyi eskiden nasıl görüyorduysa öyle görür, beyaz kutu olarak değil.
+
+## Sunucu kaynak paketi
+
+Sunucuya girdiğinizde bir **kaynak paketi indirme istemi** çıkar ve kabul
+etmeniz gerekir. Paket sunucunun görünümüdür: 28 simgenin piksel sanatı,
+menülerin arka planı, beceri/sınıf/kabiliyet/görev/unvan/kozmetik
+ikonlarının kendi dokuları, yeniden çizilmiş boss çubukları, eylem
+çubuğundaki enerji ve bekleme barları, ve Asil Kurt'un kurt silueti.
+
+Paket 100 KB'ın altındadır ve saniyeler içinde iner; oyun tarafında hiçbir
+şey kurmanız gerekmez, istemci onu kendisi indirip uygular. Bir sonraki
+sürümde otomatik olarak güncellenir.
+
+Kabul etmezseniz ya da indirilemezse ne olacağını sunucu sahibi
+`kaynak-paketi.yml` içindeki `zorunlu` anahtarıyla belirler: açıkken
+oyuncu Türkçe bir sebeple atılır, kapalıyken içeride kalır ve sohbette
+"menüler ve simgeler sade görünecek" uyarısı alır.
 
 ## Dil politikası
 
