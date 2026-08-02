@@ -30,6 +30,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class MessageCatalogTest {
 
     private static final Pattern ICON_TAG = Pattern.compile("<simge:([a-z0-9_-]+)>");
+    private static final Pattern FONT_TAG = Pattern.compile("<font:([a-z0-9_.-]+:[a-z0-9_./-]+)>");
+
+    /** The one font the resource pack defines for wide, offset and multi-cell glyphs. */
+    private static final String PACK_FONT = "hmmo:pano";
+
+    /**
+     * Keys allowed to carry Private Use Area codepoints. Everything here is a
+     * GUI title or an action bar line - places the pack may draw freely because
+     * nothing measures their width. See {@link #privateUseGlyphsStayOutOfLore()}.
+     */
+    private static final Set<String> PRIVATE_USE_ALLOWED = Set.of();
 
     @Test
     void everyMessageKeyHasExactlyOneMatchingEntry() {
@@ -50,6 +61,71 @@ final class MessageCatalogTest {
                 .filter(entry -> IconPack.byId(entry.substring(entry.lastIndexOf(' ') + 1)).isEmpty())
                 .toList();
         assertTrue(unknown.isEmpty(), "messages.yml references unknown icon names: " + unknown);
+    }
+
+    /**
+     * The mechanical half of the resource pack's "one cell rule".
+     *
+     * <p>{@code LoreWrapper} wraps item lore at 42 <em>characters</em> and its
+     * own javadoc admits it cannot know the client's font. The pack changes that
+     * font. The rule that keeps 42 as valid as it is today: icons keep their
+     * existing BMP codepoints at one cell each, and every wide, negative-space
+     * or multi-cell glyph lives at a Private Use Area codepoint in the separate
+     * {@code hmmo:pano} font, usable only where nothing measures width - a GUI
+     * title or the action bar.</p>
+     *
+     * <p>Without this test the rule is a paragraph in PROJECT_MEMORY that the
+     * next person to add a fancy glyph will not have read.</p>
+     */
+    @Test
+    void privateUseGlyphsStayOutOfLore() {
+        YamlConfiguration yaml = load();
+        List<String> offenders = yaml.getKeys(true).stream()
+                .filter(yaml::isString)
+                .filter(path -> !PRIVATE_USE_ALLOWED.contains(path))
+                .filter(path -> containsPrivateUse(yaml.getString(path, "")))
+                .toList();
+        assertTrue(offenders.isEmpty(),
+                "These messages.yml entries use Private Use Area codepoints but are not on the "
+                        + "title/action-bar allow-list, so they can reach GuiItems.of(...) and silently "
+                        + "invalidate LoreWrapper's 42-character budget: " + offenders);
+    }
+
+    /** Every allow-listed key must still exist, or the list is quietly rotting. */
+    @Test
+    void privateUseAllowListHasNoDeadEntries() {
+        YamlConfiguration yaml = load();
+        List<String> dead = PRIVATE_USE_ALLOWED.stream().filter(path -> !yaml.isString(path)).toList();
+        assertTrue(dead.isEmpty(), "Allow-listed keys that no longer exist in messages.yml: " + dead);
+    }
+
+    /**
+     * A {@code <font:...>} tag may only name the pack's own font. Pointing one
+     * at {@code minecraft:default} would be a no-op, and pointing it at a font
+     * the pack does not ship renders every character in it as a white box.
+     */
+    @Test
+    void everyFontTagNamesThePackFont() {
+        YamlConfiguration yaml = load();
+        List<String> wrong = yaml.getKeys(true).stream()
+                .filter(yaml::isString)
+                .flatMap(path -> fontNames(yaml.getString(path, "")).stream().map(name -> path + " -> " + name))
+                .filter(entry -> !entry.endsWith(" -> " + PACK_FONT))
+                .toList();
+        assertTrue(wrong.isEmpty(), "messages.yml uses a font other than " + PACK_FONT + ": " + wrong);
+    }
+
+    private static boolean containsPrivateUse(String template) {
+        return template.codePoints().anyMatch(cp -> cp >= 0xE000 && cp <= 0xF8FF);
+    }
+
+    private List<String> fontNames(String template) {
+        Matcher matcher = FONT_TAG.matcher(template);
+        List<String> names = new java.util.ArrayList<>();
+        while (matcher.find()) {
+            names.add(matcher.group(1));
+        }
+        return names;
     }
 
     private List<String> iconNames(String template) {

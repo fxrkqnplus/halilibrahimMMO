@@ -1,0 +1,57 @@
+{
+  "_aciklama": [
+    "HalilIbrahimMMO kaynak paketinin TEK renk kaynagi. Buradaki her ad,",
+    "simgeler.json ve esya-modelleri.json icindeki maskelerde tek karakterlik",
+    "bir anahtar olarak kullanilir.",
+    "",
+    "Tema, sunucunun zaten kullandigi mor->mavi kimliginin derinlestirilmis",
+    "halidir: sidebar basligi ve TAB ustbilgisi Faz 13'ten beri",
+    "<gradient:#7C3AED:#3B82F6> kullaniyor, palet o iki ucun etrafina",
+    "kuruldu. Sinif renkleri (ClassBarColor) ve boss nadirlik renkleri",
+    "BILEREK vanilla tonlarinda birakildi - oyuncu 'mor = epik' ogrendi,",
+    "onu yeniden ogretmenin bir bedeli var, kazanci yok.",
+    "",
+    "Bir rengi degistirmek butun paketi degistirir; PNG'lerin hicbiri elle",
+    "duzenlenmez, hepsi bu dosyadan uretilir."
+  ],
+
+  "renkler": {
+    ".": "#00000000",
+
+    "m": "#7C3AED",
+    "M": "#9F67F5",
+    "n": "#5B21B6",
+
+    "b": "#3B82F6",
+    "B": "#7BA9FA",
+    "c": "#1D4ED8",
+
+    "a": "#F2B21B",
+    "A": "#FFD971",
+    "s": "#B07908",
+
+    "z": "#12101B",
+    "Z": "#1B1826",
+    "e": "#2E2841",
+    "E": "#4A4166",
+
+    "w": "#E6E1F5",
+    "g": "#9A93B8",
+    "d": "#5C5478",
+
+    "k": "#EF4444",
+    "y": "#22C55E",
+    "t": "#06B6D4",
+    "o": "#F97316",
+    "p": "#EC4899"
+  },
+
+  "gradyanlar": {
+    "_aciklama": "Maskede 'G' karakteri gecen her piksel, maskenin sinirlayici kutusu boyunca bu iki uc arasinda dogrusal interpolasyonla boyanir. Yon: 'yatay' ya da 'dikey'.",
+    "kimlik": { "baslangic": "#7C3AED", "bitis": "#3B82F6", "yon": "yatay" },
+    "altin": { "baslangic": "#FFD971", "bitis": "#B07908", "yon": "dikey" },
+    "kan": { "baslangic": "#EF4444", "bitis": "#7F1D1D", "yon": "dikey" },
+    "orman": { "baslangic": "#22C55E", "bitis": "#14532D", "yon": "dikey" },
+    "tas": { "baslangic": "#9A93B8", "bitis": "#4A4166", "yon": "dikey" }
+  }
+}

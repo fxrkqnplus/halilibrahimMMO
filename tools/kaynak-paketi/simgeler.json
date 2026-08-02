@@ -1,0 +1,407 @@
+{
+  "_aciklama": [
+    "IconPack'teki 28 simgenin piksel sanati. Her giris bir IconPack id'sine",
+    "karsilik gelir ve kod noktasi IconPack'in bugun kullandigi kod noktasinin",
+    "AYNISIDIR - bu bilinclidir:",
+    "",
+    "  * messages.yml'deki ~332 <simge:...> kullanimi hic degismez,",
+    "  * IconPack.java ve MiniMessageService hic degismez,",
+    "  * ve en onemlisi, paketi OLMAYAN bir istemci bugun ne goruyorsa onu",
+    "    gormeye devam eder (beyaz kutu degil).",
+    "",
+    "TEK HUCRE KURALI: her maske 8x8'dir ve murekkep 0-6. sutunlarda kalir.",
+    "7. sutun bilerek bostur; bu, glyph'in ilerlemesini (advance) 8 pikselde",
+    "tutar ve LoreWrapper.MAXIMUM_LINE_LENGTH = 42 sabitini bugunku kadar",
+    "gecerli birakir. Bir maskeyi genisletmek o sabiti sessizce gecersiz",
+    "kilar - genisletmeyin.",
+    "",
+    "Maske karakterleri palet.json'daki 'renkler' anahtarlaridir; 'G' ozel",
+    "bir karakterdir ve 'gradyan' alaninda adi gecen gradyanla boyanir.",
+    "'.' saydamdir. IconArtCatalogTest bu dosyanin IconPack ile birebir",
+    "ortustugunu ve her maskenin tam 8x8 oldugunu zorlar."
+  ],
+
+  "yukseklik": 8,
+  "ascent": 7,
+
+  "simgeler": {
+    "guc": {
+      "kodnoktasi": "U+2726",
+      "gradyan": "kimlik",
+      "maske": [
+        "...G....",
+        "...G....",
+        "..GGG...",
+        "GGGGGGG.",
+        "GGGGGGG.",
+        "..GGG...",
+        "...G....",
+        "...G...."
+      ]
+    },
+    "prestij": {
+      "kodnoktasi": "U+2605",
+      "gradyan": "altin",
+      "maske": [
+        "...G....",
+        "..GGG...",
+        "GGGGGGG.",
+        ".GGGGG..",
+        "..GGG...",
+        "..G.G...",
+        ".G...G..",
+        "........"
+      ]
+    },
+    "sinif": {
+      "kodnoktasi": "U+2694",
+      "_not": "Capraz iki kilic 8 pikselde birbirine degmeyen noktalara dagiliyordu; tek kalin kilic ayni anlami tasiyip okunuyor.",
+      "maske": [
+        "...w....",
+        "...w....",
+        "...w....",
+        "...w....",
+        ".aaaaa..",
+        "...a....",
+        "..aaa...",
+        "........"
+      ]
+    },
+    "seviye": {
+      "kodnoktasi": "U+2756",
+      "maske": [
+        "...b....",
+        "..bbb...",
+        ".bb.bb..",
+        "bb.B.bb.",
+        ".bb.bb..",
+        "..bbb...",
+        "...b....",
+        "........"
+      ]
+    },
+    "xp": {
+      "kodnoktasi": "U+2727",
+      "maske": [
+        "...B....",
+        "..B.B...",
+        ".B...B..",
+        "BB...BB.",
+        ".B...B..",
+        "..B.B...",
+        "...B....",
+        "........"
+      ]
+    },
+    "kabiliyet": {
+      "kodnoktasi": "U+2738",
+      "gradyan": "kimlik",
+      "maske": [
+        "...G....",
+        ".G.G.G..",
+        "..GGG...",
+        "GGGGGGG.",
+        "..GGG...",
+        ".G.G.G..",
+        "...G....",
+        "........"
+      ]
+    },
+    "enerji": {
+      "kodnoktasi": "U+26A1",
+      "maske": [
+        "....aa..",
+        "...aa...",
+        "..aa....",
+        ".aaaaa..",
+        "....aa..",
+        "...aa...",
+        "..aa....",
+        "........"
+      ]
+    },
+    "can": {
+      "kodnoktasi": "U+2764",
+      "maske": [
+        ".kk.kk..",
+        "kkkkkkk.",
+        "kkkkkkk.",
+        "kkkkkkk.",
+        ".kkkkk..",
+        "..kkk...",
+        "...k....",
+        "........"
+      ]
+    },
+    "gorev": {
+      "kodnoktasi": "U+2691",
+      "maske": [
+        ".aaaaa..",
+        ".aaaaaa.",
+        ".aaaaa..",
+        ".g......",
+        ".g......",
+        ".g......",
+        ".g......",
+        "........"
+      ]
+    },
+    "koleksiyon": {
+      "kodnoktasi": "U+25C6",
+      "maske": [
+        "...t....",
+        "..ttt...",
+        ".ttttt..",
+        "ttttttt.",
+        ".ttttt..",
+        "..ttt...",
+        "...t....",
+        "........"
+      ]
+    },
+    "gunluk": {
+      "kodnoktasi": "U+270E",
+      "maske": [
+        ".....EE.",
+        "....aaa.",
+        "...aaa..",
+        "..aaa...",
+        ".aaa....",
+        ".ww.....",
+        "w.......",
+        "........"
+      ]
+    },
+    "liderlik": {
+      "kodnoktasi": "U+265B",
+      "gradyan": "altin",
+      "maske": [
+        "G..G..G.",
+        "G.GGG.G.",
+        "GGGGGGG.",
+        ".GGGGG..",
+        ".GGGGG..",
+        ".GGGGG..",
+        "........",
+        "........"
+      ]
+    },
+    "unvan": {
+      "kodnoktasi": "U+2724",
+      "_not": "Dort yaprakli susleme lekeye donuyordu; kirlangic kuyruklu bir sancak hem unvani anlatiyor hem de baska hicbir simgeye benzemiyor.",
+      "maske": [
+        "MMMMMMM.",
+        "M.MMM.M.",
+        "MMMMMMM.",
+        "MMMMMMM.",
+        "MMM.MMM.",
+        "MM...MM.",
+        "M.....M.",
+        "........"
+      ]
+    },
+    "kozmetik": {
+      "kodnoktasi": "U+273F",
+      "maske": [
+        "..p.p...",
+        ".ppppp..",
+        "ppp.ppp.",
+        "pp.a.pp.",
+        "ppp.ppp.",
+        ".ppppp..",
+        "..p.p...",
+        "........"
+      ]
+    },
+    "madencilik": {
+      "kodnoktasi": "U+26CF",
+      "_not": "Egik sap 8 pikselde rakam yedi gibi okunuyordu; duz sap kazmayi kazma yapiyor.",
+      "maske": [
+        "gg...gg.",
+        ".ggggg..",
+        "...a....",
+        "...a....",
+        "...a....",
+        "...a....",
+        "...a....",
+        "........"
+      ]
+    },
+    "odunculuk": {
+      "kodnoktasi": "U+2663",
+      "gradyan": "orman",
+      "maske": [
+        "...G....",
+        "..GGG...",
+        "..GGG...",
+        "GGGGGGG.",
+        "GGGGGGG.",
+        "...G....",
+        "..GGG...",
+        "........"
+      ]
+    },
+    "kazicilik": {
+      "kodnoktasi": "U+2692",
+      "_not": "Capraz cekic-kazma dagiliyordu. Kazicilik zaten kurek isidir (Faz 23'te geniş kazi yalnizca kurekle calisiyor), kurek hem dogru hem okunakli.",
+      "maske": [
+        "...a....",
+        "...a....",
+        "...a....",
+        "...a....",
+        ".wwwww..",
+        ".wwwww..",
+        "..www...",
+        "........"
+      ]
+    },
+    "avcilik": {
+      "kodnoktasi": "U+2620",
+      "maske": [
+        ".wwwww..",
+        "wwwwwww.",
+        "wzzwzzw.",
+        "wwwwwww.",
+        ".wwzww..",
+        "..www...",
+        ".w.w.w..",
+        "........"
+      ]
+    },
+    "tarimcilik": {
+      "kodnoktasi": "U+2740",
+      "maske": [
+        "...y....",
+        ".y.y.y..",
+        "..yyy...",
+        "yyyayyy.",
+        "..yyy...",
+        ".y.y.y..",
+        "...y....",
+        "........"
+      ]
+    },
+    "hayvancilik": {
+      "kodnoktasi": "U+2766",
+      "_not": "Duz yesil kutle sekilsizdi; koyu bir orta damar ve sap yapragi yaprak yapiyor. Gradyan kaldirildi - damarin gorunmesi icin govdenin tek tonda olmasi gerekiyor.",
+      "maske": [
+        "...yyyy.",
+        "..yyyyy.",
+        ".yyyyyy.",
+        ".yydyyy.",
+        ".yydyy..",
+        "..ydy...",
+        "..d.....",
+        "........"
+      ]
+    },
+    "tamam": {
+      "kodnoktasi": "U+2714",
+      "maske": [
+        "......y.",
+        ".....yy.",
+        "y...yy..",
+        "yy.yy...",
+        ".yyyy...",
+        "..yy....",
+        "........",
+        "........"
+      ]
+    },
+    "eksik": {
+      "kodnoktasi": "U+2718",
+      "maske": [
+        "k.....k.",
+        "kk...kk.",
+        ".kk.kk..",
+        "..kkk...",
+        ".kk.kk..",
+        "kk...kk.",
+        "k.....k.",
+        "........"
+      ]
+    },
+    "ok": {
+      "kodnoktasi": "U+00BB",
+      "maske": [
+        "........",
+        ".g..g...",
+        "..g..g..",
+        "...g..g.",
+        "..g..g..",
+        ".g..g...",
+        "........",
+        "........"
+      ]
+    },
+    "uyari": {
+      "kodnoktasi": "U+26A0",
+      "maske": [
+        "...a....",
+        "..a.a...",
+        "..aza...",
+        ".a.z.a..",
+        ".a.z.a..",
+        "a..z..a.",
+        "aaaaaaa.",
+        "........"
+      ]
+    },
+    "bilgi": {
+      "kodnoktasi": "U+2699",
+      "maske": [
+        ".g.g.g..",
+        ".ggggg..",
+        "ggg.ggg.",
+        "gg...gg.",
+        "ggg.ggg.",
+        ".ggggg..",
+        ".g.g.g..",
+        "........"
+      ]
+    },
+    "kutlama": {
+      "kodnoktasi": "U+2739",
+      "gradyan": "altin",
+      "_not": "kutlama ile sayginlik neredeyse ayni goruntuyu veriyordu. Ayrim artik yapisal: kutlama DOLU merkezli isinsal bir patlama, sayginlik ise ORTASI DELIK bir halka yildiz. Renk degil sekil ayiriyor, cunku ikisi de altin ve oyle kalmali.",
+      "maske": [
+        "G..G..G.",
+        ".G.G.G..",
+        "..GGG...",
+        "GGGGGGG.",
+        "..GGG...",
+        ".G.G.G..",
+        "G..G..G.",
+        "........"
+      ]
+    },
+    "sayginlik": {
+      "kodnoktasi": "U+2748",
+      "gradyan": "altin",
+      "maske": [
+        "..G.G...",
+        "G.GGG.G.",
+        ".GG.GG..",
+        "GG...GG.",
+        ".GG.GG..",
+        "G.GGG.G.",
+        "..G.G...",
+        "........"
+      ]
+    },
+    "boss": {
+      "kodnoktasi": "U+262C",
+      "_not": "Isinsal disk hem sekilsizdi hem de kabiliyet/kutlama ile ayni ailedendi. Boynuzlu bir kafa boss'u tek bakista soyluyor. Gradyan kaldirildi: goz cukurlarinin okunmasi icin govde tek tonda olmali.",
+      "maske": [
+        "k.....k.",
+        "kk...kk.",
+        "kkkkkkk.",
+        "kkkkkkk.",
+        "kzkkkzk.",
+        ".kkkkk..",
+        "..kkk...",
+        "........"
+      ]
+    }
+  }
+}

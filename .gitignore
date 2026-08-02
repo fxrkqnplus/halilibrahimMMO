@@ -55,5 +55,13 @@ tasks/
 # ozeldir.
 tools/modlar.yml
 
+# Ayni gerekce kaynak paketi icin de gecerli: uretici, palet ve maskeler
+# depoda kalir, urettikleri PNG/zip kalmaz - hepsi tek komutla yeniden
+# uretilir ve zip sunucuya ozeldir (adresi ve SHA-1'i config'e yaziliyor).
+# "referans" ise gercek Minecraft istemci jar'indan cikarilan vanilla
+# varliklardir; Mojang'in telifli dosyalari asla depoya girmez.
+tools/kaynak-paketi/cikti/
+tools/kaynak-paketi/referans/
+
 # Fabric sablon indirmeleri, gecici zip'ler
 template-mod-*.zip
