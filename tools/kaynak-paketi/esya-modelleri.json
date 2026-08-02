@@ -85,6 +85,69 @@
     "arayuz-ret":    { "plaka": "yok", "zemin": ".", "kenar": ".", "simge": "eksik" },
     "arayuz-kilit":  { "plaka": "yok", "zemin": ".", "kenar": ".", "simge": "eksik", "simge-renk": "d" },
     "arayuz-uyari":  { "plaka": "yok", "zemin": ".", "kenar": ".", "simge": "uyari" },
-    "arayuz-bilgi":  { "plaka": "yok", "zemin": ".", "kenar": ".", "simge": "bilgi" }
+    "arayuz-bilgi":  { "plaka": "yok", "zemin": ".", "kenar": ".", "simge": "bilgi" },
+
+    "_kurt_aciklama": "Asil Kurt'un silueti. Bunlar rozet degil sekil, bu yuzden plaka+amblem yerine dogrudan 16x16 maske ('maske16') kullaniyorlar. Bir kaynak paketi TEK BASINA oyuncu modelini degistiremez (oyuncu geometrisi istemcinin Java kodunda), bu yuzden donusum oyuncuya bagli ItemDisplay'lerle ciziliyor.",
+
+    "kurt-kafa": {
+      "maske16": [
+        "................",
+        "..d..........d..",
+        "..dd........dd..",
+        "..ddd......ddd..",
+        "..dddd....dddd..",
+        "..ddddddddddddd.",
+        ".ddddddddddddddd",
+        ".ddaddddddddaddd",
+        ".ddaddddddddaddd",
+        ".ddddddddddddddd",
+        "..ddddddddddddd.",
+        "...dddddddddddd.",
+        "....dddddddddd..",
+        ".....dddddddd...",
+        "......dddddd....",
+        "................"
+      ]
+    },
+    "kurt-burun": {
+      "maske16": [
+        "................",
+        "................",
+        "................",
+        "................",
+        ".....dddddd.....",
+        "....dddddddd....",
+        "...dddddddddd...",
+        "...dddzzzzddd...",
+        "...dddzzzzddd...",
+        "...dddddddddd...",
+        "....dddddddd....",
+        ".....dddddd.....",
+        "................",
+        "................",
+        "................",
+        "................"
+      ]
+    },
+    "kurt-kuyruk": {
+      "maske16": [
+        "................",
+        "............dd..",
+        "...........dddd.",
+        "..........dddddd",
+        ".........dddddd.",
+        "........dddddd..",
+        ".......dddddd...",
+        "......dddddd....",
+        ".....dddddd.....",
+        "....dddddd......",
+        "...dddddd.......",
+        "..dddddd........",
+        "..dddd..........",
+        "..ddd...........",
+        "..dd............",
+        "................"
+      ]
+    }
   }
 }

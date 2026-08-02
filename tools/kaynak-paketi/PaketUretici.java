@@ -877,16 +877,22 @@ public final class PaketUretici {
             for (Map.Entry<String, String> entry : models.entrySet()) {
                 String id = entry.getKey();
                 String body = entry.getValue();
-                String emblemId = Json.requireString(body, "simge");
-                List<String> mask = masks.get(emblemId);
-                if (mask == null) {
-                    throw new IOException(id + ": 'simge' bilinmeyen bir maskeyi gosteriyor: " + emblemId);
-                }
-
                 BufferedImage tile = new BufferedImage(TILE, TILE, BufferedImage.TYPE_INT_ARGB);
-                drawPlate(tile, palette, Json.requireString(body, "plaka"),
-                        Json.requireString(body, "zemin"), Json.requireString(body, "kenar"));
-                drawEmblem(tile, palette, mask, Json.optionalString(body, "simge-renk"));
+                if (body.contains("\"maske16\"")) {
+                    // A shape in its own right rather than a badge: the wolf
+                    // parts are silhouettes, and an 8x8 emblem on a plate cannot
+                    // be a snout.
+                    drawRawMask(tile, palette, Json.stringArray(body, "maske16"), id);
+                } else {
+                    String emblemId = Json.requireString(body, "simge");
+                    List<String> mask = masks.get(emblemId);
+                    if (mask == null) {
+                        throw new IOException(id + ": 'simge' bilinmeyen bir maskeyi gosteriyor: " + emblemId);
+                    }
+                    drawPlate(tile, palette, Json.requireString(body, "plaka"),
+                            Json.requireString(body, "zemin"), Json.requireString(body, "kenar"));
+                    drawEmblem(tile, palette, mask, Json.optionalString(body, "simge-renk"));
+                }
 
                 files.put("assets/" + NAMESPACE + "/textures/item/" + PREFIX + id + ".png", png(tile));
                 files.put("assets/" + NAMESPACE + "/models/item/" + PREFIX + id + ".json", ("""
@@ -900,6 +906,25 @@ public final class PaketUretici {
                           "model": { "type": "minecraft:model", "model": "%s:item/%s%s" }
                         }
                         """.formatted(NAMESPACE, PREFIX, id)).getBytes(StandardCharsets.UTF_8));
+            }
+        }
+
+        /** A literal 16x16 mask, for icons that are a shape rather than an emblem on a plate. */
+        private static void drawRawMask(BufferedImage tile, Palette palette, List<String> mask, String id) {
+            if (mask.size() != TILE) {
+                throw new IllegalArgumentException(id + ": maske16 tam " + TILE + " satir olmali, " + mask.size() + " var.");
+            }
+            for (int y = 0; y < TILE; y++) {
+                String row = mask.get(y);
+                if (row.length() != TILE) {
+                    throw new IllegalArgumentException(id + ": maske16 satiri " + TILE + " karakter olmali: '" + row + "'");
+                }
+                for (int x = 0; x < TILE; x++) {
+                    char key = row.charAt(x);
+                    if (key != '.') {
+                        tile.setRGB(x, y, palette.color(String.valueOf(key)));
+                    }
+                }
             }
         }
 

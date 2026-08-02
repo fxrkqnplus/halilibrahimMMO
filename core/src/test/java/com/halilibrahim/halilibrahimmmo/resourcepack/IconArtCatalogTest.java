@@ -256,9 +256,15 @@ final class IconArtCatalogTest {
         Set<String> masks = icons().keySet();
         List<String> wrong = new ArrayList<>();
         for (Map.Entry<String, String> entry : models().entrySet()) {
+            // A model is either a badge (plate + named 8x8 emblem) or a shape in
+            // its own right (a literal 16x16 mask). The wolf silhouette parts are
+            // the latter: an emblem on a plate cannot be a snout.
+            if (entry.getValue().contains("\"maske16\"")) {
+                continue;
+            }
             Matcher matcher = Pattern.compile("\"simge\"\\s*:\\s*\"([a-z0-9_-]+)\"").matcher(entry.getValue());
             if (!matcher.find()) {
-                wrong.add(entry.getKey() + ": no 'simge'");
+                wrong.add(entry.getKey() + ": neither 'simge' nor 'maske16'");
             } else if (!masks.contains(matcher.group(1))) {
                 wrong.add(entry.getKey() + " -> " + matcher.group(1));
             }

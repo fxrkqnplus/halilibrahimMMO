@@ -99,6 +99,8 @@ public final class YamlAbilityService implements AbilityService {
     private static final long GROWTH_SURGE_PASS_TICKS = 8L;
     /** How many times the opening howl repeats, one second apart. */
     private static final int NOBLE_WOLF_HOWLS = 3;
+    /** Draws the transformation; see WolfSilhouette for why it is not a model. */
+    private final WolfSilhouette wolfSilhouette;
     /** How fast a frightened animal runs from the wolf, as a multiple of its own walking speed. */
     private static final double NOBLE_WOLF_FLEE_SPEED = 1.6D;
     /** The window, in world ticks, during which Asil Kurt can be called at all. */
@@ -240,6 +242,7 @@ public final class YamlAbilityService implements AbilityService {
         this.mineBombKey = new NamespacedKey(plugin, "maden-bombasi");
         this.mineBombOwnerKey = new NamespacedKey(plugin, "maden-bombasi-sahip");
         this.mineBombAbilityKey = new NamespacedKey(plugin, "maden-bombasi-kabiliyet");
+        this.wolfSilhouette = new WolfSilhouette(plugin);
     }
 
     /** The tags {@code AbilityExplosionListener} reads off a primed charge to know it is ours. */
@@ -258,6 +261,9 @@ public final class YamlAbilityService implements AbilityService {
     @Override
     public void enable() {
         reload();
+        // A crash bypasses every removal path, so any silhouette left by a
+        // previous run is cleared before a new one can be spawned.
+        wolfSilhouette.sweep(plugin);
     }
 
     @Override
@@ -277,6 +283,9 @@ public final class YamlAbilityService implements AbilityService {
         // targets Paper, where disable runs on the thread owning these entities.
         revealedOres.values().forEach(ore -> ore.display().remove());
         revealedOres.clear();
+        // Same reasoning as the ore outlines above, and the same urgency:
+        // an ItemDisplay nobody removes is permanent world litter.
+        wolfSilhouette.clear();
     }
 
     @Override
@@ -753,6 +762,7 @@ public final class YamlAbilityService implements AbilityService {
                 player.removePotionEffect(PotionEffectType.RESISTANCE);
                 player.removePotionEffect(PotionEffectType.STRENGTH);
                 player.setGlowing(false);
+                wolfSilhouette.hide(player);
                 packTargets.remove(player.getUniqueId());
                 // The armour is deliberately not put back on. It went into the
                 // player's own inventory, it is theirs, and re-equipping it for
@@ -1669,6 +1679,7 @@ public final class YamlAbilityService implements AbilityService {
         player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, durationTicks, 1, false, false));
         player.setGlowing(true);
         stripArmour(player);
+        wolfSilhouette.show(player);
         howlAcrossServer(player);
         comboDamage.remove(player.getUniqueId());
         packTargets.remove(player.getUniqueId());
@@ -1677,9 +1688,16 @@ public final class YamlAbilityService implements AbilityService {
             if (!player.isOnline() || System.currentTimeMillis() >= expiresAt
                     || !isStillActive(player.getUniqueId(), definition.id())) {
                 task.cancel();
+                // Quitting mid-transformation does not tear the effect down -
+                // PlayerQuitEvent only clears the action-bar feedback - so the
+                // silhouette is removed here, in the one place that already
+                // notices the player is gone. Without it the displays would hang
+                // in the air until the chunk unloaded.
+                wolfSilhouette.hide(player.getUniqueId());
                 return;
             }
             stripArmour(player);
+            wolfSilhouette.follow(player);
             forgetPlayer(player);
             drivePack(player, radius);
             scatterPrey(player, radius);
