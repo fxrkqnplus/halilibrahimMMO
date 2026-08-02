@@ -54,11 +54,11 @@ final class UnlockConditionsTest {
         assertFalse(UnlockConditions.isSatisfied(reference(UnlockConditionType.SKILL_LEVEL, 1, "avcilik"), CONTEXT));
     }
 
-    /** Zenginlik thresholds run past {@code int}, which is why the condition carries its own {@code long}. */
+    /** Saygınlık thresholds run past {@code int}, which is why the condition carries its own {@code long}. */
     @Test
-    void wealthConditionComparesWealthTotal() {
-        assertTrue(UnlockConditions.isSatisfied(new UnlockCondition(UnlockConditionType.WEALTH, 0, "", 1_000_000L), CONTEXT));
-        assertTrue(UnlockConditions.isSatisfied(new UnlockCondition(UnlockConditionType.WEALTH, 0, "", 250_000L), CONTEXT));
-        assertFalse(UnlockConditions.isSatisfied(new UnlockCondition(UnlockConditionType.WEALTH, 0, "", 5_000_000_000L), CONTEXT));
+    void reputationConditionComparesReputationTotal() {
+        assertTrue(UnlockConditions.isSatisfied(new UnlockCondition(UnlockConditionType.REPUTATION, 0, "", 1_000_000L), CONTEXT));
+        assertTrue(UnlockConditions.isSatisfied(new UnlockCondition(UnlockConditionType.REPUTATION, 0, "", 250_000L), CONTEXT));
+        assertFalse(UnlockConditions.isSatisfied(new UnlockCondition(UnlockConditionType.REPUTATION, 0, "", 5_000_000_000L), CONTEXT));
     }
 }

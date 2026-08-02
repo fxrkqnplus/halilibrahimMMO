@@ -47,8 +47,8 @@ final class UnlockRequirementLore {
                     "beceri", skillName(services, condition.referenceId()),
                     "seviye", Integer.toString(condition.level())
             ));
-            case WEALTH -> services.messages().render(MessageKey.GUI_UNLOCK_REQUIREMENT_WEALTH, Map.of(
-                    "zenginlik", NumberFormatter.compact(condition.amount())
+            case REPUTATION -> services.messages().render(MessageKey.GUI_UNLOCK_REQUIREMENT_REPUTATION, Map.of(
+                    "sayginlik", NumberFormatter.compact(condition.amount())
             ));
         };
     }

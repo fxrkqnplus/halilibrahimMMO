@@ -34,15 +34,29 @@ public final class AbilityHudState {
      */
     private static final long STALE_AFTER_MILLIS = 5_000L;
 
+    /**
+     * How long before the end the tint has finished fading out.
+     *
+     * <p>The fade runs across the whole duration and reaches nothing exactly
+     * here, so the last second of an ability is always already clear - which is
+     * what makes "it is about to end" readable without a number.</p>
+     */
+    private static final long FADE_FLOOR_MILLIS = 1_000L;
+
     private volatile String displayName = "";
     private volatile ItemStack icon = ItemStack.EMPTY;
     private volatile int colorRgb = 0xFFFFFF;
     private volatile int intensity;
     private volatile boolean highlightHostiles;
+    private volatile boolean pulsing;
+    private volatile boolean proximityGlow;
     private volatile boolean endless;
     private volatile long expiresAtMillis;
+    private volatile long totalMillis;
     private volatile long lastMessageMillis;
     private volatile boolean active;
+    private volatile String comboLine = "";
+    private volatile int comboTier;
 
     public void accept(HudProtocol.Message message) {
         if (message.type() == HudProtocol.TYPE_CLEAR) {
@@ -54,8 +68,13 @@ public final class AbilityHudState {
         colorRgb = message.colorRgb() & 0xFFFFFF;
         intensity = message.intensity();
         highlightHostiles = message.highlightsHostiles();
+        pulsing = message.pulses();
+        proximityGlow = message.glowScalesWithDistance();
         endless = message.remainingMillis() == HudProtocol.NO_EXPIRY;
         expiresAtMillis = endless ? Long.MAX_VALUE : System.currentTimeMillis() + message.remainingMillis();
+        totalMillis = Math.max(1L, message.totalMillis());
+        comboLine = message.comboLine();
+        comboTier = message.comboTier();
         lastMessageMillis = System.currentTimeMillis();
         active = true;
     }
@@ -63,8 +82,12 @@ public final class AbilityHudState {
     public void clear() {
         active = false;
         highlightHostiles = false;
+        pulsing = false;
+        proximityGlow = false;
         icon = ItemStack.EMPTY;
         displayName = "";
+        comboLine = "";
+        comboTier = 0;
     }
 
     /** {@code true} while there is something to draw - and no longer, whatever the server does next. */
@@ -104,6 +127,40 @@ public final class AbilityHudState {
 
     public long remainingMillis() {
         return endless ? 0L : Math.max(0L, expiresAtMillis - System.currentTimeMillis());
+    }
+
+    public boolean pulses() {
+        return pulsing;
+    }
+
+    public boolean glowScalesWithDistance() {
+        return isActive() && proximityGlow;
+    }
+
+    /** The frenzy line the server wrote, or empty when this ability has none. */
+    public String comboLine() {
+        return isActive() ? comboLine : "";
+    }
+
+    public int comboTier() {
+        return isActive() ? comboTier : 0;
+    }
+
+    /**
+     * How much of the effect is still on screen, {@code 1.0} down to {@code 0.0}.
+     *
+     * <p>Falls linearly across the whole activation and hits zero
+     * {@link #FADE_FLOOR_MILLIS} before the end, so an ability visibly dims as
+     * it runs out instead of vanishing between two frames. An ability with no
+     * expiry (Creative) never fades - there is nothing to count down to.</p>
+     */
+    public double fade() {
+        if (endless) {
+            return 1.0D;
+        }
+        long span = Math.max(1L, totalMillis - FADE_FLOOR_MILLIS);
+        long left = remainingMillis() - FADE_FLOOR_MILLIS;
+        return Math.max(0.0D, Math.min(1.0D, (double) left / span));
     }
 
     /**

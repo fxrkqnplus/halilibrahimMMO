@@ -31,6 +31,16 @@ public interface AbilityService extends PluginService {
     void deactivate(Player player);
 
     /**
+     * Ends whatever is running because the player just died.
+     *
+     * <p>Separate from {@link #deactivate} on both halves: this one keeps the
+     * player's <em>selection</em>, because dying is not choosing to put an
+     * ability down, and it says so with its own message rather than Creative's
+     * "switched off" line. A no-op when nothing was running.</p>
+     */
+    void endOnDeath(Player player);
+
+    /**
      * Resolves whatever a block break means for the ability layer: expiring ore
      * outlines, extra-drop buffs, and firing an armed sweep. {@code energy} is
      * needed because a sweep ability now pays per block as it runs, and stops

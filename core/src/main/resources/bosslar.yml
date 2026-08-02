@@ -16,26 +16,71 @@
 #
 #  Her nadirlik şunları belirler:
 #    can-carpani / hasar-carpani / hiz-carpani : temel yaratığın kaç katı
+#    zeka         : bossun DAVRANIŞ seviyesi (aşağıya bakın)
 #    silahlar     : hangi silah türü hangi eşyaya karşılık gelir
 #    zirh         : sırasıyla kask, göğüslük, pantolon, bot (en fazla 4)
-#    kacar        : canı %25'in altına düşünce uzağa ışınlanıp kaçar
 #    isinlanir    : savaş sırasında oyuncuya doğru kısa ışınlamalar yapar
-#    iksir-icer   : canı yarıya düşünce kendine yenilenme basar
 #    sinif-xp     : öldüren oyuncunun sınıfına yazılan XP
 #    oyun-xp      : yere düşen normal Minecraft tecrübesi
-#    zenginlik    : öldüren oyuncuya yazılan Zenginlik Puanı
+#    sayginlik    : öldüren oyuncuya yazılan Saygınlık Puanı
 #    ganimet      : ölünce düşen eşyalar (sans: 0-1 arası ihtimal)
+#
+#  ----- ZEKA (Faz 23) -----
+#  Bir bossun ne kadar akıllı olduğu TEK bir isimle söylenir; hangi
+#  davranışın hangi seviyede açıldığı koddadır (BossIntelligence). Böylece
+#  "kapı kıran ama çiti açamayan" gibi kimsenin istemediği bir bileşim
+#  yapılandırmadan üretilemez. Merdiven her zaman tek yönlüdür: üst seviye,
+#  alt seviyenin yaptığı her şeyi yapar.
+#
+#    SERSEM  : yalnızca dolaşır ve vurur. Çok güçlü sıradan bir yaratık.
+#    UYANIK  : tırmanır, zıplar, tuzak kapısı/çit kapısı açar, başıboşken
+#              çevredeki hayvanlara ve köylülere saldırır.
+#    KURNAZ  : + mağaralara girmez, uçurum kenarına gitmez, önündeki kapıyı
+#              kırar, elinde yay varsa kaçarak nişan alır, canı azalınca
+#              kaçıp kendini toparlar ve geri döner.
+#    USTA    : + köy basar. Önce demir golemi, sonra köylüleri hedef alır;
+#              yolundaki kapıları kırar, tarlaları çiğner.
+#    DEHA    : USTA ile aynı repertuvar, aşağıdaki sayılarla (daha hızlı
+#              toparlanma, daha çok kaçış hakkı).
+#
+#  Yazılmazsa zeka nadirliğe göre türetilir (SIRADAN->SERSEM ...
+#  MISTIK->DEHA), yani bu dosyanın eski bir sürümü de mantıklı davranır.
+#
+#  ----- KAÇMA VE TOPARLANMA -----
+#    kacis-can-orani            : bu orana düşünce boss kaçmaya başlar
+#    toparlanma-orani           : kaçtıktan sonra bu orana kadar iyileşir,
+#                                 sonra geri döner. Bilerek 1.0 DEĞİLDİR:
+#                                 tam dolarak dönen bir boss dövüşü hayatta
+#                                 kalmış değil, silmiş olurdu.
+#    can-yenileme-orani-saniyede: saniyede kendi maksimum canının kaçta kaçı.
+#                                 0.01 = %1. Oran olmasının sebebi: sabit bir
+#                                 sayı Mistik'te işe yaramaz, Sıradan'da anında
+#                                 biterdi. Bilerek YAVAŞTIR - kaçış bir
+#                                 nefeslenme olmalı, bir sıfırlama değil.
+#    kacis-hakki                : ömrü boyunca kaç kere kaçabileceği. 0 =
+#                                 durduğu yerde dövüşür.
+#
+#  NOT (Faz 23): iyileştirme artık YENİLENME İKSİRİ ile değil, doğrudan can
+#  yazarak yapılıyor. Zombi/iskelet/boğulmuş yaratıklar undead oldukları için
+#  Regeneration'dan hiç etkilenmiyorlardı; ekranda kalp efekti çıkıyor ama can
+#  hiç dolmuyordu. Bildirilen hata tam olarak buydu.
 #
 #  BOSS TÜRLERİ: her türün kendi isim havuzu vardır - isim, uzaktan
 #  bakıldığında neyle karşı karşıya olduğunu söylemelidir. Boss öldüğünde
-#  "kafa" alanındaki eşya, o bossun kendi ismiyle ve nadirlik rengiyle
-#  yere düşer.
+#  "kafa" alanındaki eşya, o bossun kendi ismiyle, nadirlik rengiyle ve
+#  ONU ÖLDÜREN OYUNCUNUN ADIYLA yere düşer.
 #
 #  silah-turu: KILIC | BALTA | YAY | YOK
 #  hiz-seviyesi: bu türün kalıcı Hız büyüsü seviyesi (0 = yok, 2 = Hız 2).
 #                Nadirliğin "hiz-carpani" değerinden ayrıdır: o, yaratığın
 #                kendi yürüyüş hızını ölçekler; bu ise türün genel olarak
 #                yavaş mı hızlı mı olduğunu söyler.
+#
+#  UYARI - YAY silahi neden her kademede BOW: bir iskelet yalnizca elinde
+#  BOW varken vanilla'nin ok atma goal'una geciyor. ARBALET verildiginde
+#  sessizce yumruk atma goal'una dusuyor ve "elinde arbalet var ama elle
+#  vuruyor" hatasi tam olarak buydu. Ustune eklenti KURNAZ ve uzeri bosslara
+#  kacarak nisan alma + agir bir isabet atisi ekliyor.
 # =====================================================================
 
 spawn-araligi-dakika: 30
@@ -52,12 +97,15 @@ nadirlikler:
     can-carpani: 3.0
     hasar-carpani: 1.5
     hiz-carpani: 1.05
+    zeka: SERSEM
     sinif-xp: 400
     oyun-xp: 60
-    zenginlik: 2000
-    kacar: false
+    sayginlik: 2000
     isinlanir: false
-    iksir-icer: false
+    kacis-can-orani: 0.25
+    toparlanma-orani: 0.60
+    can-yenileme-orani-saniyede: 0.010
+    kacis-hakki: 0
     silahlar:
       KILIC: STONE_SWORD
       BALTA: STONE_AXE
@@ -72,12 +120,15 @@ nadirlikler:
     can-carpani: 6.0
     hasar-carpani: 2.0
     hiz-carpani: 1.12
+    zeka: UYANIK
     sinif-xp: 1200
     oyun-xp: 150
-    zenginlik: 8000
-    kacar: false
+    sayginlik: 8000
     isinlanir: false
-    iksir-icer: true
+    kacis-can-orani: 0.25
+    toparlanma-orani: 0.60
+    can-yenileme-orani-saniyede: 0.010
+    kacis-hakki: 0
     silahlar:
       KILIC: IRON_SWORD
       BALTA: IRON_AXE
@@ -93,16 +144,19 @@ nadirlikler:
     can-carpani: 10.0
     hasar-carpani: 2.6
     hiz-carpani: 1.2
+    zeka: KURNAZ
     sinif-xp: 3000
     oyun-xp: 320
-    zenginlik: 25000
-    kacar: false
+    sayginlik: 25000
     isinlanir: true
-    iksir-icer: true
+    kacis-can-orani: 0.25
+    toparlanma-orani: 0.55
+    can-yenileme-orani-saniyede: 0.008
+    kacis-hakki: 1
     silahlar:
       KILIC: DIAMOND_SWORD
       BALTA: DIAMOND_AXE
-      YAY: CROSSBOW
+      YAY: BOW
     zirh: [DIAMOND_HELMET, DIAMOND_CHESTPLATE, DIAMOND_LEGGINGS, DIAMOND_BOOTS]
     ganimet:
       - { esya: DIAMOND_BLOCK, en-az: 1, en-fazla: 2, sans: 1.0 }
@@ -115,16 +169,19 @@ nadirlikler:
     can-carpani: 16.0
     hasar-carpani: 3.2
     hiz-carpani: 1.3
+    zeka: USTA
     sinif-xp: 8000
     oyun-xp: 700
-    zenginlik: 80000
-    kacar: true
+    sayginlik: 80000
     isinlanir: true
-    iksir-icer: true
+    kacis-can-orani: 0.30
+    toparlanma-orani: 0.60
+    can-yenileme-orani-saniyede: 0.012
+    kacis-hakki: 1
     silahlar:
       KILIC: NETHERITE_SWORD
       BALTA: NETHERITE_AXE
-      YAY: CROSSBOW
+      YAY: BOW
     zirh: [NETHERITE_HELMET, DIAMOND_CHESTPLATE, DIAMOND_LEGGINGS, NETHERITE_BOOTS]
     ganimet:
       - { esya: NETHERITE_INGOT, en-az: 1, en-fazla: 2, sans: 1.0 }
@@ -137,16 +194,19 @@ nadirlikler:
     can-carpani: 26.0
     hasar-carpani: 4.0
     hiz-carpani: 1.45
+    zeka: DEHA
     sinif-xp: 25000
     oyun-xp: 1800
-    zenginlik: 400000
-    kacar: true
+    sayginlik: 400000
     isinlanir: true
-    iksir-icer: true
+    kacis-can-orani: 0.35
+    toparlanma-orani: 0.65
+    can-yenileme-orani-saniyede: 0.015
+    kacis-hakki: 2
     silahlar:
       KILIC: NETHERITE_SWORD
       BALTA: NETHERITE_AXE
-      YAY: CROSSBOW
+      YAY: BOW
     zirh: [NETHERITE_HELMET, NETHERITE_CHESTPLATE, NETHERITE_LEGGINGS, NETHERITE_BOOTS]
     ganimet:
       - { esya: NETHER_STAR, en-az: 1, en-fazla: 1, sans: 1.0 }

@@ -87,6 +87,18 @@ final class DurationFormatterTest {
         }
 
         @Override
+        public void send(
+                Audience audience, MessageKey key, Map<String, String> placeholders, Map<String, Component> components
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Component render(MessageKey key, Map<String, String> placeholders, Map<String, Component> components) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void broadcast(MessageKey key, Map<String, String> placeholders) {
             throw new UnsupportedOperationException();
         }

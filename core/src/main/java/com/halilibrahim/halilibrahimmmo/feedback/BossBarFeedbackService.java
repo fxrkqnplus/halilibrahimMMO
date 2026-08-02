@@ -420,6 +420,11 @@ public final class BossBarFeedbackService implements FeedbackService {
     @Override
     public void celebrateMysticBossSpawned(Player player) {
         playSound(player, "boss-mistik");
+        // Two cues, deliberately simultaneous rather than sequenced. The elder
+        // guardian's curse alone is a thin, high sound that reads as a warning
+        // ping; laying a deep growl under it in the same instant is what turns
+        // the rarest spawn on the server into something a player stops for.
+        playSound(player, "boss-mistik-ikincil");
         // ELDER_GUARDIAN is the one particle that draws on the receiving
         // player's screen rather than in the world, so it is spawned through
         // the player and its location is only there to satisfy the signature.
@@ -432,9 +437,9 @@ public final class BossBarFeedbackService implements FeedbackService {
     }
 
     @Override
-    public void celebrateWealthMilestone(Player player, long newTotal) {
-        messages.send(player, MessageKey.WEALTH_MILESTONE_PERSONAL, Map.of("zenginlik", Long.toString(newTotal)));
-        playSound(player, "zenginlik-kilometre-tasi");
+    public void celebrateReputationMilestone(Player player, long newTotal) {
+        messages.send(player, MessageKey.REPUTATION_MILESTONE_PERSONAL, Map.of("sayginlik", Long.toString(newTotal)));
+        playSound(player, "sayginlik-kilometre-tasi");
     }
 
     @Override

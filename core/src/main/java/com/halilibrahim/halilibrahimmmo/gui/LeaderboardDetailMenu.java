@@ -64,7 +64,7 @@ public final class LeaderboardDetailMenu implements GuiView {
             case PRESTIGE -> MessageKey.GUI_LEADERBOARD_DETAIL_TITLE_PRESTIGE;
             case QUEST_COMPLETIONS -> MessageKey.GUI_LEADERBOARD_DETAIL_TITLE_QUESTS;
             case COLLECTION_ENTRIES -> MessageKey.GUI_LEADERBOARD_DETAIL_TITLE_COLLECTIONS;
-            case WEALTH -> MessageKey.GUI_LEADERBOARD_DETAIL_TITLE_WEALTH;
+            case REPUTATION -> MessageKey.GUI_LEADERBOARD_DETAIL_TITLE_REPUTATION;
         };
         return services.messages().render(key);
     }
@@ -156,8 +156,8 @@ public final class LeaderboardDetailMenu implements GuiView {
             ));
             // The one board whose numbers reach eight figures, so it is the one
             // that has to be readable at a glance rather than counted digit by digit.
-            case WEALTH -> services.messages().render(MessageKey.GUI_LEADERBOARD_ENTRY_WEALTH_LORE, Map.of(
-                    "zenginlik", NumberFormatter.compact(entry.primaryValue())
+            case REPUTATION -> services.messages().render(MessageKey.GUI_LEADERBOARD_ENTRY_REPUTATION_LORE, Map.of(
+                    "sayginlik", NumberFormatter.compact(entry.primaryValue())
             ));
         };
     }

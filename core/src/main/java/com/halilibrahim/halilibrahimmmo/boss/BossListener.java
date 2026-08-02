@@ -3,10 +3,11 @@ package com.halilibrahim.halilibrahimmmo.boss;
 import com.halilibrahim.halilibrahimmmo.classes.ClassAwardHandler;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
+import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthAwardHandler;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationAwardHandler;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -24,6 +25,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -34,7 +36,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * <p>Reads the rarity straight off the corpse's {@code PersistentDataContainer}
  * rather than from any in-memory registry, which is what lets a boss that
  * outlived a server restart still reward properly. Ordinary skill XP, quest
- * progress and Zenginlik Puanı for the underlying creature are unaffected and
+ * progress and Saygınlık Puanı for the underlying creature are unaffected and
  * still flow through {@code SkillListener} - everything here is <em>on top</em>
  * of what killing that mob would normally be worth.</p>
  */
@@ -45,14 +47,14 @@ public final class BossListener implements Listener {
     private final ProfileService profiles;
     private final ClassService classes;
     private final ClassAwardHandler classAwards;
-    private final WealthService wealth;
-    private final WealthAwardHandler wealthAwards;
+    private final ReputationService reputation;
+    private final ReputationAwardHandler reputationAwards;
     private final FeedbackService feedback;
     private final MessageService messages;
 
     public BossListener(
             JavaPlugin plugin, YamlBossService bosses, ProfileService profiles, ClassService classes,
-            ClassAwardHandler classAwards, WealthService wealth, WealthAwardHandler wealthAwards,
+            ClassAwardHandler classAwards, ReputationService reputation, ReputationAwardHandler reputationAwards,
             FeedbackService feedback, MessageService messages
     ) {
         this.plugin = plugin;
@@ -60,8 +62,8 @@ public final class BossListener implements Listener {
         this.profiles = profiles;
         this.classes = classes;
         this.classAwards = classAwards;
-        this.wealth = wealth;
-        this.wealthAwards = wealthAwards;
+        this.reputation = reputation;
+        this.reputationAwards = reputationAwards;
         this.feedback = feedback;
         this.messages = messages;
     }
@@ -108,9 +110,9 @@ public final class BossListener implements Listener {
         bosses.retire(entity.getUniqueId());
         event.setDroppedExp(tier.vanillaExperience());
         rollLoot(event, tier);
-        bosses.headOf(entity).ifPresent(head -> event.getDrops().add(headItem(head, rarity.get(), name)));
-
         Player killer = entity.getKiller();
+        bosses.headOf(entity).ifPresent(head -> event.getDrops().add(headItem(head, rarity.get(), name, killer)));
+
         if (killer == null) {
             // Died to lava, a fall or another mob: the drops are still on the
             // ground for whoever finds them, but there is nobody to credit.
@@ -121,8 +123,8 @@ public final class BossListener implements Listener {
                 online.getScheduler().run(plugin, task -> feedback.celebrateBossDefeated(online), null));
         celebrateAtCorpse(entity);
         awardClassExperience(killer, tier);
-        wealth.award(killer.getUniqueId(), tier.wealthReward())
-                .thenAccept(award -> wealthAwards.handle(killer, award));
+        reputation.award(killer.getUniqueId(), tier.reputationReward())
+                .thenAccept(award -> reputationAwards.handle(killer, award));
     }
 
     /**
@@ -162,11 +164,24 @@ public final class BossListener implements Listener {
         }
     }
 
-    /** The trophy: this specific boss's own name, in its rarity's own colour. */
-    private ItemStack headItem(Material material, BossRarity rarity, String name) {
+    /**
+     * The trophy: this specific boss's own name, in its rarity's own colour,
+     * over a lore line naming whoever brought it down.
+     *
+     * <p>The head already said <em>what</em> was killed; the killer's name is
+     * what makes it a trophy rather than a drop, and it is the only record of
+     * that fight that outlives the death broadcast scrolling out of chat. A boss
+     * that drowned in lava or was finished by another mob has no name to write,
+     * so the head says so plainly instead of quietly losing the line - an empty
+     * lore would read as a bug the first time somebody compared two heads.</p>
+     */
+    private ItemStack headItem(Material material, BossRarity rarity, String name, Player killer) {
         ItemStack head = new ItemStack(material);
         ItemMeta meta = head.getItemMeta();
         meta.displayName(messages.render(rarity.headKey(), Map.of("isim", name)));
+        meta.lore(List.of(killer == null
+                ? messages.render(MessageKey.BOSS_HEAD_UNCLAIMED)
+                : messages.render(MessageKey.BOSS_HEAD_KILLER, Map.of("oyuncu", killer.getName()))));
         head.setItemMeta(meta);
         return head;
     }

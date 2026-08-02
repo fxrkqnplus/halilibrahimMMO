@@ -74,9 +74,16 @@ kabiliyetler:
   # =====================================================================
   #  Tabiat Vârisi (tabiat-varisi)
   #  Sinerji: odunculuk + kazicilik + tarimcilik + hayvancilik
-  #  Dort becerinin her biri icin tam olarak bir kabiliyet:
-  #  Agac Kirici (10, odunculuk) -> Filiz Patlamasi (20, tarimcilik) ->
-  #  Doga Ana'nin Koruyuculari (35, kazicilik) -> Suru Cagrisi (50, hayvancilik)
+  #
+  #  Faz 23 duzeni:
+  #  Filiz Patlamasi (10, tarimcilik) -> Suru Cagrisi (20, hayvancilik) ->
+  #  Doga Ana'nin Koruyuculari (35, kazicilik) -> ASIL KURT (50, odunculuk)
+  #
+  #  Agac Kirici KALDIRILDI. Odunculugun 25. kilometre tasi zaten agac
+  #  devirmeyi kaliciya cevirmisti; ayni isi yapan bir kabiliyeti 10. basamakta
+  #  tutmak sinifin ilk kabiliyetini "zaten sahip oldugun sey" yapiyordu.
+  #  Yerine gecen Asil Kurt sinifin son sozu ve oyundaki en gorkemli kabiliyet.
+  #  NOT: kilometre tasi agac devirme HIC degismedi, o duruyor.
   # =====================================================================
   doga-ana-koruyuculari:
     gorunen-ad: "Doğa Ana'nın Koruyucuları"
@@ -115,14 +122,19 @@ kabiliyetler:
 
   filiz-patlamasi:
     gorunen-ad: "Filiz Patlaması"
-    aciklama: "Çevrendeki 7 blok yarıçapındaki bütün olmamış ekinler bir anda hasada hazır hâle gelir. Hiç kemik tozu harcamazsın."
+    aciklama: "Çevrendeki 7 blok yarıçapındaki bütün olmamış ekinler kademe kademe, dalga dalga büyür. Hiç kemik tozu harcamazsın. Son ekin de olgunlaştığı anda kabiliyet kendiliğinden kapanır."
     simge: BONE_MEAL
     beceri: tarimcilik
     sinif: tabiat-varisi
-    gerekli-seviye: 20
+    # Faz 23: sinifin ilk basamagi (eski 20 -> 10).
+    gerekli-seviye: 10
     enerji: 25
-    bekleme-suresi-saniye: 150
-    etki-suresi-saniye: 3
+    # Faz 23: 150 -> 450 saniye (7,5 dakika).
+    bekleme-suresi-saniye: 450
+    # Buyume dalgalari yaklasik 2,5 saniye surer; sure yalnizca son dalganin
+    # oturmasi icin biraz daha uzun tutuldu. Kabiliyet zaten son dalgada
+    # kendini kapatiyor, bu deger bir ust sinirdir.
+    etki-suresi-saniye: 5
     arac:
       tur: HOE
     etki:
@@ -140,14 +152,15 @@ kabiliyetler:
 
   suru-cagrisi:
     gorunen-ad: "Sürü Çağrısı"
-    aciklama: "Çevrendeki 10 blok yarıçapındaki bütün yetişkin hayvanlar tek bir yem harcamadan çiftleşme moduna girer. Sınıfın son basamağı: bir sürüyü tek çağrıyla ikiye katlar."
+    aciklama: "Çevrendeki 10 blok yarıçapındaki bütün yetişkin hayvanlar tek bir yem harcamadan çiftleşme moduna girer. Bir sürüyü tek çağrıyla ikiye katlar."
     simge: WHEAT
     beceri: hayvancilik
     sinif: tabiat-varisi
-    gerekli-seviye: 50
+    # Faz 23: 50 -> 20. Sinifin son sozu artik Asil Kurt.
+    gerekli-seviye: 20
     enerji: 30
-    # Sinifin son kabiliyeti: 8 dakika bekleme.
-    bekleme-suresi-saniye: 480
+    # Artik ikinci basamak oldugu icin bekleme 8 dakikadan 4 dakikaya indi.
+    bekleme-suresi-saniye: 240
     # Cagri aninda biter: hayvanlar zaten cagriya o anda karsilik veriyor,
     # kabiliyetin acik kalmasinin bir islevi yok. 2 saniye sonra hem
     # survival'da hem yaratici modda kendiliginden kapanir.
@@ -167,40 +180,38 @@ kabiliyetler:
       partikul-sayisi: 30
       sekil: KUBBE
 
-  agac-kirici:
-    gorunen-ad: "Ağaç Kırıcı"
-    aciklama: "2,5 dakika boyunca kestiğin HER ağaç bir bütün olarak devrilir. Düşen her kütük 5 enerji ve baltandan 1 dayanıklılık götürür; enerjin biterse kabiliyet orada kapanır. Enerji kabiliyet açıkken hiç yenilenmez."
-    simge: IRON_AXE
+  asil-kurt:
+    gorunen-ad: "Asil Kurt"
+    aciklama: "YALNIZCA GECELERİ çağrılabilir. Açıldığı anda tüm sunucu kurt ulumasını duyar. 1 dakika boyunca zırhın çıkar ve giyemezsin; Hız, Dayanıklılık ve Güç alırsın; hiçbir canavar sana saldırmaz; çevrendeki kurtlar ve köpekler senin saldırdığın hedefe atılır; seni gören inek, koyun, at, kedi, köylü, domuz ve tavuk kaçar. Ekranın Kan Yemini gibi kızarır ve kombo merdiveni işler."
+    simge: BONE
     beceri: odunculuk
     sinif: tabiat-varisi
-    # Faz 22: sinifin ilk basamagi. Odunculuk Tabiat Varisi'nin en erken
-    # ogrendigi is, bu yuzden kabiliyeti de ilk acilan oldu.
-    gerekli-seviye: 10
-    enerji: 10
-    # Ilk basamak oldugu icin bekleme de 5 dakikadan 3 dakikaya indi; suresi ve
-    # blok basi enerjisi degismedi, yani bir seferde kac kutuk aldigi ayni.
-    bekleme-suresi-saniye: 180
-    # SUREKLI KABILIYET: ilk agacta tukenmez. 2,5 dakika boyunca acik kalir ve
-    # o sure boyunca kesilen her agac devrilir. Enerji biterse daha erken kapanir.
-    etki-suresi-saniye: 150
-    # Her dusen kutuk 5 enerji goturur; 100 enerjilik bir barla yaklasik 18
-    # kutuk devrilir. Kacini alacagini blok siniri degil enerjin belirler.
-    enerji-blok-basi: 5
-    # Menuden secilip sag tikla etkinlestirmek icin gereken alet: herhangi bir balta.
+    # Sinifin son sozu.
+    gerekli-seviye: 50
+    enerji: 40
+    # Sinifin son kabiliyeti: 10 dakika bekleme.
+    bekleme-suresi-saniye: 600
+    etki-suresi-saniye: 60
+    # Bir yardim cagrisi degil bir donusum: elinde ne varsa onunla acilir.
     arac:
-      tur: AXE
+      tur: ANY
     etki:
-      tur: TREE_FELL
-      limit: 64
+      tur: NOBLE_WOLF
+      # Kurtlarin cagriyi duydugu, hayvanlarin kactigi ve canavarlarin hedefini
+      # kaybettigi mesafe. Odak agacindan buyutulebilir.
+      yaricap: 16
+    # NOT: Paper 26.2'de "kurt ulumasi" diye bir Sound sabiti YOKTUR (kontrol
+    # edildi: ambient/growl/whine/pant var, howl yok). Ulumanin yerine oyunun
+    # sahip oldugu en derin hirlama cok dusuk tonda calinir.
     gorsel:
-      renk: YESIL
-      ses: ITEM_AXE_STRIP
-      yanki-ses: BLOCK_BAMBOO_WOOD_BREAK
+      renk: KIRMIZI
+      ses: ENTITY_WOLF_BIG_GROWL
+      yanki-ses: ENTITY_RAVAGER_ROAR
       ses-seviyesi: 1.0
-      ton: 0.8
-      partikul: CHERRY_LEAVES
-      partikul-sayisi: 36
-      sekil: HALKA
+      ton: 0.6
+      partikul: DUST
+      partikul-sayisi: 48
+      sekil: KUBBE
 
   # =====================================================================
   #  Amansız Savaşçı (avci) - sinerji: avcilik

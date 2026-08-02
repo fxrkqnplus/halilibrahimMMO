@@ -89,7 +89,35 @@ public enum AbilityEffectType {
      * {@code energyPerHit} is what restoring one of their hearts costs. Tamed
      * animals never answer - see {@code nearbyGuardians} for why.
      */
-    GUARDIAN_CALL;
+    GUARDIAN_CALL,
+    /**
+     * Instant, and only after dark: the player becomes the thing in the woods.
+     *
+     * <p>For the ability's duration they wear no armour, run faster, hit harder
+     * and take less; nothing hostile will come near them; the wolves and dogs
+     * around them tear into whatever they are fighting; and every ordinary
+     * animal that can see them runs. {@code limit} is how far all of that
+     * reaches.</p>
+     *
+     * <p>It shares Kan Yemini's whole presentation - the pulsing red screen, the
+     * heartbeat, the creatures glowing through it and the combo ladder - because
+     * the two are the same idea told twice: one is a hunter who has gone too
+     * far, the other is what is hunting him.</p>
+     */
+    NOBLE_WOLF;
+
+    /**
+     * Whether this ability drives the client's blood-red presentation: the
+     * pulsing screen edge, the heartbeat, the creatures glowing brighter as they
+     * close, and the combo ladder counting what the player has torn through.
+     *
+     * <p>Answered here rather than by naming ability ids anywhere, so a server
+     * owner who authors a third ability of this kind gets the whole presentation
+     * by choosing the effect type and nothing else.</p>
+     */
+    public boolean isFrenzy() {
+        return this == LIFE_STEAL || this == NOBLE_WOLF;
+    }
 
     /**
      * Whether this ability keeps working after its first block break, rather
@@ -120,6 +148,6 @@ public enum AbilityEffectType {
      * watch the dust settle.</p>
      */
     public boolean resolvesImmediately() {
-        return this == KNOCKBACK_SLAM || this == GROWTH_SURGE || this == LOVE_CALL || this == MINE_BOMB;
+        return this == KNOCKBACK_SLAM || this == LOVE_CALL || this == MINE_BOMB;
     }
 }

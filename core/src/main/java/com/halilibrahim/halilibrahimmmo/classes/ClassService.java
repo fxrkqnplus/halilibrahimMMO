@@ -26,7 +26,14 @@ public interface ClassService extends PluginService {
     /** How many points of one pool this player has earned in total (Güç cadence plus prestige grants). */
     int pointsFor(PlayerProfile profile, TalentPointCategory category);
 
-    /** Earned minus already-spent points of one pool - what the player may still spend right now. */
+    /**
+     * Earned minus already-spent points of one pool - what the player may still
+     * spend right now.
+     *
+     * <p>"Spent" covers more than talent ranks: the cloud chest's widenings are
+     * bought out of the feature pool too, and are counted here rather than at
+     * each screen that shows the number, so no caller can forget them.</p>
+     */
     int availablePoints(PlayerProfile profile, PlayerClassProgress progress, TalentPointCategory category);
 
     /**

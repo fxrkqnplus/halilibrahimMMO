@@ -25,7 +25,7 @@ import java.util.function.Consumer;
  * player-facing surface is GUI-only, and the admin panel has been GUI-only
  * since Phase 10 - which works right up to the moment staff need to type an
  * arbitrary number. Click-increment rows can add ten at a time; they cannot set
- * a wealth total of 4 812 500. Rather than reintroducing an admin chat command
+ * a reputation total of 4 812 500. Rather than reintroducing an admin chat command
  * (deleted on purpose, and the thing that made permissions hard to reason
  * about), the panel asks a question and reads the answer back.</p>
  *

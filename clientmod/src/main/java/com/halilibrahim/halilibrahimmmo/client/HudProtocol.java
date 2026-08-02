@@ -23,12 +23,16 @@ public final class HudProtocol {
     public static final String NAMESPACE = "hmmo";
     public static final String PATH = "hud";
 
-    public static final byte PROTOCOL_VERSION = 1;
+    public static final byte PROTOCOL_VERSION = 2;
 
     public static final byte TYPE_CLEAR = 0;
     public static final byte TYPE_ABILITY = 1;
 
     public static final int FLAG_HIGHLIGHT_HOSTILES = 1;
+    /** The screen edge breathes in and out rather than sitting still. */
+    public static final int FLAG_PULSE = 2;
+    /** A highlighted creature burns brighter the closer it gets. */
+    public static final int FLAG_PROXIMITY_GLOW = 4;
 
     /** Sent as the remaining time for an ability with no expiry worth counting down. */
     public static final int NO_EXPIRY = -1;
@@ -55,11 +59,21 @@ public final class HudProtocol {
             int remainingMillis,
             int totalMillis,
             int intensity,
-            int flags
+            int flags,
+            String comboLine,
+            int comboTier
     ) {
 
         public boolean highlightsHostiles() {
             return (flags & FLAG_HIGHLIGHT_HOSTILES) != 0;
+        }
+
+        public boolean pulses() {
+            return (flags & FLAG_PULSE) != 0;
+        }
+
+        public boolean glowScalesWithDistance() {
+            return (flags & FLAG_PROXIMITY_GLOW) != 0;
         }
     }
 
@@ -74,7 +88,7 @@ public final class HudProtocol {
             }
             byte type = in.readByte();
             if (type == TYPE_CLEAR) {
-                return new Message(TYPE_CLEAR, "", "", "", 0, 0, 0, 0, 0);
+                return new Message(TYPE_CLEAR, "", "", "", 0, 0, 0, 0, 0, "", 0);
             }
             if (type != TYPE_ABILITY) {
                 return null;
@@ -87,11 +101,14 @@ public final class HudProtocol {
             int totalMillis = in.readInt();
             int intensity = in.readByte();
             int flags = in.readByte();
+            String comboLine = in.readUTF();
+            int comboTier = in.readByte();
             if (abilityId.isEmpty()) {
                 return null;
             }
             return new Message(TYPE_ABILITY, abilityId, displayName, iconItem, colorRgb,
-                    remainingMillis, Math.max(0, totalMillis), Math.max(0, Math.min(100, intensity)), flags);
+                    remainingMillis, Math.max(0, totalMillis), Math.max(0, Math.min(100, intensity)), flags,
+                    comboLine, Math.max(0, comboTier));
         } catch (IOException exception) {
             return null;
         }

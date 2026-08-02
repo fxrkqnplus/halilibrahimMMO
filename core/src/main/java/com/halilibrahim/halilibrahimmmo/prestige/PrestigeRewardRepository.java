@@ -37,6 +37,40 @@ public final class PrestigeRewardRepository {
         });
     }
 
+    CompletableFuture<Integer> findPhysicalTaken(UUID playerId) {
+        return database.<Integer>execute(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT taken_count FROM hmmo_player_prestige_physical WHERE player_id = ?
+                    """)) {
+                statement.setString(1, playerId.toString());
+                try (ResultSet result = statement.executeQuery()) {
+                    return result.next() ? result.getInt("taken_count") : 0;
+                }
+            }
+        });
+    }
+
+    CompletableFuture<Void> savePhysicalTaken(UUID playerId, int taken) {
+        return database.executeVoid(connection -> {
+            try (PreparedStatement update = connection.prepareStatement("""
+                    UPDATE hmmo_player_prestige_physical SET taken_count = ? WHERE player_id = ?
+                    """)) {
+                update.setInt(1, taken);
+                update.setString(2, playerId.toString());
+                if (update.executeUpdate() != 0) {
+                    return;
+                }
+            }
+            try (PreparedStatement insert = connection.prepareStatement("""
+                    INSERT INTO hmmo_player_prestige_physical (player_id, taken_count) VALUES (?, ?)
+                    """)) {
+                insert.setString(1, playerId.toString());
+                insert.setInt(2, taken);
+                insert.executeUpdate();
+            }
+        });
+    }
+
     /**
      * Writes one reward's new total. UPDATE-then-INSERT, the same upsert idiom
      * every other repository in this codebase uses and the one the cross-engine

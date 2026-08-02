@@ -1,7 +1,7 @@
 # HalilIbrahimMMO - Kozmetik kataloğu
 # Kozmetikler, katılım ve seviye atlama anında kısa bir parçacık efekti
 # olarak görünür. Her kozmetiğin tek bir kazanma koşulu vardır - geçerli
-# değerler için titles.yml'nin başındaki açıklamaya bakın (WEALTH dahil).
+# değerler için titles.yml'nin başındaki açıklamaya bakın (REPUTATION dahil).
 # "efekt" herhangi bir geçerli Bukkit Particle adı olabilir.
 kozmetikler:
   # ----- İlerlemeye dayalı -----
@@ -100,27 +100,27 @@ kozmetikler:
       tur: QUEST_COMPLETED
       gorev-id: esya-ejderha-yumurtasi
 
-  # ----- Zenginlik Puanı -----
+  # ----- Saygınlık Puanı -----
   altin-sagnagi:
     gorunen-ad: "Altın Sağanağı"
     esya: GOLD_NUGGET
     efekt: WAX_ON
     kosul:
-      tur: WEALTH
-      zenginlik: 250000
+      tur: REPUTATION
+      sayginlik: 250000
 
   kutsal-hale:
     gorunen-ad: "Kutsal Hâle"
     esya: TOTEM_OF_UNDYING
     efekt: TOTEM_OF_UNDYING
     kosul:
-      tur: WEALTH
-      zenginlik: 1000000
+      tur: REPUTATION
+      sayginlik: 1000000
 
   boyut-yirtigi:
     gorunen-ad: "Boyut Yırtığı"
     esya: ENDER_EYE
     efekt: PORTAL
     kosul:
-      tur: WEALTH
-      zenginlik: 5000000
+      tur: REPUTATION
+      sayginlik: 5000000

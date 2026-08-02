@@ -7,7 +7,7 @@ import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.quests.QuestProgress;
 import com.halilibrahim.halilibrahimmmo.quests.QuestService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,17 +28,17 @@ public final class UnlockContextLoader {
     private final SkillService skills;
     private final QuestService quests;
     private final CollectionService collections;
-    private final WealthService wealth;
+    private final ReputationService reputation;
 
     public UnlockContextLoader(
             ProfileService profiles, SkillService skills, QuestService quests,
-            CollectionService collections, WealthService wealth
+            CollectionService collections, ReputationService reputation
     ) {
         this.profiles = profiles;
         this.skills = skills;
         this.quests = quests;
         this.collections = collections;
-        this.wealth = wealth;
+        this.reputation = reputation;
     }
 
     public CompletableFuture<UnlockContext> load(UUID playerId, String playerName) {
@@ -46,13 +46,13 @@ public final class UnlockContextLoader {
                 quests.loadAll(playerId).thenCompose(questProgress ->
                         collections.loadAll(playerId).thenCompose(collectionProgress ->
                                 loadSkillLevels(playerId).thenCompose(skillLevels ->
-                                        wealth.load(playerId).thenApply(wealthPoints -> new UnlockContext(
+                                        reputation.load(playerId).thenApply(reputationPoints -> new UnlockContext(
                                                 skillLevels.values().stream().mapToInt(Integer::intValue).sum(),
                                                 profile.prestige(),
                                                 completedQuestIds(questProgress),
                                                 completedCollectionIds(collectionProgress),
                                                 skillLevels,
-                                                wealthPoints
+                                                reputationPoints
                                         ))))));
     }
 

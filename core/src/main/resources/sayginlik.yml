@@ -1,12 +1,23 @@
 # =====================================================================
-#  HalilIbrahimMMO - Zenginlik Puanı Ayarları
+#  HalilIbrahimMMO - Saygınlık Puanı Ayarları
 # =====================================================================
-#  Zenginlik Puanı herkeste 0 olarak başlar ve yalnızca ARTAR - hiçbir
-#  şekilde harcanmaz, takas edilmez, bir şey satın almaz. Bu bir para
-#  birimi DEĞİLDİR; bu sunucuda ekonomi yoktur. Puan, oyuncunun dünyadan
-#  gerçekte ne çıkardığının bir ölçüsüdür: liderlik tablosundaki yerini,
-#  hangi ünvan ve kozmetikleri açtığını ve hangi anların tüm sunucuya
-#  duyurulacağını belirler.
+#  Saygınlık Puanı herkeste 0 olarak başlar. Hiçbir şekilde harcanmaz,
+#  takas edilmez, bir şey satın almaz - bu bir para birimi DEĞİLDİR; bu
+#  sunucuda ekonomi yoktur. Puan bir İTİBAR ölçüsüdür: liderlik
+#  tablosundaki yerini, hangi ünvan ve kozmetikleri açtığını ve hangi
+#  anların tüm sunucuya duyurulacağını belirler.
+#
+#  ÖNEMLİ (Faz 23): saygınlık artık DÜŞEBİLİR. Ölmek puana mal olur ve
+#  bedel, ölmeden önceki puana göre belirlenir - kademeler koddadır
+#  (ReputationPenalty), çünkü bunlar bir denge ayarı değil sistemin
+#  kendisidir. Özet:
+#     100 altı        : yalnızca bir oyuncu öldürürse, TÜM puan gider
+#     100-1.000       : yalnızca bir oyuncu öldürürse -100
+#     1.000-10.000    : kendi -100 / yaratık -250 / oyuncu -500
+#     10.000-100.000  : kendi -1.000 / yaratık -2.500 / oyuncu -5.000
+#     100.000-1M      : kendi -10.000 / yaratık -25.000 / oyuncu -50.000
+#     1M ve üstü      : kendi -100.000 / yaratık -250.000 / oyuncu -500.000
+#  Puan hiçbir zaman sıfırın altına inmez.
 #
 #  Her kaynak tasarım gereği tek seferliktir; çiftlik kurup tekrar tekrar
 #  kazanılamaz:
@@ -27,7 +38,7 @@
 #  Bir ödül aynı anda birkaç eşiği birden geçerse yalnızca en yükseği
 #  duyurulur.
 #
-#  siralama-duyuru-araligi-dakika: zenginlik liderlik tablosunun ne sıklıkla
+#  siralama-duyuru-araligi-dakika: saygınlık liderlik tablosunun ne sıklıkla
 #  yeniden okunup sıralama değişikliklerinin sohbete duyurulacağı. Her duyuru
 #  TÜM SUNUCUYA gider; kısa bir aralık tabloyu kimsenin susturamayacağı bir
 #  spikere çevirir, o yüzden 20-30 dakika arası önerilir. Her turda yalnızca
@@ -40,6 +51,15 @@ varsayilan-gorev: 2500
 kilometre-taslari: [10000, 50000, 250000, 1000000, 5000000, 25000000, 100000000]
 
 siralama-duyuru-araligi-dakika: 25
+
+# ----- Eğilim duyuruları (Faz 23) -----
+# Sıralama duyurularının ARASINA giren ikinci bir duyuru türü. Her turda
+# çevrimiçi herkesin puanı bir önceki turla karşılaştırılır ve YALNIZCA en çok
+# kıpırdayan tek kişi duyurulur - yükseliyorsa övgüyle, düşüyorsa iğnelemeyle.
+# Aralık her turda bu bandın içinden yeniden çekilir; sabit olsaydı duyuru bir
+# haber olmaktan çıkıp saate dönüşürdü.
+egilim-duyuru-en-az-dakika: 35
+egilim-duyuru-en-fazla-dakika: 40
 
 # ----- Doğal olarak oluşmuş bloklar -----
 bloklar:

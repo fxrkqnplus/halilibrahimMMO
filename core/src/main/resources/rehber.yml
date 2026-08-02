@@ -38,7 +38,7 @@ kategoriler:
           - "<gray>Açmak için <white>/mmo</white> yaz.</gray>"
           - ""
           - "<gray>Açılmadan önce hiçbir şey ilerlemez: beceri XP'si,</gray>"
-          - "<gray>görev, zenginlik, hiçbiri. Bu kasıtlıdır - sisteme</gray>"
+          - "<gray>görev, saygınlık, hiçbiri. Bu kasıtlıdır - sisteme</gray>"
           - "<gray>girmeyi sen seçersin.</gray>"
       - baslik: "<green>2. Adım - Sınıfını seç</green>"
         simge: DIAMOND_SWORD
@@ -55,7 +55,7 @@ kategoriler:
         simge: OAK_SIGN
         satirlar:
           - "<gray>Ekranın sağındaki panel her şeyi anlatır: Güç'ün,</gray>"
-          - "<gray>prestijin, zenginliğin, sınıfın, kuşandığın kabiliyet</gray>"
+          - "<gray>prestijin, saygınlığın, sınıfın, kuşandığın kabiliyet</gray>"
           - "<gray>ve takip ettiğin görevler.</gray>"
           - ""
           - "<gray>Panel iki saniyede bir kendini yeniler.</gray>"
@@ -126,10 +126,10 @@ kategoriler:
           - "<gray>becerinin birine düşer, bu yüzden hiçbiri tek başına</gray>"
           - "<gray>belirleyici değildir - ama dördü birden çok yönlüdür.</gray>"
           - ""
-          - "<white>10</white> <gray>Doğa Ana'nın Koruyucuları - hayvanlar savaşır</gray>"
-          - "<white>20</white> <gray>Filiz Patlaması - ekinler anında olgunlaşır</gray>"
-          - "<white>35</white> <gray>Sürü Çağrısı - sürü yemsiz çiftleşir</gray>"
-          - "<white>50</white> <gray>Ağaç Kırıcı - ağaçlar bütün olarak devrilir</gray>"
+          - "<white>10</white> <gray>Filiz Patlaması - ekinler dalga dalga olgunlaşır</gray>"
+          - "<white>20</white> <gray>Sürü Çağrısı - sürü yemsiz çiftleşir</gray>"
+          - "<white>35</white> <gray>Doğa Ana'nın Koruyucuları - hayvanlar savaşır</gray>"
+          - "<white>50</white> <gray>Asil Kurt - geceleri kurda dönüşürsün</gray>"
       - baslik: "<yellow>Sınıf seviyesi</yellow>"
         simge: EXPERIENCE_BOTTLE
         satirlar:
@@ -298,10 +298,9 @@ kategoriler:
       - baslik: "<aqua>Blok başına maliyetler</aqua>"
         simge: IRON_PICKAXE
         satirlar:
-          - "<white>Ağaç Kırıcı</white>  <gray>düşen her kütük için <white>5</white> enerji</gray>"
           - "<white>Bulldozer</white>   <gray>kazılan her blok için <white>3</white> enerji</gray>"
           - ""
-          - "<gray>Yani \"bir seferde kaç kütük devirirsin\" sorusunun</gray>"
+          - "<gray>Yani \"bir seferde kaç blok kazarsın\" sorusunun</gray>"
           - "<gray>cevabı blok sınırı değil, <white>enerji barındır</white>.</gray>"
           - ""
           - "<gray>Süpürme <white>aleti de yer</white>: düşen her blok için elindeki</gray>"
@@ -330,13 +329,15 @@ kategoriler:
           - "<gray>Yetenekler <white>birbirinin yerine geçmeyen</white> iki puan</gray>"
           - "<gray>havuzundan ödenir:</gray>"
           - ""
-          - "<white>Özellik Puanı</white> <gray>- her 25 Güç seviyesinde 1,</gray>"
-          - "<gray>her prestijde 4. Can, PvE hasar, maksimum enerji.</gray>"
+          - "<white>Özellik Puanı</white> <gray>- her 30 Güç seviyesinde 1,</gray>"
+          - "<gray>her prestijde 4. Can, PvE hasar, maksimum enerji</gray>"
+          - "<gray>ve bulut sandığının genişletmeleri.</gray>"
           - ""
-          - "<white>Kabiliyet Puanı</white> <gray>- her 40 Güç seviyesinde 1,</gray>"
+          - "<white>Kabiliyet Puanı</white> <gray>- her 60 Güç seviyesinde 1,</gray>"
           - "<gray>her prestijde 2. Tek bir kabiliyete özel iyileştirme.</gray>"
           - ""
-          - "<yellow>Kabiliyet puanı bilerek daha nadirdir.</yellow>"
+          - "<yellow>Kural tek cümle: özellik puanı her zaman kabiliyet</yellow>"
+          - "<yellow>puanının tam iki katı hızda gelir.</yellow>"
       - baslik: "<blue>Kabiliyet yetenekleri ne yapar?</blue>"
         simge: EXPERIENCE_BOTTLE
         satirlar:
@@ -415,21 +416,21 @@ kategoriler:
           - "<gray>hiçbir şey sabitlemezsen hepsi görünür.</gray>"
 
   # -------------------------------------------------------------------
-  zenginlik:
-    gorunen-ad: "<blue><bold>Zenginlik Puanı</bold></blue>"
+  sayginlik:
+    gorunen-ad: "<blue><bold>Saygınlık Puanı</bold></blue>"
     simge: DIAMOND
     ozet: "Para değil, itibar. Nasıl artar?"
     konular:
-      - baslik: "<blue>Zenginlik nedir?</blue>"
+      - baslik: "<blue>Saygınlık nedir?</blue>"
         simge: DIAMOND
         satirlar:
-          - "<red>Bu sunucuda para yoktur.</red> <gray>Zenginlik Puanı bir</gray>"
+          - "<red>Bu sunucuda para yoktur.</red> <gray>Saygınlık Puanı bir</gray>"
           - "<gray>bakiye değil, bir <white>skordur</white>: harcanmaz, düşmez,</gray>"
           - "<gray>hiçbir şeye takas edilmez.</gray>"
           - ""
           - "<gray>Satın aldığı tek şey <white>itibardır</white>: liderlik tablosunda</gray>"
           - "<gray>sıra, unvanlar, kozmetikler ve sunucu duyuruları.</gray>"
-      - baslik: "<blue>Zenginlik nasıl artar?</blue>"
+      - baslik: "<blue>Saygınlık nasıl artar?</blue>"
         simge: ANCIENT_DEBRIS
         satirlar:
           - "<gray>Dört kaynaktan, hepsi tek seferlik:</gray>"
@@ -449,7 +450,7 @@ kategoriler:
           - "<gray>duyurulur. Aynı anda birkaçını birden geçersen</gray>"
           - "<gray>yalnızca <white>en yükseği</white> duyurulur.</gray>"
           - ""
-          - "<gray>25 dakikada bir zenginlik sıralamasındaki en dikkat</gray>"
+          - "<gray>25 dakikada bir saygınlık sıralamasındaki en dikkat</gray>"
           - "<gray>çekici değişiklik sunucuya duyurulur.</gray>"
           - ""
           - "<gray>Panelde kısaltılarak yazılır: <white>12.6K</white>, <white>1.05M</white>.</gray>"
@@ -524,7 +525,7 @@ kategoriler:
           - "<gray>Sıradan → Nadir → Epik → Efsanevi → <white>Mistik</white></gray>"
           - ""
           - "<gray>Nadirlik canını, hasarını, hızını, zırhını, silahını,</gray>"
-          - "<gray>ganimetini ve verdiği zenginliği birden belirler.</gray>"
+          - "<gray>ganimetini ve verdiği saygınlığı birden belirler.</gray>"
           - ""
           - "<gray>Bazıları yarı canda kendini iyileştirir, bazıları sana</gray>"
           - "<gray>doğru ışınlanır, bazıları çeyrek canda <white>kaçar</white>.</gray>"
@@ -538,7 +539,7 @@ kategoriler:
           - "<gray>  eskisi <white>kaybolur</white>. Ama bir oyuncu ona bir kez</gray>"
           - "<gray>  bile vurduysa kaybolmaz - dövüş bitene kadar durur.</gray>"
           - ""
-          - "<gray>• Öldüren oyuncu sınıf XP'si, zenginlik, ganimet ve</gray>"
+          - "<gray>• Öldüren oyuncu sınıf XP'si, saygınlık, ganimet ve</gray>"
           - "<gray>  bossun <white>kendi adını taşıyan kafasını</white> alır.</gray>"
 
   # -------------------------------------------------------------------
@@ -624,7 +625,7 @@ kategoriler:
           - "<gray>Kozmetik seviye atladığında ve girişte partikül patlatır.</gray>"
           - ""
           - "<gray>Açılma şartları seviye, prestij, görev, koleksiyon</gray>"
-          - "<gray>ya da zenginliktir. Kilitli olanın üstüne gelince</gray>"
+          - "<gray>ya da saygınlıktir. Kilitli olanın üstüne gelince</gray>"
           - "<gray>onu <white>neyin açacağı</white> yazar.</gray>"
       - baslik: "<dark_aqua>Uyku ve TAB listesi</dark_aqua>"
         simge: WHITE_BED

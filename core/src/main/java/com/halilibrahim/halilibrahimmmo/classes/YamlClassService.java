@@ -48,10 +48,12 @@ public final class YamlClassService implements ClassService {
     private final ConcurrentHashMap<UUID, Map<TalentPointCategory, Integer>> grantCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, CompletableFuture<Void>> updateChains = new ConcurrentHashMap<>();
     private final NamespacedKey healthModifierKey;
+    private final java.util.function.ToIntFunction<java.util.UUID> featurePointsSpentElsewhere;
 
     public YamlClassService(
             JavaPlugin plugin, ProfileService profiles, ClassRepository repository, AbilityService abilities,
-            SkillService skills, ProgressionService progression
+            SkillService skills, ProgressionService progression,
+            java.util.function.ToIntFunction<java.util.UUID> featurePointsSpentElsewhere
     ) {
         this.plugin = plugin;
         this.profiles = profiles;
@@ -59,6 +61,7 @@ public final class YamlClassService implements ClassService {
         this.abilities = abilities;
         this.skills = skills;
         this.progression = progression;
+        this.featurePointsSpentElsewhere = featurePointsSpentElsewhere;
         this.healthModifierKey = new NamespacedKey(plugin, "class-health");
     }
 
@@ -349,9 +352,20 @@ public final class YamlClassService implements ClassService {
         ) + grantedPoints(profile.playerId(), category);
     }
 
+    /**
+     * <p>{@code featurePointsSpentElsewhere} is the cloud chest's widenings,
+     * supplied as a lambda by the bootstrap rather than as a service field: the
+     * backpack already depends on this class (it needs the player's class level
+     * to know whether it is unlocked), so a field pointing the other way would
+     * be a cycle. The same forward-reference shape the synergy bridge and the
+     * trade screen already use.</p>
+     */
     @Override
     public int availablePoints(PlayerProfile profile, PlayerClassProgress progress, TalentPointCategory category) {
-        return pointsFor(profile, category) - progress.spentPoints(settings().definitions(), category);
+        int spentElsewhere = category == TalentPointCategory.OZELLIK
+                ? featurePointsSpentElsewhere.applyAsInt(profile.playerId())
+                : 0;
+        return pointsFor(profile, category) - progress.spentPoints(settings().definitions(), category) - spentElsewhere;
     }
 
     private ClassSettings parse(YamlConfiguration yaml) {

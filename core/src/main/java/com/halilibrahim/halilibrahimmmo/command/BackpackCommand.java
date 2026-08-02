@@ -58,7 +58,9 @@ public final class BackpackCommand implements BasicCommand {
             // Personal chat confirmation, matching what /ev and /takas already
             // do: the window opening is the obvious part, but the chat line is
             // what stays on screen after it is closed again.
-            messages.send(player, MessageKey.BACKPACK_OPENED);
+            messages.send(player, MessageKey.BACKPACK_OPENED, Map.of(
+                    "kapasite", Integer.toString(backpacks.capacity(player.getUniqueId()))
+            ));
         }, null));
     }
 }

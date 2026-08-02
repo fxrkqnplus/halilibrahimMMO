@@ -36,7 +36,22 @@ public final class HostileGlowTicker {
 
     /** How far the oath reaches, in blocks. Matches nothing on the server: this is presentation only. */
     private static final double RADIUS = 32.0D;
+    /**
+     * Inside this fraction of {@link #RADIUS} a creature burns in the bright
+     * team rather than the dark one.
+     *
+     * <p><strong>Two bands, not a gradient, and that is a genuine limitation of
+     * the game rather than a choice.</strong> Vanilla's outline renderer reads
+     * its colour from a scoreboard team and from nowhere else, and a team's
+     * colour is one of the sixteen chat colours - there is no per-entity alpha
+     * to fade. Dark red for the ones still out there and bright red for the ones
+     * on top of you is the whole range the renderer can express. The rest of
+     * "closer is worse" is carried by the screen tint, which <em>can</em> be
+     * scaled smoothly.</p>
+     */
+    private static final double NEAR_BAND = 0.45D;
     private static final String TEAM_NAME = "hmmo_kan_yemini";
+    private static final String NEAR_TEAM_NAME = "hmmo_kan_yemini_yakin";
 
     private final AbilityHudState state;
     private final Set<Integer> marked = new HashSet<>();
@@ -55,15 +70,19 @@ public final class HostileGlowTicker {
             forgetAll(level);
             return;
         }
-        PlayerTeam team = ensureTeam(level.getScoreboard());
+        PlayerTeam farTeam = ensureTeam(level.getScoreboard(), TEAM_NAME, TeamColor.DARK_RED);
+        PlayerTeam nearTeam = ensureTeam(level.getScoreboard(), NEAR_TEAM_NAME, TeamColor.RED);
+        boolean banded = state.glowScalesWithDistance();
         Set<Integer> stillNear = new HashSet<>();
         double radiusSquared = RADIUS * RADIUS;
+        double nearSquared = radiusSquared * NEAR_BAND * NEAR_BAND;
         for (Entity entity : level.entitiesForRendering()) {
-            if (!(entity instanceof Enemy) || entity.isRemoved()
-                    || entity.distanceToSqr(minecraft.player) > radiusSquared) {
+            double distanceSquared = entity.distanceToSqr(minecraft.player);
+            if (!(entity instanceof Enemy) || entity.isRemoved() || distanceSquared > radiusSquared) {
                 continue;
             }
             stillNear.add(entity.getId());
+            PlayerTeam wanted = !banded || distanceSquared <= nearSquared ? nearTeam : farTeam;
             if (marked.add(entity.getId())) {
                 // Only ever turned on for a creature that was not already
                 // glowing on its own - otherwise ending the ability would put
@@ -74,8 +93,11 @@ public final class HostileGlowTicker {
                     continue;
                 }
                 entity.setGlowingTag(true);
-                level.getScoreboard().addPlayerToTeam(entity.getScoreboardName(), team);
             }
+            // Re-applied every tick rather than only on first sight: a creature
+            // that walks from the far band into the near one has to change
+            // colour, and moving it between teams is the only way to say so.
+            level.getScoreboard().addPlayerToTeam(entity.getScoreboardName(), wanted);
         }
         marked.removeIf(id -> {
             if (stillNear.contains(id)) {
@@ -107,10 +129,10 @@ public final class HostileGlowTicker {
      * client's own scoreboard, so it is never sent anywhere and never collides
      * with the server's own teams.
      */
-    private PlayerTeam ensureTeam(Scoreboard scoreboard) {
-        PlayerTeam existing = scoreboard.getPlayerTeam(TEAM_NAME);
-        PlayerTeam team = existing != null ? existing : scoreboard.addPlayerTeam(TEAM_NAME);
-        team.setColor(Optional.of(TeamColor.RED));
+    private PlayerTeam ensureTeam(Scoreboard scoreboard, String name, TeamColor color) {
+        PlayerTeam existing = scoreboard.getPlayerTeam(name);
+        PlayerTeam team = existing != null ? existing : scoreboard.addPlayerTeam(name);
+        team.setColor(Optional.of(color));
         return team;
     }
 }

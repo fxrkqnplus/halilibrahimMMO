@@ -44,7 +44,7 @@ public final class AdminPlayerEditMenu implements GuiView {
     private static final int ABILITY_SLOT = 31;
     private static final int FEATURE_POINTS_SLOT = 32;
     private static final int ABILITY_POINTS_SLOT = 33;
-    private static final int WEALTH_SLOT = 34;
+    private static final int REPUTATION_SLOT = 34;
     private static final int BACK_SLOT = 49;
 
     private final GuiServices services;
@@ -157,11 +157,11 @@ public final class AdminPlayerEditMenu implements GuiView {
         renderPointRow(inventory, profile, classProgress, TalentPointCategory.KABILIYET,
                 ABILITY_POINTS_SLOT, Material.ENCHANTED_BOOK, MessageKey.GUI_ADMIN_EDIT_ABILITY_POINTS_ITEM);
 
-        inventory.setItem(WEALTH_SLOT, GuiItems.of(Material.DIAMOND,
-                services.messages().render(MessageKey.GUI_ADMIN_EDIT_WEALTH_ITEM, Map.of(
-                        "zenginlik", NumberFormatter.compact(services.wealth().cached(targetId))
+        inventory.setItem(REPUTATION_SLOT, GuiItems.of(Material.DIAMOND,
+                services.messages().render(MessageKey.GUI_ADMIN_EDIT_REPUTATION_ITEM, Map.of(
+                        "sayginlik", NumberFormatter.compact(services.reputation().cached(targetId))
                 )),
-                List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_WEALTH_LORE))));
+                List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_REPUTATION_LORE))));
 
         inventory.setItem(FORCE_CLASS_SLOT, GuiItems.of(Material.ANVIL,
                 services.messages().render(MessageKey.GUI_ADMIN_EDIT_FORCE_CLASS_ITEM),
@@ -226,8 +226,8 @@ public final class AdminPlayerEditMenu implements GuiView {
             GuiManager.open(player, new AdminAbilityPickerMenu(services, targetId, targetName, fromOnlineList));
             return;
         }
-        if (slot == WEALTH_SLOT) {
-            promptForWealth(player);
+        if (slot == REPUTATION_SLOT) {
+            promptForReputation(player);
             return;
         }
         if (slot == FEATURE_POINTS_SLOT) {
@@ -359,38 +359,38 @@ public final class AdminPlayerEditMenu implements GuiView {
     /**
      * The one admin field a click-increment row cannot express.
      *
-     * <p>Zenginlik totals routinely run into the millions, so stepping one at a
+     * <p>Saygınlık totals routinely run into the millions, so stepping one at a
      * time - or even five hundred at a time - is not a correction tool, it is a
      * repetitive-strain injury. The panel asks for the number in chat instead
      * ({@link ChatPromptService}), which keeps the admin surface GUI-driven
      * without pretending a number can be clicked into existence.</p>
      *
      * <p>This is also the only path in the plugin that can <em>lower</em> a
-     * wealth total, and it is deliberately an overwrite rather than a delta:
+     * reputation total, and it is deliberately an overwrite rather than a delta:
      * staff correcting a rollback know what the number should be, not what to
      * add to reach it.</p>
      */
-    private void promptForWealth(Player player) {
-        services.chatPrompts().await(player, MessageKey.ADMIN_WEALTH_PROMPT, reply -> {
+    private void promptForReputation(Player player) {
+        services.chatPrompts().await(player, MessageKey.ADMIN_REPUTATION_PROMPT, reply -> {
             long total;
             try {
                 total = Long.parseLong(reply.replace(".", "").replace(",", "").trim());
             } catch (NumberFormatException exception) {
-                services.messages().send(player, MessageKey.ADMIN_WEALTH_INVALID, Map.of("deger", reply));
+                services.messages().send(player, MessageKey.ADMIN_REPUTATION_INVALID, Map.of("deger", reply));
                 GuiManager.open(player, reopened());
                 return;
             }
             if (total < 0) {
-                services.messages().send(player, MessageKey.ADMIN_WEALTH_INVALID, Map.of("deger", reply));
+                services.messages().send(player, MessageKey.ADMIN_REPUTATION_INVALID, Map.of("deger", reply));
                 GuiManager.open(player, reopened());
                 return;
             }
-            services.wealth().adminSetTotal(targetId, total).thenAccept(applied ->
+            services.reputation().adminSetTotal(targetId, total).thenAccept(applied ->
                     player.getScheduler().run(services.plugin(), task -> {
                         services.logger().info("Yonetici " + player.getName() + ", " + targetName
                                 + " oyuncusunun zenginligini " + applied + " olarak ayarladi.");
-                        services.messages().send(player, MessageKey.ADMIN_WEALTH_SET, Map.of(
-                                "oyuncu", targetName, "zenginlik", Long.toString(applied)
+                        services.messages().send(player, MessageKey.ADMIN_REPUTATION_SET, Map.of(
+                                "oyuncu", targetName, "sayginlik", Long.toString(applied)
                         ));
                         Player target = Bukkit.getPlayer(targetId);
                         if (target != null) {

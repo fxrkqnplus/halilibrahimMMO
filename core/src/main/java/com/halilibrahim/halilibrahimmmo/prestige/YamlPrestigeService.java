@@ -1,5 +1,6 @@
 package com.halilibrahim.halilibrahimmmo.prestige;
 
+import com.halilibrahim.halilibrahimmmo.abilities.AbilityService;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
 import com.halilibrahim.halilibrahimmmo.classes.PlayerClassDefinition;
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
@@ -8,12 +9,18 @@ import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
 import com.halilibrahim.halilibrahimmmo.progression.ProgressionService;
 import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -36,12 +43,14 @@ public final class YamlPrestigeService implements PrestigeService {
     private final SkillService skills;
     private final ClassService classes;
     private final BankedPowerService bankedPower;
-    private final WealthService wealth;
+    private final ReputationService reputation;
+    private final AbilityService abilities;
     private final AtomicReference<PrestigeSettings> settings = new AtomicReference<>();
 
     public YamlPrestigeService(
             JavaPlugin plugin, ProfileService profiles, ProgressionService progression,
-            SkillService skills, ClassService classes, BankedPowerService bankedPower, WealthService wealth
+            SkillService skills, ClassService classes, BankedPowerService bankedPower,
+            ReputationService reputation, AbilityService abilities
     ) {
         this.plugin = plugin;
         this.profiles = profiles;
@@ -49,7 +58,8 @@ public final class YamlPrestigeService implements PrestigeService {
         this.skills = skills;
         this.classes = classes;
         this.bankedPower = bankedPower;
-        this.wealth = wealth;
+        this.reputation = reputation;
+        this.abilities = abilities;
     }
 
     @Override public void enable() { reload(); }
@@ -63,10 +73,11 @@ public final class YamlPrestigeService implements PrestigeService {
             YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
             int maximum = yaml.getInt("maksimum-prestij", 0);
             int minimumSkillLevel = yaml.getInt("gerekli-beceri-seviyesi", 0);
-            long wealthReward = yaml.getLong("prestij-zenginlik-odulu", 0);
+            long reputationReward = yaml.getLong("prestij-sayginlik-odulu", 0);
             if (maximum < 1 || minimumSkillLevel < 1) throw new IllegalArgumentException("Maximum prestige and required skill level must be positive.");
-            if (wealthReward < 0) throw new IllegalArgumentException("Prestige wealth reward cannot be negative.");
-            settings.set(new PrestigeSettings(maximum, minimumSkillLevel, wealthReward, parseRewardValues(yaml)));
+            if (reputationReward < 0) throw new IllegalArgumentException("Prestige reputation reward cannot be negative.");
+            settings.set(new PrestigeSettings(maximum, minimumSkillLevel, reputationReward,
+                    parseRewardValues(yaml), parsePhysicalRewards(yaml)));
         } catch (RuntimeException exception) {
             throw new LifecycleException("prestige.yml could not be loaded.", exception);
         }
@@ -90,6 +101,52 @@ public final class YamlPrestigeService implements PrestigeService {
         return Map.copyOf(values);
     }
 
+    /**
+     * The crates, and the two things that make the choice real: there must be
+     * at least two of them, and every one must actually contain something.
+     *
+     * <p>A single crate is not a choice, and an empty crate is a button that
+     * lies about what it does - the same reasoning that makes every permanent
+     * reward's value mandatory. Both fail the load rather than shipping a
+     * screen that wastes a player's prestige.</p>
+     */
+    private Map<String, PrestigePhysicalReward> parsePhysicalRewards(YamlConfiguration yaml) {
+        ConfigurationSection section = yaml.getConfigurationSection("fiziksel-oduller");
+        if (section == null) {
+            throw new IllegalArgumentException("prestige.yml must declare a fiziksel-oduller section.");
+        }
+        Map<String, PrestigePhysicalReward> rewards = new LinkedHashMap<>();
+        for (String rawId : section.getKeys(false)) {
+            String id = rawId.toLowerCase(Locale.ROOT);
+            ConfigurationSection entry = section.getConfigurationSection(rawId);
+            if (entry == null || !id.matches("[a-z0-9_-]+") || rewards.containsKey(id)) {
+                throw new IllegalArgumentException("Invalid or duplicate physical prestige reward: " + rawId);
+            }
+            String displayName = entry.getString("gorunen-ad", "");
+            Material icon = Material.matchMaterial(entry.getString("simge", ""));
+            if (displayName.isBlank() || icon == null) {
+                throw new IllegalArgumentException("Physical prestige reward needs gorunen-ad and a known simge: " + id);
+            }
+            List<Map.Entry<Material, Integer>> contents = new ArrayList<>();
+            for (Map<?, ?> raw : entry.getMapList("esyalar")) {
+                Material material = Material.matchMaterial(String.valueOf(raw.get("esya")));
+                int amount = raw.get("adet") instanceof Number number ? number.intValue() : 0;
+                if (material == null || amount < 1) {
+                    throw new IllegalArgumentException("Invalid item entry in physical prestige reward: " + id);
+                }
+                contents.add(Map.entry(material, amount));
+            }
+            if (contents.isEmpty()) {
+                throw new IllegalArgumentException("A physical prestige reward must contain something: " + id);
+            }
+            rewards.put(id, new PrestigePhysicalReward(id, displayName, icon, List.copyOf(contents)));
+        }
+        if (rewards.size() < 2) {
+            throw new IllegalArgumentException("prestige.yml must offer at least two physical rewards to choose between.");
+        }
+        return Map.copyOf(rewards);
+    }
+
     @Override
     public PrestigeSettings settings() {
         PrestigeSettings value = settings.get();
@@ -110,12 +167,40 @@ public final class YamlPrestigeService implements PrestigeService {
                     .thenCompose(ignored -> profiles.update(playerId, playerName, PrestigeRules::apply))
                     .thenCompose(updated -> skills.resetAll(playerId)
                             .thenCompose(ignoredReset -> resetSelectedClassLevel(playerId, playerName, selectedClass))
-                            // Wealth is added, never reset: the score records what
+                            // Reputation is added, never reset: the score records what
                             // this player has taken out of the world, and a
                             // prestige does not undo any of it.
-                            .thenCompose(ignoredReset -> wealth.award(playerId, settings().wealthReward()))
-                            .thenApply(ignoredAward -> new PrestigeResult(PrestigeResult.Status.PRESTIGED, updated.prestige(), Optional.empty())));
+                            .thenCompose(ignoredReset -> reputation.award(playerId, settings().reputationReward()))
+                            .thenApply(ignoredAward -> {
+                                unequipAbility(playerId);
+                                return new PrestigeResult(PrestigeResult.Status.PRESTIGED, updated.prestige(), Optional.empty());
+                            }));
         });
+    }
+
+    /**
+     * A prestige takes the equipped ability off.
+     *
+     * <p>Prestige resets the selected class to level 1, so every ability that
+     * class has is locked again the instant it finishes - leaving one equipped
+     * would mean a player walks away wearing something they can no longer use,
+     * and the ability screen would show a highlighted icon it refuses to
+     * activate. Done <em>here</em> rather than in the two screens that call
+     * prestige, because there are two of them and this is not the kind of thing
+     * one of them is allowed to forget.</p>
+     *
+     * <p>{@code unequip} rather than {@code clearSelection}: the switch-cooldown
+     * record is deliberately kept, so prestiging is not a free way around it.
+     * The chain resolves on a database thread, so the player-touching half hops
+     * onto their own region - and a player who logged out mid-prestige simply
+     * has nothing equipped to take off.</p>
+     */
+    private void unequipAbility(UUID playerId) {
+        Player player = plugin.getServer().getPlayer(playerId);
+        if (player == null) {
+            return;
+        }
+        player.getScheduler().run(plugin, task -> abilities.unequip(player), null);
     }
 
     @Override

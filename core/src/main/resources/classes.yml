@@ -9,9 +9,26 @@ sinif-degistirme-bekleme-gun: 7
 # Bir yetenegin hangi havuzdan odendigi "etki.tur" degerinden belirlenir, ayrica
 # yazilmaz - kabiliyete ozel her tur zaten bir "kabiliyet" alani ister, digerleri
 # istemez. Kabiliyet puani bilerek daha nadirdir.
+# ----- YETENEK PUANI EKONOMISI (Faz 23'te oturtuldu) -----
+# Iki havuz da AYNI iki kaynaktan beslenir - Guc ve prestij - ve aralarindaki
+# oran her iki kaynakta da AYNIDIR:
+#
+#     Ozellik puani her zaman kabiliyet puaninin TAM IKI KATI hizda gelir.
+#       Guc'ten : 30 Guc'te 1 ozellik  /  60 Guc'te 1 kabiliyet
+#       Prestij : her prestijde 4 ozellik / 2 kabiliyet
+#
+# Bu oran kasitli olarak her yerde ayni tutuldu: "kabiliyet puani daha nadirdir"
+# cumlesinin tek bir sayisi olmali, iki kaynakta iki farkli orani degil.
+# Oyuncu ekranda bu iki satiri okur (odak agacindaki puan sayaclarina gelince),
+# yani buradaki her degisiklik oyuna dogrudan yansiyip yazili olarak gorunur.
+#
+# Faz 23'te kazanim BIR TIK ZORLASTIRILDI: 25/40 -> 30/60. Alti becerinin
+# hepsi 100 olan, hic prestij yapmamis bir oyuncu (600 Guc) artik 24 ozellik +
+# 15 kabiliyet degil, 20 ozellik + 10 kabiliyet puanina sahip. Ustune bulut
+# sandiginin iki genisletmesi de ozellik puanindan odenir.
 yetenek-puani:
-  ozellik-seviye-basina: 25
-  kabiliyet-seviye-basina: 40
+  ozellik-seviye-basina: 30
+  kabiliyet-seviye-basina: 60
   prestij-basina-ozellik: 4
   prestij-basina-kabiliyet: 2
 
@@ -168,12 +185,18 @@ siniflar:
       guc: { gorunen-ad: "Güç", maksimum-rank: 4, etki: { tur: PVE_DAMAGE_MULTIPLIER, deger-rank-basina: 0.03 } }
       dayaniklilik: { gorunen-ad: "Dayanıklılık", maksimum-rank: 4, etki: { tur: MAX_ENERGY, deger-rank-basina: 5 } }
       # --- Kabiliyet yetenekleri ---
-      # Agac Kirici: temel enerji 10 -> her rank -1 enerji (rank 4'te 6).
-      kesim-tasarrufu: { gorunen-ad: "Kesim Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.10 } }
-      # Agac Kirici: temel bekleme 180 sn -> her rank -9 sn (rank 4'te 144 sn).
-      kesim-ritmi: { gorunen-ad: "Kesim Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: agac-kirici, deger-rank-basina: 0.05 } }
-      # Agac Kirici: temel 64 kutuk -> her rank +1 kutuk.
-      kesim-uzmanligi: { gorunen-ad: "Kesim Uzmanlığı", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: agac-kirici, deger-rank-basina: 1 } }
+      # Faz 23: Agac Kirici kaldirildi, yerine Asil Kurt geldi. Uc yetenek de
+      # AYNI ID'ler ve AYNI havuzda kalarak yeni kabiliyete yoneltildi -
+      # §15.4'un kurali geregi silinmis bir kabiliyete harcanmis rankler zaten
+      # hicbir seye sayilmaz, yani hem eski rankler iade edilmis olur hem de
+      # sinifin yetenek sayisi (3 ozellik + 7 kabiliyet) bozulmaz.
+      #
+      # Asil Kurt: temel enerji 40 -> her rank -4 enerji (rank 4'te 24).
+      kesim-tasarrufu: { gorunen-ad: "Kurt Açlığı", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: asil-kurt, deger-rank-basina: 0.10 } }
+      # Asil Kurt: temel bekleme 600 sn -> her rank -30 sn (rank 4'te 480 sn).
+      kesim-ritmi: { gorunen-ad: "Kurt Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: asil-kurt, deger-rank-basina: 0.05 } }
+      # Asil Kurt: temel yaricap 16 -> her rank +1 blok (rank 4'te 20).
+      kesim-uzmanligi: { gorunen-ad: "Sürü Sesi", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: asil-kurt, deger-rank-basina: 1 } }
       # Doga Ana'nin Koruyuculari: temel sure 10 sn -> her rank +5 sn (rank 4'te 30 sn).
       koruyucu-suresi: { gorunen-ad: "Koruyucu Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: doga-ana-koruyuculari, deger-rank-basina: 0.5 } }
       # Doga Ana'nin Koruyuculari: temel 6 hayvan -> her rank +1 (rank 2'de 8).
@@ -183,7 +206,7 @@ siniflar:
       koruyucu-ritmi: { gorunen-ad: "Koruyucu Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: doga-ana-koruyuculari, deger-rank-basina: 0.0625 } }
       # Filiz Patlamasi: temel yaricap 7 -> her rank +1 blok (rank 4'te 11).
       filiz-genisligi: { gorunen-ad: "Filiz Genişliği", maksimum-rank: 4, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: filiz-patlamasi, deger-rank-basina: 1 } }
-      # Suru Cagrisi: temel bekleme 480 sn -> her rank -30 sn (rank 4'te 360 sn).
+      # Suru Cagrisi: temel bekleme 240 sn -> her rank -15 sn (rank 4'te 180 sn).
       #
       # Faz 22'de sure yerine beklemeyi kisaltiyor. LOVE_CALL cagri gider gitmez
       # biten bir kabiliyet (2 sn) ve hayvanlarin ask penceresi ondan bagimsiz,

@@ -47,9 +47,11 @@ public final class PluginMessageHudService implements HudService {
     }
 
     @Override
-    public void showAbility(Player player, AbilityDefinition definition, long expiresAtMillis, long totalMillis) {
+    public void showAbility(
+            Player player, AbilityDefinition definition, long expiresAtMillis, long totalMillis,
+            String comboLine, int comboTier
+    ) {
         long remaining = expiresAtMillis <= 0 ? -1L : expiresAtMillis - System.currentTimeMillis();
-        int flags = definition.effectType() == AbilityEffectType.LIFE_STEAL ? HudProtocol.FLAG_HIGHLIGHT_HOSTILES : 0;
         player.sendPluginMessage(plugin, HudProtocol.CHANNEL, HudProtocol.ability(
                 definition.id(),
                 definition.displayName(),
@@ -58,8 +60,25 @@ public final class PluginMessageHudService implements HudService {
                 remaining < 0 ? HudProtocol.NO_EXPIRY : (int) Math.min(Integer.MAX_VALUE, remaining),
                 (int) Math.min(Integer.MAX_VALUE, Math.max(0L, totalMillis)),
                 intensityOf(definition),
-                flags
+                flagsOf(definition),
+                comboLine,
+                comboTier
         ));
+    }
+
+    /**
+     * Which of the client's optional presentations this ability turns on.
+     *
+     * <p>All three ride on {@link AbilityEffectType#isFrenzy()} rather than on a
+     * list of ability ids, so an owner authoring a third ability of that kind
+     * gets the pulsing screen, the proximity glow and the combo ladder by
+     * choosing the effect type and nothing else.</p>
+     */
+    private int flagsOf(AbilityDefinition definition) {
+        if (!definition.effectType().isFrenzy()) {
+            return 0;
+        }
+        return HudProtocol.FLAG_HIGHLIGHT_HOSTILES | HudProtocol.FLAG_PULSE | HudProtocol.FLAG_PROXIMITY_GLOW;
     }
 
     @Override

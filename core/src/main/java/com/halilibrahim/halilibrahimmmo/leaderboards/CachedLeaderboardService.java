@@ -97,8 +97,8 @@ public final class CachedLeaderboardService implements LeaderboardService {
     }
 
     @Override
-    public CompletableFuture<Integer> wealthRank(long wealth) {
-        return repository.rankOfWealth(wealth);
+    public CompletableFuture<Integer> reputationRank(long reputation) {
+        return repository.rankOfReputation(reputation);
     }
 
     @Override

@@ -31,8 +31,20 @@ public interface HudService extends PluginService {
      *                        (Creative, where the ability stays until switched off)
      * @param totalMillis     how long this activation was given, so the client can
      *                        draw progress rather than only a number
+     * @param comboLine       the frenzy line to draw at the bottom of the screen,
+     *                        already rendered to plain text by the server, or an
+     *                        empty string when this ability has none. Rendered
+     *                        server-side on purpose: the words are Turkish and
+     *                        belong in {@code messages.yml} like every other
+     *                        string a player reads, not compiled into a mod
+     *                        nobody can edit.
+     * @param comboTier       which rung that line is on, so the client knows how
+     *                        hard to shake it
      */
-    void showAbility(Player player, AbilityDefinition definition, long expiresAtMillis, long totalMillis);
+    void showAbility(
+            Player player, AbilityDefinition definition, long expiresAtMillis, long totalMillis,
+            String comboLine, int comboTier
+    );
 
     /** Announces that whatever was running has stopped. Safe to call when nothing was. */
     void clearAbility(Player player);

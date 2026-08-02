@@ -10,6 +10,6 @@ public record UnlockContext(
         Set<String> completedQuestIds,
         Set<String> completedCollectionIds,
         Map<String, Integer> skillLevels,
-        long wealth
+        long reputation
 ) {
 }

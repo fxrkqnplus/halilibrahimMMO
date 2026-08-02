@@ -37,6 +37,9 @@ public final class CachedPrestigeRewardService implements PrestigeRewardService 
     private final Supplier<Map<PrestigeRewardType, Double>> valueSupplier;
     private final ConcurrentHashMap<UUID, Map<PrestigeRewardType, Integer>> cache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, CompletableFuture<Boolean>> updateChains = new ConcurrentHashMap<>();
+    /** How many crates this player has already taken - the physical half's whole state. */
+    private final ConcurrentHashMap<UUID, Integer> physicalCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, CompletableFuture<Boolean>> physicalChains = new ConcurrentHashMap<>();
     private final NamespacedKey healthModifierKey;
 
     public CachedPrestigeRewardService(
@@ -57,6 +60,8 @@ public final class CachedPrestigeRewardService implements PrestigeRewardService 
     public void disable() {
         cache.clear();
         updateChains.clear();
+        physicalCache.clear();
+        physicalChains.clear();
     }
 
     @Override
@@ -66,7 +71,43 @@ public final class CachedPrestigeRewardService implements PrestigeRewardService 
 
     @Override
     public CompletableFuture<Void> load(UUID playerId) {
-        return repository.findAll(playerId).thenAccept(found -> cache.put(playerId, found));
+        return repository.findAll(playerId)
+                .thenAccept(found -> cache.put(playerId, found))
+                .thenCompose(ignored -> repository.findPhysicalTaken(playerId))
+                .thenAccept(taken -> physicalCache.put(playerId, Math.max(0, taken)));
+    }
+
+    @Override
+    public int pendingPhysicalChoices(UUID playerId, int prestige) {
+        return Math.max(0, prestige - physicalCache.getOrDefault(playerId, 0));
+    }
+
+    /**
+     * Rides its own chain rather than sharing the permanent reward's, because
+     * the two are independent counters and a player is expected to spend one of
+     * each in quick succession - serialising them against each other would only
+     * make the second click wait for the first for no benefit.
+     */
+    @Override
+    public CompletableFuture<Boolean> claimPhysical(UUID playerId, int prestige) {
+        synchronized (physicalChains) {
+            CompletableFuture<Boolean> previous =
+                    physicalChains.getOrDefault(playerId, CompletableFuture.completedFuture(false));
+            CompletableFuture<Boolean> next = previous.handle((ignoredValue, ignoredThrowable) -> null)
+                    .thenCompose(ignored -> {
+                        if (pendingPhysicalChoices(playerId, prestige) <= 0) {
+                            return CompletableFuture.completedFuture(false);
+                        }
+                        int updated = physicalCache.getOrDefault(playerId, 0) + 1;
+                        return repository.savePhysicalTaken(playerId, updated).thenApply(saved -> {
+                            physicalCache.put(playerId, updated);
+                            return true;
+                        });
+                    });
+            physicalChains.put(playerId, next);
+            next.whenComplete((ignored, throwable) -> physicalChains.remove(playerId, next));
+            return next;
+        }
     }
 
     @Override
@@ -158,5 +199,6 @@ public final class CachedPrestigeRewardService implements PrestigeRewardService 
     @Override
     public void evict(UUID playerId) {
         cache.remove(playerId);
+        physicalCache.remove(playerId);
     }
 }

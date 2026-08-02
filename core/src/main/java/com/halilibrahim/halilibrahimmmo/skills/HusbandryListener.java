@@ -56,17 +56,19 @@ public final class HusbandryListener implements Listener {
     private final ActivationService activation;
     private final MessageService messages;
     private final SkillAwardHandler awards;
+    private final MilestoneToggles toggles;
     private ScheduledTask leadTask;
 
     public HusbandryListener(
             JavaPlugin plugin, SkillService skills, ActivationService activation,
-            MessageService messages, SkillAwardHandler awards
+            MessageService messages, SkillAwardHandler awards, MilestoneToggles toggles
     ) {
         this.plugin = plugin;
         this.skills = skills;
         this.activation = activation;
         this.messages = messages;
         this.awards = awards;
+        this.toggles = toggles;
     }
 
     /** Starts the lead-carrying tick; same shape as {@code PlayerEnergyService.enable()}'s regeneration task. */
@@ -169,7 +171,9 @@ public final class HusbandryListener implements Listener {
      * did not already expect to spend.
      */
     private void refundBreedingFood(Player player, ItemStack breedItem) {
-        double chance = skills.milestoneModifiers(player.getUniqueId()).breedRefundChance();
+        double chance = toggles.isEnabled(player, SkillMilestoneEffectType.BREED_REFUND)
+                ? skills.milestoneModifiers(player.getUniqueId()).breedRefundChance()
+                : 0.0D;
         if (chance <= 0 || breedItem == null || breedItem.getType().isAir()) {
             return;
         }
@@ -196,7 +200,9 @@ public final class HusbandryListener implements Listener {
      * growing-up timer.</p>
      */
     private void spawnTwinIfLucky(Player player, EntityBreedEvent event) {
-        double chance = skills.milestoneModifiers(player.getUniqueId()).breedTwinChance();
+        double chance = toggles.isEnabled(player, SkillMilestoneEffectType.BREED_TWIN)
+                ? skills.milestoneModifiers(player.getUniqueId()).breedTwinChance()
+                : 0.0D;
         Entity newborn = event.getEntity();
         if (chance <= 0 || !(newborn instanceof Ageable)) {
             return;

@@ -112,6 +112,10 @@ public final class HmmoClientMod implements ClientModInitializer {
                 (extractor, deltaTracker) -> {
                     hudRenderer.renderVignette(extractor);
                     hudRenderer.renderBadge(extractor, HUD_BADGE_X, HUD_BADGE_Y);
+                    // Low and centred, where a player's eye already is mid-fight -
+                    // and only on the HUD, never over a screen: the frenzy is
+                    // something you are in, not something you read in a menu.
+                    hudRenderer.renderCombo(extractor);
                 });
 
         // The HUD is not drawn while a screen is open, so the badge is drawn

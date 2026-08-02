@@ -29,6 +29,7 @@ import org.bukkit.block.data.Ageable;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.AbstractVillager;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
@@ -40,6 +41,7 @@ import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.entity.Tameable;
+import org.bukkit.entity.Wolf;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.inventory.ItemStack;
@@ -58,6 +60,7 @@ import java.io.File;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -89,6 +92,16 @@ public final class YamlAbilityService implements AbilityService {
     private static final int OPEN_SPACE_PROBE_RADIUS = 4;
     /** Hard ceiling on GROWTH_SURGE's crops per activation, independent of the configured radius. */
     private static final int MAX_SURGED_CROPS = 256;
+    /** How many outward waves a growth surge is split into, and how far apart they land. */
+    private static final int GROWTH_SURGE_PASSES = 6;
+    private static final long GROWTH_SURGE_PASS_TICKS = 8L;
+    /** How many times the opening howl repeats, one second apart. */
+    private static final int NOBLE_WOLF_HOWLS = 3;
+    /** How fast a frightened animal runs from the wolf, as a multiple of its own walking speed. */
+    private static final double NOBLE_WOLF_FLEE_SPEED = 1.6D;
+    /** The window, in world ticks, during which Asil Kurt can be called at all. */
+    private static final long NIGHT_START_TICKS = 13_000L;
+    private static final long NIGHT_END_TICKS = 23_000L;
     /** How far an activation particle burst scatters around the caster, in blocks. */
     private static final double BURST_SPREAD = 0.6D;
     /** How many frames every shaped activation animation runs for. */
@@ -188,6 +201,18 @@ public final class YamlAbilityService implements AbilityService {
     private final ConcurrentHashMap<UUID, ScheduledTask> activationFeedbackTasks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Integer> glintedSlots = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<RevealedBlock, RevealedOre> revealedOres = new ConcurrentHashMap<>();
+    /**
+     * Cumulative damage dealt since a frenzy ability started, which is what the
+     * combo ladder counts. Cleared with the ability, so a rung is always about
+     * this activation and never about a run of them.
+     */
+    private final ConcurrentHashMap<UUID, Double> comboDamage = new ConcurrentHashMap<>();
+    /**
+     * What a Asil Kurt caster last swung at, so the pack knows who to go for.
+     * Stored as an id rather than as the entity itself: the wolves resolve it a
+     * tick later and the thing may already be dead.
+     */
+    private final ConcurrentHashMap<UUID, UUID> packTargets = new ConcurrentHashMap<>();
     private final ThreadLocal<Set<Block>> secondaryBreaks = ThreadLocal.withInitial(HashSet::new);
     /** Written onto a temporarily-enchanted pickaxe: the Efficiency level it had before. */
     private final NamespacedKey efficiencyKey;
@@ -448,9 +473,15 @@ public final class YamlAbilityService implements AbilityService {
             // never overheal. Scheduled on the victim's own region via the
             // attacker's scheduler, since the damage event resolves there.
             case LIFE_STEAL -> healFromDamage(player, event.getDamage() * effectValue);
+            // The wolf's own swing is vanilla's; what the ability adds here is
+            // the pack knowing where to go and the ladder counting the damage.
+            case NOBLE_WOLF -> packTargets.put(player.getUniqueId(), event.getEntity().getUniqueId());
             default -> {
                 return;
             }
+        }
+        if (definition.effectType().isFrenzy()) {
+            comboDamage.merge(player.getUniqueId(), event.getDamage(), Double::sum);
         }
         if (definition.mode() != AbilityActivationMode.ENERJI || isCreative(player)) {
             return;
@@ -665,6 +696,33 @@ public final class YamlAbilityService implements AbilityService {
      */
     @Override
     public void deactivate(Player player) {
+        tearDown(player);
+        messages.send(player, MessageKey.ABILITY_DEACTIVATED);
+    }
+
+    /**
+     * Dying ends whatever was running, immediately.
+     *
+     * <p>Nothing about an ability survived respawning in any useful sense
+     * anyway - potion effects are wiped by the death, the held tool is on the
+     * ground, and the countdown was ticking against a corpse - but the state
+     * maps did survive it, so a player who died mid-Kan-Yemini walked back with
+     * a life-steal buff still armed and the HUD still red. The selection is
+     * deliberately kept: the ability is over, but the player has not chosen to
+     * take it off, and making them re-equip through the switch cooldown would be
+     * a second punishment for the same death.</p>
+     */
+    @Override
+    public void endOnDeath(Player player) {
+        if (activeStatus(player.getUniqueId()).isEmpty()) {
+            return;
+        }
+        tearDown(player);
+        messages.send(player, MessageKey.ABILITY_ENDED_ON_DEATH);
+    }
+
+    /** Every kind of active state this player could be holding, and whatever it left on them. */
+    private void tearDown(Player player) {
         UUID playerId = player.getUniqueId();
         ArmedAbility instant = activeEffects.remove(playerId);
         ArmedAbility buff = damageBuffs.remove(playerId);
@@ -674,7 +732,6 @@ public final class YamlAbilityService implements AbilityService {
         clearLeftovers(player, instant);
         clearLeftovers(player, buff);
         clearActivationFeedback(player);
-        messages.send(player, MessageKey.ABILITY_DEACTIVATED);
     }
 
     /** The mirror of {@link #applyInstantEffect}: only the potion-backed effects leave anything to remove. */
@@ -689,6 +746,16 @@ public final class YamlAbilityService implements AbilityService {
                 player.removePotionEffect(PotionEffectType.SPEED);
             }
             case LIFE_STEAL -> player.removePotionEffect(PotionEffectType.SPEED);
+            case NOBLE_WOLF -> {
+                player.removePotionEffect(PotionEffectType.SPEED);
+                player.removePotionEffect(PotionEffectType.RESISTANCE);
+                player.removePotionEffect(PotionEffectType.STRENGTH);
+                player.setGlowing(false);
+                packTargets.remove(player.getUniqueId());
+                // The armour is deliberately not put back on. It went into the
+                // player's own inventory, it is theirs, and re-equipping it for
+                // them would fight whatever they chose to wear in the meantime.
+            }
             // The enchantment is on an item the player still holds, so unlike
             // every potion effect above it cannot simply be allowed to expire.
             case TOOL_EFFICIENCY -> restoreEfficiency(player);
@@ -709,6 +776,9 @@ public final class YamlAbilityService implements AbilityService {
         cancelFeedbackTask(player.getUniqueId());
         clearGlint(player);
         hud.clearAbility(player);
+        // The ladder describes one activation, so it goes down with it - a
+        // second Kan Yemini must start from "Güzel!" and earn its way back up.
+        comboDamage.remove(player.getUniqueId());
         if (wasActive) {
             feedback.celebrateAbilityEnded(player);
         }
@@ -728,7 +798,7 @@ public final class YamlAbilityService implements AbilityService {
         applyGlint(player, player.getInventory().getHeldItemSlot(), Boolean.TRUE);
         cancelFeedbackTask(player.getUniqueId());
         long totalMillis = expiresAtMillis - System.currentTimeMillis();
-        hud.showAbility(player, definition, isCreative(player) ? 0L : expiresAtMillis, totalMillis);
+        pushHud(player, definition, expiresAtMillis, totalMillis);
         ScheduledTask task = player.getScheduler().runAtFixedRate(plugin, self -> {
             long remainingMillis = expiresAtMillis - System.currentTimeMillis();
             if (remainingMillis <= 0 || !isStillActive(player.getUniqueId(), definition.id())) {
@@ -739,7 +809,8 @@ public final class YamlAbilityService implements AbilityService {
             // one message carries the whole picture, so a client that joined
             // late or missed a packet is corrected a second later instead of
             // needing a resynchronisation path of its own.
-            hud.showAbility(player, definition, isCreative(player) ? 0L : expiresAtMillis, totalMillis);
+            pushHud(player, definition, expiresAtMillis, totalMillis);
+            playFrenzyPulse(player, definition);
             // In Creative there is no remaining time and no energy worth
             // reading - what the player needs to know is how to turn it off.
             if (isCreative(player)) {
@@ -767,6 +838,48 @@ public final class YamlAbilityService implements AbilityService {
             )));
         }, null, 1L, 20L);
         activationFeedbackTasks.put(player.getUniqueId(), task);
+    }
+
+    /**
+     * One HUD refresh, carrying the combo line the client draws under the
+     * crosshair.
+     *
+     * <p>The line is rendered here rather than on the client because the words
+     * are Turkish content and belong in {@code messages.yml} with every other
+     * string a player reads - a mod nobody can edit is the worst possible place
+     * to keep six sentences an owner might want to reword.</p>
+     */
+    private void pushHud(Player player, AbilityDefinition definition, long expiresAtMillis, long totalMillis) {
+        int tier = 0;
+        String line = "";
+        if (definition.effectType().isFrenzy()) {
+            double dealt = comboDamage.getOrDefault(player.getUniqueId(), 0.0D);
+            tier = ComboLadder.tierFor(dealt);
+            MessageKey key = ComboLadder.lineFor(tier);
+            if (key != null) {
+                line = messages.plain(key, Map.of("hasar", Long.toString(Math.round(dealt))));
+            }
+        }
+        hud.showAbility(player, definition, isCreative(player) ? 0L : expiresAtMillis, totalMillis, line, tier);
+    }
+
+    /**
+     * The heartbeat under a frenzy.
+     *
+     * <p>Two beats a second apart in the same tick would be one noise; the
+     * second is delayed four ticks so it lands as the answering half of a
+     * heartbeat rather than as an echo. Played to the player alone
+     * ({@code Player#playSound}) rather than into the world - this is what the
+     * caster's own body is doing, and the people fighting next to them have no
+     * business hearing it.</p>
+     */
+    private void playFrenzyPulse(Player player, AbilityDefinition definition) {
+        if (!definition.effectType().isFrenzy()) {
+            return;
+        }
+        player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_HEARTBEAT, 0.7F, 1.4F);
+        player.getScheduler().runDelayed(plugin, task ->
+                player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_HEARTBEAT, 0.5F, 1.1F), null, 4L);
     }
 
     private boolean isStillActive(UUID playerId, String abilityId) {
@@ -863,6 +976,14 @@ public final class YamlAbilityService implements AbilityService {
             messages.send(player, MessageKey.ABILITY_REQUIRES_PICKAXE, Map.of("kabiliyet", definition.displayName()));
             return;
         }
+        // The third gate of the same shape, and the strongest flavour statement
+        // any ability in this plugin makes: the wolf only comes out after dark.
+        // Checked before any cost for the same reason as the two above - a
+        // refusal is not a use.
+        if (definition.effectType() == AbilityEffectType.NOBLE_WOLF && !isNight(player.getWorld())) {
+            messages.send(player, MessageKey.ABILITY_REQUIRES_NIGHT, Map.of("kabiliyet", definition.displayName()));
+            return;
+        }
         // Creative mode lifts every budget an ability normally answers to: no
         // cooldown, no energy, and a duration that outlasts any session, so it
         // stays on until it is explicitly switched off again. The point of
@@ -944,10 +1065,19 @@ public final class YamlAbilityService implements AbilityService {
                 ));
             }
             case GROWTH_SURGE -> {
-                int grown = surgeGrowth(player, limit);
+                // Registered before the ripple starts, because the ripple's last
+                // pass is what takes it back down again.
                 activeEffects.put(player.getUniqueId(), active);
+                int grown = surgeGrowth(player, definition, limit);
                 messages.send(player, MessageKey.ABILITY_ACTIVE_GROWTH, Map.of(
                         "kabiliyet", definition.displayName(), "sayi", Integer.toString(grown)
+                ));
+            }
+            case NOBLE_WOLF -> {
+                startNobleWolf(player, definition, limit, activeMillis);
+                activeEffects.put(player.getUniqueId(), active);
+                messages.send(player, MessageKey.ABILITY_ACTIVE_NOBLE_WOLF, Map.of(
+                        "kabiliyet", definition.displayName(), "sure", duration
                 ));
             }
             case LOVE_CALL -> {
@@ -1296,7 +1426,7 @@ public final class YamlAbilityService implements AbilityService {
      *
      * @return how many crops were advanced, for the player's feedback message.
      */
-    private int surgeGrowth(Player player, int radius) {
+    private int surgeGrowth(Player player, AbilityDefinition definition, int radius) {
         World world = player.getWorld();
         Location origin = player.getLocation();
         int originX = origin.getBlockX();
@@ -1304,25 +1434,81 @@ public final class YamlAbilityService implements AbilityService {
         int originZ = origin.getBlockZ();
         int minY = Math.max(world.getMinHeight(), originY - radius);
         int maxY = Math.min(world.getMaxHeight() - 1, originY + radius);
-        int grown = 0;
-        for (int x = originX - radius; x <= originX + radius && grown < MAX_SURGED_CROPS; x++) {
-            for (int z = originZ - radius; z <= originZ + radius && grown < MAX_SURGED_CROPS; z++) {
+        List<Block> crops = new ArrayList<>();
+        for (int x = originX - radius; x <= originX + radius && crops.size() < MAX_SURGED_CROPS; x++) {
+            for (int z = originZ - radius; z <= originZ + radius && crops.size() < MAX_SURGED_CROPS; z++) {
                 if (!world.isChunkLoaded(x >> 4, z >> 4)) {
                     continue;
                 }
-                for (int y = minY; y <= maxY && grown < MAX_SURGED_CROPS; y++) {
+                for (int y = minY; y <= maxY && crops.size() < MAX_SURGED_CROPS; y++) {
                     Block block = world.getBlockAt(x, y, z);
-                    if (!(block.getBlockData() instanceof Ageable crop) || crop.getAge() >= crop.getMaximumAge()) {
-                        continue;
+                    if (block.getBlockData() instanceof Ageable crop && crop.getAge() < crop.getMaximumAge()) {
+                        crops.add(block);
                     }
-                    crop.setAge(crop.getMaximumAge());
-                    block.setBlockData(crop);
-                    world.spawnParticle(Particle.HAPPY_VILLAGER, block.getLocation().add(0.5D, 0.5D, 0.5D), 6, 0.3D, 0.3D, 0.3D, 0.0D);
-                    grown++;
                 }
             }
         }
-        return grown;
+        if (crops.isEmpty()) {
+            endGrowthSurge(player, definition);
+            return 0;
+        }
+        // Nearest first, so the wave visibly leaves the player and travels
+        // outward instead of popping the whole field at once.
+        crops.sort(Comparator.comparingDouble(block -> block.getLocation().distanceSquared(origin)));
+        rippleGrowth(player, definition, crops);
+        return crops.size();
+    }
+
+    /**
+     * Grows the collected crops one ring at a time so the surge reads as
+     * something spreading rather than as a single frame in which the field
+     * changed.
+     *
+     * <p>Each pass takes one slice of the distance-sorted list and moves every
+     * crop in it <em>one</em> age step, so a wheat stalk visibly climbs through
+     * its stages rather than jumping to gold. The ability ends itself the moment
+     * the last pass finishes - holding it open afterwards would only mean the
+     * player waits out a timer for something that is already done.</p>
+     */
+    private void rippleGrowth(Player player, AbilityDefinition definition, List<Block> crops) {
+        int[] pass = {0};
+        player.getScheduler().runAtFixedRate(plugin, task -> {
+            if (!player.isOnline() || pass[0] >= GROWTH_SURGE_PASSES) {
+                task.cancel();
+                endGrowthSurge(player, definition);
+                return;
+            }
+            int from = crops.size() * pass[0] / GROWTH_SURGE_PASSES;
+            int to = crops.size() * (pass[0] + 1) / GROWTH_SURGE_PASSES;
+            pass[0]++;
+            // Every earlier slice is stepped again as well, which is what makes
+            // a stalk climb through its stages instead of snapping to ripe: by
+            // the last pass the closest crops have had every step and the
+            // furthest have had one.
+            for (int index = 0; index < to; index++) {
+                Block block = crops.get(index);
+                if (!(block.getBlockData() instanceof Ageable crop) || crop.getAge() >= crop.getMaximumAge()) {
+                    continue;
+                }
+                crop.setAge(Math.min(crop.getMaximumAge(), crop.getAge() + 1));
+                block.setBlockData(crop);
+                if (index >= from) {
+                    block.getWorld().spawnParticle(Particle.HAPPY_VILLAGER,
+                            block.getLocation().add(0.5D, 0.5D, 0.5D), 6, 0.3D, 0.3D, 0.3D, 0.0D);
+                }
+            }
+            player.getWorld().playSound(player.getLocation(), Sound.ITEM_BONE_MEAL_USE, 0.7F, 0.8F + pass[0] * 0.1F);
+        }, null, GROWTH_SURGE_PASS_TICKS, GROWTH_SURGE_PASS_TICKS);
+    }
+
+    /** Takes the surge down the moment the field has finished growing. */
+    private void endGrowthSurge(Player player, AbilityDefinition definition) {
+        ArmedAbility state = activeEffects.get(player.getUniqueId());
+        if (state == null || !state.abilityId().equals(definition.id())) {
+            return;
+        }
+        activeEffects.remove(player.getUniqueId(), state);
+        clearActivationFeedback(player);
     }
 
     /**
@@ -1439,6 +1625,165 @@ public final class YamlAbilityService implements AbilityService {
             }
             forgetPlayer(player);
         }, null, 1L, UPKEEP_PERIOD_TICKS);
+    }
+
+    /**
+     * Asil Kurt: after dark, the player stops being the hunted.
+     *
+     * <p>Five things run together for the ability's whole duration, and the
+     * upkeep pass is what keeps every one of them true rather than merely
+     * setting them once:</p>
+     *
+     * <ul>
+     *   <li><strong>No armour.</strong> Stripped into the inventory on
+     *   activation and again on every pass, so putting a helmet back on mid-hunt
+     *   simply does not stick. Dropped at the player's feet only when the
+     *   inventory is genuinely full - losing a chestplate to a full backpack
+     *   would be a far worse bug than a dropped item.</li>
+     *   <li><strong>Nothing hostile comes near.</strong> The same target-clearing
+     *   pass B Planı uses, for the same reason vanilla has no flag for it.</li>
+     *   <li><strong>The pack joins in.</strong> Every wolf in reach - tamed or
+     *   not - goes for whatever the player last swung at.</li>
+     *   <li><strong>Everything harmless runs.</strong> Animals and villagers that
+     *   can see the player path away from them.</li>
+     *   <li><strong>The howl.</strong> Heard by the whole server on activation,
+     *   played at each listener's own position so distance never mutes it.</li>
+     * </ul>
+     *
+     * <p><strong>The one thing this deliberately does not do is change the
+     * player's model.</strong> A werewolf model is a client-side asset - a mesh
+     * and a texture - and neither the server nor a mod that ships no assets can
+     * conjure one. What is delivered instead is everything the request asked for
+     * that a server can actually be the authority on, plus the strongest
+     * identity the game itself offers: bare, glowing, fast, and surrounded by
+     * fleeing animals.</p>
+     */
+    private void startNobleWolf(Player player, AbilityDefinition definition, int radius, long activeMillis) {
+        int durationTicks = (int) Math.max(1L, activeMillis / 50L);
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, durationTicks, 1, false, false));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, durationTicks, 1, false, false));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, durationTicks, 1, false, false));
+        player.setGlowing(true);
+        stripArmour(player);
+        howlAcrossServer(player);
+        comboDamage.remove(player.getUniqueId());
+        packTargets.remove(player.getUniqueId());
+        long expiresAt = System.currentTimeMillis() + activeMillis;
+        player.getScheduler().runAtFixedRate(plugin, task -> {
+            if (!player.isOnline() || System.currentTimeMillis() >= expiresAt
+                    || !isStillActive(player.getUniqueId(), definition.id())) {
+                task.cancel();
+                return;
+            }
+            stripArmour(player);
+            forgetPlayer(player);
+            drivePack(player, radius);
+            scatterPrey(player, radius);
+        }, null, 1L, UPKEEP_PERIOD_TICKS);
+    }
+
+    /**
+     * The opening howl, heard everywhere.
+     *
+     * <p>Played to each listener at their <em>own</em> location rather than at
+     * the caster's, which is the only way a sound reaches a player on the far
+     * side of the map at all - a world sound at the caster's feet is inaudible
+     * fifty blocks away, and the request was that the whole server hears it.
+     * Three calls a second apart, because one howl is a wolf and three is a
+     * warning.</p>
+     *
+     * <p><strong>Paper 26.2 has no wolf howl.</strong> Every wolf sound the
+     * registry offers is an ambient, a growl, a whine or a pant - checked
+     * against the API jar rather than assumed. The deepest growl the game has,
+     * pitched right down and repeated, is the closest thing to a howl that
+     * exists without shipping a resource pack, and at half pitch it carries the
+     * length a howl needs.</p>
+     */
+    private void howlAcrossServer(Player caster) {
+        for (int repeat = 0; repeat < NOBLE_WOLF_HOWLS; repeat++) {
+            float pitch = 0.5F + repeat * 0.1F;
+            plugin.getServer().getGlobalRegionScheduler().runDelayed(plugin, task ->
+                    plugin.getServer().getOnlinePlayers().forEach(listener ->
+                            listener.playSound(listener.getLocation(), Sound.ENTITY_WOLF_BIG_GROWL, 1.0F, pitch)),
+                    Math.max(1L, repeat * 20L));
+        }
+        caster.getWorld().spawnParticle(Particle.SOUL, caster.getLocation().add(0, 1, 0),
+                40, 0.6D, 0.8D, 0.6D, 0.05D);
+    }
+
+    /** Takes every piece of armour off and puts it somewhere the player still owns. */
+    private void stripArmour(Player player) {
+        ItemStack[] worn = player.getInventory().getArmorContents();
+        boolean changed = false;
+        for (int slot = 0; slot < worn.length; slot++) {
+            ItemStack piece = worn[slot];
+            if (piece == null || piece.getType().isAir()) {
+                continue;
+            }
+            worn[slot] = null;
+            changed = true;
+            // Dropped only when the inventory genuinely cannot take it back:
+            // eating somebody's netherite for a full hotbar would be far worse
+            // than an item on the ground next to them.
+            player.getInventory().addItem(piece).values()
+                    .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
+        }
+        if (changed) {
+            player.getInventory().setArmorContents(worn);
+            player.getWorld().playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_LEATHER, 1.0F, 0.6F);
+        }
+    }
+
+    /** Every wolf in reach goes for whatever the caster last hit. */
+    private void drivePack(Player player, int radius) {
+        UUID targetId = packTargets.get(player.getUniqueId());
+        if (targetId == null) {
+            return;
+        }
+        Entity quarry = plugin.getServer().getEntity(targetId);
+        if (!(quarry instanceof LivingEntity prey) || prey.isDead()) {
+            packTargets.remove(player.getUniqueId());
+            return;
+        }
+        for (Entity nearby : player.getNearbyEntities(radius, radius, radius)) {
+            if (!(nearby instanceof Wolf wolf) || wolf.isDead() || wolf.equals(quarry)) {
+                continue;
+            }
+            wolf.setTarget(prey);
+            wolf.setAngry(true);
+            wolf.getPathfinder().moveTo(prey.getLocation(), GUARDIAN_CHARGE_SPEED);
+        }
+    }
+
+    /**
+     * Everything harmless that can see the caster runs from them.
+     *
+     * <p>Line of sight is the condition on purpose: an animal behind a wall has
+     * not seen anything, and having a whole farm bolt through its fence because
+     * somebody transformed two rooms away would read as a bug rather than as
+     * fear.</p>
+     */
+    private void scatterPrey(Player player, int radius) {
+        for (Entity nearby : player.getNearbyEntities(radius, radius, radius)) {
+            if (!(nearby instanceof Mob prey) || prey.isDead()
+                    || !(prey instanceof Animals || prey instanceof AbstractVillager)) {
+                continue;
+            }
+            if (prey instanceof Wolf || !prey.hasLineOfSight(player)) {
+                continue;
+            }
+            Vector away = prey.getLocation().toVector().subtract(player.getLocation().toVector()).setY(0);
+            if (away.lengthSquared() == 0) {
+                continue;
+            }
+            prey.getPathfinder().moveTo(prey.getLocation().add(away.normalize().multiply(8)), NOBLE_WOLF_FLEE_SPEED);
+        }
+    }
+
+    /** Whether it is dark enough outside for the wolf to come out. */
+    private boolean isNight(World world) {
+        long time = world.getTime();
+        return time >= NIGHT_START_TICKS && time <= NIGHT_END_TICKS;
     }
 
     /** Every creature within reach that is hunting this player loses its target. */
@@ -1611,6 +1956,22 @@ public final class YamlAbilityService implements AbilityService {
             guardian.getWorld().spawnParticle(Particle.HEART, above, 4, 0.3D, 0.3D, 0.3D, 0.0D);
             guardian.getWorld().spawnParticle(Particle.COMPOSTER, above, 10, 0.4D, 0.5D, 0.4D, 0.05D);
             guardian.getWorld().playSound(guardian.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.7F, 1.6F);
+            // Naming the animal and the price is what makes the energy bar
+            // draining feel like a decision rather than a leak. The creature's
+            // own translated name comes from the client's language file via
+            // Adventure's translatable component, so nothing here is a hardcoded
+            // list of Turkish animal names that would go stale on the next
+            // Minecraft update.
+            messages.send(player, MessageKey.ABILITY_GUARDIAN_MENDED,
+                    Map.of(
+                            "kalp", Integer.toString(affordable),
+                            "enerji", Integer.toString(affordable * energyPerHeart)
+                    ),
+                    // Entity#name() is the creature's custom name if it has one
+                    // and its own translatable type name otherwise, so a named
+                    // cow reads as itself and an ordinary pig reads as "Domuz"
+                    // in the client's own language.
+                    Map.of("hayvan", guardian.name()));
         }
     }
 
@@ -2186,6 +2547,13 @@ public final class YamlAbilityService implements AbilityService {
                     // used since ORE_REVEAL: both answer "what does one unit of
                     // this ability's combat effect cost in energy".
                     energyPerHit = perHeart;
+                }
+                case NOBLE_WOLF -> {
+                    int reach = section.getInt("etki.yaricap", 0);
+                    if (reach < 1) {
+                        throw new IllegalArgumentException("Noble wolf requires a positive yaricap: " + id);
+                    }
+                    limit = reach;
                 }
                 case PHANTOM_STEP -> {
                     // Duration and cooldown are the whole configuration; there

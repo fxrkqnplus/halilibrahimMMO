@@ -24,7 +24,7 @@ import com.halilibrahim.halilibrahimmmo.titles.TitleChatStyle;
 import com.halilibrahim.halilibrahimmmo.titles.TitleService;
 import com.halilibrahim.halilibrahimmmo.trade.TradeService;
 import com.halilibrahim.halilibrahimmmo.trade.TradeSession;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -74,7 +74,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * each of the three sections is asking for nine of them on their own. That is
  * why dividers and the footer are marked {@link SidebarLine#decorative()}: when
  * the layout overflows, decoration is dropped before information is
- * ({@link #trimToFit}). It is also why Güç, prestij and Zenginlik share one
+ * ({@link #trimToFit}). It is also why Güç, prestij and Saygınlık share one
  * line and why the three quest sections share one header, each entry carrying
  * its type in its own colour instead - three headers and three dividers cost
  * six lines to say what three colours already say, and the permanent section
@@ -102,7 +102,7 @@ public final class ScoreboardSidebarService implements SidebarService {
     private final HomeService homes;
     private final TradeService trades;
     private final BackpackService backpacks;
-    private final WealthService wealth;
+    private final ReputationService reputation;
     private final ConcurrentHashMap<UUID, Boolean> visible = new ConcurrentHashMap<>();
     private ScheduledTask refreshTask;
 
@@ -120,7 +120,7 @@ public final class ScoreboardSidebarService implements SidebarService {
             HomeService homes,
             TradeService trades,
             BackpackService backpacks,
-            WealthService wealth
+            ReputationService reputation
     ) {
         this.plugin = plugin;
         this.messages = messages;
@@ -135,7 +135,7 @@ public final class ScoreboardSidebarService implements SidebarService {
         this.homes = homes;
         this.trades = trades;
         this.backpacks = backpacks;
-        this.wealth = wealth;
+        this.reputation = reputation;
     }
 
     @Override
@@ -315,13 +315,13 @@ public final class ScoreboardSidebarService implements SidebarService {
     private List<SidebarLine> activatedLines(UUID playerId, PlayerProfile profile) {
         List<SidebarLine> lines = new ArrayList<>();
         lines.add(information(nameLine(playerId, profile)));
-        // Güç, prestij and Zenginlik share one line, as do class and class
+        // Güç, prestij and Saygınlık share one line, as do class and class
         // level. All five are read together anyway, and every line they give
         // back is a pinned quest that fits.
         lines.add(information(messages.render(MessageKey.SIDEBAR_LINE_POWER, Map.of(
                 "seviye", Integer.toString(progression.cachedGlobalLevel(playerId)),
                 "prestij", Integer.toString(profile.prestige()),
-                "zenginlik", NumberFormatter.compact(wealth.cached(playerId))
+                "sayginlik", NumberFormatter.compact(reputation.cached(playerId))
         ))));
 
         String classId = profile.selectedClass();
@@ -402,7 +402,7 @@ public final class ScoreboardSidebarService implements SidebarService {
      * (class level 15, 20 or 30), onboarding is long finished.</p>
      *
      * <p>All three share a single line rather than taking one each, for the same
-     * reason Güç, prestij and Zenginlik do: each is one word of state, and every
+     * reason Güç, prestij and Saygınlık do: each is one word of state, and every
      * line they give back is a pinned quest that fits.</p>
      */
     private void addFeatureLines(List<SidebarLine> lines, UUID playerId) {
@@ -496,6 +496,14 @@ public final class ScoreboardSidebarService implements SidebarService {
      * are written to be read in a menu tooltip.</p>
      */
     private void addQuestSection(List<SidebarLine> lines, UUID playerId) {
+        // Nothing from the three pools reaches the panel until the starting
+        // list is finished. A new player was otherwise handed a tutorial and
+        // three quest types in the same fifteen lines, with no way to tell
+        // which of them was the one meant for them - and the onboarding block
+        // directly above this one is already saying exactly that.
+        if (!OnboardingTask.allCompleted(onboarding.cachedCompleted(playerId))) {
+            return;
+        }
         Map<String, QuestProgress> progress = quests.cachedAll(playerId);
         Set<String> dismissed = quests.cachedDismissals(playerId);
         Map<QuestType, List<QuestDefinition>> shown = new EnumMap<>(QuestType.class);

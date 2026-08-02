@@ -5,8 +5,9 @@ import com.halilibrahim.halilibrahimmmo.activation.ActivationService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
 import com.halilibrahim.halilibrahimmmo.exploit.BlockBreakRateLimiter;
 import com.halilibrahim.halilibrahimmmo.exploit.PlacedBlockTracker;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthAwardHandler;
-import com.halilibrahim.halilibrahimmmo.wealth.WealthService;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationAwardHandler;
+import com.halilibrahim.halilibrahimmmo.reputation.ReputationService;
+import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
@@ -28,8 +29,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * Bridges valid player actions into persistent skills and ephemeral energy
  * state.
  *
- * <p>Zenginlik Puanı is awarded from here too rather than from a listener of
- * its own, deliberately: wealth answers to exactly the same four gates skill XP
+ * <p>Saygınlık Puanı is awarded from here too rather than from a listener of
+ * its own, deliberately: reputation answers to exactly the same four gates skill XP
  * does - the MMO must be activated, the gamemode must be a real one, the block
  * must be world-generated rather than player-placed, and the break rate must be
  * plausible - and a second listener would have had to reproduce all four and
@@ -46,15 +47,17 @@ public final class SkillListener implements Listener {
     private final BlockBreakRateLimiter breakRateLimiter;
     private final PlacedBlockTracker placedBlocks;
     private final SkillAwardHandler awards;
-    private final WealthService wealth;
-    private final WealthAwardHandler wealthAwards;
+    private final ReputationService reputation;
+    private final ReputationAwardHandler reputationAwards;
+    private final MilestoneToggles toggles;
 
     public SkillListener(
             JavaPlugin plugin, SkillService skills, AbilityService abilities, EnergyService energy,
             ActivationService activation, BlockBreakRateLimiter breakRateLimiter,
             PlacedBlockTracker placedBlocks, SkillAwardHandler awards,
-            WealthService wealth, WealthAwardHandler wealthAwards
+            ReputationService reputation, ReputationAwardHandler reputationAwards, MilestoneToggles toggles
     ) {
+        this.toggles = toggles;
         this.plugin = plugin;
         this.skills = skills;
         this.abilities = abilities;
@@ -63,8 +66,8 @@ public final class SkillListener implements Listener {
         this.breakRateLimiter = breakRateLimiter;
         this.placedBlocks = placedBlocks;
         this.awards = awards;
-        this.wealth = wealth;
-        this.wealthAwards = wealthAwards;
+        this.reputation = reputation;
+        this.reputationAwards = reputationAwards;
     }
 
     @EventHandler
@@ -108,8 +111,8 @@ public final class SkillListener implements Listener {
             applyBlockMilestones(player, event);
             skills.awardBlock(player.getUniqueId(), player.getName(), event.getBlock().getType())
                     .thenAccept(result -> awards.handle(player, result));
-            wealth.awardBlock(player.getUniqueId(), event.getBlock().getType())
-                    .thenAccept(award -> wealthAwards.handle(player, award));
+            reputation.awardBlock(player.getUniqueId(), event.getBlock().getType())
+                    .thenAccept(award -> reputationAwards.handle(player, award));
         }
     }
 
@@ -129,14 +132,33 @@ public final class SkillListener implements Listener {
             return;
         }
         UUID playerId = player.getUniqueId();
-        int excavationLimit = (int) skills.milestoneValue(playerId, skillId, SkillMilestoneEffectType.EXCAVATION);
-        if (excavationLimit > 0) {
+        int excavationLimit = (int) milestoneValue(player, skillId, SkillMilestoneEffectType.EXCAVATION);
+        // A shovel, and only a shovel. Wide dig is the kazıcılık line's whole
+        // payoff and kazıcılık is the shovel's job; firing it off a pickaxe or a
+        // bare hand meant a player laying a path or clearing one gravel block
+        // took eight more with it, which is the exact opposite of a reward.
+        if (excavationLimit > 0 && Tag.ITEMS_SHOVELS.isTagged(player.getInventory().getItemInMainHand().getType())) {
             abilities.excavate(event, skillId, excavationLimit);
         }
         if (event.isDropItems()) {
-            doubleDropIfLucky(player, event, skills.milestoneValue(playerId, skillId, SkillMilestoneEffectType.DOUBLE_DROP));
+            doubleDropIfLucky(player, event, milestoneValue(player, skillId, SkillMilestoneEffectType.DOUBLE_DROP));
         }
-        replantIfLucky(player, event, skills.milestoneValue(playerId, skillId, SkillMilestoneEffectType.AUTO_REPLANT));
+        replantIfLucky(player, event, milestoneValue(player, skillId, SkillMilestoneEffectType.AUTO_REPLANT));
+    }
+
+    /**
+     * A milestone's value, or zero when the player has switched that feature
+     * off.
+     *
+     * <p>Read through here rather than straight off the service so the toggle
+     * cannot be forgotten at one call site: an unlocked-but-disabled feature is
+     * indistinguishable from one that was never unlocked, which is exactly what
+     * every consumer already handles.</p>
+     */
+    private double milestoneValue(Player player, String skillId, SkillMilestoneEffectType type) {
+        return toggles.isEnabled(player, type)
+                ? skills.milestoneValue(player.getUniqueId(), skillId, type)
+                : 0.0D;
     }
 
     /** Duplicates the block's own drop table rather than granting a fixed item, so enchantments and block state still decide what falls. */
@@ -184,8 +206,8 @@ public final class SkillListener implements Listener {
                 && SkillAwardHandler.isGameplayGameMode(killer)) {
             skills.awardMob(killer.getUniqueId(), killer.getName(), event.getEntity().getType())
                     .thenAccept(result -> awards.handle(killer, result));
-            wealth.awardEntity(killer.getUniqueId(), event.getEntity().getType())
-                    .thenAccept(award -> wealthAwards.handle(killer, award));
+            reputation.awardEntity(killer.getUniqueId(), event.getEntity().getType())
+                    .thenAccept(award -> reputationAwards.handle(killer, award));
         }
     }
 
@@ -203,6 +225,9 @@ public final class SkillListener implements Listener {
      * quest progress.</p>
      */
     private void fellTreeIfUnlocked(Player player, BlockBreakEvent event) {
+        if (!toggles.isEnabled(player, SkillMilestoneEffectType.TREE_FELLING)) {
+            return;
+        }
         int limit = skills.milestoneModifiers(player.getUniqueId()).treeFellingLimit();
         if (limit <= 0 || !TreeShape.isNaturalTreeRoot(event.getBlock())) {
             return;
