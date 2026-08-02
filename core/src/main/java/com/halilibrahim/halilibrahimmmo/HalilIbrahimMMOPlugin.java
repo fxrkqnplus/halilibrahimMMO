@@ -116,6 +116,7 @@ import com.halilibrahim.halilibrahimmmo.modcheck.ModCheckListener;
 import com.halilibrahim.halilibrahimmmo.modcheck.ModCheckProtocol;
 import com.halilibrahim.halilibrahimmmo.modcheck.ModVerificationService;
 import com.halilibrahim.halilibrahimmmo.modcheck.PluginMessageModVerificationService;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ActionBarGlyphs;
 import com.halilibrahim.halilibrahimmmo.resourcepack.PaperResourcePackService;
 import com.halilibrahim.halilibrahimmmo.resourcepack.ResourcePackListener;
 import com.halilibrahim.halilibrahimmmo.resourcepack.ResourcePackService;
@@ -251,6 +252,11 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     ResourcePackService.class
             );
             getServer().getPluginManager().registerEvents(new ResourcePackListener(resourcePackService), this);
+            // Same shape as GuiManager.bindGuard: the energy and ability
+            // services draw action bars and have no reason to know the pack
+            // exists, so one bind point beats threading a service through both.
+            ActionBarGlyphs.bind(() -> resourcePackService.settings().actionBarBars()
+                    && resourcePackService.settings().usable());
 
             DatabaseService databaseService = startService(
                     new HikariDatabaseService(configService.coreConfig().databaseSettings(), getDataFolder().toPath(), pluginLogger),
@@ -529,6 +535,9 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // Cleared before anything else so a reload cannot inherit a supplier
+        // pointing at the previous ResourcePackService instance.
+        ActionBarGlyphs.unbind();
         getServer().getServicesManager().unregisterAll(this);
         getServer().getMessenger().unregisterOutgoingPluginChannel(this, ModCheckProtocol.CHANNEL);
         getServer().getMessenger().unregisterIncomingPluginChannel(this, ModCheckProtocol.CHANNEL);

@@ -14,6 +14,7 @@ import com.halilibrahim.halilibrahimmmo.skills.SkillDefinition;
 import com.halilibrahim.halilibrahimmmo.skills.SkillService;
 import com.halilibrahim.halilibrahimmmo.skills.TreeShape;
 import com.halilibrahim.halilibrahimmmo.resourcepack.ItemModels;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ActionBarGlyphs;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -823,20 +824,22 @@ public final class YamlAbilityService implements AbilityService {
             // Energy is part of both variants: while an ability is running the
             // action bar is the only place it can be read, and the plain energy
             // status line is deliberately suppressed for the whole duration.
+            int current = energy.currentEnergy(player);
+            int maximum = energy.maximumEnergy(player);
             if (definition.mode() == AbilityActivationMode.ENERJI) {
                 player.sendActionBar(messages.render(MessageKey.ABILITY_COUNTDOWN_ACTIONBAR_ENERGY, Map.of(
                         "kabiliyet", definition.displayName(),
-                        "mevcut", Integer.toString(energy.currentEnergy(player)),
-                        "maksimum", Integer.toString(energy.maximumEnergy(player))
-                )));
+                        "mevcut", Integer.toString(current),
+                        "maksimum", Integer.toString(maximum)
+                ), Map.of("bar", ActionBarGlyphs.bar(current, maximum))));
                 return;
             }
             player.sendActionBar(messages.render(MessageKey.ABILITY_COUNTDOWN_ACTIONBAR, Map.of(
                     "kabiliyet", definition.displayName(),
                     "kalan", DurationFormatter.ofMillis(messages, remainingMillis),
-                    "mevcut", Integer.toString(energy.currentEnergy(player)),
-                    "maksimum", Integer.toString(energy.maximumEnergy(player))
-            )));
+                    "mevcut", Integer.toString(current),
+                    "maksimum", Integer.toString(maximum)
+            ), Map.of("bar", ActionBarGlyphs.bar(current, maximum))));
         }, null, 1L, 20L);
         activationFeedbackTasks.put(player.getUniqueId(), task);
     }

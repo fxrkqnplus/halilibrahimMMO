@@ -4,6 +4,7 @@ import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
 import com.halilibrahim.halilibrahimmmo.locale.DurationFormatter;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ActionBarGlyphs;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -181,10 +182,13 @@ public final class AbilityActivationListener implements Listener {
         if (!creative && !alreadyRunning) {
             long cooldownRemaining = abilities.cooldownRemainingMillis(player.getUniqueId(), definition.id());
             if (cooldownRemaining > 0) {
+                // The bar drains as the wait does, so a repeated click shows
+                // progress rather than the same sentence again.
                 player.sendActionBar(messages.render(MessageKey.ABILITY_COOLDOWN_ACTIONBAR, Map.of(
                         "kabiliyet", definition.displayName(),
                         "sure", DurationFormatter.ofMillis(messages, cooldownRemaining)
-                )));
+                ), Map.of("bar", ActionBarGlyphs.remaining(
+                        definition.cooldownMillis() - cooldownRemaining, definition.cooldownMillis()))));
                 return;
             }
         }

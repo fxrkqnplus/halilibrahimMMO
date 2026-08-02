@@ -189,11 +189,11 @@ tab:
   oyuncu: "<white><oyuncu></white> <dark_gray>|</dark_gray> <gold><simge:guc> <guc></gold>"
 
 enerji:
-  durum: "<aqua><simge:enerji> Enerji:</aqua> <white><mevcut></white><gray>/</gray><white><maksimum></white>"
+  durum: "<aqua><simge:enerji> Enerji:</aqua> <white><mevcut></white><gray>/</gray><white><maksimum></white> <bar>"
   # Kabiliyet kapandiktan sonra bar dolarken gorunur. Kabiliyet ACIKKEN enerji
   # hic yenilenmez, dolayisiyla bu satir yalnizca "simdi doluyor" demektir -
   # oyuncunun bir sonraki kullanima ne kadar kaldigini gordugu tek yer.
-  yenileniyor: "<aqua><simge:enerji> Enerji yenileniyor:</aqua> <white><mevcut></white><gray>/</gray><white><maksimum></white> <dark_gray>•</dark_gray> <gray>saniyede <white><hiz></white></gray>"
+  yenileniyor: "<aqua><simge:enerji> Enerji yenileniyor:</aqua> <white><mevcut></white><gray>/</gray><white><maksimum></white> <dark_gray>•</dark_gray> <gray>saniyede <white><hiz></white></gray> <bar>"
 
 kabiliyet:
   bilinmeyen: "<red>Bilinmeyen kabiliyet:</red> <white><kabiliyet></white>"
@@ -202,7 +202,7 @@ kabiliyet:
   bekleme: "<yellow><kabiliyet> yeniden kullanılabilir olmadan önce <sure> beklemelisin.</yellow>"
   # Bekleme suresi dolmamisken sag tiklandiginda eylem cubugunda gorunur;
   # sohbete hicbir sey gitmez, cunku bu tiklama cogunlukla kaza eseridir.
-  bekleme-eylem-cubugu: "<yellow><simge:kabiliyet> <kabiliyet></yellow> <dark_gray>•</dark_gray> <gray>Hazır olmasına <white><sure></white> var</gray>"
+  bekleme-eylem-cubugu: "<yellow><simge:kabiliyet> <kabiliyet></yellow> <dark_gray>•</dark_gray> <gray>Hazır olmasına <white><sure></white> var</gray> <bar>"
   enerji-bitti: "<yellow><simge:enerji> Enerjin tükendi,</yellow> <white><kabiliyet></white> <gray><sayi> blokta sona erdi.</gray>"
   # Cagriya cevap veren butun hayvanlar dustugunde kabiliyet kendiliginden biter.
   koruyucu-dustu: "<red><simge:uyari> Bütün koruyucuların düştü;</red> <white><kabiliyet></white> <gray>sona erdi.</gray>"
@@ -253,8 +253,8 @@ kabiliyet:
   onay-kapat: "<yellow><simge:kabiliyet> <kabiliyet> kabiliyetini kapatmak için tekrar sağ tıkla</yellow>"
   kapatildi: "<yellow><simge:kabiliyet> Kabiliyet kapatıldı.</yellow>"
   cikarildi: "<yellow><simge:kabiliyet> Kuşandığın kabiliyeti çıkardın.</yellow> <gray>Yeni bir kabiliyet seçmek için bekleme süresi işlemeye devam eder.</gray>"
-  geri-sayim: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <white><kalan></white> <dark_gray>•</dark_gray> <aqua><simge:enerji> Enerji <white><mevcut></white><gray>/</gray><white><maksimum></white></aqua>"
-  geri-sayim-enerji: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <aqua><simge:enerji> Enerji <white><mevcut></white><gray>/</gray><white><maksimum></white></aqua>"
+  geri-sayim: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <white><kalan></white> <dark_gray>•</dark_gray> <aqua><simge:enerji> Enerji <white><mevcut></white><gray>/</gray><white><maksimum></white></aqua> <bar>"
+  geri-sayim-enerji: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <aqua><simge:enerji> Enerji <white><mevcut></white><gray>/</gray><white><maksimum></white></aqua> <bar>"
   geri-sayim-yaratici: "<yellow><kabiliyet></yellow> <dark_gray>•</dark_gray> <light_purple>Yaratıcı mod</light_purple> <dark_gray>•</dark_gray> <gray>Kapatmak için çift sağ tıkla</gray>"
 
 # Beceri kilometre taslarinin acma/kapama bildirimi. Tercih oyuncunun kendi

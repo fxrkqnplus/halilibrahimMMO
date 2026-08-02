@@ -3,6 +3,8 @@ package com.halilibrahim.halilibrahimmmo.energy;
 import com.halilibrahim.halilibrahimmmo.abilities.AbilitySettings;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
+import com.halilibrahim.halilibrahimmmo.resourcepack.ActionBarGlyphs;
+import net.kyori.adventure.text.Component;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -138,18 +140,22 @@ public final class PlayerEnergyService implements EnergyService {
             return;
         }
         lastShownAt.put(player.getUniqueId(), now);
+        int maximum = maximumEnergy(player);
+        // The bar is decoration: the numbers stay in the template either way, so
+        // a player whose pack never applied loses nothing but the picture.
+        Map<String, Component> bar = Map.of("bar", ActionBarGlyphs.bar(current, maximum));
         if (regenerating) {
             player.sendActionBar(messages.render(MessageKey.ENERGY_REGENERATING, Map.of(
                     "mevcut", Integer.toString(current),
-                    "maksimum", Integer.toString(maximumEnergy(player)),
+                    "maksimum", Integer.toString(maximum),
                     "hiz", Integer.toString(settings.get().energyRegenerationPerSecond())
-            )));
+            ), bar));
             return;
         }
         player.sendActionBar(messages.render(MessageKey.ENERGY_STATUS, Map.of(
                 "mevcut", Integer.toString(current),
-                "maksimum", Integer.toString(maximumEnergy(player))
-        )));
+                "maksimum", Integer.toString(maximum)
+        ), bar));
     }
 
     @Override

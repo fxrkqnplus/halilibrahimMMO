@@ -182,6 +182,7 @@ public final class PaketUretici {
         files.put("assets/" + NAMESPACE + "/textures/font/simgeler.png", icons.png());
         files.put("assets/" + NAMESPACE + "/font/simgeler.json", icons.fontJson().getBytes(StandardCharsets.UTF_8));
 
+        Panel.build(palette, files);
         ItemTextures.build(root, palette, files);
 
         Path out = root.resolve("cikti");
@@ -225,6 +226,7 @@ public final class PaketUretici {
         IconSheet icons = IconSheet.build(root.resolve("simgeler.json"), palette);
         files.put("assets/" + NAMESPACE + "/textures/font/simgeler.png", icons.png());
         files.put("assets/" + NAMESPACE + "/font/simgeler.json", icons.fontJson().getBytes(StandardCharsets.UTF_8));
+        Panel.build(palette, files);
         ItemTextures.build(root, palette, files);
 
         String sha1 = sha1Hex(deterministicZip(files));
@@ -597,6 +599,148 @@ public final class PaketUretici {
             StringBuilder out = new StringBuilder();
             value.codePoints().forEach(cp -> out.append(String.format(Locale.ROOT, "\\u%04X", cp)));
             return out.toString();
+        }
+    }
+
+    // ------------------------------------------------------------------ hmmo:pano
+
+    /**
+     * The pack's second font: wide, multi-cell glyphs that must never appear in
+     * item lore, plus the boss bar sprites that share their palette.
+     *
+     * <p>Kept separate from {@code hmmo:simgeler} on purpose. The icon font
+     * redraws existing BMP codepoints at one character cell each, so it cannot
+     * change how wide anything is; this one draws bars several cells wide at
+     * Private Use Area codepoints, which would silently invalidate
+     * {@code LoreWrapper}'s 42-character budget if it were ever used in a
+     * tooltip. Two fonts is what makes "never in lore" a rule a test can
+     * enforce.</p>
+     */
+    static final class Panel {
+
+        /** Must stay in step with {@code locale.GlyphBar}. */
+        private static final int CELL_EMPTY = 0xF210;
+        private static final int CELL_FULL = 0xF211;
+        private static final int CAP_LEFT = 0xF212;
+        private static final int CAP_RIGHT = 0xF213;
+
+        private static final int BAR_HEIGHT = 8;
+        private static final int CELL_WIDTH = 5;
+        private static final int CAP_WIDTH = 3;
+
+        private Panel() {
+        }
+
+        static void build(Palette palette, Map<String, byte[]> files) {
+            // One strip, four glyphs, laid out left to right at a fixed pitch so
+            // the chars grid below is a single row.
+            int pitch = 8;
+            BufferedImage strip = new BufferedImage(pitch * 4, BAR_HEIGHT, BufferedImage.TYPE_INT_ARGB);
+
+            drawCell(strip, 0 * pitch, palette.color("e"), palette.color("z"));
+            drawCell(strip, 1 * pitch, palette.gradientStart("kimlik"), palette.gradientEnd("kimlik"));
+            drawCap(strip, 2 * pitch, palette.color("E"), true);
+            drawCap(strip, 3 * pitch, palette.color("E"), false);
+
+            files.put("assets/" + NAMESPACE + "/textures/font/pano.png", png(strip));
+            files.put("assets/" + NAMESPACE + "/font/pano.json", ("""
+                    {
+                      "providers": [
+                        {
+                          "type": "bitmap",
+                          "file": "%s:font/pano.png",
+                          "height": %d,
+                          "ascent": 7,
+                          "chars": ["\\u%04X\\u%04X\\u%04X\\u%04X"]
+                        }
+                      ]
+                    }
+                    """.formatted(NAMESPACE, BAR_HEIGHT, CELL_EMPTY, CELL_FULL, CAP_LEFT, CAP_RIGHT))
+                    .getBytes(StandardCharsets.UTF_8));
+
+            bossBars(palette, files);
+        }
+
+        /** A cell is a filled block with a one-pixel darker outline, vertically centred. */
+        private static void drawCell(BufferedImage strip, int originX, int fill, int outline) {
+            for (int y = 2; y <= 5; y++) {
+                for (int x = 0; x < CELL_WIDTH; x++) {
+                    boolean edge = y == 2 || y == 5;
+                    strip.setRGB(originX + x, y, edge ? outline : fill);
+                }
+            }
+        }
+
+        private static void drawCap(BufferedImage strip, int originX, int color, boolean left) {
+            for (int y = 1; y <= 6; y++) {
+                int x = left ? 0 : CAP_WIDTH - 1;
+                strip.setRGB(originX + x, y, color);
+            }
+            for (int x = 0; x < CAP_WIDTH; x++) {
+                strip.setRGB(originX + x, 1, color);
+                strip.setRGB(originX + x, 6, color);
+            }
+        }
+
+        /**
+         * The seven vanilla boss bar colours plus the four notched variants,
+         * redrawn in the pack's palette.
+         *
+         * <p>Colour identity is deliberately preserved rather than flattened
+         * into the purple/blue theme: {@code BossRarity} maps purple to Epik and
+         * pink to Mistik, and players have already learned that. The pack
+         * changes the <em>surface</em> - a darker trough, a cleaner cap - not
+         * what each colour means. Confirmed 182x5 with no .mcmeta by reading the
+         * real 26.2 client jar.</p>
+         */
+        private static void bossBars(Palette palette, Map<String, byte[]> files) {
+            Map<String, Integer> colors = new LinkedHashMap<>();
+            colors.put("pink", palette.color("p"));
+            colors.put("blue", palette.color("b"));
+            colors.put("red", palette.color("k"));
+            colors.put("green", palette.color("y"));
+            colors.put("yellow", palette.color("a"));
+            colors.put("purple", palette.color("m"));
+            colors.put("white", palette.color("w"));
+
+            for (Map.Entry<String, Integer> entry : colors.entrySet()) {
+                put(files, entry.getKey() + "_background", bar(palette.color("z"), palette.color("e"), 0));
+                put(files, entry.getKey() + "_progress", bar(entry.getValue(), lighten(entry.getValue()), 0));
+            }
+            for (int notches : new int[]{6, 10, 12, 20}) {
+                put(files, "notched_" + notches + "_background", bar(palette.color("z"), palette.color("e"), notches));
+                put(files, "notched_" + notches + "_progress",
+                        bar(palette.color("m"), palette.color("M"), notches));
+            }
+        }
+
+        private static void put(Map<String, byte[]> files, String name, BufferedImage image) {
+            files.put("assets/minecraft/textures/gui/sprites/boss_bar/" + name + ".png", png(image));
+        }
+
+        private static BufferedImage bar(int fill, int highlight, int notches) {
+            BufferedImage image = new BufferedImage(182, 5, BufferedImage.TYPE_INT_ARGB);
+            for (int x = 0; x < 182; x++) {
+                for (int y = 0; y < 5; y++) {
+                    // Row 1 catches the light, row 4 is the shadowed lip: two
+                    // rows of shading is all a five-pixel bar can carry.
+                    image.setRGB(x, y, y == 1 ? highlight : fill);
+                }
+            }
+            if (notches > 1) {
+                int step = 182 / notches;
+                for (int notch = 1; notch < notches; notch++) {
+                    int x = Math.min(181, notch * step);
+                    for (int y = 0; y < 5; y++) {
+                        image.setRGB(x, y, 0xFF000000);
+                    }
+                }
+            }
+            return image;
+        }
+
+        private static int lighten(int argb) {
+            return lerp(argb, 0xFFFFFFFF, 0.35);
         }
     }
 
