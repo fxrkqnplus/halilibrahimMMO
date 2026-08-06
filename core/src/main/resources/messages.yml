@@ -962,7 +962,7 @@ gui:
     baslik: "<dark_gray><simge:prestij> Kalıcı Ödülünü Seç</dark_gray>"
     ust-oge: "<gold><simge:prestij> Prestij Ödülü</gold>"
     ust-aciklama: "<gray>Prestij <white><prestij></white> <dark_gray>•</dark_gray> Bekleyen seçim hakkın: <white><hak></white></gray>"
-    ust-ipucu: "<dark_gray>Seçimin kalıcıdır ve geri alınamaz. Aynı ödülü her prestijde tekrar seçebilirsin.</dark_gray>"
+    ust-ipucu: "<dark_gray>İki yoldan birini seç: daha zor ölmek ya da daha sert vurmak. Seçimin kalıcıdır ve geri alınamaz; aynı ödülü her prestijde tekrar seçebilirsin.</dark_gray>"
     sahip: "<dark_gray>Şu ana kadar <white><sayi></white> kez seçtin <dark_gray>(toplam <toplam>)</dark_gray></dark_gray>"
     sec-ipucu: "<green>Seçmek için tıkla</green>"
     can: "<red><simge:can> Dayanıklılık</red>"

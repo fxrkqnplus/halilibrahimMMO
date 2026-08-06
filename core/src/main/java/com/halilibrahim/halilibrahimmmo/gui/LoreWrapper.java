@@ -70,12 +70,20 @@ final class LoreWrapper {
 
     /**
      * Depth-first walk producing one run per styled text fragment. The parent's
-     * style is merged into the child only where the child leaves it unset,
-     * which is exactly how Adventure resolves inherited style at render time -
-     * so a run carries the colour the player actually sees.
+     * style fills in only what the child leaves unset, which is exactly how
+     * Adventure resolves inherited style at render time - so a run carries the
+     * colour the player actually sees.
+     *
+     * <p><strong>The direction of this merge is the whole point and it was
+     * backwards until Faz 24.</strong> {@code a.merge(b, IF_ABSENT_ON_TARGET)}
+     * applies {@code b} onto {@code a} only where {@code a} has nothing, so
+     * merging the child into the parent meant the parent won every property it
+     * had set - a red phrase inside a grey sentence came back out grey the
+     * moment the line was long enough to wrap. Merging the parent into the
+     * child is the inheritance the renderer actually performs.</p>
      */
     private static void flatten(Component component, Style inherited, List<Run> runs) {
-        Style resolved = inherited.merge(component.style(), Style.Merge.Strategy.IF_ABSENT_ON_TARGET);
+        Style resolved = component.style().merge(inherited, Style.Merge.Strategy.IF_ABSENT_ON_TARGET);
         String own = component instanceof TextComponent text
                 ? text.content()
                 // Anything that is not plain text (a translatable, a score) has
@@ -94,56 +102,87 @@ final class LoreWrapper {
     /**
      * Refills the runs into lines no longer than {@link #MAXIMUM_LINE_LENGTH}.
      *
-     * <p>Breaks are taken at spaces. A single word longer than the whole line
-     * budget - a URL, a run of digits - is broken mid-word instead, because the
-     * alternative is the exact runaway line this class exists to prevent.</p>
+     * <p><strong>The break points are chosen against the whole line, not against
+     * one fragment of it.</strong> Faz 22 walked the runs one at a time and
+     * looked for a space inside whichever run happened to overflow - so a line
+     * built as "<em>Bekleme süresi:</em> <em>7 dakika 30 saniye</em>" could only
+     * break inside the second fragment, and a fragment with no space of its own
+     * was cut straight through the middle of a word. That is exactly the
+     * "breaks in the wrong places" this fixes: the text is laid out as one
+     * string, broken where a reader would break it, and the styled runs are then
+     * sliced to match.</p>
+     *
+     * <p>A single word longer than the whole budget - a URL, a run of digits -
+     * is still broken mid-word, because the alternative is the runaway line this
+     * class exists to prevent.</p>
      */
     private static List<Component> rebuild(List<Run> runs) {
+        StringBuilder joined = new StringBuilder();
+        runs.forEach(run -> joined.append(run.text()));
+        String text = joined.toString();
+
         List<Component> lines = new ArrayList<>();
-        List<Run> current = new ArrayList<>();
-        int used = 0;
+        int start = 0;
+        while (start < text.length()) {
+            start = skipSpaces(text, start);
+            if (start >= text.length()) {
+                break;
+            }
+            int end = lineEnd(text, start);
+            lines.add(slice(runs, start, end));
+            start = end;
+        }
+        return lines.isEmpty() ? List.of(Component.empty()) : lines;
+    }
+
+    /**
+     * Where the line starting at {@code start} should end.
+     *
+     * <p>The last space that still leaves the line inside the budget, so the
+     * break lands between words; a hard cut at the budget when the first word
+     * alone is already too long.</p>
+     */
+    private static int lineEnd(String text, int start) {
+        int limit = start + MAXIMUM_LINE_LENGTH;
+        if (limit >= text.length()) {
+            return text.length();
+        }
+        // Searching from limit rather than limit-1: a space sitting exactly on
+        // the boundary is a legitimate break and costs nothing to take.
+        int space = text.lastIndexOf(' ', limit);
+        return space > start ? space : limit;
+    }
+
+    private static int skipSpaces(String text, int index) {
+        int cursor = index;
+        while (cursor < text.length() && text.charAt(cursor) == ' ') {
+            cursor++;
+        }
+        return cursor;
+    }
+
+    /**
+     * The half-open range {@code [start, end)} of the joined text, rebuilt as a
+     * component with every fragment's own style intact - which is what keeps a
+     * coloured word coloured when a break falls inside it.
+     */
+    private static Component slice(List<Run> runs, int start, int end) {
+        List<Run> taken = new ArrayList<>();
+        int cursor = 0;
         for (Run run : runs) {
-            String remaining = run.text();
-            while (!remaining.isEmpty()) {
-                int room = MAXIMUM_LINE_LENGTH - used;
-                if (room <= 0) {
-                    lines.add(toComponent(current));
-                    current = new ArrayList<>();
-                    used = 0;
-                    remaining = stripLeadingSpace(remaining);
-                    continue;
-                }
-                if (remaining.length() <= room) {
-                    current.add(new Run(remaining, run.style()));
-                    used += remaining.length();
-                    break;
-                }
-                int cut = breakPoint(remaining, room);
-                current.add(new Run(remaining.substring(0, cut), run.style()));
-                lines.add(toComponent(current));
-                current = new ArrayList<>();
-                used = 0;
-                remaining = stripLeadingSpace(remaining.substring(cut));
+            int runStart = cursor;
+            int runEnd = cursor + run.text().length();
+            cursor = runEnd;
+            if (runEnd <= start || runStart >= end) {
+                continue;
+            }
+            int from = Math.max(start, runStart) - runStart;
+            int to = Math.min(end, runEnd) - runStart;
+            if (to > from) {
+                taken.add(new Run(run.text().substring(from, to), run.style()));
             }
         }
-        if (!current.isEmpty()) {
-            lines.add(toComponent(current));
-        }
-        return lines;
-    }
-
-    /** The last space at or before {@code room}, or a hard cut when the fragment holds no space at all. */
-    private static int breakPoint(String text, int room) {
-        int space = text.lastIndexOf(' ', room);
-        return space > 0 ? space : room;
-    }
-
-    private static String stripLeadingSpace(String text) {
-        int index = 0;
-        while (index < text.length() && text.charAt(index) == ' ') {
-            index++;
-        }
-        return text.substring(index);
+        return toComponent(taken);
     }
 
     private static Component toComponent(List<Run> runs) {
