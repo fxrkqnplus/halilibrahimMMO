@@ -337,15 +337,25 @@ public final class ScoreboardSidebarService implements SidebarService {
         lines.add(decoration(divider()));
         String className = classes.displayName(classId);
         ClassLevelProgress classProgress = classes.classProgress(playerId, classId);
-        long requiredForClassLevel = classProgress.level() >= classes.settings().classLevelCurve().maximumLevel()
-                ? 0L
-                : classes.settings().classLevelCurve().requiredForCurrentLevel(classProgress.level());
-        lines.add(information(messages.render(MessageKey.SIDEBAR_LINE_CLASS_LEVEL, Map.of(
-                "sinif", className,
-                "seviye", Integer.toString(classProgress.level()),
-                "xp", Long.toString(classProgress.experience()),
-                "gereken", Long.toString(requiredForClassLevel)
-        ))));
+        // At the top of the curve there is no "next level" to divide by, and the
+        // panel used to print the arithmetic anyway: "50. Sv (0/0)". Zero over
+        // zero reads as a broken counter rather than as an achievement, so the
+        // capped line is its own template with the word in it.
+        boolean maxedOut = classProgress.level() >= classes.settings().classLevelCurve().maximumLevel();
+        if (maxedOut) {
+            lines.add(information(messages.render(MessageKey.SIDEBAR_LINE_CLASS_LEVEL_MAX, Map.of(
+                    "sinif", className,
+                    "seviye", Integer.toString(classProgress.level())
+            ))));
+        } else {
+            lines.add(information(messages.render(MessageKey.SIDEBAR_LINE_CLASS_LEVEL, Map.of(
+                    "sinif", className,
+                    "seviye", Integer.toString(classProgress.level()),
+                    "xp", Long.toString(classProgress.experience()),
+                    "gereken", Long.toString(
+                            classes.settings().classLevelCurve().requiredForCurrentLevel(classProgress.level()))
+            ))));
+        }
         lines.add(information(abilityLine(playerId)));
 
         addFeatureLines(lines, playerId);

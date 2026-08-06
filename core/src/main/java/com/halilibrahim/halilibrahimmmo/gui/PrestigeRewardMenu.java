@@ -34,12 +34,13 @@ public final class PrestigeRewardMenu implements GuiView {
 
     private static final int HEADER_SLOT = 4;
     /**
-     * Two slots, either side of the middle, so the screen reads as a fork
-     * rather than as a row with gaps in it. Sized from
-     * {@link PrestigeRewardType#SELECTABLE_COUNT} at render time, so this array
-     * is the layout and that constant is the count - they cannot disagree.
+     * Four slots in a square, two rows of two, so the screen reads as a grid of
+     * equals rather than as a row that ran out of space. The render loop stops
+     * at whichever is shorter, this array or
+     * {@link PrestigeRewardType#SELECTABLE_COUNT}, so the layout and the count
+     * cannot disagree about how many buttons exist.
      */
-    private static final int[] REWARD_SLOTS = {20, 24};
+    private static final int[] REWARD_SLOTS = {20, 24, 29, 33};
 
     private final GuiServices services;
     private final Map<Integer, PrestigeRewardType> slotToReward = new LinkedHashMap<>();

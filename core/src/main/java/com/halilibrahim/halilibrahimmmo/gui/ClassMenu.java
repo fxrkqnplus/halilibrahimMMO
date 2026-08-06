@@ -10,6 +10,7 @@ import com.halilibrahim.halilibrahimmmo.classes.TalentPointSettings;
 import com.halilibrahim.halilibrahimmmo.classes.TalentSpendResult;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.profile.PlayerProfile;
+import com.halilibrahim.halilibrahimmmo.progression.FeatureUnlockRules;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -250,6 +251,17 @@ public final class ClassMenu implements GuiView {
      * would be indefensible.</p>
      */
     private ItemStack backpackUpgradeItem(Player player) {
+        // A player who has not reached the chest itself cannot be sold room in
+        // it. Shown greyed out rather than hidden, for the same reason the quest
+        // board shows its locked tabs as barriers: a feature that appears out of
+        // nowhere later reads as a bug, one you can see coming reads as a goal.
+        if (!services.backpacks().isUnlocked(player.getUniqueId())) {
+            return GuiItems.of(Material.GRAY_DYE,
+                    services.messages().render(MessageKey.GUI_BACKPACK_UPGRADE_ITEM),
+                    List.of(services.messages().render(MessageKey.GUI_BACKPACK_UPGRADE_FEATURE_LOCKED, Map.of(
+                            "seviye", Integer.toString(FeatureUnlockRules.BACKPACK_CLASS_LEVEL)
+                    ))));
+        }
         int owned = services.backpacks().upgrades(player.getUniqueId());
         int capacity = services.backpacks().capacity(player.getUniqueId());
         if (owned >= BackpackService.MAXIMUM_UPGRADES) {
@@ -270,6 +282,12 @@ public final class ClassMenu implements GuiView {
     }
 
     private void buyBackpackUpgrade(Player player, PlayerProfile profile, PlayerClassProgress progress) {
+        if (!services.backpacks().isUnlocked(player.getUniqueId())) {
+            services.messages().send(player, MessageKey.BACKPACK_UPGRADE_FEATURE_LOCKED, Map.of(
+                    "seviye", Integer.toString(FeatureUnlockRules.BACKPACK_CLASS_LEVEL)
+            ));
+            return;
+        }
         if (services.backpacks().upgrades(player.getUniqueId()) >= BackpackService.MAXIMUM_UPGRADES) {
             services.messages().send(player, MessageKey.BACKPACK_UPGRADE_MAXED);
             return;

@@ -125,6 +125,41 @@ public final class YamlAbilityService implements AbilityService {
     /** Health points the water takes off the wolf on every upkeep pass. */
     private static final double NOBLE_WOLF_WATER_DAMAGE = 2.0D;
     /**
+     * How far the wolf can fall without paying for it, in blocks.
+     *
+     * <p>Faz 24 cancelled fall damage outright, on the grounds that a leap the
+     * ability itself grants is not a fall the player chose. That is still true of
+     * the leap - Jump Boost 5 clears about four blocks - but it also made a drop
+     * off any cliff on the map free, which is a different promise entirely.
+     * Twenty blocks is comfortably more than anything the ability's own jump can
+     * reach and comfortably less than a mountainside.</p>
+     */
+    private static final double NOBLE_WOLF_SAFE_FALL_BLOCKS = 20.0D;
+    /** Health points taken per block past {@link #NOBLE_WOLF_SAFE_FALL_BLOCKS}. */
+    private static final double NOBLE_WOLF_FALL_DAMAGE_PER_BLOCK = 1.0D;
+    /** How hard the ground slam throws the wolf down, in blocks per tick. */
+    private static final double NOBLE_WOLF_SLAM_SPEED = 2.4D;
+    /** How far the landing shock reaches, in blocks. */
+    private static final double NOBLE_WOLF_SLAM_RADIUS = 6.0D;
+    /** Health points the shock deals at the point of impact, falling off to zero at its edge. */
+    private static final double NOBLE_WOLF_SLAM_DAMAGE = 9.0D;
+    /** How long a dive is watched for before it is given up on, in ticks. */
+    private static final long NOBLE_WOLF_SLAM_TIMEOUT_TICKS = 200L;
+    /** Health points the sun takes off on every upkeep pass while the wolf is caught in it. */
+    private static final double NOBLE_WOLF_SUN_DAMAGE = 1.0D;
+    /** How long the wolf has to stay under cover before the form lets go, in milliseconds. */
+    private static final long NOBLE_WOLF_SHELTER_MILLIS = 5_000L;
+    /**
+     * How far the expiry is pushed forward on each upkeep pass while the sun has
+     * the wolf.
+     *
+     * <p>Deliberately a short lease rather than an open-ended hold: if anything
+     * at all stops the upkeep pass - a chunk unload, a plugin reload, a crash -
+     * the form runs out a couple of seconds later instead of stranding somebody
+     * as a wolf forever.</p>
+     */
+    private static final long NOBLE_WOLF_SUN_HOLD_MILLIS = 3_000L;
+    /**
      * Animals whose meat the wolf eats where it kills, mapped to the hunger the
      * <em>cooked</em> cut would have restored.
      *
@@ -266,6 +301,10 @@ public final class YamlAbilityService implements AbilityService {
      * a form nothing owns.</p>
      */
     private final ConcurrentHashMap<UUID, String> wolfForms = new ConcurrentHashMap<>();
+    /** Who is mid-dive, and when they started, so a dive that never lands is given up on. */
+    private final ConcurrentHashMap<UUID, Long> wolfDives = new ConcurrentHashMap<>();
+    /** Since when a sun-caught wolf has been under cover. Absent means "out in it". */
+    private final ConcurrentHashMap<UUID, Long> wolfShelterSince = new ConcurrentHashMap<>();
     private final ThreadLocal<Set<Block>> secondaryBreaks = ThreadLocal.withInitial(HashSet::new);
     /** Written onto a temporarily-enchanted pickaxe: the Efficiency level it had before. */
     private final NamespacedKey efficiencyKey;
@@ -274,6 +313,20 @@ public final class YamlAbilityService implements AbilityService {
     private final NamespacedKey mineBombAbilityKey;
     /** The attribute modifier carrying Asil Kurt's ten extra hearts, so they can be taken off by name. */
     private final NamespacedKey wolfHealthKey;
+    /** Marks the claws themselves, so nothing else can be mistaken for them. */
+    private final NamespacedKey wolfClawKey;
+    /**
+     * Where a transformed player's own hotbar waits.
+     *
+     * <p>On the <em>player's</em> persistent data rather than in a table, for
+     * §23.8's reason: the server already writes the player file, so this survives
+     * a restart - even an unclean one - with no schema, no migration and no
+     * retention question. It is also why a crash mid-transformation cannot eat
+     * anybody's inventory: the next login sees the key and hands it all back.</p>
+     */
+    private final NamespacedKey wolfHotbarKey;
+    /** The attack damage the claws carry, so they are a weapon and not a prop. */
+    private final NamespacedKey wolfClawDamageKey;
 
     public YamlAbilityService(
             JavaPlugin plugin, SkillService skills, MessageService messages, ProfileService profiles,
@@ -294,6 +347,9 @@ public final class YamlAbilityService implements AbilityService {
         this.mineBombOwnerKey = new NamespacedKey(plugin, "maden-bombasi-sahip");
         this.mineBombAbilityKey = new NamespacedKey(plugin, "maden-bombasi-kabiliyet");
         this.wolfHealthKey = new NamespacedKey(plugin, "asil-kurt-can");
+        this.wolfClawKey = new NamespacedKey(plugin, "kurt-pencesi");
+        this.wolfHotbarKey = new NamespacedKey(plugin, "kurt-pencesi-envanter");
+        this.wolfClawDamageKey = new NamespacedKey(plugin, "kurt-pencesi-hasar");
     }
 
     /** The tags {@code AbilityExplosionListener} reads off a primed charge to know it is ours. */
@@ -316,11 +372,19 @@ public final class YamlAbilityService implements AbilityService {
 
     @Override
     public void disable() {
+        // Before anything else is cleared: a shutdown must not be the one way to
+        // keep a set of claws. Runs on the main thread during disable, which is
+        // where this project already tears down its display entities.
+        plugin.getServer().getOnlinePlayers().stream()
+                .filter(online -> wolfForms.containsKey(online.getUniqueId()))
+                .forEach(this::restoreHotbar);
         armed.clear();
         damageBuffs.clear();
         dropBuffs.clear();
         activeEffects.clear();
         wolfForms.clear();
+        wolfDives.clear();
+        wolfShelterSince.clear();
         cooldowns.clear();
         selectedAbility.clear();
         lastSelectedAbility.clear();
@@ -795,6 +859,27 @@ public final class YamlAbilityService implements AbilityService {
         clearActivationFeedback(player);
     }
 
+    /**
+     * When this ability currently says it runs out, whichever state map it was
+     * filed under.
+     *
+     * <p>Exists because one ability moves its own deadline: a wolf caught by the
+     * sunrise keeps leasing its form forward until it reaches cover, and the
+     * countdown task has to see that rather than the number it was handed when it
+     * started. Falls back to that original number for anything the maps no longer
+     * know about, so a state torn down between two ticks still ends the countdown
+     * rather than leaving it to run forever.</p>
+     */
+    private long currentExpiry(UUID playerId, String abilityId, long fallbackMillis) {
+        for (ConcurrentHashMap<UUID, ArmedAbility> states : List.of(armed, damageBuffs, dropBuffs, activeEffects)) {
+            ArmedAbility state = states.get(playerId);
+            if (state != null && state.abilityId().equals(abilityId)) {
+                return state.expiresAtMillis();
+            }
+        }
+        return fallbackMillis;
+    }
+
     /** @return the removed state when it was this ability's, otherwise {@code null} */
     private static ArmedAbility removeIfSameAbility(
             ConcurrentHashMap<UUID, ArmedAbility> states, UUID playerId, String abilityId
@@ -839,6 +924,11 @@ public final class YamlAbilityService implements AbilityService {
                 revokeWolfHearts(player);
                 player.setGlowing(false);
                 packTargets.remove(player.getUniqueId());
+                wolfDives.remove(player.getUniqueId());
+                wolfShelterSince.remove(player.getUniqueId());
+                // The hotbar goes back before the form is dropped, so no path
+                // out of the transformation can leave a player holding claws.
+                restoreHotbar(player);
                 if (wolfForms.remove(player.getUniqueId()) != null) {
                     broadcastWolfForms();
                 }
@@ -889,7 +979,13 @@ public final class YamlAbilityService implements AbilityService {
         cancelFeedbackTask(player.getUniqueId());
         pushHud(player, definition, expiresAtMillis);
         ScheduledTask task = player.getScheduler().runAtFixedRate(plugin, self -> {
-            long remainingMillis = expiresAtMillis - System.currentTimeMillis();
+            // Read back out of the state rather than from the value this task
+            // was started with, because one ability can move its own deadline:
+            // a wolf caught by the sunrise leases its form forward every upkeep
+            // pass until it finds a roof (see punishSun). Every other ability
+            // gets exactly the number it was given.
+            long expiryNow = currentExpiry(player.getUniqueId(), definition.id(), expiresAtMillis);
+            long remainingMillis = expiryNow - System.currentTimeMillis();
             // Running out is its own path, and until §24 it was not: the timer
             // only stopped the feedback, so anything an ability had put on the
             // player that is not a potion effect with a matching duration - the
@@ -908,7 +1004,7 @@ public final class YamlAbilityService implements AbilityService {
             // one message carries the whole picture, so a client that joined
             // late or missed a packet is corrected a second later instead of
             // needing a resynchronisation path of its own.
-            pushHud(player, definition, expiresAtMillis);
+            pushHud(player, definition, expiryNow);
             playFrenzyPulse(player, definition);
             // In Creative there is no remaining time and no energy worth
             // reading - what the player needs to know is how to turn it off.
@@ -1797,12 +1893,22 @@ public final class YamlAbilityService implements AbilityService {
     }
 
     /**
-     * Asil Kurt does not take fall damage - it is a four-block leap and landing
-     * on it would be absurd.
+     * Asil Kurt lands its own leaps for free, and pays for a cliff.
      *
-     * <p>Cancelled rather than reduced: a jump the ability itself grants is not
-     * a fall the player chose, and "mostly survivable" is a worse promise than
-     * "you can jump".</p>
+     * <p>Faz 24 cancelled fall damage outright. That was right about the leap -
+     * the ability grants Jump Boost 5 and being hurt by a jump it handed you is
+     * absurd - and wrong about everything else: it also made stepping off a
+     * mountain free, which is not a wolf, it is a feather. The line is drawn at
+     * {@value #NOBLE_WOLF_SAFE_FALL_BLOCKS} blocks, comfortably above anything
+     * the ability's own jump can reach and comfortably below a real drop, and
+     * past it the damage is one health point per further block rather than
+     * vanilla's curve - a thirty-block fall costs five hearts out of the
+     * transformation's twenty, which hurts without being the end of the
+     * hunt.</p>
+     *
+     * <p><strong>A ground slam is exempt.</strong> The dive is the ability
+     * spending the fall on something else; charging for it as well would mean
+     * the move damaged its user harder than its targets.</p>
      */
     @Override
     public void handleFallDamage(EntityDamageEvent event) {
@@ -1811,7 +1917,119 @@ public final class YamlAbilityService implements AbilityService {
                 || !wolfForms.containsKey(player.getUniqueId())) {
             return;
         }
-        event.setCancelled(true);
+        if (wolfDives.containsKey(player.getUniqueId())) {
+            event.setCancelled(true);
+            return;
+        }
+        double fallen = player.getFallDistance();
+        if (fallen <= NOBLE_WOLF_SAFE_FALL_BLOCKS) {
+            event.setCancelled(true);
+            return;
+        }
+        event.setDamage((fallen - NOBLE_WOLF_SAFE_FALL_BLOCKS) * NOBLE_WOLF_FALL_DAMAGE_PER_BLOCK);
+    }
+
+    /**
+     * The wolf throwing itself at the ground.
+     *
+     * <p>Started by holding sneak in mid-air, which is the one gesture a player
+     * already has free while falling - there is no key to bind and no command to
+     * learn. Everything after that is watched by a one-tick task rather than by a
+     * move event: a landing is a change of state, not a message, and polling
+     * {@code isOnGround} is both cheaper and correct for a player who lands on a
+     * boat, a slab or another entity.</p>
+     *
+     * <p>The task gives up after {@value #NOBLE_WOLF_SLAM_TIMEOUT_TICKS} ticks
+     * whatever happens, so a wolf that dives into a bottomless void does not
+     * leave a task running for the rest of the session.</p>
+     */
+    @Override
+    public void handleSneak(Player player, boolean sneaking) {
+        UUID playerId = player.getUniqueId();
+        if (!sneaking || !wolfForms.containsKey(playerId) || player.isOnGround()
+                || wolfDives.containsKey(playerId) || player.isInWater()) {
+            return;
+        }
+        wolfDives.put(playerId, System.currentTimeMillis());
+        player.setVelocity(player.getVelocity().setY(-NOBLE_WOLF_SLAM_SPEED));
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_WOLF_GROWL, 1.2F, 0.5F);
+        player.getWorld().spawnParticle(Particle.CLOUD, player.getLocation(), 20, 0.4D, 0.2D, 0.4D, 0.08D);
+        long startedTick = System.currentTimeMillis();
+        player.getScheduler().runAtFixedRate(plugin, task -> {
+            boolean gone = !player.isOnline()
+                    || !wolfForms.containsKey(playerId)
+                    || System.currentTimeMillis() - startedTick > NOBLE_WOLF_SLAM_TIMEOUT_TICKS * MILLIS_PER_TICK;
+            if (gone) {
+                wolfDives.remove(playerId);
+                task.cancel();
+                return;
+            }
+            if (!player.isOnGround()) {
+                // Held down rather than left to vanilla gravity, so the dive
+                // reads as a deliberate strike rather than as a long fall.
+                player.setVelocity(player.getVelocity().setY(-NOBLE_WOLF_SLAM_SPEED));
+                return;
+            }
+            task.cancel();
+            groundSlam(player);
+            // Removed after the slam, not before: handleFallDamage runs on the
+            // same landing tick and has to still see the dive to waive it.
+            player.getScheduler().runDelayed(plugin, later -> wolfDives.remove(playerId), null, 2L);
+        }, null, 1L, 1L);
+    }
+
+    /**
+     * The landing: a shock that shakes the ground and hurts everything standing
+     * on it.
+     *
+     * <p>Damage falls off with distance rather than being flat, so the move
+     * rewards landing <em>on</em> something. Nothing is broken and no block is
+     * changed - the visible dust is the block the wolf landed on, played as a
+     * particle, which is the whole of the shake a server can give a vanilla
+     * client. Players are deliberately untouched: the wolf's own glow already
+     * marks people out, and turning a mobility move into a PvP finisher is a
+     * different ability than the one that was asked for.</p>
+     */
+    private void groundSlam(Player player) {
+        Location at = player.getLocation();
+        World world = at.getWorld();
+        world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 1.4F, 0.55F);
+        world.playSound(at, Sound.BLOCK_ANVIL_LAND, 1.0F, 0.5F);
+        world.playSound(at, Sound.ENTITY_WOLF_GROWL, 1.4F, 0.6F);
+        Material ground = at.clone().subtract(0, 1, 0).getBlock().getType();
+        if (!ground.isAir()) {
+            world.spawnParticle(Particle.BLOCK, at, 120, NOBLE_WOLF_SLAM_RADIUS / 3, 0.2D,
+                    NOBLE_WOLF_SLAM_RADIUS / 3, 0.4D, ground.createBlockData());
+        }
+        world.spawnParticle(Particle.EXPLOSION, at, 3, 0.6D, 0.1D, 0.6D, 0.0D);
+        // A ring rather than a cloud: the edge of the shock is the part a player
+        // needs to be able to see, because it is the part that decides whether
+        // something was caught by it.
+        for (int step = 0; step < 40; step++) {
+            double angle = Math.PI * 2 * step / 40;
+            world.spawnParticle(Particle.SWEEP_ATTACK,
+                    at.clone().add(Math.cos(angle) * NOBLE_WOLF_SLAM_RADIUS, 0.2D,
+                            Math.sin(angle) * NOBLE_WOLF_SLAM_RADIUS), 1, 0, 0, 0, 0);
+        }
+        int struck = 0;
+        for (Entity nearby : player.getNearbyEntities(
+                NOBLE_WOLF_SLAM_RADIUS, NOBLE_WOLF_SLAM_RADIUS / 2, NOBLE_WOLF_SLAM_RADIUS)) {
+            if (!(nearby instanceof LivingEntity victim) || victim instanceof Player || victim.isDead()) {
+                continue;
+            }
+            double distance = victim.getLocation().distance(at);
+            if (distance > NOBLE_WOLF_SLAM_RADIUS) {
+                continue;
+            }
+            double share = 1.0D - distance / NOBLE_WOLF_SLAM_RADIUS;
+            victim.damage(NOBLE_WOLF_SLAM_DAMAGE * share, player);
+            Vector away = victim.getLocation().toVector().subtract(at.toVector()).setY(0);
+            if (away.lengthSquared() > 0) {
+                victim.setVelocity(away.normalize().multiply(0.6D * share).setY(0.45D * share));
+            }
+            struck++;
+        }
+        messages.send(player, MessageKey.ABILITY_NOBLE_WOLF_SLAM, Map.of("sayi", Integer.toString(struck)));
     }
 
     /**
@@ -1836,6 +2054,12 @@ public final class YamlAbilityService implements AbilityService {
 
     @Override
     public void handlePlayerQuit(Player player) {
+        wolfDives.remove(player.getUniqueId());
+        wolfShelterSince.remove(player.getUniqueId());
+        // Undone here rather than left to the next login, so the player file
+        // that is about to be written already holds their own hotbar. The login
+        // path stays as the safety net for the case this never ran at all.
+        restoreHotbar(player);
         if (wolfForms.remove(player.getUniqueId()) != null) {
             broadcastWolfForms();
         }
@@ -1915,15 +2139,16 @@ public final class YamlAbilityService implements AbilityService {
         grantWolfHearts(player);
         player.setGlowing(true);
         stripArmour(player);
+        equipClaws(player);
         howlAcrossServer(player);
         comboDamage.remove(player.getUniqueId());
         packTargets.remove(player.getUniqueId());
+        wolfDives.remove(player.getUniqueId());
+        wolfShelterSince.remove(player.getUniqueId());
         wolfForms.put(player.getUniqueId(), definition.id());
         broadcastWolfForms();
-        long expiresAt = System.currentTimeMillis() + activeMillis;
         player.getScheduler().runAtFixedRate(plugin, task -> {
-            if (!player.isOnline() || System.currentTimeMillis() >= expiresAt
-                    || !isStillActive(player.getUniqueId(), definition.id())) {
+            if (!player.isOnline() || !isStillActive(player.getUniqueId(), definition.id())) {
                 task.cancel();
                 return;
             }
@@ -1932,7 +2157,228 @@ public final class YamlAbilityService implements AbilityService {
             drivePack(player, radius);
             scatterPrey(player, radius);
             punishWater(player);
+            punishSun(player, definition);
         }, null, 1L, UPKEEP_PERIOD_TICKS);
+    }
+
+    /**
+     * Daybreak, which the wolf cannot simply walk through.
+     *
+     * <p>The form can only be called after dark, so morning arriving in the
+     * middle of it is a genuine event and not a corner case. When it does, the
+     * transformation stops running out on its own clock: the expiry is leased
+     * forward on every pass, health drains, and the screen says one thing in the
+     * plainest words the game has. The way out is not the timer, it is a roof -
+     * somewhere the sky reaches neither the wolf's feet nor its head. Five
+     * seconds under cover and it lets go.</p>
+     *
+     * <p>Leased rather than held open, so the failure mode is a wolf that reverts
+     * a couple of seconds early rather than one nobody can turn back: if this
+     * pass ever stops running, the lease simply runs out.</p>
+     *
+     * <p>Sky light, not the height map, is what "sheltered" means. A cave under
+     * an overhang and a cave under a mountain both have a sky light of zero, and
+     * that is exactly the question being asked - does the sun reach here.</p>
+     */
+    private void punishSun(Player player, AbilityDefinition definition) {
+        UUID playerId = player.getUniqueId();
+        if (isNight(player.getWorld())) {
+            wolfShelterSince.remove(playerId);
+            return;
+        }
+        if (isSheltered(player)) {
+            long since = wolfShelterSince.computeIfAbsent(playerId, ignored -> System.currentTimeMillis());
+            long undercover = System.currentTimeMillis() - since;
+            if (undercover >= NOBLE_WOLF_SHELTER_MILLIS) {
+                wolfShelterSince.remove(playerId);
+                expireActive(player, definition);
+                messages.send(player, MessageKey.ABILITY_NOBLE_WOLF_HUMAN_AGAIN);
+                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8F, 0.7F);
+                return;
+            }
+            long remaining = Math.max(1L, (NOBLE_WOLF_SHELTER_MILLIS - undercover + 999L) / 1000L);
+            player.showTitle(Title.title(
+                    messages.render(MessageKey.ABILITY_NOBLE_WOLF_REVERTING_TITLE),
+                    messages.render(MessageKey.ABILITY_NOBLE_WOLF_REVERTING_SUBTITLE,
+                            Map.of("saniye", Long.toString(remaining))),
+                    Title.Times.times(Duration.ZERO, Duration.ofMillis(600), Duration.ofMillis(300))
+            ));
+            leaseWolfForm(player, definition);
+            return;
+        }
+        wolfShelterSince.remove(playerId);
+        player.damage(NOBLE_WOLF_SUN_DAMAGE);
+        player.getWorld().spawnParticle(Particle.SMOKE, player.getLocation().add(0, 1, 0),
+                12, 0.3D, 0.6D, 0.3D, 0.02D);
+        player.playSound(player.getLocation(), Sound.ENTITY_WOLF_WHINE, 1.0F, 1.2F);
+        player.showTitle(Title.title(
+                messages.render(MessageKey.ABILITY_NOBLE_WOLF_SUN_TITLE),
+                messages.render(MessageKey.ABILITY_NOBLE_WOLF_SUN_SUBTITLE),
+                Title.Times.times(Duration.ZERO, Duration.ofMillis(700), Duration.ofMillis(200))
+        ));
+        leaseWolfForm(player, definition);
+    }
+
+    /** Whether the sky reaches this player at all - the test for "inside" a cave. */
+    private static boolean isSheltered(Player player) {
+        Location feet = player.getLocation();
+        return feet.getBlock().getLightFromSky() == 0
+                && player.getEyeLocation().getBlock().getLightFromSky() == 0;
+    }
+
+    /**
+     * Pushes the running form's expiry a few seconds further out.
+     *
+     * <p>Written back into {@code damageBuffs} because that is the map Asil Kurt
+     * is registered in (§24, madde 9) and the one every reader of "is this still
+     * running" consults. Nothing else has to be told: the countdown task reads
+     * the expiry from the state rather than from a value captured when it
+     * started, precisely so that this can move it.</p>
+     */
+    private void leaseWolfForm(Player player, AbilityDefinition definition) {
+        UUID playerId = player.getUniqueId();
+        ArmedAbility current = damageBuffs.get(playerId);
+        if (current == null || !current.abilityId().equals(definition.id())) {
+            return;
+        }
+        long leaseUntil = System.currentTimeMillis() + NOBLE_WOLF_SUN_HOLD_MILLIS;
+        if (current.expiresAtMillis() >= leaseUntil) {
+            return;
+        }
+        damageBuffs.replace(playerId, current,
+                new ArmedAbility(current.abilityId(), leaseUntil, current.limit()));
+    }
+
+    /**
+     * Takes the player's hotbar away and puts claws in it.
+     *
+     * <p>The request was that the ordinary hotbar stop being there at all while
+     * the form is up, so the nine slots are lifted out whole, written onto the
+     * player's own persistent data and put back when the form ends. Everything
+     * else - not being able to switch slots, drop, pick up or rearrange - is
+     * enforced by {@code AbilityActivationListener}; this is only the swap.</p>
+     *
+     * <p>Nothing is ever destroyed. If the write fails the hotbar is left exactly
+     * as it was and the claws are simply not given: a wolf with its own sword is
+     * a cosmetic disappointment, and an eaten inventory is not.</p>
+     */
+    private void equipClaws(Player player) {
+        if (player.getPersistentDataContainer().has(wolfHotbarKey, PersistentDataType.BYTE_ARRAY)) {
+            // Already holding somebody's hotbar - a re-activation before cleanup
+            // ran. Overwriting it would be exactly the way to lose an inventory.
+            return;
+        }
+        ItemStack[] hotbar = new ItemStack[9];
+        for (int slot = 0; slot < hotbar.length; slot++) {
+            hotbar[slot] = player.getInventory().getItem(slot);
+        }
+        try {
+            player.getPersistentDataContainer().set(wolfHotbarKey, PersistentDataType.BYTE_ARRAY,
+                    ItemStack.serializeItemsAsBytes(hotbar));
+        } catch (RuntimeException exception) {
+            plugin.getLogger().warning("Kurt Pencesi: oyuncunun slotbari kaydedilemedi, esyalara dokunulmadi ("
+                    + player.getName() + "): " + exception.getMessage());
+            return;
+        }
+        for (int slot = 0; slot < hotbar.length; slot++) {
+            player.getInventory().setItem(slot, null);
+        }
+        player.getInventory().setItem(0, wolfClaws());
+        player.getInventory().setHeldItemSlot(0);
+    }
+
+    /**
+     * Gives the hotbar back.
+     *
+     * <p>Called from every path that ends the form - expiry, death, unequip,
+     * class change, logout, plugin shutdown - and from the join handler, which is
+     * what makes an unclean shutdown survivable: the data is on the player, so
+     * whenever they next appear the key is still there and the swap is
+     * undone.</p>
+     */
+    private void restoreHotbar(Player player) {
+        byte[] stored = player.getPersistentDataContainer().get(wolfHotbarKey, PersistentDataType.BYTE_ARRAY);
+        if (stored == null) {
+            stripClaws(player);
+            return;
+        }
+        ItemStack[] hotbar;
+        try {
+            hotbar = ItemStack.deserializeItemsFromBytes(stored);
+        } catch (RuntimeException exception) {
+            plugin.getLogger().severe("Kurt Pencesi: saklanan slotbar okunamadi (" + player.getName()
+                    + "). Esyalar kaydin icinde duruyor, slotbar temizlenmedi: " + exception.getMessage());
+            return;
+        }
+        player.getPersistentDataContainer().remove(wolfHotbarKey);
+        stripClaws(player);
+        for (int slot = 0; slot < Math.min(hotbar.length, 9); slot++) {
+            ItemStack existing = player.getInventory().getItem(slot);
+            if (existing != null && !existing.getType().isAir()) {
+                // Something arrived in a slot while the claws were on. It is the
+                // player's, so it goes somewhere they still own rather than
+                // under the returning item.
+                player.getInventory().addItem(existing).values()
+                        .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+            }
+            player.getInventory().setItem(slot, hotbar[slot]);
+        }
+    }
+
+    /** Removes every claw anywhere in the inventory - they are never a keepsake. */
+    private void stripClaws(Player player) {
+        ItemStack[] contents = player.getInventory().getContents();
+        for (int slot = 0; slot < contents.length; slot++) {
+            if (isWolfClaw(contents[slot])) {
+                player.getInventory().setItem(slot, null);
+            }
+        }
+    }
+
+    @Override
+    public boolean isWolfClaw(ItemStack item) {
+        return item != null && !item.getType().isAir() && item.hasItemMeta()
+                && item.getItemMeta().getPersistentDataContainer().has(wolfClawKey, PersistentDataType.BYTE);
+    }
+
+    @Override
+    public boolean isTransformed(UUID playerId) {
+        return wolfForms.containsKey(playerId);
+    }
+
+    @Override
+    public void restoreHotbarIfStranded(Player player) {
+        if (player.getPersistentDataContainer().has(wolfHotbarKey, PersistentDataType.BYTE_ARRAY)) {
+            restoreHotbar(player);
+        }
+    }
+
+    /**
+     * The claws themselves.
+     *
+     * <p>A bone underneath, because it is inert - no right-click behaviour of its
+     * own to fight with, and nothing a player could confuse for a real weapon in
+     * a chest. What it actually looks like comes from the {@code item_model}
+     * component pointing at {@code hmmo:kurt_pencesi}, which the companion mod
+     * ships as a real model: long white claws in the player's own hands. The
+     * server never has to know what that model contains.</p>
+     */
+    private ItemStack wolfClaws() {
+        ItemStack claws = new ItemStack(Material.BONE);
+        ItemMeta meta = claws.getItemMeta();
+        meta.displayName(messages.render(MessageKey.ABILITY_NOBLE_WOLF_CLAWS_NAME));
+        meta.lore(List.of(messages.render(MessageKey.ABILITY_NOBLE_WOLF_CLAWS_LORE)));
+        meta.setItemModel(new NamespacedKey("hmmo", "kurt_pencesi"));
+        meta.setUnbreakable(true);
+        meta.getPersistentDataContainer().set(wolfClawKey, PersistentDataType.BYTE, (byte) 1);
+        meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(
+                wolfClawDamageKey, 6.0D, AttributeModifier.Operation.ADD_NUMBER,
+                org.bukkit.inventory.EquipmentSlotGroup.MAINHAND));
+        meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(
+                new NamespacedKey(plugin, "kurt-pencesi-hiz"), 1.6D, AttributeModifier.Operation.ADD_NUMBER,
+                org.bukkit.inventory.EquipmentSlotGroup.MAINHAND));
+        claws.setItemMeta(meta);
+        return claws;
     }
 
     /** One potion effect for exactly the ability's duration, written in levels rather than amplifiers. */

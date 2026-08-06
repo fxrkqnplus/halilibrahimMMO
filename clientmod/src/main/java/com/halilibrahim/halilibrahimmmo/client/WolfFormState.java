@@ -1,5 +1,6 @@
 package com.halilibrahim.halilibrahimmmo.client;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,18 +29,29 @@ public final class WolfFormState {
 
     private final Set<UUID> transformed = ConcurrentHashMap.newKeySet();
     private final Set<Integer> transformedEntityIds = ConcurrentHashMap.newKeySet();
+    /**
+     * What each transformed body is doing, keyed by entity id.
+     *
+     * <p>Here rather than in {@link WerewolfModel} because one model instance
+     * draws every wolf on screen - it has nowhere to keep a memory of any single
+     * one of them. {@link WolfFormTicker} writes this once a tick and the render
+     * layer reads it once per player per frame.</p>
+     */
+    private final Map<Integer, WolfMotion> motions = new ConcurrentHashMap<>();
 
     public void accept(Set<UUID> playerIds) {
         transformed.retainAll(playerIds);
         transformed.addAll(playerIds);
         if (transformed.isEmpty()) {
             transformedEntityIds.clear();
+            motions.clear();
         }
     }
 
     public void clear() {
         transformed.clear();
         transformedEntityIds.clear();
+        motions.clear();
     }
 
     public boolean isTransformed(UUID playerId) {
@@ -55,6 +67,21 @@ public final class WolfFormState {
     void publishEntityIds(Set<Integer> entityIds) {
         transformedEntityIds.retainAll(entityIds);
         transformedEntityIds.addAll(entityIds);
+        motions.keySet().retainAll(entityIds);
+    }
+
+    /** Records one wolf's eased motion weights. Called only by {@link WolfFormTicker}. */
+    void publishMotion(int entityId, WolfMotion motion) {
+        motions.put(entityId, motion);
+    }
+
+    /**
+     * What this wolf is doing, or {@link WolfMotion#RESTING} for one the ticker
+     * has not seen yet - a body that has just come into view stands still for a
+     * frame rather than being drawn in whatever pose the previous entity left.
+     */
+    public WolfMotion motionOf(int entityId) {
+        return motions.getOrDefault(entityId, WolfMotion.RESTING);
     }
 
     /** What the render layer asks, once per player per frame. */

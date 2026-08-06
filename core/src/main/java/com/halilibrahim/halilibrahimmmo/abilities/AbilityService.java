@@ -157,6 +157,33 @@ public interface AbilityService extends PluginService {
     void handleFallDamage(org.bukkit.event.entity.EntityDamageEvent event);
 
     /**
+     * A player starting or stopping a sneak, which is how Asil Kurt's ground
+     * slam is aimed.
+     *
+     * <p>Sneak is the one gesture a falling player has free - there is no key to
+     * bind and nothing to learn - and it only means anything here in mid-air
+     * while transformed. Every other case returns immediately.</p>
+     */
+    void handleSneak(Player player, boolean sneaking);
+
+    /** Whether this player is currently wearing Asil Kurt's body. In-memory only. */
+    boolean isTransformed(UUID playerId);
+
+    /** Whether this stack is a pair of Asil Kurt's claws, by the tag on the item itself. */
+    boolean isWolfClaw(org.bukkit.inventory.ItemStack item);
+
+    /**
+     * Hands back a hotbar that Asil Kurt's claws were holding, if this player
+     * still has one stored.
+     *
+     * <p>The safety net for an unclean shutdown. The saved hotbar rides on the
+     * player's own persistent data, so it survives a crash the plugin never got
+     * to react to; this is what notices on the next login and undoes the
+     * swap.</p>
+     */
+    void restoreHotbarIfStranded(Player player);
+
+    /**
      * Sends a joining player the set of players currently in Asil Kurt's form.
      *
      * <p>Needed because the set is only broadcast when it <em>changes</em>: a

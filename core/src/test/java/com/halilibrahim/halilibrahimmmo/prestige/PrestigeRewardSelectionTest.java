@@ -9,35 +9,50 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Faz 24, madde 17: the prestige screen offers two rewards, and the two that
- * left the screen did not leave the enum.
+ * Faz 25, madde 10: the prestige screen offers all four permanent rewards
+ * again, and every one of them still resolves by name.
+ *
+ * <p>Faz 24 had narrowed the screen to two on the reading that four small
+ * trickles were a menu rather than a decision. What the request had actually
+ * wanted narrowed was the physical chest; taking a direction away from a build
+ * steering towards energy or towards skill XP was a side effect nobody
+ * asked for.</p>
  */
 class PrestigeRewardSelectionTest {
 
     @Test
-    @DisplayName("The screen offers exactly two rewards")
-    void twoRewardsAreSelectable() {
-        assertEquals(2, PrestigeRewardType.SELECTABLE_COUNT);
-        assertEquals(2, PrestigeRewardType.selectable().size());
+    @DisplayName("The screen offers all four rewards")
+    void everyRewardIsSelectable() {
+        assertEquals(4, PrestigeRewardType.SELECTABLE_COUNT);
+        assertEquals(4, PrestigeRewardType.selectable().size());
     }
 
     @Test
-    @DisplayName("They are the first two, in declaration order")
-    void selectableAreTheFirstTwo() {
-        assertEquals(List.of(PrestigeRewardType.CAN, PrestigeRewardType.HASAR), PrestigeRewardType.selectable());
+    @DisplayName("They are offered in declaration order")
+    void selectableFollowDeclarationOrder() {
+        assertEquals(
+                List.of(
+                        PrestigeRewardType.CAN,
+                        PrestigeRewardType.HASAR,
+                        PrestigeRewardType.ENERJI,
+                        PrestigeRewardType.BILGELIK
+                ),
+                PrestigeRewardType.selectable());
     }
 
     /**
-     * The load-bearing half of madde 17. Deleting the two constants would have
-     * silently voided every ENERJI and BILGELIK a player had already banked,
-     * because {@link PrestigeRewardType#byName} answers an unknown name with
-     * nothing and the stored rows would stop resolving.
+     * The rule §15.4 set for talent ranks whose configuration moved under them,
+     * applied here: whatever the screen currently offers, a reward a player has
+     * already banked has to keep resolving, because
+     * {@link PrestigeRewardType#byName} answers an unknown name with nothing and
+     * the stored rows would quietly stop counting.
      */
     @Test
-    @DisplayName("Rewards that left the screen still resolve, so banked ranks keep paying out")
-    void retiredRewardsStillResolve() {
-        assertTrue(PrestigeRewardType.byName("ENERJI").isPresent());
-        assertTrue(PrestigeRewardType.byName("BILGELIK").isPresent());
+    @DisplayName("Every banked reward name still resolves")
+    void everyBankedRewardResolves() {
+        for (PrestigeRewardType type : PrestigeRewardType.values()) {
+            assertTrue(PrestigeRewardType.byName(type.name()).isPresent(), type.name());
+        }
         assertEquals(4, PrestigeRewardType.values().length);
     }
 }

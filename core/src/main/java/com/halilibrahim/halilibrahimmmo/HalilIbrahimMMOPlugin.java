@@ -334,7 +334,11 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                             playerId -> {
                                 BackpackService backpacks = backpackServiceReference.get();
                                 return backpacks == null ? 0 : backpacks.upgrades(playerId);
-                            }), ClassService.class
+                            },
+                            // ...and the ceiling those widenings add to the
+                            // feature pool's cap, which is a constant rather
+                            // than a per-player reading.
+                            BackpackService.MAXIMUM_UPGRADES), ClassService.class
             );
             classServiceReference.set(classService);
             PrestigeService prestigeService = startService(

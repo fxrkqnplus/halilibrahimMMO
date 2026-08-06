@@ -194,10 +194,17 @@ public final class HmmoClientMod implements ClientModInitializer {
     /**
      * The badge's right edge when it is drawn beside an open container panel.
      *
-     * <p>Kept on the same side as the HUD badge, so opening a chest moves the
-     * countdown a few pixels rather than throwing it across the screen. The
-     * badge is right-aligned, so this returns where its right edge goes: just
-     * clear of the panel's right side.</p>
+     * <p><strong>To the left of the panel, unlike the HUD badge.</strong> Faz 24
+     * moved the in-play badge to the top right, which is the corner nothing else
+     * claims while you are playing - and then moved this copy with it, which was
+     * a step too far. The right of an open inventory is where the game already
+     * puts things a player is reading (recipe book, and on this server the
+     * sidebar panel is over on that side too); the left of the panel is where
+     * status has always sat, and it is where this badge sat before. Only the HUD
+     * corner moved.</p>
+     *
+     * <p>The badge is right-aligned, so this returns where its right edge goes:
+     * just clear of the panel's <em>left</em> side.</p>
      *
      * <p><strong>Derived from the screen size rather than read off the
      * screen.</strong> {@code AbstractContainerScreen}'s {@code leftPos} and
@@ -208,12 +215,12 @@ public final class HmmoClientMod implements ClientModInitializer {
      * case, so the centred arithmetic lands on the same pixel; a wider one only
      * moves the badge a little further from its edge.</p>
      *
-     * <p>Clamped so a narrow window gets an overlapping badge rather than one
-     * drawn off the side of the screen.</p>
+     * <p>Clamped so a narrow window gets a badge overlapping the panel rather
+     * than one drawn off the side of the screen.</p>
      */
     private static int badgeRightX(int guiWidth) {
-        int panelRight = (guiWidth + PANEL_WIDTH) / 2;
-        return Math.min(guiWidth - 2, Math.max(BADGE_WIDTH_GUESS, panelRight + SCREEN_BADGE_GAP + BADGE_WIDTH_GUESS));
+        int panelLeft = (guiWidth - PANEL_WIDTH) / 2;
+        return Math.min(guiWidth - 2, Math.max(BADGE_WIDTH_GUESS + 2, panelLeft - SCREEN_BADGE_GAP));
     }
 
     private static int badgeY(int guiHeight) {

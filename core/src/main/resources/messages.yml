@@ -32,10 +32,6 @@ genel:
 canta:
   baslik: "<dark_aqua>Bulut Sandığı</dark_aqua>"
   kilitli: "<red><simge:uyari> Bulut sandığı <white><seviye>. sınıf seviyesinde</white> açılır.</red> <gray>(Prestij yaptıysan seviyeden bağımsız olarak zaten açıktır.)</gray>"
-  # Sandik HER acildiginda gorunur, bu yuzden kasitli olarak tek kelimelik:
-  # anlatinin tamami uzerine gelindiginde cikan ipucuna tasindi. Iki satirlik
-  # bir aciklamayi gunde otuz kere okumak bilgi degil gurultudur.
-  acildi: "<hover:show_text:'<gray>İçindekiler ölümde kaybolmaz.<newline>Pencereyi kapattığında kaydedilir.<newline><dark_gray>Kapasite: <white><kapasite></white> slot</dark_gray>'><aqua><simge:koleksiyon> Bulut Sandığı</aqua></hover>"
   # Sandik 18 slotla acilir; iki genisletmenin her biri +7 slot verir (18 -> 25
   # -> 32). Minecraft 25 slotluk bir sandik yapamadigi icin pencere her zaman
   # tam satirdir ve satin alinmamis slotlar bu panelle kapatilir.
@@ -44,6 +40,7 @@ canta:
   genisletildi: "<green><simge:kutlama> Bulut sandığın genişledi!</green> <gray>Yeni kapasite:</gray> <white><kapasite></white> <gray>slot.</gray>"
   genisletme-dolu: "<yellow>Bulut sandığın zaten en geniş hâlinde.</yellow>"
   genisletme-puan-yok: "<red>Bunun için bir özellik puanına ihtiyacın var.</red>"
+  genisletme-kilitli: "<red><simge:uyari> Önce bulut sandığının kendisi açılmalı (<white><seviye>. sınıf seviyesi</white> ya da prestij).</red>"
 
 # Ekranda gorunen HER sure bu dort parcadan birlestirilir: once gun, sonra
 # saat, dakika ve saniye - sifir olan birimler hic yazilmaz. Ornegin 130
@@ -109,6 +106,9 @@ sidebar:
   aktivasyon-onerisi: "<yellow><simge:ok> Başlamak için /mmo aktif yaz!</yellow>"
   sinif-onerisi: "<yellow><simge:ok> Sınıf seçmek için /sınıf yaz!</yellow>"
   sinif-seviye: "<aqua><simge:sinif> <sinif></aqua> <gray>Sv.</gray><aqua><seviye></aqua> <dark_gray>(<xp>/<gereken>)</dark_gray>"
+  # Sinif son seviyeye ulastiginda "(0/0)" yerine bu satir yazilir: sifir bolu
+  # sifir bir ilerleme degil, bir hata gibi okunuyordu.
+  sinif-seviye-max: "<aqua><simge:sinif> <sinif></aqua> <gray>Sv.</gray><aqua><seviye></aqua> <dark_gray>(</dark_gray><gold>MAX</gold><dark_gray>)</dark_gray>"
   aktif-kabiliyet: "<gold><simge:kabiliyet> <kabiliyet></gold> <dark_gray>(<kalan>)</dark_gray>"
   kabiliyet-secili: "<green><simge:kabiliyet> <kabiliyet></green> <dark_gray>hazır</dark_gray>"
   kabiliyet-yok: "<dark_gray><simge:kabiliyet> Kabiliyet seçilmedi</dark_gray>"
@@ -238,6 +238,20 @@ kabiliyet:
   asil-kurt-su-baslik: "<dark_red><bold>SUDAN ÇIK!</bold></dark_red>"
   asil-kurt-su-altbaslik: "<red>Kurt suda yaşayamaz - canın gidiyor.</red>"
   asil-kurt-yedi: "<dark_red><simge:hayvancilik> Avını yerinde parçaladın.</dark_red> <gray>Açlık <white>+<aclik></white>.</gray>"
+  # Havadayken shift'e basili tutunca kurt kendini yere firlatir; inisin sarsintisi
+  # yakindaki yaratiklara zarar verir. Oyunculara dokunmaz.
+  asil-kurt-carpma: "<dark_red><simge:kabiliyet> Yere çakıldın!</dark_red> <gray>Sarsıntı <white><sayi></white> yaratığa zarar verdi.</gray>"
+  # Kabiliyet aktifken sabah olursa: kurt gunesin altinda kalamaz. Ekrandaki yazi
+  # sadece golgede (gokyuzu isigi 0 olan bir yerde) kaybolur.
+  asil-kurt-gunes-baslik: "<gold><bold>GÜNEŞTEN KAÇ</bold></gold>"
+  asil-kurt-gunes-altbaslik: "<red>Güneş seni yakıyor - kapalı bir yere gir.</red>"
+  asil-kurt-donusuyor-baslik: "<gray><bold>İnsana dönülüyor...</bold></gray>"
+  asil-kurt-donusuyor-altbaslik: "<dark_gray>Gölgede bekle - <white><saniye></white> saniye</dark_gray>"
+  asil-kurt-insan-oldun: "<green><simge:tamam> İnsana döndün.</green> <gray>Slotbarın geri geldi.</gray>"
+  asil-kurt-pence-ad: "<white><bold>Kurt Pençeleri</bold></white>"
+  asil-kurt-pence-aciklama: "<gray>Dönüşüm bitene kadar elinden çıkmaz.</gray>"
+  asil-kurt-slot-kilitli: "<red><simge:uyari> Pençelerin elinde - başka bir slota geçemezsin.</red>"
+  asil-kurt-esya-kilitli: "<red><simge:uyari> Kurt hâlindeyken eşya alıp veremezsin.</red>"
   olumle-bitti: "<yellow><simge:uyari> Öldün;</yellow> <gray>çalışan kabiliyetin sona erdi. Kuşandığın kabiliyet üzerinde kalır.</gray>"
   # ----- Kombo merdiveni (Kan Yemini ve Asil Kurt) -----
   # Ekranın altında, istemci mod'unun cizdigi satir. Basamak, kabiliyet
@@ -899,6 +913,9 @@ gui:
     canta-genislet: "<aqua><simge:koleksiyon> Bulut Sandığını Genişlet</aqua>"
     canta-genislet-aciklama: "<gray>Kapasite <white><kapasite></white> slot <dark_gray>(<mevcut>/<maksimum> genişletme)</dark_gray><newline><gray>1 özellik puanı karşılığında <white>+<slot> slot</white> <dark_gray>• satın almak için tıkla</dark_gray></gray>"
     canta-genislet-dolu: "<green><simge:tamam> En geniş hâlinde: <white><kapasite></white> slot</green>"
+    # Bulut sandığını henüz açmamış bir oyuncuya genişletme satmak, sahip olmadığı
+    # bir şeye özellik puanı harcatmak demekti.
+    canta-genislet-kilitli: "<red><simge:uyari> Bulut sandığı henüz açılmadı.</red><newline><gray><white><seviye>. sınıf seviyesinde</white> ya da prestij yaptığında açılır; genişletme ondan sonra alınır.</gray>"
 
   # ----- Sinif secim ekrani (/mmo ve /sinif) -----
   # DIKKAT: Esya aciklama satirlari ALT SATIRA KAYMAZ, kesilir. Her "aciklama-*"
