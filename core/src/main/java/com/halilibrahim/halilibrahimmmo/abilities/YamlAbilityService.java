@@ -92,8 +92,10 @@ public final class YamlAbilityService implements AbilityService {
     private static final int OPEN_SPACE_PROBE_RADIUS = 4;
     /** Hard ceiling on GROWTH_SURGE's crops per activation, independent of the configured radius. */
     private static final int MAX_SURGED_CROPS = 256;
-    /** How many outward waves a growth surge is split into, and how far apart they land. */
-    private static final int GROWTH_SURGE_PASSES = 6;
+    /** One Minecraft tick in milliseconds - the conversion a measured animation length is built from. */
+    private static final long MILLIS_PER_TICK = 50L;
+    /** How many outward rings a growth surge's wave is split into, and how far apart they land. */
+    private static final int GROWTH_SURGE_RINGS = 6;
     private static final long GROWTH_SURGE_PASS_TICKS = 8L;
     /** How many times the opening howl repeats, one second apart. */
     private static final int NOBLE_WOLF_HOWLS = 3;
@@ -797,8 +799,7 @@ public final class YamlAbilityService implements AbilityService {
         clearGlint(player);
         applyGlint(player, player.getInventory().getHeldItemSlot(), Boolean.TRUE);
         cancelFeedbackTask(player.getUniqueId());
-        long totalMillis = expiresAtMillis - System.currentTimeMillis();
-        pushHud(player, definition, expiresAtMillis, totalMillis);
+        pushHud(player, definition, expiresAtMillis);
         ScheduledTask task = player.getScheduler().runAtFixedRate(plugin, self -> {
             long remainingMillis = expiresAtMillis - System.currentTimeMillis();
             if (remainingMillis <= 0 || !isStillActive(player.getUniqueId(), definition.id())) {
@@ -809,7 +810,7 @@ public final class YamlAbilityService implements AbilityService {
             // one message carries the whole picture, so a client that joined
             // late or missed a packet is corrected a second later instead of
             // needing a resynchronisation path of its own.
-            pushHud(player, definition, expiresAtMillis, totalMillis);
+            pushHud(player, definition, expiresAtMillis);
             playFrenzyPulse(player, definition);
             // In Creative there is no remaining time and no energy worth
             // reading - what the player needs to know is how to turn it off.
@@ -849,7 +850,7 @@ public final class YamlAbilityService implements AbilityService {
      * string a player reads - a mod nobody can edit is the worst possible place
      * to keep six sentences an owner might want to reword.</p>
      */
-    private void pushHud(Player player, AbilityDefinition definition, long expiresAtMillis, long totalMillis) {
+    private void pushHud(Player player, AbilityDefinition definition, long expiresAtMillis) {
         int tier = 0;
         String line = "";
         if (definition.effectType().isFrenzy()) {
@@ -860,7 +861,7 @@ public final class YamlAbilityService implements AbilityService {
                 line = messages.plain(key, Map.of("hasar", Long.toString(Math.round(dealt))));
             }
         }
-        hud.showAbility(player, definition, isCreative(player) ? 0L : expiresAtMillis, totalMillis, line, tier);
+        hud.showAbility(player, definition, isCreative(player) ? 0L : expiresAtMillis, line, tier);
     }
 
     /**
@@ -1021,6 +1022,19 @@ public final class YamlAbilityService implements AbilityService {
             }
             cooldowns.put(cooldownKey, now + cooldownMillis);
         }
+        // Filiz Patlaması is the one ability whose duration is measured rather
+        // than configured, so its field has to be surveyed before the clock is
+        // set. Done after the cost has been taken, so a refused activation
+        // never pays for the scan. Creative gets the measured length too: a six
+        // hour timer over a wave that finishes in seconds is exactly the
+        // mismatch madde 6 is about.
+        List<Block> surgeCrops = List.of();
+        if (definition.effectType() == AbilityEffectType.GROWTH_SURGE) {
+            surgeCrops = collectSurgeCrops(player, limit);
+            if (!surgeCrops.isEmpty()) {
+                activeMillis = surgeMillis(surgeCrops);
+            }
+        }
         ArmedAbility active = new ArmedAbility(definition.id(), now + activeMillis, limit);
         String duration = DurationFormatter.ofMillis(messages, activeMillis);
         switch (definition.effectType()) {
@@ -1068,14 +1082,28 @@ public final class YamlAbilityService implements AbilityService {
                 // Registered before the ripple starts, because the ripple's last
                 // pass is what takes it back down again.
                 activeEffects.put(player.getUniqueId(), active);
-                int grown = surgeGrowth(player, definition, limit);
+                if (surgeCrops.isEmpty()) {
+                    endGrowthSurge(player, definition);
+                } else {
+                    rippleGrowth(player, definition, surgeCrops, surgePasses(surgeCrops));
+                }
                 messages.send(player, MessageKey.ABILITY_ACTIVE_GROWTH, Map.of(
-                        "kabiliyet", definition.displayName(), "sayi", Integer.toString(grown)
+                        "kabiliyet", definition.displayName(),
+                        "sayi", Integer.toString(surgeCrops.size()),
+                        "sure", duration
                 ));
             }
+            // Registered in damageBuffs, not activeEffects, and that is the
+            // whole of §24's madde 9. The four state maps are read
+            // interchangeably by isStillActive, activeStatus and tearDown, but
+            // handleEntityDamage reads damageBuffs and only damageBuffs - so
+            // filing the wolf under activeEffects meant its damage hook never
+            // ran: the combo ladder never counted a hit, and the pack never
+            // learned what the player had swung at. Both were written and
+            // neither had ever fired.
             case NOBLE_WOLF -> {
                 startNobleWolf(player, definition, limit, activeMillis);
-                activeEffects.put(player.getUniqueId(), active);
+                damageBuffs.put(player.getUniqueId(), active);
                 messages.send(player, MessageKey.ABILITY_ACTIVE_NOBLE_WOLF, Map.of(
                         "kabiliyet", definition.displayName(), "sure", duration
                 ));
@@ -1426,7 +1454,7 @@ public final class YamlAbilityService implements AbilityService {
      *
      * @return how many crops were advanced, for the player's feedback message.
      */
-    private int surgeGrowth(Player player, AbilityDefinition definition, int radius) {
+    private List<Block> collectSurgeCrops(Player player, int radius) {
         World world = player.getWorld();
         Location origin = player.getLocation();
         int originX = origin.getBlockX();
@@ -1448,15 +1476,44 @@ public final class YamlAbilityService implements AbilityService {
                 }
             }
         }
-        if (crops.isEmpty()) {
-            endGrowthSurge(player, definition);
-            return 0;
-        }
         // Nearest first, so the wave visibly leaves the player and travels
         // outward instead of popping the whole field at once.
         crops.sort(Comparator.comparingDouble(block -> block.getLocation().distanceSquared(origin)));
-        rippleGrowth(player, definition, crops);
-        return crops.size();
+        return crops;
+    }
+
+    /**
+     * How many passes this particular field needs before every crop in it is
+     * ripe - and therefore, at {@link #GROWTH_SURGE_PASS_TICKS} apart, exactly
+     * how long the ability runs.
+     *
+     * <p><strong>This is §24's madde 6: the duration is measured, not
+     * configured.</strong> The ability used to advertise a flat five seconds
+     * from {@code abilities.yml} while the wave finished in under three, so the
+     * countdown on screen described nothing that was happening. It now counts
+     * the growing, which is what the player is watching.</p>
+     *
+     * <p><strong>It also fixes a real bug.</strong> The wave was hard-coded to
+     * six passes, and a crop reached by the sixth ring was stepped exactly once
+     * - so freshly-sown wheat at the edge of the radius was left at age 1 while
+     * the ability reported that everything had ripened. The count here is the
+     * honest one: the furthest ring arrives on pass {@code rings - 1} and then
+     * needs one pass per remaining age step, so the whole field is ripe on the
+     * last pass and not before.</p>
+     */
+    private int surgePasses(List<Block> crops) {
+        int widestGap = 0;
+        for (Block block : crops) {
+            if (block.getBlockData() instanceof Ageable crop) {
+                widestGap = Math.max(widestGap, crop.getMaximumAge() - crop.getAge());
+            }
+        }
+        return Math.max(1, GROWTH_SURGE_RINGS - 1 + widestGap);
+    }
+
+    /** The measured length of one surge, in milliseconds - see {@link #surgePasses}. */
+    private long surgeMillis(List<Block> crops) {
+        return surgePasses(crops) * GROWTH_SURGE_PASS_TICKS * MILLIS_PER_TICK;
     }
 
     /**
@@ -1464,41 +1521,46 @@ public final class YamlAbilityService implements AbilityService {
      * something spreading rather than as a single frame in which the field
      * changed.
      *
-     * <p>Each pass takes one slice of the distance-sorted list and moves every
-     * crop in it <em>one</em> age step, so a wheat stalk visibly climbs through
-     * its stages rather than jumping to gold. The ability ends itself the moment
-     * the last pass finishes - holding it open afterwards would only mean the
-     * player waits out a timer for something that is already done.</p>
+     * <p>Each pass moves every crop the wave has already reached <em>one</em>
+     * age step, so a wheat stalk visibly climbs through its stages rather than
+     * jumping to gold. The wave itself reaches one more ring per pass for the
+     * first {@link #GROWTH_SURGE_RINGS} passes and then keeps stepping what it
+     * has, which is why the last ring still ripens.</p>
+     *
+     * <p>The ability ends itself the moment the last pass finishes - holding it
+     * open afterwards would only mean the player waits out a timer for
+     * something that is already done.</p>
      */
-    private void rippleGrowth(Player player, AbilityDefinition definition, List<Block> crops) {
+    private void rippleGrowth(Player player, AbilityDefinition definition, List<Block> crops, int passes) {
         int[] pass = {0};
         player.getScheduler().runAtFixedRate(plugin, task -> {
-            if (!player.isOnline() || pass[0] >= GROWTH_SURGE_PASSES) {
+            if (!player.isOnline() || pass[0] >= passes) {
                 task.cancel();
                 endGrowthSurge(player, definition);
                 return;
             }
-            int from = crops.size() * pass[0] / GROWTH_SURGE_PASSES;
-            int to = crops.size() * (pass[0] + 1) / GROWTH_SURGE_PASSES;
+            int reachedBefore = reachedCrops(crops.size(), pass[0]);
             pass[0]++;
-            // Every earlier slice is stepped again as well, which is what makes
-            // a stalk climb through its stages instead of snapping to ripe: by
-            // the last pass the closest crops have had every step and the
-            // furthest have had one.
-            for (int index = 0; index < to; index++) {
+            int reached = reachedCrops(crops.size(), pass[0]);
+            for (int index = 0; index < reached; index++) {
                 Block block = crops.get(index);
                 if (!(block.getBlockData() instanceof Ageable crop) || crop.getAge() >= crop.getMaximumAge()) {
                     continue;
                 }
                 crop.setAge(Math.min(crop.getMaximumAge(), crop.getAge() + 1));
                 block.setBlockData(crop);
-                if (index >= from) {
+                if (index >= reachedBefore) {
                     block.getWorld().spawnParticle(Particle.HAPPY_VILLAGER,
                             block.getLocation().add(0.5D, 0.5D, 0.5D), 6, 0.3D, 0.3D, 0.3D, 0.0D);
                 }
             }
             player.getWorld().playSound(player.getLocation(), Sound.ITEM_BONE_MEAL_USE, 0.7F, 0.8F + pass[0] * 0.1F);
         }, null, GROWTH_SURGE_PASS_TICKS, GROWTH_SURGE_PASS_TICKS);
+    }
+
+    /** How far out the wave has travelled after {@code pass} passes, as a count into the distance-sorted list. */
+    private static int reachedCrops(int total, int pass) {
+        return total * Math.min(pass, GROWTH_SURGE_RINGS) / GROWTH_SURGE_RINGS;
     }
 
     /** Takes the surge down the moment the field has finished growing. */

@@ -55,6 +55,16 @@ public interface FeedbackService extends PluginService {
     /** Bossbar+title/subtitle fade, fired when a class-exclusive ability's skill-level threshold is crossed. */
     void celebrateAbilityUnlocked(Player player, String abilityDisplayName);
 
+    /**
+     * Fired once, when the last of the four starting tasks is finished.
+     *
+     * <p>This is the moment the sidebar's starting block disappears and the
+     * three quest pools open behind it, so it gets a screen of its own: a block
+     * that vanishes with nothing said in its place reads as a bug, not as
+     * progress.</p>
+     */
+    void celebrateOnboardingCompleted(Player player);
+
     /** Sends the invoking player a chat-only, non-broadcast class level-up message. */
     void celebrateClassLevelUp(Player player, String classDisplayName, int newLevel);
 
@@ -127,6 +137,18 @@ public interface FeedbackService extends PluginService {
      * because the three surfaces are meant to carry the same wording.
      */
     void celebrateClassChanged(Player player, String classDisplayName);
+
+    /**
+     * The same three surfaces {@link #celebrateClassChanged} paints, worded for
+     * a change the player did not make.
+     *
+     * <p>An admin force-set used to be completely silent, which left the target
+     * with a different class and a wiped class level and nothing on screen
+     * saying why - indistinguishable from having lost progress to a bug. It is
+     * deliberately not the same message: what a player needs to know here is
+     * not only <em>what</em> changed but that it was not them.</p>
+     */
+    void celebrateClassChangedByAdmin(Player player, String classDisplayName);
 
     /** Plays the short confirmation cue for picking an ability in the menu - the chat line is sent by the caller. */
     void celebrateAbilitySelected(Player player);

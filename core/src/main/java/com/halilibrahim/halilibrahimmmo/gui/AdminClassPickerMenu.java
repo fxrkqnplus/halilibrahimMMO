@@ -64,18 +64,44 @@ public final class AdminClassPickerMenu implements GuiView {
         if (classId == null) {
             return;
         }
-        services.classes().adminForceSetClass(targetId, targetName, classId).thenRun(() -> {
+        services.classes().adminForceSetClass(targetId, targetName, classId).thenAccept(previousClassId -> {
             // The same unequip the player's own change performs: an ability
             // selected for the class the target no longer has must not stay
             // equipped just because staff made the change instead of them.
             services.abilities().clearSelection(targetId);
+            // ...and the same wipe of the abandoned class's level track. This
+            // used to be the one difference between the two paths, and it was
+            // not a defensible one: the class a player is no longer on starts
+            // over, and who pressed the button does not change that.
+            if (!previousClassId.isEmpty() && !previousClassId.equals(classId)) {
+                services.classes().resetClassLevel(targetId, targetName, previousClassId);
+            }
             services.logger().info("Yonetici " + player.getName() + ", " + targetName + " oyuncusunun sinifini "
                     + (classId.isEmpty() ? "temizledi" : classId + " olarak zorla ayarladi") + ".");
             Player target = services.plugin().getServer().getPlayer(targetId);
             if (target != null) {
-                target.getScheduler().run(services.plugin(), task -> services.sidebar().refresh(target), null);
+                target.getScheduler().run(services.plugin(), task -> announceToTarget(target, classId), null);
             }
             player.getScheduler().run(services.plugin(), task -> GuiManager.open(player, new AdminPlayerEditMenu(services, targetId, targetName)), null);
         });
+    }
+
+    /**
+     * Everything the target's own confirmation screen does to them, on the
+     * target's own scheduler.
+     *
+     * <p>The attribute modifiers and the energy ceiling are not cosmetic: a
+     * player left on the old class's maximum health after being moved to a new
+     * one is simply wrong until their next login. Clearing the class is the one
+     * case with nothing to announce - there is no new class to name - but the
+     * effects still have to be reconciled down.</p>
+     */
+    private void announceToTarget(Player target, String classId) {
+        services.classes().applyPlayerEffects(target);
+        services.energy().reconcile(target);
+        services.sidebar().refresh(target);
+        if (!classId.isEmpty()) {
+            services.feedback().celebrateClassChangedByAdmin(target, services.classes().displayName(classId));
+        }
     }
 }

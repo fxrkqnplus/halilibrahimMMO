@@ -40,23 +40,28 @@ public final class HmmoClientMod implements ClientModInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("hmmo-client");
 
-    /** Where the badge sits on the ordinary HUD. */
-    private static final int HUD_BADGE_X = 4;
-    private static final int HUD_BADGE_Y = 4;
     /**
-     * Where the badge sits beside an open container: in the column to the left
-     * of the panel, which is where vanilla draws the potion-effect list and
-     * therefore where a player already looks to see what is affecting them.
+     * How far the badge's right edge sits from the right edge of the HUD.
+     *
+     * <p>Top <em>right</em>, not top left. The left of a Minecraft screen is
+     * where the game already stacks things a player has no control over -
+     * status effects, the debug overlay, a mod's own counters - and the
+     * countdown for the ability you just fired is the one thing on this HUD you
+     * are meant to be watching. It gets the corner nothing else claims.</p>
      */
+    private static final int HUD_BADGE_MARGIN = 4;
+    private static final int HUD_BADGE_Y = 4;
+    /** How far the badge sits from the container panel it is drawn beside. */
     private static final int SCREEN_BADGE_GAP = 6;
-    private static final int SCREEN_BADGE_WIDTH_GUESS = 110;
     /** The size of a vanilla container panel, which every one of them is centred at. */
     private static final int PANEL_WIDTH = 176;
     private static final int PANEL_HEIGHT = 166;
+    /** Widest the badge is allowed to be when its right edge is clamped to the screen. */
+    private static final int BADGE_WIDTH_GUESS = 110;
 
     private final AbilityHudState hudState = new AbilityHudState();
     private final AbilityHudRenderer hudRenderer = new AbilityHudRenderer(hudState);
-    private final HostileGlowTicker glowTicker = new HostileGlowTicker(hudState);
+    private final EntityGlowTicker glowTicker = new EntityGlowTicker(hudState);
 
     @Override
     public void onInitializeClient() {
@@ -111,7 +116,7 @@ public final class HmmoClientMod implements ClientModInitializer {
                 Identifier.fromNamespaceAndPath(HudProtocol.NAMESPACE, "ability_overlay"),
                 (extractor, deltaTracker) -> {
                     hudRenderer.renderVignette(extractor);
-                    hudRenderer.renderBadge(extractor, HUD_BADGE_X, HUD_BADGE_Y);
+                    hudRenderer.renderBadge(extractor, extractor.guiWidth() - HUD_BADGE_MARGIN, HUD_BADGE_Y);
                     // Low and centred, where a player's eye already is mid-fight -
                     // and only on the HUD, never over a screen: the frenzy is
                     // something you are in, not something you read in a menu.
@@ -126,7 +131,7 @@ public final class HmmoClientMod implements ClientModInitializer {
                 return;
             }
             ScreenEvents.afterExtract(screen).register((ignoredScreen, extractor, mouseX, mouseY, tickDelta) ->
-                    hudRenderer.renderBadge(extractor, badgeX(extractor.guiWidth()), badgeY(extractor.guiHeight())));
+                    hudRenderer.renderBadge(extractor, badgeRightX(extractor.guiWidth()), badgeY(extractor.guiHeight())));
         });
 
         ClientTickEvents.END_CLIENT_TICK.register(glowTicker::tick);
@@ -139,7 +144,12 @@ public final class HmmoClientMod implements ClientModInitializer {
     }
 
     /**
-     * Left of the container panel, where vanilla lists potion effects.
+     * The badge's right edge when it is drawn beside an open container panel.
+     *
+     * <p>Kept on the same side as the HUD badge, so opening a chest moves the
+     * countdown a few pixels rather than throwing it across the screen. The
+     * badge is right-aligned, so this returns where its right edge goes: just
+     * clear of the panel's right side.</p>
      *
      * <p><strong>Derived from the screen size rather than read off the
      * screen.</strong> {@code AbstractContainerScreen}'s {@code leftPos} and
@@ -153,9 +163,9 @@ public final class HmmoClientMod implements ClientModInitializer {
      * <p>Clamped so a narrow window gets an overlapping badge rather than one
      * drawn off the side of the screen.</p>
      */
-    private static int badgeX(int guiWidth) {
-        int panelLeft = (guiWidth - PANEL_WIDTH) / 2;
-        return Math.max(2, panelLeft - SCREEN_BADGE_GAP - SCREEN_BADGE_WIDTH_GUESS);
+    private static int badgeRightX(int guiWidth) {
+        int panelRight = (guiWidth + PANEL_WIDTH) / 2;
+        return Math.min(guiWidth - 2, Math.max(BADGE_WIDTH_GUESS, panelRight + SCREEN_BADGE_GAP + BADGE_WIDTH_GUESS));
     }
 
     private static int badgeY(int guiHeight) {

@@ -400,7 +400,8 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     new TabListService(this, messageService, serverInfoService, titleService, progressionService), TabListService.class
             );
             OnboardingRewarder onboardingRewarder = new OnboardingRewarder(
-                    this, onboardingService, profileService, classService, messageService, sidebarService, classAwardHandler
+                    this, onboardingService, profileService, classService, messageService, sidebarService,
+                    classAwardHandler, feedbackService
             );
             ReputationAwardHandler reputationAwardHandler = new ReputationAwardHandler(this, messageService, feedbackService, sidebarService);
             this.reputationRankAnnouncer = new ReputationRankAnnouncer(this, messageService, leaderboardService, reputationService);

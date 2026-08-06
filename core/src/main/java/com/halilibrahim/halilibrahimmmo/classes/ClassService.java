@@ -88,6 +88,13 @@ public interface ClassService extends PluginService {
      * Internal, admin-only: force-sets the player's selected class, bypassing
      * the change cooldown entirely and preserving spent talent ranks - an empty
      * string clears the class. Works for offline players too.
+     *
+     * <p><strong>Returns the class the player was on before the change</strong>
+     * (empty when they had none). The caller needs it to wipe the abandoned
+     * class's level track exactly as {@code ClassConfirmMenu} does on the
+     * player's own change, and reading it here rather than beforehand is what
+     * makes that work for an offline target, whose profile is not in any
+     * cache.</p>
      */
-    CompletableFuture<Void> adminForceSetClass(UUID playerId, String playerName, String classId);
+    CompletableFuture<String> adminForceSetClass(UUID playerId, String playerName, String classId);
 }

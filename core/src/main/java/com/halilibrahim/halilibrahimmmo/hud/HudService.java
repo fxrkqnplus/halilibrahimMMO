@@ -29,8 +29,6 @@ public interface HudService extends PluginService {
      *
      * @param expiresAtMillis when it ends, or {@code 0} when it does not
      *                        (Creative, where the ability stays until switched off)
-     * @param totalMillis     how long this activation was given, so the client can
-     *                        draw progress rather than only a number
      * @param comboLine       the frenzy line to draw at the bottom of the screen,
      *                        already rendered to plain text by the server, or an
      *                        empty string when this ability has none. Rendered
@@ -42,7 +40,7 @@ public interface HudService extends PluginService {
      *                        hard to shake it
      */
     void showAbility(
-            Player player, AbilityDefinition definition, long expiresAtMillis, long totalMillis,
+            Player player, AbilityDefinition definition, long expiresAtMillis,
             String comboLine, int comboTier
     );
 

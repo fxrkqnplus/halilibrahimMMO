@@ -122,7 +122,7 @@ kabiliyetler:
 
   filiz-patlamasi:
     gorunen-ad: "Filiz Patlaması"
-    aciklama: "Çevrendeki 7 blok yarıçapındaki bütün olmamış ekinler kademe kademe, dalga dalga büyür. Hiç kemik tozu harcamazsın. Son ekin de olgunlaştığı anda kabiliyet kendiliğinden kapanır."
+    aciklama: "Çevrendeki 7 blok yarıçapındaki bütün olmamış ekinler kademe kademe, dalga dalga büyür. Hiç kemik tozu harcamazsın. Kabiliyetin süresi sabit değildir: tam olarak ekinlerin olgunlaşması ne kadar sürüyorsa o kadar sürer ve son ekin de olgunlaştığı anda kendiliğinden kapanır."
     simge: BONE_MEAL
     beceri: tarimcilik
     sinif: tabiat-varisi
@@ -131,9 +131,13 @@ kabiliyetler:
     enerji: 25
     # Faz 23: 150 -> 450 saniye (7,5 dakika).
     bekleme-suresi-saniye: 450
-    # Buyume dalgalari yaklasik 2,5 saniye surer; sure yalnizca son dalganin
-    # oturmasi icin biraz daha uzun tutuldu. Kabiliyet zaten son dalgada
-    # kendini kapatiyor, bu deger bir ust sinirdir.
+    # BU KABILIYETTE ETKI SURESI OLCULUR, AYARLANMAZ (Faz 24, madde 6).
+    # Sure, tarlanin gercekten olgunlasmasi ne kadar suruyorsa odur: dalga
+    # her gecisde bir yas kademesi ilerletir, en uzaktaki ekin de olgunlasana
+    # kadar devam eder, ve ekranda geri sayan sayi tam olarak o. Yeni ekilmis
+    # bugday (7 kademe) uzun, olgunlasmaya yakin pancar (3 kademe) kisa surer.
+    # Asagidaki deger yalnizca tarlada hic olmamis ekin YOKKEN kullanilir;
+    # parser bu anahtari her kabiliyette zorunlu tuttugu icin duruyor.
     etki-suresi-saniye: 5
     arac:
       tur: HOE

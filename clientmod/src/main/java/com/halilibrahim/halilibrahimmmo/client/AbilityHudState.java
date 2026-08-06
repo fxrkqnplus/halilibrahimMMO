@@ -35,24 +35,39 @@ public final class AbilityHudState {
     private static final long STALE_AFTER_MILLIS = 5_000L;
 
     /**
-     * How long before the end the tint has finished fading out.
+     * How long before the end the tint starts giving way.
      *
-     * <p>The fade runs across the whole duration and reaches nothing exactly
-     * here, so the last second of an ability is always already clear - which is
-     * what makes "it is about to end" readable without a number.</p>
+     * <p>Faz 22 faded linearly across the <em>whole</em> activation, and on a
+     * forty-five second Kan Yemini that meant the border was already half gone
+     * twenty seconds in - the effect looked like it was failing rather than
+     * running. It now sits at full strength for as long as the ability is
+     * genuinely under way and only lets go over the last stretch, which is the
+     * part a player actually needs warning about.</p>
      */
-    private static final long FADE_FLOOR_MILLIS = 1_000L;
+    private static final long FADE_WINDOW_MILLIS = 5_000L;
+
+    /**
+     * How long one rung of the fade lasts.
+     *
+     * <p>The fade steps rather than slides, and that is the point: a smooth
+     * ramp over five seconds is indistinguishable from a border that is simply
+     * dim, whereas five visible drops one second apart read as a countdown
+     * without printing a number. {@link #FADE_WINDOW_MILLIS} divided by this is
+     * the number of rungs, so changing either keeps the arithmetic honest.</p>
+     */
+    private static final long FADE_STEP_MILLIS = 1_000L;
 
     private volatile String displayName = "";
     private volatile ItemStack icon = ItemStack.EMPTY;
     private volatile int colorRgb = 0xFFFFFF;
     private volatile int intensity;
-    private volatile boolean highlightHostiles;
+    private volatile boolean glowMonsters;
+    private volatile boolean glowCreatures;
+    private volatile boolean glowPlayers;
     private volatile boolean pulsing;
     private volatile boolean proximityGlow;
     private volatile boolean endless;
     private volatile long expiresAtMillis;
-    private volatile long totalMillis;
     private volatile long lastMessageMillis;
     private volatile boolean active;
     private volatile String comboLine = "";
@@ -67,12 +82,13 @@ public final class AbilityHudState {
         icon = resolveIcon(message.iconItem());
         colorRgb = message.colorRgb() & 0xFFFFFF;
         intensity = message.intensity();
-        highlightHostiles = message.highlightsHostiles();
+        glowMonsters = message.glowsMonsters();
+        glowCreatures = message.glowsCreatures();
+        glowPlayers = message.glowsPlayers();
         pulsing = message.pulses();
         proximityGlow = message.glowScalesWithDistance();
         endless = message.remainingMillis() == HudProtocol.NO_EXPIRY;
         expiresAtMillis = endless ? Long.MAX_VALUE : System.currentTimeMillis() + message.remainingMillis();
-        totalMillis = Math.max(1L, message.totalMillis());
         comboLine = message.comboLine();
         comboTier = message.comboTier();
         lastMessageMillis = System.currentTimeMillis();
@@ -81,7 +97,9 @@ public final class AbilityHudState {
 
     public void clear() {
         active = false;
-        highlightHostiles = false;
+        glowMonsters = false;
+        glowCreatures = false;
+        glowPlayers = false;
         pulsing = false;
         proximityGlow = false;
         icon = ItemStack.EMPTY;
@@ -100,8 +118,21 @@ public final class AbilityHudState {
         return true;
     }
 
-    public boolean highlightsHostiles() {
-        return isActive() && highlightHostiles;
+    /** {@code true} while anything at all should be lit up, so the ticker can bail in one check. */
+    public boolean glowsAnything() {
+        return isActive() && (glowMonsters || glowCreatures || glowPlayers);
+    }
+
+    public boolean glowsMonsters() {
+        return glowMonsters;
+    }
+
+    public boolean glowsCreatures() {
+        return glowCreatures;
+    }
+
+    public boolean glowsPlayers() {
+        return glowPlayers;
     }
 
     public String displayName() {
@@ -149,18 +180,29 @@ public final class AbilityHudState {
     /**
      * How much of the effect is still on screen, {@code 1.0} down to {@code 0.0}.
      *
-     * <p>Falls linearly across the whole activation and hits zero
-     * {@link #FADE_FLOOR_MILLIS} before the end, so an ability visibly dims as
-     * it runs out instead of vanishing between two frames. An ability with no
-     * expiry (Creative) never fades - there is nothing to count down to.</p>
+     * <p>Full strength until {@link #FADE_WINDOW_MILLIS} are left, then one
+     * visible step down per {@link #FADE_STEP_MILLIS} until it is gone - so the
+     * border holds while the ability is doing its work and then plainly counts
+     * itself out.</p>
+     *
+     * <p>An ability shorter than the window fades for the whole of its life,
+     * which is the honest reading: a two-second call <em>is</em> all ending. An
+     * ability with no expiry (Creative) never fades - there is nothing to count
+     * down to.</p>
      */
     public double fade() {
         if (endless) {
             return 1.0D;
         }
-        long span = Math.max(1L, totalMillis - FADE_FLOOR_MILLIS);
-        long left = remainingMillis() - FADE_FLOOR_MILLIS;
-        return Math.max(0.0D, Math.min(1.0D, (double) left / span));
+        long remaining = remainingMillis();
+        if (remaining >= FADE_WINDOW_MILLIS) {
+            return 1.0D;
+        }
+        long rungs = FADE_WINDOW_MILLIS / FADE_STEP_MILLIS;
+        // Floored, not rounded: the first drop has to land the moment the final
+        // window opens, otherwise the top rung is held for a whole extra second
+        // and the step nobody sees is the one that mattered.
+        return (double) (remaining / FADE_STEP_MILLIS) / rungs;
     }
 
     /**

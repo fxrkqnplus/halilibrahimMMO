@@ -23,16 +23,21 @@ public final class HudProtocol {
     public static final String NAMESPACE = "hmmo";
     public static final String PATH = "hud";
 
-    public static final byte PROTOCOL_VERSION = 2;
+    public static final byte PROTOCOL_VERSION = 3;
 
     public static final byte TYPE_CLEAR = 0;
     public static final byte TYPE_ABILITY = 1;
 
-    public static final int FLAG_HIGHLIGHT_HOSTILES = 1;
     /** The screen edge breathes in and out rather than sitting still. */
-    public static final int FLAG_PULSE = 2;
-    /** A highlighted creature burns brighter the closer it gets. */
-    public static final int FLAG_PROXIMITY_GLOW = 4;
+    public static final int FLAG_PULSE = 1;
+    /** A highlighted entity burns brighter the closer it gets. */
+    public static final int FLAG_PROXIMITY_GLOW = 2;
+    /** Hostile creatures - anything the game counts as an enemy - glow. */
+    public static final int FLAG_GLOW_MONSTERS = 4;
+    /** Ordinary creatures - animals, villagers, anything that is not an enemy - glow. */
+    public static final int FLAG_GLOW_CREATURES = 8;
+    /** Other players glow. */
+    public static final int FLAG_GLOW_PLAYERS = 16;
 
     /** Sent as the remaining time for an ability with no expiry worth counting down. */
     public static final int NO_EXPIRY = -1;
@@ -46,9 +51,9 @@ public final class HudProtocol {
     /**
      * One decoded message.
      *
-     * @param abilityId     empty for {@link #TYPE_CLEAR}
-     * @param remainingTicksAtReceipt milliseconds left when the message arrived,
-     *                      or {@link #NO_EXPIRY}
+     * @param abilityId      empty for {@link #TYPE_CLEAR}
+     * @param remainingMillis milliseconds left when the message arrived, or
+     *                       {@link #NO_EXPIRY}
      */
     public record Message(
             byte type,
@@ -57,16 +62,11 @@ public final class HudProtocol {
             String iconItem,
             int colorRgb,
             int remainingMillis,
-            int totalMillis,
             int intensity,
             int flags,
             String comboLine,
             int comboTier
     ) {
-
-        public boolean highlightsHostiles() {
-            return (flags & FLAG_HIGHLIGHT_HOSTILES) != 0;
-        }
 
         public boolean pulses() {
             return (flags & FLAG_PULSE) != 0;
@@ -74,6 +74,18 @@ public final class HudProtocol {
 
         public boolean glowScalesWithDistance() {
             return (flags & FLAG_PROXIMITY_GLOW) != 0;
+        }
+
+        public boolean glowsMonsters() {
+            return (flags & FLAG_GLOW_MONSTERS) != 0;
+        }
+
+        public boolean glowsCreatures() {
+            return (flags & FLAG_GLOW_CREATURES) != 0;
+        }
+
+        public boolean glowsPlayers() {
+            return (flags & FLAG_GLOW_PLAYERS) != 0;
         }
     }
 
@@ -88,7 +100,7 @@ public final class HudProtocol {
             }
             byte type = in.readByte();
             if (type == TYPE_CLEAR) {
-                return new Message(TYPE_CLEAR, "", "", "", 0, 0, 0, 0, 0, "", 0);
+                return new Message(TYPE_CLEAR, "", "", "", 0, 0, 0, 0, "", 0);
             }
             if (type != TYPE_ABILITY) {
                 return null;
@@ -98,7 +110,6 @@ public final class HudProtocol {
             String iconItem = in.readUTF();
             int colorRgb = in.readInt();
             int remainingMillis = in.readInt();
-            int totalMillis = in.readInt();
             int intensity = in.readByte();
             int flags = in.readByte();
             String comboLine = in.readUTF();
@@ -107,7 +118,7 @@ public final class HudProtocol {
                 return null;
             }
             return new Message(TYPE_ABILITY, abilityId, displayName, iconItem, colorRgb,
-                    remainingMillis, Math.max(0, totalMillis), Math.max(0, Math.min(100, intensity)), flags,
+                    remainingMillis, Math.max(0, Math.min(100, intensity)), flags,
                     comboLine, Math.max(0, comboTier));
         } catch (IOException exception) {
             return null;

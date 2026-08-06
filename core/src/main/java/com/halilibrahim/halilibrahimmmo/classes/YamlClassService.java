@@ -337,11 +337,20 @@ public final class YamlClassService implements ClassService {
     }
 
     @Override
-    public CompletableFuture<Void> adminForceSetClass(UUID playerId, String playerName, String classId) {
+    public CompletableFuture<String> adminForceSetClass(UUID playerId, String playerName, String classId) {
+        // Captured inside the mutation rather than read beforehand: that lambda
+        // is handed the authoritative profile by the profile service's own
+        // per-player chain, so this sees what was actually replaced even when
+        // the target is offline and nothing is cached anywhere.
+        AtomicReference<String> previousClass = new AtomicReference<>("");
         return serial(playerId, () -> load(playerId, playerName).thenCompose(progress ->
-                profiles.update(playerId, playerName, old -> withClass(old, classId)).thenAccept(ignored -> {
+                profiles.update(playerId, playerName, old -> {
+                    previousClass.set(old.selectedClass());
+                    return withClass(old, classId);
+                }).thenApply(ignored -> {
                     selectedClasses.put(playerId, classId);
                     progressCache.put(playerId, new PlayerClassProgress(playerId, progress.talentRanks(), progress.classChangeReadyAtMillis(), progress.classLevels()));
+                    return previousClass.get();
                 })));
     }
 

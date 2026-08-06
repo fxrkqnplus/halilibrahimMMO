@@ -48,7 +48,7 @@ public final class PluginMessageHudService implements HudService {
 
     @Override
     public void showAbility(
-            Player player, AbilityDefinition definition, long expiresAtMillis, long totalMillis,
+            Player player, AbilityDefinition definition, long expiresAtMillis,
             String comboLine, int comboTier
     ) {
         long remaining = expiresAtMillis <= 0 ? -1L : expiresAtMillis - System.currentTimeMillis();
@@ -58,7 +58,6 @@ public final class PluginMessageHudService implements HudService {
                 definition.icon().name(),
                 definition.visual().color().effectColor().asRGB(),
                 remaining < 0 ? HudProtocol.NO_EXPIRY : (int) Math.min(Integer.MAX_VALUE, remaining),
-                (int) Math.min(Integer.MAX_VALUE, Math.max(0L, totalMillis)),
                 intensityOf(definition),
                 flagsOf(definition),
                 comboLine,
@@ -69,16 +68,29 @@ public final class PluginMessageHudService implements HudService {
     /**
      * Which of the client's optional presentations this ability turns on.
      *
-     * <p>All three ride on {@link AbilityEffectType#isFrenzy()} rather than on a
-     * list of ability ids, so an owner authoring a third ability of that kind
-     * gets the pulsing screen, the proximity glow and the combo ladder by
-     * choosing the effect type and nothing else.</p>
+     * <p>The pulse and the combo ladder ride on
+     * {@link AbilityEffectType#isFrenzy()} rather than on a list of ability ids,
+     * so an owner authoring a third ability of that kind gets both by choosing
+     * the effect type and nothing else.</p>
+     *
+     * <p><strong>Who glows is the one thing the two frenzies do not share.</strong>
+     * Asil Kurt is the predator the world runs from: every ordinary creature and
+     * every other player is lit up, and the monsters - which the ability has
+     * already made blind to the player - are not, because a thing that cannot
+     * see you is not what you are watching for. Kan Yemini is the opposite
+     * reading, a hunter of monsters: everything that can be killed glows and no
+     * player does, so the oath never turns into a wallhack pointed at people.
+     * Naming the two effect types here is deliberate - this is a statement about
+     * these two abilities, not a property a third could inherit by accident.</p>
      */
     private int flagsOf(AbilityDefinition definition) {
-        if (!definition.effectType().isFrenzy()) {
-            return 0;
-        }
-        return HudProtocol.FLAG_HIGHLIGHT_HOSTILES | HudProtocol.FLAG_PULSE | HudProtocol.FLAG_PROXIMITY_GLOW;
+        return switch (definition.effectType()) {
+            case NOBLE_WOLF -> HudProtocol.FLAG_PULSE | HudProtocol.FLAG_PROXIMITY_GLOW
+                    | HudProtocol.FLAG_GLOW_CREATURES | HudProtocol.FLAG_GLOW_PLAYERS;
+            case LIFE_STEAL -> HudProtocol.FLAG_PULSE | HudProtocol.FLAG_PROXIMITY_GLOW
+                    | HudProtocol.FLAG_GLOW_CREATURES | HudProtocol.FLAG_GLOW_MONSTERS;
+            default -> 0;
+        };
     }
 
     @Override
@@ -86,7 +98,20 @@ public final class PluginMessageHudService implements HudService {
         player.sendPluginMessage(plugin, HudProtocol.CHANNEL, HudProtocol.clear());
     }
 
+    /**
+     * Zero for an ability that does not tint the screen at all, and the client
+     * reads zero as "draw nothing" - so the whole of §24's narrowing is carried
+     * by one number that was already in the protocol.
+     *
+     * <p>Deliberately not a new flag. The badge, the countdown and the combo
+     * line are all still sent for these abilities; the only thing switched off
+     * is the border, and intensity is precisely the field that says how strong
+     * the border is.</p>
+     */
     private int intensityOf(AbilityDefinition definition) {
+        if (!definition.effectType().tintsScreen()) {
+            return 0;
+        }
         for (int index = RUNG_LEVELS.length - 1; index >= 0; index--) {
             if (definition.requiredLevel() >= RUNG_LEVELS[index]) {
                 return RUNG_INTENSITY[index];

@@ -161,6 +161,37 @@ public final class BossBarFeedbackService implements FeedbackService {
         playSound(player, "sinif-degistirildi");
     }
 
+    /**
+     * Held twice as long as an ordinary celebration, for the same reason the
+     * prestige screen is: this happens once per player and it is the sentence
+     * that replaces a whole sidebar section as it disappears.
+     */
+    @Override
+    public void celebrateOnboardingCompleted(Player player) {
+        Duration stay = Duration.ofMillis(settings().durationMillis() * 2);
+        BossBar bar = BossBar.bossBar(messages.render(MessageKey.FEEDBACK_ONBOARDING_COMPLETE_BOSSBAR),
+                1f, BossBar.Color.GREEN, BossBar.Overlay.PROGRESS);
+        player.showBossBar(bar);
+        player.getScheduler().runDelayed(plugin, task -> player.hideBossBar(bar), null,
+                stay.toMillis() / 1000L * TICKS_PER_SECOND);
+        player.showTitle(Title.title(
+                messages.render(MessageKey.FEEDBACK_ONBOARDING_COMPLETE_TITLE),
+                messages.render(MessageKey.FEEDBACK_ONBOARDING_COMPLETE_SUBTITLE),
+                Title.Times.times(TITLE_FADE_IN, stay, TITLE_FADE_OUT)
+        ));
+        playSound(player, "baslangic-tamamlandi");
+        sparkle(player, Particle.HAPPY_VILLAGER, 40, 1.0D);
+    }
+
+    @Override
+    public void celebrateClassChangedByAdmin(Player player, String classDisplayName) {
+        Map<String, String> placeholders = Map.of("sinif", classDisplayName);
+        show(player, MessageKey.FEEDBACK_CLASS_ADMIN_SET_BOSSBAR, MessageKey.FEEDBACK_CLASS_ADMIN_SET_TITLE,
+                MessageKey.FEEDBACK_CLASS_ADMIN_SET_SUBTITLE, placeholders, BossBar.Color.PURPLE);
+        messages.send(player, MessageKey.FEEDBACK_CLASS_ADMIN_SET_CHAT, placeholders);
+        playSound(player, "sinif-degistirildi");
+    }
+
     @Override
     public void celebrateAbilitySelected(Player player) {
         playSound(player, "kabiliyet-secildi");

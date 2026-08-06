@@ -443,28 +443,53 @@ public final class ScoreboardSidebarService implements SidebarService {
         return Component.text("――――――――――", NamedTextColor.DARK_GRAY).decoration(TextDecoration.STRIKETHROUGH, true);
     }
 
-    /** Omitted entirely once every onboarding task is complete, per the "omitted not blank" convention. */
+    /**
+     * The starting list, with every step still on it - the finished ones turned
+     * green and ticked rather than deleted.
+     *
+     * <p>Dropping a step the moment it was done was the one place on this panel
+     * where progress <em>removed</em> evidence of itself: a player who had done
+     * three of the four saw a single grey line and no sign they had got anywhere.
+     * Quest lines have said "finished" in green with a tick since §22.2 and this
+     * is the same statement about the same kind of thing, so it is made the same
+     * way - a fully authored {@code -tamam} template per step rather than a
+     * colour applied in Java.</p>
+     *
+     * <p>The block is still omitted entirely, but only once <em>all four</em> are
+     * done, which is also the moment the three quest pools unlock beneath it and
+     * the moment {@code OnboardingRewarder} puts the completion title on screen.
+     * The section does not quietly shrink to nothing; it is replaced.</p>
+     */
     private void addOnboardingLines(List<SidebarLine> lines, UUID playerId) {
         Set<String> completed = onboarding.cachedCompleted(playerId);
-        List<MessageKey> remaining = new ArrayList<>();
-        if (!completed.contains(OnboardingTask.ILK_MENU_ACMA.id())) {
-            remaining.add(MessageKey.SIDEBAR_LINE_ONBOARDING_MENU);
-        }
-        if (!completed.contains(OnboardingTask.BECERILERI_INCELEME.id())) {
-            remaining.add(MessageKey.SIDEBAR_LINE_ONBOARDING_SKILLS);
-        }
-        if (!completed.contains(OnboardingTask.KABILIYETLERI_INCELEME.id())) {
-            remaining.add(MessageKey.SIDEBAR_LINE_ONBOARDING_ABILITIES);
-        }
-        if (!completed.contains(OnboardingTask.BECERI_KOMUTU_KULLANMA.id())) {
-            remaining.add(MessageKey.SIDEBAR_LINE_ONBOARDING_SKILL_COMMAND);
-        }
-        if (remaining.isEmpty()) {
+        if (OnboardingTask.allCompleted(completed)) {
             return;
         }
         lines.add(decoration(divider()));
         lines.add(information(messages.render(MessageKey.SIDEBAR_LINE_ONBOARDING_HEADER)));
-        remaining.forEach(key -> lines.add(information(messages.render(key))));
+        for (OnboardingTask task : OnboardingTask.values()) {
+            lines.add(information(messages.render(sidebarOnboardingKey(task, completed.contains(task.id())))));
+        }
+    }
+
+    /**
+     * One fully-authored template per step and state, for the same reason the
+     * quest entries have one per type and state: the Turkish wording and the
+     * colour that says "done" belong together in {@code messages.yml}, not
+     * assembled from a shared line and a colour chosen in Java.
+     */
+    private MessageKey sidebarOnboardingKey(OnboardingTask task, boolean completed) {
+        return switch (task) {
+            case ILK_MENU_ACMA -> completed
+                    ? MessageKey.SIDEBAR_LINE_ONBOARDING_MENU_DONE : MessageKey.SIDEBAR_LINE_ONBOARDING_MENU;
+            case BECERILERI_INCELEME -> completed
+                    ? MessageKey.SIDEBAR_LINE_ONBOARDING_SKILLS_DONE : MessageKey.SIDEBAR_LINE_ONBOARDING_SKILLS;
+            case KABILIYETLERI_INCELEME -> completed
+                    ? MessageKey.SIDEBAR_LINE_ONBOARDING_ABILITIES_DONE : MessageKey.SIDEBAR_LINE_ONBOARDING_ABILITIES;
+            case BECERI_KOMUTU_KULLANMA -> completed
+                    ? MessageKey.SIDEBAR_LINE_ONBOARDING_SKILL_COMMAND_DONE
+                    : MessageKey.SIDEBAR_LINE_ONBOARDING_SKILL_COMMAND;
+        };
     }
 
     /**
