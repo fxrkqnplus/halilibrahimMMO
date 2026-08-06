@@ -116,6 +116,12 @@ sesler:
     ses: UI_TOAST_CHALLENGE_COMPLETE
     ses-seviyesi: 1.0
     ton: 0.9
+  # Dort baslangic gorevinin de bitmesi. Oyuncunun sunucudaki ilk kilometre
+  # tasi; seviye atlamadan daha buyuk, prestijden daha kucuk duyulmali.
+  baslangic-tamamlandi:
+    ses: UI_TOAST_CHALLENGE_COMPLETE
+    ses-seviyesi: 1.0
+    ton: 1.4
   # Sayginlik Puani bir kilometre tasini asti.
   sayginlik-kilometre-tasi:
     ses: BLOCK_AMETHYST_BLOCK_CHIME

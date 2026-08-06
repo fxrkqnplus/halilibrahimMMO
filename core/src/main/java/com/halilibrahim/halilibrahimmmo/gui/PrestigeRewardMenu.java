@@ -16,7 +16,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * The screen a prestige opens: four permanent rewards, pick one.
+ * The screen a prestige opens: two permanent rewards, pick one.
  *
  * <p>Shown immediately after prestiging and, until the choice is spent, in
  * place of every other MMO screen the player tries to open
@@ -33,7 +33,13 @@ import java.util.Map;
 public final class PrestigeRewardMenu implements GuiView {
 
     private static final int HEADER_SLOT = 4;
-    private static final int[] REWARD_SLOTS = {20, 21, 23, 24};
+    /**
+     * Two slots, either side of the middle, so the screen reads as a fork
+     * rather than as a row with gaps in it. Sized from
+     * {@link PrestigeRewardType#SELECTABLE_COUNT} at render time, so this array
+     * is the layout and that constant is the count - they cannot disagree.
+     */
+    private static final int[] REWARD_SLOTS = {20, 24};
 
     private final GuiServices services;
     private final Map<Integer, PrestigeRewardType> slotToReward = new LinkedHashMap<>();
@@ -77,9 +83,9 @@ public final class PrestigeRewardMenu implements GuiView {
                 )));
 
         slotToReward.clear();
-        PrestigeRewardType[] types = PrestigeRewardType.values();
-        for (int index = 0; index < types.length && index < REWARD_SLOTS.length; index++) {
-            PrestigeRewardType type = types[index];
+        List<PrestigeRewardType> types = PrestigeRewardType.selectable();
+        for (int index = 0; index < types.size() && index < REWARD_SLOTS.length; index++) {
+            PrestigeRewardType type = types.get(index);
             slotToReward.put(REWARD_SLOTS[index], type);
             inventory.setItem(REWARD_SLOTS[index], rewardItem(type, owned.getOrDefault(type, 0)));
         }

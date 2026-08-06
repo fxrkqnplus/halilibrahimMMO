@@ -10,7 +10,7 @@ Bu dosya **iki bölümden** oluşur:
   oyuncunun bilmesi gereken her şey. Komutlar, beceriler, sınıflar,
   kabiliyetler, enerji, görevler, **saygınlık ve ölüm cezaları**, prestij,
   prestij ödülleri, **boss zekâsı**, ev/takas/bulut sandığı, unvanlar,
-  kabiliyet HUD'u.
+  kabiliyet HUD'u ve **Asil Kurt'un kurt adam dönüşümü**.
 - **[Bölüm 2 — Teknik Bölüm](#bölüm-2--teknik-bölüm)**: sunucu yöneticisi ve
   geliştirici için. Yönetici paneli, kurulum, derleme, veritabanı,
   yapılandırma dosyaları, **moderasyon kaydı**, entegrasyonlar, test.
@@ -65,6 +65,7 @@ da her ekrana ulaşabilir.
 | `/harita` | `/map` | Canlı oyun içi haritanın adresini verir (tıklanabilir) |
 | `/takas <oyuncu>` | `/trade` | Takas isteği (`/takas kabul`, `/takas ret`, `/takas iptal`) |
 | `/panel` | — | Sağdaki bilgi panelini gizler/gösterir |
+| `/credits` | `/yapımcı`, `/yapimci`, `/halilibrahimmmo` | **Emeği Geçenler** ekranı (`/menü` içinden de ulaşılır) |
 | `/haliladmin` | — | Yönetici paneli (`halilibrahimmmo.admin` izni gerekir) |
 
 **Ekranda görünen her süre** saat/dakika/saniye olarak yazılır: kabiliyet
@@ -358,6 +359,14 @@ değeri ileride değişirse yetenek onunla birlikte ölçeklensin diye — ama e
 gördüğünüz artık gerçek sayıdır. Birim de kabiliyete göre değişir: Verimlilik
 seviyesi, Hız seviyesi, hayvan sayısı, blok sınırı ya da blok yarıçapı.
 
+**Sayılar artık yuvarlak.** Bir oran her zaman temsil ettiği kesrin tam kendisi
+olamaz — Kan Yemini'nin 450 saniyelik beklemesi çarpı 0,0667 tam 330 değil
+329,94 eder — ve ekran bunu sadakatle *"5 dakika 29 saniye"* diye okuyordu;
+aynı hata yüzdelerde *%0,3* gibi hiçbir şey ifade etmeyen değerler üretiyordu.
+Bütün türetilmiş süreler artık **tam saniyeye**, bütün oranlar **tek ondalığa**
+oturtulur. Ayrıca yuvarlak bir sayı üretmeyen iki oran düzeltildi (Odak Ritmi
+rank başına 7,5 saniye yerine **15 saniye** kısaltıyor).
+
 **Ekran iki ayrı bloktan oluşur.** En üstte oynadığınız sınıfı ve o sınıfın
 kendi seviyesini/XP'sini gösteren bir başlık, altında sınıf simgeleri ve iki
 puan sayacı yan yana, sonra **Özellik Yetenekleri** ve **Kabiliyet
@@ -561,23 +570,43 @@ anlatımıdır: biri fazla ileri gitmiş bir avcı, diğeri avlayan şeyin kendi
   büyüyüp küçülen bir soluk alıştır.
 - **Kalp atışı sesi** yalnızca size gelir — yanınızda savaşan arkadaşınız
   duymaz. Bu sizin bedeninizde olan bir şey.
-- **Yaklaşan her düşman kırmızı parlar** ve yakındakiler uzaktakilerden daha
-  parlak yanar. (Oyunun bir sınırı burada devreye giriyor: Minecraft'ın parlama
-  çizgisi rengini yalnızca on altı sohbet renginden biri olarak alabiliyor,
-  yani gerçek bir geçiş yapılamıyor. Uzak için koyu, yakın için parlak kırmızı
-  kullanılıyor; "yaklaştıkça artan" hissinin geri kalanını düzgün ölçeklenen
-  ekran tinti taşıyor.)
-- **Kombo merdiveni**: ekranın altında, kabiliyet açıldığından beri verdiğiniz
-  **toplam hasara** göre kızışan bir satır belirir. Öldürdüğünüz yaratık
-  sayısına göre değil — bir tavukla bir ravager aynı başarı değildir. Altı
-  basamak vardır ve son ikisi ekranda **titrer**:
+- **Yaklaştıkça kırmızı parlayanlar** — ama iki kabiliyette **farklı şeyler**,
+  çünkü ikisi aynı avcı değil:
+
+  | | Canavarlar | Diğer moblar (hayvan, köylü…) | Oyuncular |
+  |---|---|---|---|
+  | **Kan Yemini** | ✔ parlar | ✔ parlar | ✘ parlamaz |
+  | **Asil Kurt** | ✘ parlamaz | ✔ parlar | ✔ parlar |
+
+  Kan Yemini bir **canavar avcısıdır**: öldürülebilecek her şey yanar, hiçbir
+  oyuncu yanmaz — yani yemin insanlara doğrultulmuş bir duvar hilesine
+  dönüşmez. Asil Kurt ise dünyanın kaçtığı **yırtıcının kendisidir**:
+  canavarları zaten kendisine kör etmiştir, o yüzden onlar yanmaz; yanan şey
+  avdır ve insandır.
+
+  (Oyunun bir sınırı burada devreye giriyor: Minecraft'ın parlama çizgisi
+  rengini yalnızca on altı sohbet renginden biri olarak alabiliyor, yani gerçek
+  bir geçiş yapılamıyor. Uzak için koyu, yakın için parlak kırmızı kullanılıyor;
+  "yaklaştıkça artan" hissinin geri kalanını düzgün ölçeklenen ekran tinti
+  taşıyor.)
+- **Kombo merdiveni**: enerji barınızın biraz yukarısında, kabiliyet
+  açıldığından beri verdiğiniz **toplam hasara** göre kızışan bir satır belirir.
+  Öldürdüğünüz yaratık sayısına göre değil — bir tavukla bir ravager aynı başarı
+  değildir. Altı basamak vardır; **basamak yükseldikçe yazı da büyür** (en üstte
+  iki katı) ve son ikisi ekranda **titrer**:
 
   > Güzel! → Devam et. → Durmayı aklından bile geçirme. → HIZINI KESME! →
   > AKLINI MI KAÇIRDIN?! → HEPSİNİ ÖLDÜR!?
 
-- **Kabiliyet bittikçe bütün bu efektler yavaşça söner** ve son saniyede
-  tamamen kaybolur, böylece süre dolmadan önce dolmak üzere olduğunu bir sayıya
-  bakmadan anlarsınız. Merdiven her aktivasyonda sıfırdan başlar.
+  Merdiven **her iki kabiliyette de** işler. (Asil Kurt'ta daha önce hiç
+  çalışmıyordu: kabiliyet, hasar kancasının okuduğu kayda hiç yazılmıyordu.)
+
+- **Kabiliyetin son 5 saniyesinde efektler kademe kademe söner** — saniyede bir
+  gözle görülür basamak, sonra hiç. Böylece süre dolmadan önce dolmak üzere
+  olduğunu bir sayıya bakmadan anlarsınız. Eskiden sönme kabiliyetin *tüm*
+  süresine yayılıyordu, yani 45 saniyelik bir Kan Yemini yirminci saniyede zaten
+  yarı yarıya gitmiş görünüyordu: çalışan değil, bozulan bir efekt gibi.
+  Merdiven her aktivasyonda sıfırdan başlar.
 
 **Bulldozer** (Mağara Adamı 10) **sürekli** bir kabiliyettir: açtıktan sonra
 1 dakika boyunca kazdığınız **her blok**, merkezinde durduğu 3x3x3 küple
@@ -660,12 +689,22 @@ olmamış ekinleri hasada hazır hâle getirir — bir kova kemik tozu gibi, ama
 kemik tozu harcamadan. Zaten olgunlaşmış ekinlere dokunmaz, dolayısıyla size
 kaç bitkinin gerçekten büyüdüğünü söyler.
 
-**Büyüme artık bir anda olmuyor, dalga dalga yayılıyor.** Ekinler size olan
-uzaklıklarına göre sıralanır ve altı geçişte, her geçişte bir yaş kademesi
-ilerleyecek şekilde büyür: yanınızdaki buğday tam boyuna varırken en dışarıdaki
-daha yeni filizlenir. Yaklaşık 2,5 saniye sürer ve **son dalga bittiği anda
-kabiliyet kendiliğinden kapanır** — işi bitmiş bir kabiliyeti açık tutmanın
-kimseye faydası yok. Bekleme süresi **7 dakika 30 saniyedir**.
+**Büyüme bir anda olmaz, dalga dalga yayılır.** Ekinler size olan uzaklıklarına
+göre sıralanır ve dalga her geçişte bir halka daha uzağa varır, ulaştığı her
+ekini bir yaş kademesi ilerletir: yanınızdaki buğday tam boyuna varırken en
+dışarıdaki daha yeni filizlenir.
+
+**Kabiliyetin süresi sabit değildir — tarlanın kendisi belirler.** Süre, tam
+olarak ekinlerin olgunlaşmasının sürdüğü kadardır: yeni ekilmiş buğday yedi
+kademe büyüyeceği için uzun, olgunlaşmaya yakın bir pancar tarlası kısa sürer.
+Ekranda geri sayan sayı da artık gerçekten olan biteni sayar. (Eskiden düz beş
+saniye ilan ediliyordu ama dalga üç saniyede bitiyordu — ve daha kötüsü, geçiş
+sayısı altıya sabit olduğu için yarıçapın kenarındaki taze buğday **yarım
+kalıyordu**, kabiliyet ise her şeyin olgunlaştığını bildiriyordu.)
+
+**Son ekin de olgunlaştığı anda kabiliyet kendiliğinden kapanır** — işi bitmiş
+bir kabiliyeti açık tutmanın kimseye faydası yok. Bekleme süresi **7 dakika
+30 saniyedir**.
 
 **Sürü Çağrısı** (Tabiat Vârisi 20) çevrenizdeki 10 blok yarıçapındaki bütün
 **yetişkin** hayvanları tek bir yem harcamadan çiftleşme moduna sokar. Yavrular
@@ -686,7 +725,16 @@ dakika boyunca:
 - **Zırhınız çıkar ve giyemezsiniz.** Çıkan parçalar envanterinize gider —
   yeri yoksa ayağınıza düşer, hiçbir şey silinmez. Süre boyunca zırh giymeye
   çalışmak işe yaramaz, tekrar çıkarılır.
-- **Hız, Dayanıklılık ve Güç** alırsınız ve parlarsınız.
+- **Hız 2, Dayanıklılık 2 ve Güç 3** alırsınız, parlarsınız ve **10 fazladan
+  kalp** kazanırsınız (canınız da o kadar dolar). Kalpler kabiliyet bittiğinde
+  geri alınır; o sırada canınız yeni tavanın üstündeyse ona indirilir.
+- **Çok yükseğe zıplarsınız ve düşerken hiç zarar görmezsiniz.** Dört bloğu
+  aşan bir sıçramanın bedeli olsaydı kabiliyet kendi kendini cezalandırırdı.
+- **Et düşüren bir hayvanı öldürdüğünüzde onu yerinde yersiniz**: inek,
+  mantar inek, domuz, koyun, tavuk ve tavşan. Kemirme sesi duyulur ve açlık
+  barınız o etin **pişmiş hâlinin** doyurduğu kadar dolar (inek/domuz 8,
+  koyun/tavuk 6, tavşan 5). Doyum (saturation) dolmaz — bir inekten bir
+  saatlik yemek çıkmamalı.
 - **Hiçbir canavar size saldırmaz** — size nişan almış olanlar hedefini
   kaybeder, yenisi de sizi bulamaz.
 - **Çevrenizdeki kurtlar ve köpekler** en son vurduğunuz hedefin üstüne atılır.
@@ -695,17 +743,26 @@ dakika boyunca:
 - Ekranınız **Kan Yemini gibi kızarır ve nabız gibi atar**, kalp atışı sesi
   gelir, ve aynı **kombo merdiveni** işler (aşağıya bakın).
 
+**Ve bir bedeli var: su.** Kurt suda yaşayamaz. Suya girdiğiniz anda hızla can
+kaybetmeye başlarsınız ve ekranınıza büyük harflerle **"SUDAN ÇIK!"** yazar.
+Boğulma değildir — hava barı beklemez, doğrudan vurur. Kesintisiz daha iyi olan
+bir form, elli seviyeden sonra sınıfın tek oynanış biçimi olurdu; nehir de tam
+olarak bunu engelleyen şeydir.
+
 Bekleme süresi **10 dakikadır**. Odak ağacından enerjisini, beklemesini ve
 çağrının menzilini geliştirebilirsiniz.
 
-> **Not — kurt adam modeli.** İsteğin bu tek parçası yapılamadı ve bunu açıkça
-> yazmak gerekiyor: bir karakter modeli bir *dosyadır* (mesh + doku), ve ne
-> sunucu vanilla bir istemcinin oyuncu modelini değiştirebilir ne de hiç görsel
-> içermeyen eşlik mod'u onu üretebilir. Bunun için ya bir kaynak paketi ya da
-> mod'a eklenecek gerçek bir model dosyası gerekir. Maddenin geri kalanının
-> tamamı yapıldı; görsel kimlik yerine oyunun kendi verebildiği en güçlü hâl
-> kullanıldı: zırhsız, parlayan, hızlı ve etrafında her şeyin kaçtığı bir
-> oyuncu.
+**Kurt adam modeli artık var.** Dönüştüğünüz anda, sizi gören herkes sizi bir
+oyuncu olarak değil **kurt adam olarak** görür: uzun burunlu bir kurt kafası,
+dik kulaklar, öne eğik bir gövde, dizden aşağı sarkan uzun kollar ve ters
+eklemli bacaklar. Model **eşlik mod'unun içinde** gelir (`hmmo-client`
+1.3.0) — mod zaten zorunlu olduğu için ayrıca bir kaynak paketi kurmanız
+gerekmez. Yürüdükçe kolları ve bacakları sallanır, baktığınız yere bakar,
+kuyruğu durmadan hafifçe savrulur.
+
+Kendi ekranınızda birinci şahısta değişen bir şey yoktur; dönüşüm üçüncü şahısta
+ve başkalarının ekranında görünür — bir dönüşüm zaten başkalarının gördüğü
+şeydir.
 
 ### Enerji
 
@@ -759,8 +816,12 @@ Ekranın sağında kalıcı, renklendirilmiş bir bilgi paneli. Yukarıdan aşa�
    evinizin adını (ya da "Ayarlanmadı"), takasın ve bulut sandığının açık olup
    olmadığını tek satırda gösterir. **Bir takas sürerken** hemen altında
    "Takas açık: <oyuncu>" satırı çıkar.
-6. **Başlangıç Görevleri** — yalnızca tamamlanmamış olanlar varken; hepsi
-   bitince bu bölüm tamamen kaybolur.
+6. **Başlangıç Görevleri** — dört adımın **hepsi** listelenir; bitenler
+   yeşile döner ve yanlarına tik işareti gelir, tıpkı görev satırlarında olduğu
+   gibi. Bölüm ancak **dördü de** bittiğinde kalkar ve tam o anda ekranınıza
+   **"Başlangıç görevlerini tamamladın!"** yazısı gelir. (Eskiden biten adım
+   listeden siliniyordu; dördün üçünü yapmış bir oyuncu tek bir gri satır görüp
+   hiçbir yere varamadığını sanıyordu.)
 7. **Görevler** — her tür **kendi başlığı** altında: **Günlük Görevler**
    (sarı), **Haftalık Görevler** (altın), **Kalıcı Görevler** (camgöbeği).
    Başlık altındaki satırlar da aynı renktedir, yani renk ve başlık aynı şeyi
@@ -926,15 +987,22 @@ sayısı 10'dur.
 
 ### Kalıcı ödül seçimi
 
-Prestij yaptığınız anda önünüze **kalıcı bir ödül seçme ekranı** açılır. Dört
-seçenek vardır ve hepsi kalıcıdır, hepsi tekrar tekrar seçilebilir:
+Prestij yaptığınız anda önünüze **kalıcı bir ödül seçme ekranı** açılır. **İki**
+seçenek vardır; ikisi de kalıcıdır ve her prestijde yeniden seçilebilir:
 
 | Ödül | Ne verir |
 |---|---|
 | **Dayanıklılık** | +1 kalp maksimum can |
 | **Vahşet** | Yaratıklara +%5 hasar |
-| **Soluk** | +15 maksimum enerji |
-| **Bilgelik** | +%10 beceri XP'si (sinerji becerisinden gelen sınıf XP'si de pay alır) |
+
+**Eskiden dört seçenek vardı ve bu bir karar değil, bir menüydü.** Dördü de küçük
+ve kalıcı olduğu için oyuncu her rankta aynı açıklamaları okuyup geçen sefer ne
+seçtiyse onu seçiyordu. İki seçenek gerçek bir yol ayrımıdır: **daha zor ölmek
+ya da daha sert vurmak.**
+
+> **Daha önce Soluk (+enerji) veya Bilgelik (+%10 beceri XP) almış oyuncular
+> için:** o bonuslarınız duruyor ve aynen ödenmeye devam ediyor. Yalnızca
+> ekranda artık sunulmuyorlar; kazandığınız hiçbir şey silinmedi.
 
 **Seçim yapılmadan başka bir MMO ekranı açılmaz.** Ekranı kapatıp `/menü`,
 `/sınıf`, `/kabiliyet`, `/liderlik`, `/madencilik` ya da başka bir komut
@@ -1004,7 +1072,12 @@ Dört adım şunlar (her biri 150 XP):
 3. Kabiliyetlerini incele (`/kabiliyet`)
 4. Bir beceri komutu kullan (`/madencilik`, `/avcılık` vb.)
 
-Bitirdiğiniz adımlar **Tamamlanan Görevler sekmesinde durmaya devam eder**:
+**Sağdaki panelde dört adımın hepsi durur**, bitenler yeşil ve tik işaretli
+olarak. Dördü de bittiğinde bölüm kalkar ve ekranınıza **"Başlangıç görevlerini
+tamamladın!"** yazısı gelir — bir bölümün hiçbir şey söylenmeden yok olması
+ilerleme değil, hata gibi okunur.
+
+Bitirdiğiniz adımlar **Tamamlanan Görevler sekmesinde de durmaya devam eder**:
 sunucuda yaptığınız ilk şey, biter bitmez kaydınızdan silinmemeli.
 
 **Her becerinin üç türde de görevi vardır.** Hayvancılık ve tarımcılık uzun
@@ -1659,11 +1732,22 @@ ekranınıza çizer**. Sunucu yalnızca "şu kabiliyet açık, rengi bu, ağırl
 
 | Ne | Nerede |
 |---|---|
-| **Ekran kenarı, kabiliyetin renginde** | Oyun ekranının dört kenarı, içe doğru soluklaşarak |
-| **Kabiliyet rozeti** (simge + ad + kalan süre) | HUD'un sol üstü |
-| **Aynı rozet** | **Envanteri açtığınızda**, iksir etkilerinin listelendiği sütunda |
-| **Kırmızı parlayan düşmanlar** | Kan Yemini ve Asil Kurt açıkken, çevrenizdeki hostile yaratıklar |
-| **Kombo satırı** | Ekranın altında, ortada — yalnızca Kan Yemini ve Asil Kurt'ta |
+| **Ekran kenarı, kabiliyetin renginde** | Oyun ekranının dört kenarı, içe doğru soluklaşarak — **yalnızca altı kabiliyette** |
+| **Kabiliyet rozeti** (simge + ad + kalan süre) | HUD'un **sağ üstü**, kabiliyetin renginde dört kenarlı bir çerçeve içinde |
+| **Aynı rozet** | **Envanteri açtığınızda**, panelin sağında |
+| **Kırmızı parlayanlar** | Kan Yemini ve Asil Kurt açıkken — her biri **farklı** kümeyi yakar, yukarıdaki tabloya bakın |
+| **Kombo satırı** | Ekranın altında, enerji barının biraz yukarısında — yalnızca Kan Yemini ve Asil Kurt'ta |
+| **Kurt adam modeli** | Asil Kurt açıkken, dönüşen oyuncunun yerinde — **herkes görür** |
+
+**Ekran kenarı artık on iki kabiliyette değil, altısında çıkar:** B Planı,
+Madenci Refleksleri, Asil Kurt, Filiz Patlaması, Sürü Çağrısı ve Kan Yemini.
+Hepsinde olması onu anlamsız kılıyordu — Bulldozer'la kazan bir oyuncu, sıradan
+bir kazı yaparken bir dakika boyunca renkli çerçeve görüyordu, yani "sana bir
+şey oluyor" sinyali arka plana dönüşmüştü. Kalan altısı, kabiliyetin **size**
+olduğu ve bunu söyleyebilecek başka yerin olmadığı altısıdır; çıkanlar ise
+kendini dünyada zaten duyuruyor (bir krater, savrulan bir yaratık, parlayan
+cevher, üstünüzden geçen bir sürü). **Rozet ve geri sayım on ikisinde de
+durur.**
 
 **Kenarın ne kadar koyu olduğu kabiliyetin kademesine bağlıdır**: 10. seviye
 kabiliyetler hafif bir renk verir, 50. seviye olanlar ekranı gerçekten
@@ -1671,21 +1755,25 @@ boyar (%25 / %45 / %70 / %100). Sunucunun "gücüne göre" sorusuna verebileceğ
 en dürüst cevap kademedir — bir madencilik aleti ile bir savaş buff'ının hasar
 sayıları zaten kıyaslanamaz.
 
-**Efektler kabiliyetle birlikte söner.** Kenar boyaması kalan süreyle orantılı
-olarak yavaşça zayıflar ve **son saniyede tamamen kaybolur**, yani süre dolmak
-üzereyken bunu geri sayıma bakmadan görürsünüz. Kan Yemini ve Asil Kurt'ta
-kenar ayrıca **nabız gibi atar**, ve sönerken nabız da zayıflar — bir kabiliyet
-son ana kadar tam güçle atıp sonra birden kesilmez.
+**Efektler son 5 saniyede kademe kademe söner**: saniyede bir gözle görülür
+basamak iner, sonra hiç kalmaz — yani süre dolmak üzereyken bunu geri sayıma
+bakmadan görürsünüz. Kan Yemini ve Asil Kurt'ta kenar ayrıca **nabız gibi
+atar**, ve sönerken nabız da zayıflar.
 
 **Bunların hepsi yalnızca sunumdur.** Mod'un hiçbir ekranı, komutu, tuş
 bağlaması ya da ayar dosyası yoktur ve oyunun kurallarına karışmaz: bu
 paketleri hiç almayan bir istemci aynı oyunu daha sade bir ekranla oynar.
-Kabiliyetin ne yaptığına her zaman ve yalnızca sunucu karar verir.
+Kabiliyetin ne yaptığına her zaman ve yalnızca sunucu karar verir. **Kurt adam
+modeli de buna dâhildir:** kurda dönüşmüş bir oyuncu, modeli çizilmese de tam
+olarak aynı şeyleri yapar.
 
 **Neden mod?** Sunucu vanilla bir istemcinin ekranına çizemez — "ekranı boya"
 diye bir paket yoktur, ve Minecraft'ın parlama bayrağı yaratığın kendi
 özelliğidir, izleyicinin değil; sunucudan yapılsa görüş mesafesindeki herkes
-için parlardı.
+için parlardı. Aynısı model için de geçerli: oyuncu geometrisi istemcinin kendi
+kodunda yaşar, sunucu ona dokunamaz. Mod, oyuncunun gövdesini **yalnızca kendi
+kopyasında** gizleyip yerine kurdu çizer — sunucudaki hiçbir şey değişmez, yani
+bu bir görünmezlik hilesi değildir.
 
 ---
 
@@ -1767,10 +1855,24 @@ durumunu söyleyen bir ekran. Düzenlenebilecekler:
 | **Özellik Puanı** | +1 | +5 | −1 | −5 |
 | **Kabiliyet Puanı** | +1 | +5 | −1 | −5 |
 
-Ayrıca **sınıfı zorla ayarlama** (bekleme süresi olmadan; bu da oyuncunun kendi
-değiştirmesi gibi seçili kabiliyeti kuşanmasından çıkarır), **kabiliyet
+Ayrıca **sınıfı zorla ayarlama** (bekleme süresi olmadan), **kabiliyet
 kuşandırma/çıkarma** (yalnızca çevrimiçi oyuncuda — kuşanılan kabiliyet bellekte
 durur ve çıkışta unutulur) ve **saygınlık ayarlama** düğmeleri vardır.
+
+**Sınıfı zorla ayarlamak artık oyuncunun kendi değiştirmesiyle bire bir aynı
+şeyi yapar**, tek farkı bunu söylemesidir:
+
+- Seçili kabiliyet kuşanılmış olmaktan çıkar (bu zaten böyleydi).
+- **Ayrılan sınıfın seviyesi sıfırlanır** (1. seviye, 0 XP) — oyuncunun kendi
+  değiştirmesinde olduğu gibi. Tek fark buydu ve savunulabilir değildi: artık
+  oynanmayan bir sınıf sıfırdan başlar, düğmeye kimin bastığı bunu değiştirmez.
+- Hedef çevrimiçiyse aynı üçlü ekran çalışır (boss çubuğu, ekran başlığı, ses),
+  ama **"Sınıfın Yönetici Tarafından Değiştirildi"** diyerek; can ve enerji
+  tavanları da yeni sınıfa göre yeniden hesaplanır.
+
+Susmak, oyuncunun sınıfını ve sınıf seviyesini sebepsiz yere kaybettiğini
+sanması demekti — bir hatadan ayırt edilemezdi. (Sınıfı **temizlemek** tek
+istisnadır: söylenecek yeni bir sınıf yoktur, yalnızca etkiler geri alınır.)
 
 Puan satırları oyuncunun toplam ve harcanmamış puanını, ayrıca bunun ne
 kadarının yönetici tarafından verildiğini gösterir. Verilen puan **türetilen
@@ -1830,8 +1932,13 @@ yazmak bir düzeltme aracı değil bir işkencedir.
 - [`core/`](core) — Eklentinin tam uygulaması (`HalilIbrahimMMOPlugin` ve her bir
   iç sistem). `api` modülüne bağımlıdır.
 - [`clientmod/`](clientmod) — Zorunlu Fabric eşlik mod'u: mod doğrulamasına
-  yanıt verir ve kabiliyet HUD'unu çizer. **Kök derlemeye dâhil değildir**,
-  kendi Gradle wrapper'ı vardır (bkz. "İki ayrı derleme zinciri").
+  yanıt verir, kabiliyet HUD'unu çizer ve **Asil Kurt'un kurt adam modelini**
+  taşır (`assets/hmmo/textures/entity/kurt_adam.png` + `WerewolfModel`).
+  **Kök derlemeye dâhil değildir**, kendi Gradle wrapper'ı vardır (bkz. "İki
+  ayrı derleme zinciri").
+- [`tasarim/`](tasarim) — Kaynak tasarım dosyaları (kurt adamın dokusu ve iki
+  referans görseli). Derlemeye girmez; mod'un kullandığı doku buradan
+  kopyalanır.
 
 ## Derleme
 
@@ -1859,6 +1966,21 @@ komutla birlikte derlenmez:
 | Nereye gider | sunucunun `plugins/` klasörü | oyuncunun `mods/` klasörü |
 
 PowerShell'de `clientmod` içinde `./gradlew` çalışmaz, `.\gradlew.bat` gerekir.
+
+### Kurt adam modelinin UV yerleşimi
+
+Model, `clientmod`'daki `WerewolfModel` sınıfında **kod olarak** tanımlıdır
+(kutu listesi + `texOffs` çağrıları) ve doku olarak
+`assets/hmmo/textures/entity/kurt_adam.png` dosyasını kullanır.
+
+> **Bilinmesi gereken sınır:** verilen doku, saydam oluğu olmayan, tamamen opak
+> bir 128×256 sayfadır — hangi bölgenin hangi yüz olduğu görüntüden geri
+> çıkarılamaz. Dolayısıyla `texOffs` değerleri sanattan **okunan** değil, bu
+> sınıfın **tanımladığı** bir yerleşimdir. Doku bir Blockbench projesinden
+> çıktıysa gerçek offsetler o projenin model dosyasındadır ve tek bir sabit
+> bloğunu değiştirmek yeter; dönüşümün geri kalanı (yayın, gizleme, çizim,
+> animasyon) hiçbirine bağlı değildir. Bütün offsetler kasıtlı olarak tek bir
+> yerdedir.
 
 ## Yerel test sunucusu çalıştırma
 

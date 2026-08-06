@@ -164,6 +164,11 @@ public final class ClassMenu implements GuiView {
             List<Component> lore = new ArrayList<>();
             lore.add(talentLore.perRank(talent, rank));
             talentLore.characterTotal(talent, rank).ifPresent(lore::add);
+            // A blank line between what the talent does and where the player is
+            // with it. The effect line now wraps onto two or three lines of its
+            // own, and without a gap the rank counter read as a fourth line of
+            // the same sentence.
+            lore.add(Component.empty());
             lore.add(services.messages().render(MessageKey.GUI_TALENT_ITEM_LORE, Map.of(
                     "rank", Integer.toString(rank),
                     "maksimum", Integer.toString(talent.maximumRank())

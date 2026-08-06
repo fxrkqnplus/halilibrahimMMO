@@ -22,6 +22,7 @@ import com.halilibrahim.halilibrahimmmo.command.PrestigeCommand;
 import com.halilibrahim.halilibrahimmmo.command.QuestCommand;
 import com.halilibrahim.halilibrahimmmo.command.RandomTeleportCommand;
 import com.halilibrahim.halilibrahimmmo.command.HomeCommand;
+import com.halilibrahim.halilibrahimmmo.command.CreditsCommand;
 import com.halilibrahim.halilibrahimmmo.command.MapCommand;
 import com.halilibrahim.halilibrahimmmo.command.SkillDetailCommand;
 import com.halilibrahim.halilibrahimmmo.command.SkillsCommand;
@@ -400,7 +401,8 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     new TabListService(this, messageService, serverInfoService, titleService, progressionService), TabListService.class
             );
             OnboardingRewarder onboardingRewarder = new OnboardingRewarder(
-                    this, onboardingService, profileService, classService, messageService, sidebarService, classAwardHandler
+                    this, onboardingService, profileService, classService, messageService, sidebarService,
+                    classAwardHandler, feedbackService
             );
             ReputationAwardHandler reputationAwardHandler = new ReputationAwardHandler(this, messageService, feedbackService, sidebarService);
             this.reputationRankAnnouncer = new ReputationRankAnnouncer(this, messageService, leaderboardService, reputationService);
@@ -652,6 +654,10 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
         registerCommand("takas", "Baska bir oyuncuyla takas baslatir", List.of("trade"), new TradeCommand(tradeService, messageService));
         registerCommand("rtp", "Haritada rastgele bir noktaya isinlanir", List.of("rastgele"), new RandomTeleportCommand(this, messageService, feedbackService));
         registerCommand("harita", "Canli oyunici harita adresini gosterir", List.of("map"), new MapCommand(messageService));
+        // Three labels for one screen, the same reason /yardım has three: a
+        // player looking for who made this types whichever occurs to them first.
+        registerCommand("credits", "Emegi gecenler ekranini acar", List.of("yapımcı", "yapimci", "halilibrahimmmo"),
+                new CreditsCommand(guiServices));
     }
 
     private boolean isDebugModeCurrentlyEnabled() {

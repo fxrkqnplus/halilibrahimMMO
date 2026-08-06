@@ -120,6 +120,31 @@ public enum AbilityEffectType {
     }
 
     /**
+     * Whether this ability colours the edges of its owner's screen while it
+     * runs.
+     *
+     * <p>Faz 22 gave the tint to every ability, and at twelve of them that made
+     * it meaningless: a player mining with Bulldozer had a coloured border for a
+     * solid minute of ordinary digging, so the one signal that was supposed to
+     * mean "something is happening to you" became the background.</p>
+     *
+     * <p>The six that keep it are the six where the ability is happening
+     * <em>to the player</em> and the screen is the only place that can say so -
+     * they are hidden (B Planı), transformed (Asil Kurt, Kan Yemini), or holding
+     * open a wave that the world will finish on its own (Filiz Patlaması, Sürü
+     * Çağrısı, Madenci Refleksleri). The six that lose it all announce
+     * themselves in the world instead: a crater, a thrown mob, glowing ore, a
+     * herd charging past. Those do not need a border to be noticed, and the
+     * badge and countdown are untouched for all twelve.</p>
+     */
+    public boolean tintsScreen() {
+        return switch (this) {
+            case PHANTOM_STEP, TOOL_EFFICIENCY, NOBLE_WOLF, GROWTH_SURGE, LOVE_CALL, LIFE_STEAL -> true;
+            default -> false;
+        };
+    }
+
+    /**
      * Whether this ability keeps working after its first block break, rather
      * than being spent by it.
      *

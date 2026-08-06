@@ -124,8 +124,13 @@ siniflar:
       # ORANLAR MUTLAK DEGER ICIN SECILMISTIR. Her oran, kabiliyetin abilities.yml'deki
       # KENDI temel degerine gore hesaplanir; asagidaki yorumlar rank basina dusen
       # mutlak degisimi soyler. Temel degeri degistirirseniz oranlari da guncelleyin.
+      # Avci Odagi: temel enerji 25 -> her rank -1,25 enerji (rank 4'te 20).
       odak-tasarrufu: { gorunen-ad: "Odak Tasarrufu", maksimum-rank: 4, etki: { tur: ABILITY_ENERGY_COST_REDUCTION, kabiliyet: avci-odagi, deger-rank-basina: 0.05 } }
-      odak-ritmi: { gorunen-ad: "Odak Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: avci-odagi, deger-rank-basina: 0.05 } }
+      # Avci Odagi: temel bekleme 150 sn -> her rank -15 sn (rank 4'te 90 sn).
+      # Faz 24: 0.05 idi ve rank basina 7,5 saniye ediyordu - ekranda yarim
+      # saniyeli bir bekleme kisaltmasi okunacak bir sey degil.
+      odak-ritmi: { gorunen-ad: "Odak Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: avci-odagi, deger-rank-basina: 0.10 } }
+      # Avci Odagi: temel sure 30 sn -> her rank +3 sn (rank 4'te 42 sn).
       odak-suresi: { gorunen-ad: "Odak Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: avci-odagi, deger-rank-basina: 0.10 } }
       yikim-gucu: { gorunen-ad: "Yıkım Gücü", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: yikici-darbe, deger-rank-basina: 0.08 } }
       # B Plani: temel bekleme 120 sn -> her rank -15 sn (rank 4'te 60 sn).
@@ -133,8 +138,12 @@ siniflar:
       # B Plani: temel sure 5 sn -> her rank +5 sn (rank 4'te 25 sn).
       golge-suresi: { gorunen-ad: "Gölge Süresi", maksimum-rank: 4, etki: { tur: ABILITY_DURATION_BONUS, kabiliyet: b-plani, deger-rank-basina: 1.0 } }
       # Kan Yemini: temel bekleme 450 sn -> her rank -30 sn (rank 4'te 330 sn).
+      # NOT: 30/450 devirli bir kesir. Oran burada dort haneye yuvarlaniyor ve
+      # ekrandaki mutlak deger TalentEffectLore tarafindan tam saniyeye
+      # oturtuluyor; aksi halde "5 dakika 29 saniye" yaziyordu.
       kan-ritmi: { gorunen-ad: "Kan Ritmi", maksimum-rank: 4, etki: { tur: ABILITY_COOLDOWN_REDUCTION, kabiliyet: kan-yemini, deger-rank-basina: 0.0667 } }
       # Kan Yemini: temel can-orani %15 -> her rank +%5 (rank 4'te %35).
+      # 5/15 de devirli; ayni yuvarlama kurali bunun icin de gecerli.
       kan-yemini-gucu: { gorunen-ad: "Kan Bağı", maksimum-rank: 4, etki: { tur: ABILITY_EFFECT_BONUS, kabiliyet: kan-yemini, deger-rank-basina: 0.3333 } }
       # Kan Yemini: temel Hiz 1 -> her rank +1 seviye (rank 2'de Hiz 3).
       kan-hizi: { gorunen-ad: "Kan Hızı", maksimum-rank: 2, etki: { tur: ABILITY_LIMIT_BONUS, kabiliyet: kan-yemini, deger-rank-basina: 1 } }

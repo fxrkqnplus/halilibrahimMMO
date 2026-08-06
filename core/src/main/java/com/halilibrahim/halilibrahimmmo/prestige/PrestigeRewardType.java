@@ -40,6 +40,24 @@ public enum PrestigeRewardType {
      */
     BILGELIK(Material.ENCHANTED_BOOK, MessageKey.GUI_PRESTIGE_REWARD_WISDOM, MessageKey.GUI_PRESTIGE_REWARD_WISDOM_LORE);
 
+    /**
+     * How many of these a prestige actually offers, counted from the top.
+     *
+     * <p>Four choices where every one is a small permanent trickle is not four
+     * decisions, it is a menu - a player reads the same lore every rank and
+     * picks whatever they picked last time. Two makes the choice a real one:
+     * survive harder, or hit harder.</p>
+     *
+     * <p><strong>The other two are not deleted, and that is the point.</strong>
+     * Every ENERJI and BILGELIK a player has already banked is a row in
+     * {@code hmmo_player_prestige_rewards} and keeps paying out exactly as
+     * before - the same rule §15.4 set for talent ranks whose configuration
+     * moved under them. Removing the constants would have silently taken those
+     * bonuses away, because {@link #byName} answers an unknown name with
+     * nothing.</p>
+     */
+    public static final int SELECTABLE_COUNT = 2;
+
     private final Material icon;
     private final MessageKey nameKey;
     private final MessageKey loreKey;
@@ -60,6 +78,11 @@ public enum PrestigeRewardType {
 
     public MessageKey loreKey() {
         return loreKey;
+    }
+
+    /** The rewards a prestige screen offers: the first {@link #SELECTABLE_COUNT}, in declaration order. */
+    public static java.util.List<PrestigeRewardType> selectable() {
+        return java.util.List.of(values()).subList(0, Math.min(SELECTABLE_COUNT, values().length));
     }
 
     /** Tolerant lookup for a value read back out of the database. */

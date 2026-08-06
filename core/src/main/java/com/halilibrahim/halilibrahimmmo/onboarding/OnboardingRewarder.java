@@ -2,6 +2,7 @@ package com.halilibrahim.halilibrahimmmo.onboarding;
 
 import com.halilibrahim.halilibrahimmmo.classes.ClassAwardHandler;
 import com.halilibrahim.halilibrahimmmo.classes.ClassService;
+import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import com.halilibrahim.halilibrahimmmo.locale.MessageService;
 import com.halilibrahim.halilibrahimmmo.profile.ProfileService;
@@ -31,10 +32,11 @@ public final class OnboardingRewarder {
     private final MessageService messages;
     private final SidebarService sidebar;
     private final ClassAwardHandler classAwards;
+    private final FeedbackService feedback;
 
     public OnboardingRewarder(
             JavaPlugin plugin, OnboardingService onboarding, ProfileService profiles, ClassService classes,
-            MessageService messages, SidebarService sidebar, ClassAwardHandler classAwards
+            MessageService messages, SidebarService sidebar, ClassAwardHandler classAwards, FeedbackService feedback
     ) {
         this.plugin = plugin;
         this.onboarding = onboarding;
@@ -43,6 +45,7 @@ public final class OnboardingRewarder {
         this.messages = messages;
         this.sidebar = sidebar;
         this.classAwards = classAwards;
+        this.feedback = feedback;
     }
 
     /** Idempotent: a task already completed pays nothing and says nothing. */
@@ -56,8 +59,15 @@ public final class OnboardingRewarder {
                 classes.awardClassExperience(player.getUniqueId(), player.getName(), classId, task.rewardExperience())
                         .thenAccept(result -> classAwards.handle(player, classId, task.rewardExperience(), result));
             }
+            // Read after the write, so "was this the last one" is answered by
+            // the same cache the sidebar is about to render from - not by
+            // counting the four ids here and risking the two disagreeing.
+            boolean finishedAll = OnboardingTask.allCompleted(onboarding.cachedCompleted(player.getUniqueId()));
             player.getScheduler().run(plugin, scheduled -> {
                 messages.send(player, completedMessage, Map.of("xp", Long.toString(task.rewardExperience())));
+                if (finishedAll) {
+                    feedback.celebrateOnboardingCompleted(player);
+                }
                 sidebar.refresh(player);
             }, null);
         });

@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -240,6 +241,8 @@ public final class AbilityActivationListener implements Listener {
         // A pickaxe Madenci Refleksleri lent three Efficiency levels to must not
         // leave the server still carrying them.
         abilities.restoreEfficiency(event.getPlayer());
+        // A wolf that logs out has to stop being one on everybody else's screen.
+        abilities.handlePlayerQuit(event.getPlayer());
         lastActivationAttempt.remove(event.getPlayer().getUniqueId());
         pendingActivations.remove(event.getPlayer().getUniqueId());
     }
@@ -270,6 +273,9 @@ public final class AbilityActivationListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         abilities.restoreEfficiency(event.getPlayer());
+        // The wolf-form set is only broadcast when it changes, so somebody
+        // joining mid-transformation has to be told the current truth once.
+        abilities.sendWolfForms(event.getPlayer());
     }
 
     /**
@@ -281,8 +287,21 @@ public final class AbilityActivationListener implements Listener {
     public void onCreatureDeath(EntityDeathEvent event) {
         Player killer = event.getEntity().getKiller();
         if (killer != null && !(event.getEntity() instanceof Player)) {
-            abilities.handleCreatureDeath(killer, event.getEntity().getLocation());
+            abilities.handleCreatureDeath(killer, event.getEntity().getLocation(), event.getEntity().getType());
         }
+    }
+
+    /**
+     * Asil Kurt's leap costs nothing on the way down.
+     *
+     * <p>{@code HIGHEST} rather than {@code MONITOR}: this cancels the event, and
+     * a cancellation has to happen before anything that only observes the
+     * outcome. Left cancellable-aware, so a protection plugin that already
+     * decided this fall does not hurt keeps its decision.</p>
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityDamage(EntityDamageEvent event) {
+        abilities.handleFallDamage(event);
     }
 
     private record PendingActivation(String abilityId, boolean deactivating, long expiresAtMillis) {

@@ -137,11 +137,19 @@ sidebar:
   gorev-kalici: "<aqua>• <gorev>:</aqua> <white><ilerleme></white> <dark_gray>(+<xp>)</dark_gray>"
   gorev-kalici-tamam: "<green>• <simge:tamam> <gorev></green> <dark_gray>(+<xp>)</dark_gray>"
   alt-bilgi: "<dark_gray>/panel ile aç/kapat</dark_gray>"
+  # BASLANGIC GOREVLERI, tipki gunluk/haftalik/kalici gorevler gibi, bitince
+  # panelden silinmez: yesile doner ve yanina tik isareti gelir. Bolum ancak
+  # DORDU DE bittikten sonra tamamen kalkar - o an ekrana geribildirim.
+  # baslangic-tamam-baslik yazisi gelir.
   onboarding-baslik: "<yellow><simge:bilgi> Başlangıç Görevleri:</yellow>"
   onboarding-menu: "<gray>• /menü ile ana menüyü aç</gray>"
-  onboarding-beceri: "<gray>• Becerilerini incele</gray>"
-  onboarding-kabiliyet: "<gray>• Kabiliyetlerini incele</gray>"
+  onboarding-menu-tamam: "<green>• <simge:tamam> Ana menüyü aç</green>"
+  onboarding-beceri: "<gray>• Becerilerini incele <dark_gray>(/beceri)</dark_gray></gray>"
+  onboarding-beceri-tamam: "<green>• <simge:tamam> Becerilerini incele</green>"
+  onboarding-kabiliyet: "<gray>• Kabiliyetlerini incele <dark_gray>(/kabiliyet)</dark_gray></gray>"
+  onboarding-kabiliyet-tamam: "<green>• <simge:tamam> Kabiliyetlerini incele</green>"
   onboarding-beceri-komutu: "<gray>• Beceri komutlarını incele (/madencilik, /avcılık vb.)</gray>"
+  onboarding-beceri-komutu-tamam: "<green>• <simge:tamam> Beceri komutlarını incele</green>"
 
 # "/profil <oyuncu>" ile aranan oyuncu hicbir kayitta bulunamadiginda.
 profil:
@@ -212,7 +220,7 @@ kabiliyet:
   etkin-genel: "<green><kabiliyet> etkin.</green> <gray><sure> sürecek.</gray>"
   etkin-sans: "<green><kabiliyet> etkin.</green> <gray><sure> boyunca kırdığın bloklardan ekstra düşme şansın var.</gray>"
   etkin-cevher: "<green><simge:madencilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> cevher <sure> boyunca parlıyor.</gray>"
-  etkin-filiz: "<green><simge:tarimcilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> ekin bir anda olgunlaştı.</gray>"
+  etkin-filiz: "<green><simge:tarimcilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> ekin <white><sure></white> içinde dalga dalga olgunlaşacak.</gray>"
   etkin-suru: "<green><simge:hayvancilik> <kabiliyet> etkin.</green> <gray>Çevrendeki <white><sayi></white> hayvan çağrına karşılık verdi.</gray>"
   etkin-kan: "<dark_red><simge:can> <kabiliyet> etkin.</dark_red> <gray><sure> boyunca yaratıklara verdiğin hasarın <white>%<yuzde></white> kadarı cana dönüşüyor.</gray>"
   etkin-bomba: "<dark_purple><simge:madencilik> <kabiliyet> yerleştirildi.</dark_purple> <gray>Fitil yanıyor - <white><yaricap> blok</white> yarıçapındaki kaya temizlenecek, cevherler yerinde kalacak. Uzaklaşmana gerek yok, sana zarar vermez.</gray>"
@@ -225,7 +233,11 @@ kabiliyet:
   maden-gerekli: "<red><simge:uyari> <kabiliyet> yalnızca geniş, üstü kapalı bir madende kullanılabilir.</red>"
   hayvan-gerekli: "<red><simge:uyari> <kabiliyet> için çevrende çağırabileceğin bir hayvan olmalı.</red>"
   gece-gerekli: "<red><simge:uyari> <kabiliyet> yalnızca geceleri çağrılabilir.</red> <gray>Gün batımını bekle.</gray>"
-  etkin-asil-kurt: "<dark_red><bold><simge:kabiliyet> <kabiliyet></bold></dark_red> <gray>uyandı.</gray> <white><sure></white> <gray>boyunca zırh giyemezsin; canavarlar sana yaklaşmaz, kurtlar seninle avlanır, geri kalan her şey kaçar.</gray>"
+  etkin-asil-kurt: "<dark_red><bold><simge:kabiliyet> <kabiliyet></bold></dark_red> <gray>uyandı.</gray> <white><sure></white> <gray>boyunca zırh giyemezsin; canavarlar sana yaklaşmaz, kurtlar seninle avlanır, geri kalan her şey kaçar. Hız 2, Dayanıklılık 2, Güç 3 ve 10 fazladan kalp alırsın, çok yükseğe zıplar ve düşerken zarar görmezsin. <red>Suya girme.</red></gray>"
+  # Asil Kurt suda. Baslik, cunku nehre dusmus bir oyuncu sohbet okumaz.
+  asil-kurt-su-baslik: "<dark_red><bold>SUDAN ÇIK!</bold></dark_red>"
+  asil-kurt-su-altbaslik: "<red>Kurt suda yaşayamaz - canın gidiyor.</red>"
+  asil-kurt-yedi: "<dark_red><simge:hayvancilik> Avını yerinde parçaladın.</dark_red> <gray>Açlık <white>+<aclik></white>.</gray>"
   olumle-bitti: "<yellow><simge:uyari> Öldün;</yellow> <gray>çalışan kabiliyetin sona erdi. Kuşandığın kabiliyet üzerinde kalır.</gray>"
   # ----- Kombo merdiveni (Kan Yemini ve Asil Kurt) -----
   # Ekranın altında, istemci mod'unun cizdigi satir. Basamak, kabiliyet
@@ -525,11 +537,24 @@ geribildirim:
   kabiliyet-acildi-bossbar: "<white><simge:kabiliyet> Yeni kabiliyet açıldı - <kabiliyet></white>"
   kabiliyet-acildi-baslik: "<white>Yeni Kabiliyet!</white>"
   kabiliyet-acildi-altbaslik: "<gray><kabiliyet></gray>"
+  # Dort baslangic gorevinin de bitmesi. Bir kez gorulur ve panelin baslangic
+  # bolumu tam o anda kalkar; yazi, kalkan bolumun yerini tutan seydir.
+  baslangic-tamam-bossbar: "<green><simge:tamam> Başlangıç görevlerini tamamladın!</green>"
+  baslangic-tamam-baslik: "<green><bold>Başlangıç görevlerini tamamladın!</bold></green>"
+  baslangic-tamam-altbaslik: "<yellow>Günlük, haftalık ve kalıcı görevler açıldı.</yellow>"
   sinif-seviye-atladi: "<green><simge:sinif> <sinif> seviyesi arttı! Yeni seviye: <white><seviye></white>.</green>"
   sinif-degistirildi-bossbar: "<light_purple><simge:sinif> Sınıf Değiştirildi - <white><sinif></white></light_purple>"
   sinif-degistirildi-baslik: "<light_purple>Sınıf Değiştirildi</light_purple>"
   sinif-degistirildi-altbaslik: "<white><sinif></white>"
   sinif-degistirildi-sohbet: "<light_purple><simge:sinif> Sınıf Değiştirildi - <white><sinif></white></light_purple> <gray>Önceki sınıfının seviyesi sıfırlandı.</gray>"
+  # YONETICI sinifi zorla degistirdiginde. Ekranda olan biten oyuncunun kendi
+  # degistirdigi andakiyle AYNI (ayni bossbar, ayni baslik suresi, ayni ses);
+  # tek fark, degisikligin ondan gelmedigini soylemesi. Bunu susmak, oyuncunun
+  # sinifini ve seviyesini sebepsiz kaybettigini sanmasi demekti.
+  sinif-yonetici-bossbar: "<light_purple><simge:sinif> Sınıfın Yönetici Tarafından Değiştirildi - <white><sinif></white></light_purple>"
+  sinif-yonetici-baslik: "<light_purple>Sınıfın Değiştirildi</light_purple>"
+  sinif-yonetici-altbaslik: "<gray>Yönetici tarafından:</gray> <white><sinif></white>"
+  sinif-yonetici-sohbet: "<light_purple><simge:sinif> Sınıfın bir yönetici tarafından <white><sinif></white> olarak değiştirildi.</light_purple> <gray>Önceki sınıfının seviyesi sıfırlandı.</gray>"
   beceri-seviye-atladi: "<green><simge:seviye> <beceri> seviyesi arttı! Yeni seviye: <white><seviye></white>.</green>"
   guc-bossbar: "<green>Güç arttı! Yeni Güç: <guc></green>"
   guc-baslik: "<green>Güç Arttı!</green>"
@@ -937,7 +962,7 @@ gui:
     baslik: "<dark_gray><simge:prestij> Kalıcı Ödülünü Seç</dark_gray>"
     ust-oge: "<gold><simge:prestij> Prestij Ödülü</gold>"
     ust-aciklama: "<gray>Prestij <white><prestij></white> <dark_gray>•</dark_gray> Bekleyen seçim hakkın: <white><hak></white></gray>"
-    ust-ipucu: "<dark_gray>Seçimin kalıcıdır ve geri alınamaz. Aynı ödülü her prestijde tekrar seçebilirsin.</dark_gray>"
+    ust-ipucu: "<dark_gray>İki yoldan birini seç: daha zor ölmek ya da daha sert vurmak. Seçimin kalıcıdır ve geri alınamaz; aynı ödülü her prestijde tekrar seçebilirsin.</dark_gray>"
     sahip: "<dark_gray>Şu ana kadar <white><sayi></white> kez seçtin <dark_gray>(toplam <toplam>)</dark_gray></dark_gray>"
     sec-ipucu: "<green>Seçmek için tıkla</green>"
     can: "<red><simge:can> Dayanıklılık</red>"
@@ -981,8 +1006,8 @@ gui:
     bolum-baslangic: "<green><simge:kutlama> Başlangıç Görevleri</green>"
     bolum-baslangic-aciklama: "<gray>Sunucuyu tanıman için dört adım. Diğer bölümler bunlar bitince açılır.</gray>"
     baslangic-menu: "<white>Ana menüyü aç</white>"
-    baslangic-beceriler: "<white>Becerilerini incele</white>"
-    baslangic-kabiliyetler: "<white>Kabiliyetlerini incele</white>"
+    baslangic-beceriler: "<white>Becerilerini incele <dark_gray>(/beceri)</dark_gray></white>"
+    baslangic-kabiliyetler: "<white>Kabiliyetlerini incele <dark_gray>(/kabiliyet)</dark_gray></white>"
     baslangic-beceri-komutu: "<white>Bir beceri komutu kullan <dark_gray>(/madencilik, /avcılık vb.)</dark_gray></white>"
     baslangic-bekliyor: "<dark_gray>Henüz yapılmadı</dark_gray>"
     sekme-kilitli: "<red><simge:uyari> Başlangıç görevlerini bitirmeden açılmaz.</red>"

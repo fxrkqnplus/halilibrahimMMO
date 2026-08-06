@@ -4,12 +4,16 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.model.geom.ModelLayerLocation;
+import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,28 +44,62 @@ public final class HmmoClientMod implements ClientModInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("hmmo-client");
 
-    /** Where the badge sits on the ordinary HUD. */
-    private static final int HUD_BADGE_X = 4;
-    private static final int HUD_BADGE_Y = 4;
     /**
-     * Where the badge sits beside an open container: in the column to the left
-     * of the panel, which is where vanilla draws the potion-effect list and
-     * therefore where a player already looks to see what is affecting them.
+     * How far the badge's right edge sits from the right edge of the HUD.
+     *
+     * <p>Top <em>right</em>, not top left. The left of a Minecraft screen is
+     * where the game already stacks things a player has no control over -
+     * status effects, the debug overlay, a mod's own counters - and the
+     * countdown for the ability you just fired is the one thing on this HUD you
+     * are meant to be watching. It gets the corner nothing else claims.</p>
      */
+    private static final int HUD_BADGE_MARGIN = 4;
+    private static final int HUD_BADGE_Y = 4;
+    /** How far the badge sits from the container panel it is drawn beside. */
     private static final int SCREEN_BADGE_GAP = 6;
-    private static final int SCREEN_BADGE_WIDTH_GUESS = 110;
     /** The size of a vanilla container panel, which every one of them is centred at. */
     private static final int PANEL_WIDTH = 176;
     private static final int PANEL_HEIGHT = 166;
+    /** Widest the badge is allowed to be when its right edge is clamped to the screen. */
+    private static final int BADGE_WIDTH_GUESS = 110;
+
+    /** The model layer Asil Kurt's body is baked from. */
+    private static final ModelLayerLocation WEREWOLF_LAYER = new ModelLayerLocation(
+            Identifier.fromNamespaceAndPath(HudProtocol.NAMESPACE, "kurt_adam"), "main");
 
     private final AbilityHudState hudState = new AbilityHudState();
     private final AbilityHudRenderer hudRenderer = new AbilityHudRenderer(hudState);
-    private final HostileGlowTicker glowTicker = new HostileGlowTicker(hudState);
+    private final EntityGlowTicker glowTicker = new EntityGlowTicker(hudState);
+    private final WolfFormState wolfForms = new WolfFormState();
+    private final WolfFormTicker wolfFormTicker = new WolfFormTicker(wolfForms);
 
     @Override
     public void onInitializeClient() {
         registerModCheck();
         registerHud();
+        registerWolfForm();
+    }
+
+    /**
+     * Asil Kurt's body: one model layer and one render layer on every player
+     * renderer.
+     *
+     * <p>Both are registered unconditionally and both are inert until a server
+     * says somebody is transformed - {@link WolfFormState} starts empty, so on a
+     * single-player world this costs one {@code isEmpty()} check per player per
+     * frame.</p>
+     */
+    private void registerWolfForm() {
+        ModelLayerRegistry.registerModelLayer(WEREWOLF_LAYER, WerewolfModel::createBodyLayer);
+        LivingEntityRenderLayerRegistrationCallback.EVENT.register(
+                (entityType, renderer, helper, context) -> {
+                    if (!(renderer instanceof AvatarRenderer<?>)) {
+                        return;
+                    }
+                    helper.register(new WerewolfLayer(
+                            (AvatarRenderer<?>) renderer, context.bakeLayer(WEREWOLF_LAYER), wolfForms));
+                });
+        ClientTickEvents.END_CLIENT_TICK.register(wolfFormTicker::tick);
     }
 
     private void registerModCheck() {
@@ -97,6 +135,17 @@ public final class HmmoClientMod implements ClientModInitializer {
     private void registerHud() {
         PayloadTypeRegistry.clientboundPlay().register(HudPayload.TYPE, HudPayload.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(HudPayload.TYPE, (payload, context) -> {
+            // Two message shapes share one channel, so the type byte decides
+            // which reader gets it. Sniffed rather than tried-and-failed: a
+            // wolf-form packet fed to the ability reader would be discarded
+            // silently and look exactly like a server that had gone quiet.
+            if (HudProtocol.peekType(payload.data()) == HudProtocol.TYPE_WOLF_FORMS) {
+                HudProtocol.WolfForms forms = HudProtocol.readWolfForms(payload.data());
+                if (forms != null) {
+                    context.client().execute(() -> wolfForms.accept(forms.playerIds()));
+                }
+                return;
+            }
             HudProtocol.Message message = HudProtocol.read(payload.data());
             if (message == null) {
                 return;
@@ -111,7 +160,7 @@ public final class HmmoClientMod implements ClientModInitializer {
                 Identifier.fromNamespaceAndPath(HudProtocol.NAMESPACE, "ability_overlay"),
                 (extractor, deltaTracker) -> {
                     hudRenderer.renderVignette(extractor);
-                    hudRenderer.renderBadge(extractor, HUD_BADGE_X, HUD_BADGE_Y);
+                    hudRenderer.renderBadge(extractor, extractor.guiWidth() - HUD_BADGE_MARGIN, HUD_BADGE_Y);
                     // Low and centred, where a player's eye already is mid-fight -
                     // and only on the HUD, never over a screen: the frenzy is
                     // something you are in, not something you read in a menu.
@@ -126,7 +175,7 @@ public final class HmmoClientMod implements ClientModInitializer {
                 return;
             }
             ScreenEvents.afterExtract(screen).register((ignoredScreen, extractor, mouseX, mouseY, tickDelta) ->
-                    hudRenderer.renderBadge(extractor, badgeX(extractor.guiWidth()), badgeY(extractor.guiHeight())));
+                    hudRenderer.renderBadge(extractor, badgeRightX(extractor.guiWidth()), badgeY(extractor.guiHeight())));
         });
 
         ClientTickEvents.END_CLIENT_TICK.register(glowTicker::tick);
@@ -135,11 +184,20 @@ public final class HmmoClientMod implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             hudState.clear();
             glowTicker.tick(client);
+            // Cleared before the last tick, so that tick's job is to put every
+            // hidden player back rather than to keep hiding them.
+            wolfForms.clear();
+            wolfFormTicker.tick(client);
         });
     }
 
     /**
-     * Left of the container panel, where vanilla lists potion effects.
+     * The badge's right edge when it is drawn beside an open container panel.
+     *
+     * <p>Kept on the same side as the HUD badge, so opening a chest moves the
+     * countdown a few pixels rather than throwing it across the screen. The
+     * badge is right-aligned, so this returns where its right edge goes: just
+     * clear of the panel's right side.</p>
      *
      * <p><strong>Derived from the screen size rather than read off the
      * screen.</strong> {@code AbstractContainerScreen}'s {@code leftPos} and
@@ -153,9 +211,9 @@ public final class HmmoClientMod implements ClientModInitializer {
      * <p>Clamped so a narrow window gets an overlapping badge rather than one
      * drawn off the side of the screen.</p>
      */
-    private static int badgeX(int guiWidth) {
-        int panelLeft = (guiWidth - PANEL_WIDTH) / 2;
-        return Math.max(2, panelLeft - SCREEN_BADGE_GAP - SCREEN_BADGE_WIDTH_GUESS);
+    private static int badgeRightX(int guiWidth) {
+        int panelRight = (guiWidth + PANEL_WIDTH) / 2;
+        return Math.min(guiWidth - 2, Math.max(BADGE_WIDTH_GUESS, panelRight + SCREEN_BADGE_GAP + BADGE_WIDTH_GUESS));
     }
 
     private static int badgeY(int guiHeight) {

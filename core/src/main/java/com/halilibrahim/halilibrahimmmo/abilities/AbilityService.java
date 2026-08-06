@@ -132,14 +132,47 @@ public interface AbilityService extends PluginService {
     void clearActivationFeedback(Player player);
 
     /**
-     * The flourish {@link AbilityEffectType#LIFE_STEAL} plays when a creature
-     * this player was draining actually dies. Purely audiovisual - the healing
-     * itself happened blow by blow in {@link #handleEntityDamage} - so a caller
-     * with no life-steal running is a no-op.
+     * What the two frenzy abilities do when something they were fighting dies.
      *
-     * @param at where the creature fell, which is where the soul is torn from
+     * <p>{@link AbilityEffectType#LIFE_STEAL} plays its soul flourish, which is
+     * purely audiovisual - the healing itself happened blow by blow in
+     * {@link #handleEntityDamage}. {@link AbilityEffectType#NOBLE_WOLF} eats the
+     * kill, which is not: an animal that drops meat feeds the player where it
+     * fell. A caller with neither running is a no-op.</p>
+     *
+     * @param at         where the creature fell, which is where the soul is torn
+     *                   from and where the eating is heard
+     * @param victimType what died, which is the only thing that decides whether
+     *                   there was anything on it worth eating
      */
-    void handleCreatureDeath(Player killer, org.bukkit.Location at);
+    void handleCreatureDeath(Player killer, org.bukkit.Location at, org.bukkit.entity.EntityType victimType);
+
+    /**
+     * Cancels fall damage for a player currently in Asil Kurt's form.
+     *
+     * <p>Separate from {@link #handleEntityDamage}, which only ever sees one
+     * entity hitting another: a fall has no attacker, so it arrives on the
+     * broader event and would never reach that method.</p>
+     */
+    void handleFallDamage(org.bukkit.event.entity.EntityDamageEvent event);
+
+    /**
+     * Sends a joining player the set of players currently in Asil Kurt's form.
+     *
+     * <p>Needed because the set is only broadcast when it <em>changes</em>: a
+     * player who logs in halfway through somebody else's transformation would
+     * otherwise see a person where everybody else sees a wolf.</p>
+     */
+    void sendWolfForms(Player recipient);
+
+    /**
+     * Takes a leaving player out of the wolf-form set and tells everyone left.
+     *
+     * <p>Without this the transformation would outlive the connection: the
+     * upkeep task stops on its own, but every other client would keep drawing a
+     * wolf where a player used to be until the next change to the set.</p>
+     */
+    void handlePlayerQuit(Player player);
 
     /**
      * Puts back the Efficiency level of every pickaxe in this player's

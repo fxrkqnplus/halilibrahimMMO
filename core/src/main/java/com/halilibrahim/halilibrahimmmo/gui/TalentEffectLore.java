@@ -33,6 +33,10 @@ import java.util.Optional;
  */
 final class TalentEffectLore {
 
+    private static final long MILLIS_PER_SECOND = 1000L;
+    /** One decimal place, as a divisor - the finest this screen ever states a value to. */
+    private static final double DECIMALS_SHOWN = 10.0D;
+
     private final MessageService messages;
     private final AbilityService abilities;
 
@@ -173,12 +177,36 @@ final class TalentEffectLore {
                 .findFirst();
     }
 
+    /**
+     * A duration, snapped to whole seconds before it is worded.
+     *
+     * <p>Every number on this screen is a ratio multiplied by a base, and a
+     * ratio that has to be written down in a YAML file is never exactly the
+     * fraction it stands for: Kan Yemini's 450-second cooldown times {@code
+     * 0.0667} is 329.94 seconds, which the formatter dutifully read out as
+     * "5 dakika 29 saniye" for a talent whose comment says it takes it to 330.
+     * A second is the smallest unit this screen ever shows, so rounding to one
+     * cannot lose anything a player could have read - it only stops the
+     * arithmetic's last decimal place from leaking onto the screen.</p>
+     */
     private String duration(double millis) {
-        return DurationFormatter.ofMillis(messages, Math.max(0L, Math.round(millis)));
+        long seconds = Math.max(0L, Math.round(millis / (double) MILLIS_PER_SECOND));
+        return DurationFormatter.ofMillis(messages, seconds * MILLIS_PER_SECOND);
     }
 
-    /** Whole numbers read as "2", not "2.0"; fractional values keep one decimal. */
+    /**
+     * Whole numbers read as "2", not "2.0"; everything else keeps one decimal.
+     *
+     * <p>Snapped to a tenth <em>before</em> the whole-number test, for the same
+     * reason {@link #duration} snaps to a second: {@code 0.15 * 0.3333 * 100} is
+     * 4.9995, which is a 5 that fails an equality test against 5 and prints as
+     * "5.0" - and one rank lower the same error prints as "%0.3" where the
+     * talent means nothing of the sort.</p>
+     */
     private String format(double value) {
-        return value == Math.rint(value) ? Long.toString(Math.round(value)) : String.format(Locale.ROOT, "%.1f", value);
+        double snapped = Math.round(value * DECIMALS_SHOWN) / DECIMALS_SHOWN;
+        return snapped == Math.rint(snapped)
+                ? Long.toString(Math.round(snapped))
+                : String.format(Locale.ROOT, "%.1f", snapped);
     }
 }

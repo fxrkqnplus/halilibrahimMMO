@@ -163,6 +163,10 @@ public final class AbilitiesMenu implements GuiView {
 
         List<Component> lore = new ArrayList<>();
         lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_DESCRIPTION, Map.of("aciklama", definition.description())));
+        // An ability description is three or four sentences and wraps to five or
+        // six lines; the numbers under it are a table. Running the two together
+        // made the first number look like the end of the last sentence.
+        lore.add(Component.empty());
         lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE, Map.of(
                 "seviye", Integer.toString(definition.requiredLevel()),
                 "bekleme", DurationFormatter.ofMillis(services.messages(), cooldownMillis)
@@ -184,6 +188,9 @@ public final class AbilitiesMenu implements GuiView {
         if (isUpgraded(definition, energyCost, cooldownMillis, activeMillis, limit, effect, energyPerBlock)) {
             lore.add(services.messages().render(MessageKey.GUI_ABILITY_ITEM_LORE_UPGRADED));
         }
+        // ...and another before the call to action, so it reads as a button
+        // rather than as one more row of the table.
+        lore.add(Component.empty());
         lore.add(services.messages().render(selected
                 ? MessageKey.GUI_ABILITY_SELECTED_MARKER
                 : MessageKey.GUI_ABILITY_EQUIP_HINT));

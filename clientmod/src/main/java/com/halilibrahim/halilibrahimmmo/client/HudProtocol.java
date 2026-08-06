@@ -23,16 +23,26 @@ public final class HudProtocol {
     public static final String NAMESPACE = "hmmo";
     public static final String PATH = "hud";
 
-    public static final byte PROTOCOL_VERSION = 2;
+    public static final byte PROTOCOL_VERSION = 3;
 
     public static final byte TYPE_CLEAR = 0;
     public static final byte TYPE_ABILITY = 1;
+    /** The set of players currently in Asil Kurt's form. About other people, not the recipient. */
+    public static final byte TYPE_WOLF_FORMS = 2;
 
-    public static final int FLAG_HIGHLIGHT_HOSTILES = 1;
+    /** Refuses a longer list outright rather than allocating on a stranger's say-so. */
+    private static final int MAXIMUM_WOLF_FORMS = 64;
+
     /** The screen edge breathes in and out rather than sitting still. */
-    public static final int FLAG_PULSE = 2;
-    /** A highlighted creature burns brighter the closer it gets. */
-    public static final int FLAG_PROXIMITY_GLOW = 4;
+    public static final int FLAG_PULSE = 1;
+    /** A highlighted entity burns brighter the closer it gets. */
+    public static final int FLAG_PROXIMITY_GLOW = 2;
+    /** Hostile creatures - anything the game counts as an enemy - glow. */
+    public static final int FLAG_GLOW_MONSTERS = 4;
+    /** Ordinary creatures - animals, villagers, anything that is not an enemy - glow. */
+    public static final int FLAG_GLOW_CREATURES = 8;
+    /** Other players glow. */
+    public static final int FLAG_GLOW_PLAYERS = 16;
 
     /** Sent as the remaining time for an ability with no expiry worth counting down. */
     public static final int NO_EXPIRY = -1;
@@ -46,10 +56,53 @@ public final class HudProtocol {
     /**
      * One decoded message.
      *
-     * @param abilityId     empty for {@link #TYPE_CLEAR}
-     * @param remainingTicksAtReceipt milliseconds left when the message arrived,
-     *                      or {@link #NO_EXPIRY}
+     * @param abilityId      empty for {@link #TYPE_CLEAR}
+     * @param remainingMillis milliseconds left when the message arrived, or
+     *                       {@link #NO_EXPIRY}
      */
+    /**
+     * A decoded wolf-form broadcast.
+     *
+     * <p>Its own record rather than a field on {@link Message}, because it is a
+     * genuinely different message: it says nothing about the recipient's own
+     * ability, and mixing it into a record whose every other field would be
+     * empty would mean every reader of that record having to know which fields
+     * were meaningful this time.</p>
+     */
+    public record WolfForms(java.util.Set<java.util.UUID> playerIds) {
+    }
+
+    /** @return the decoded wolf-form set, or {@code null} when this is not one */
+    public static WolfForms readWolfForms(byte[] payload) {
+        if (payload == null || payload.length < 3 || payload.length > MAXIMUM_PAYLOAD_BYTES) {
+            return null;
+        }
+        try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(payload))) {
+            if (in.readByte() != PROTOCOL_VERSION || in.readByte() != TYPE_WOLF_FORMS) {
+                return null;
+            }
+            int count = in.readByte();
+            if (count < 0 || count > MAXIMUM_WOLF_FORMS) {
+                return null;
+            }
+            java.util.Set<java.util.UUID> playerIds = new java.util.HashSet<>(Math.max(1, count));
+            for (int index = 0; index < count; index++) {
+                playerIds.add(new java.util.UUID(in.readLong(), in.readLong()));
+            }
+            return new WolfForms(java.util.Set.copyOf(playerIds));
+        } catch (IOException exception) {
+            return null;
+        }
+    }
+
+    /** @return the message type byte, or {@code -1} when the payload is not ours at all */
+    public static byte peekType(byte[] payload) {
+        if (payload == null || payload.length < 2 || payload[0] != PROTOCOL_VERSION) {
+            return -1;
+        }
+        return payload[1];
+    }
+
     public record Message(
             byte type,
             String abilityId,
@@ -57,16 +110,11 @@ public final class HudProtocol {
             String iconItem,
             int colorRgb,
             int remainingMillis,
-            int totalMillis,
             int intensity,
             int flags,
             String comboLine,
             int comboTier
     ) {
-
-        public boolean highlightsHostiles() {
-            return (flags & FLAG_HIGHLIGHT_HOSTILES) != 0;
-        }
 
         public boolean pulses() {
             return (flags & FLAG_PULSE) != 0;
@@ -74,6 +122,18 @@ public final class HudProtocol {
 
         public boolean glowScalesWithDistance() {
             return (flags & FLAG_PROXIMITY_GLOW) != 0;
+        }
+
+        public boolean glowsMonsters() {
+            return (flags & FLAG_GLOW_MONSTERS) != 0;
+        }
+
+        public boolean glowsCreatures() {
+            return (flags & FLAG_GLOW_CREATURES) != 0;
+        }
+
+        public boolean glowsPlayers() {
+            return (flags & FLAG_GLOW_PLAYERS) != 0;
         }
     }
 
@@ -88,7 +148,7 @@ public final class HudProtocol {
             }
             byte type = in.readByte();
             if (type == TYPE_CLEAR) {
-                return new Message(TYPE_CLEAR, "", "", "", 0, 0, 0, 0, 0, "", 0);
+                return new Message(TYPE_CLEAR, "", "", "", 0, 0, 0, 0, "", 0);
             }
             if (type != TYPE_ABILITY) {
                 return null;
@@ -98,7 +158,6 @@ public final class HudProtocol {
             String iconItem = in.readUTF();
             int colorRgb = in.readInt();
             int remainingMillis = in.readInt();
-            int totalMillis = in.readInt();
             int intensity = in.readByte();
             int flags = in.readByte();
             String comboLine = in.readUTF();
@@ -107,7 +166,7 @@ public final class HudProtocol {
                 return null;
             }
             return new Message(TYPE_ABILITY, abilityId, displayName, iconItem, colorRgb,
-                    remainingMillis, Math.max(0, totalMillis), Math.max(0, Math.min(100, intensity)), flags,
+                    remainingMillis, Math.max(0, Math.min(100, intensity)), flags,
                     comboLine, Math.max(0, comboTier));
         } catch (IOException exception) {
             return null;

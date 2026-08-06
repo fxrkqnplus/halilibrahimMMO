@@ -29,8 +29,6 @@ public interface HudService extends PluginService {
      *
      * @param expiresAtMillis when it ends, or {@code 0} when it does not
      *                        (Creative, where the ability stays until switched off)
-     * @param totalMillis     how long this activation was given, so the client can
-     *                        draw progress rather than only a number
      * @param comboLine       the frenzy line to draw at the bottom of the screen,
      *                        already rendered to plain text by the server, or an
      *                        empty string when this ability has none. Rendered
@@ -42,10 +40,25 @@ public interface HudService extends PluginService {
      *                        hard to shake it
      */
     void showAbility(
-            Player player, AbilityDefinition definition, long expiresAtMillis, long totalMillis,
+            Player player, AbilityDefinition definition, long expiresAtMillis,
             String comboLine, int comboTier
     );
 
     /** Announces that whatever was running has stopped. Safe to call when nothing was. */
     void clearAbility(Player player);
+
+    /**
+     * Tells {@code recipient} which players are currently in Asil Kurt's form,
+     * so their client can draw those players as the wolf instead of as people.
+     *
+     * <p>The one message on this channel that is not about the recipient. A
+     * transformation nobody else can see is not a transformation, so this is
+     * broadcast to everybody online - including the transformed players
+     * themselves, whose own body is drawn the same way to anybody watching
+     * them.</p>
+     *
+     * <p>Carries the whole set every time, so it is safe to send on any change
+     * and on join without tracking what each client already believes.</p>
+     */
+    void showWolfForms(Player recipient, java.util.Set<java.util.UUID> transformedPlayerIds);
 }
