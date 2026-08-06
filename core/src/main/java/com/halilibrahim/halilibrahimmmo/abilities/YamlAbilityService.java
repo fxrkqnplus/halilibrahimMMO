@@ -24,6 +24,7 @@ import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.configuration.ConfigurationSection;
@@ -34,6 +35,7 @@ import org.bukkit.entity.Animals;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
@@ -44,6 +46,7 @@ import org.bukkit.entity.Tameable;
 import org.bukkit.entity.Wolf;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -55,8 +58,10 @@ import org.bukkit.util.Vector;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import net.kyori.adventure.title.Title;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -101,6 +106,41 @@ public final class YamlAbilityService implements AbilityService {
     private static final int NOBLE_WOLF_HOWLS = 3;
     /** How fast a frightened animal runs from the wolf, as a multiple of its own walking speed. */
     private static final double NOBLE_WOLF_FLEE_SPEED = 1.6D;
+    /**
+     * The extra hearts Asil Kurt carries, in health points - ten hearts.
+     *
+     * <p>Granted as an attribute modifier rather than as Health Boost, for the
+     * same reason §22.12's prestige reward is: a modifier under a stable key can
+     * be removed by name, sits alongside the class and milestone bonuses instead
+     * of fighting them, and cannot be milked off by a bucket of milk.</p>
+     */
+    private static final double NOBLE_WOLF_BONUS_HEALTH = 20.0D;
+    /** Jump Boost level while transformed. Five clears roughly four blocks - the leap the form is for. */
+    private static final int NOBLE_WOLF_JUMP_LEVEL = 5;
+    /** Strength level while transformed, as the request names it: Güç 3. */
+    private static final int NOBLE_WOLF_STRENGTH_LEVEL = 3;
+    /** Speed and Resistance levels while transformed. */
+    private static final int NOBLE_WOLF_SPEED_LEVEL = 2;
+    private static final int NOBLE_WOLF_RESISTANCE_LEVEL = 2;
+    /** Health points the water takes off the wolf on every upkeep pass. */
+    private static final double NOBLE_WOLF_WATER_DAMAGE = 2.0D;
+    /**
+     * Animals whose meat the wolf eats where it kills, mapped to the hunger the
+     * <em>cooked</em> cut would have restored.
+     *
+     * <p>Cooked rather than raw on purpose: the wolf is not eating a raw
+     * drumstick off the floor, it is a predator taking a kill, and the number
+     * that makes that feel worth doing is the one a player would have got by
+     * carrying the meat home and cooking it.</p>
+     */
+    private static final Map<EntityType, Integer> NOBLE_WOLF_PREY = Map.of(
+            EntityType.COW, 8,
+            EntityType.MOOSHROOM, 8,
+            EntityType.PIG, 8,
+            EntityType.SHEEP, 6,
+            EntityType.CHICKEN, 6,
+            EntityType.RABBIT, 5
+    );
     /** The window, in world ticks, during which Asil Kurt can be called at all. */
     private static final long NIGHT_START_TICKS = 13_000L;
     private static final long NIGHT_END_TICKS = 23_000L;
@@ -215,12 +255,25 @@ public final class YamlAbilityService implements AbilityService {
      * tick later and the thing may already be dead.
      */
     private final ConcurrentHashMap<UUID, UUID> packTargets = new ConcurrentHashMap<>();
+    /**
+     * Who is currently in wolf form, and under which ability.
+     *
+     * <p>Kept separately from the four state maps because it is the one piece of
+     * ability state that <strong>everybody else</strong> needs: the client draws
+     * a different body for these players, so the set has to be broadcast rather
+     * than sent to its owner. The ability id is the value only so a
+     * configuration reload naming a different ability cannot strand somebody in
+     * a form nothing owns.</p>
+     */
+    private final ConcurrentHashMap<UUID, String> wolfForms = new ConcurrentHashMap<>();
     private final ThreadLocal<Set<Block>> secondaryBreaks = ThreadLocal.withInitial(HashSet::new);
     /** Written onto a temporarily-enchanted pickaxe: the Efficiency level it had before. */
     private final NamespacedKey efficiencyKey;
     private final NamespacedKey mineBombKey;
     private final NamespacedKey mineBombOwnerKey;
     private final NamespacedKey mineBombAbilityKey;
+    /** The attribute modifier carrying Asil Kurt's ten extra hearts, so they can be taken off by name. */
+    private final NamespacedKey wolfHealthKey;
 
     public YamlAbilityService(
             JavaPlugin plugin, SkillService skills, MessageService messages, ProfileService profiles,
@@ -240,6 +293,7 @@ public final class YamlAbilityService implements AbilityService {
         this.mineBombKey = new NamespacedKey(plugin, "maden-bombasi");
         this.mineBombOwnerKey = new NamespacedKey(plugin, "maden-bombasi-sahip");
         this.mineBombAbilityKey = new NamespacedKey(plugin, "maden-bombasi-kabiliyet");
+        this.wolfHealthKey = new NamespacedKey(plugin, "asil-kurt-can");
     }
 
     /** The tags {@code AbilityExplosionListener} reads off a primed charge to know it is ours. */
@@ -266,6 +320,7 @@ public final class YamlAbilityService implements AbilityService {
         damageBuffs.clear();
         dropBuffs.clear();
         activeEffects.clear();
+        wolfForms.clear();
         cooldowns.clear();
         selectedAbility.clear();
         lastSelectedAbility.clear();
@@ -723,6 +778,34 @@ public final class YamlAbilityService implements AbilityService {
         messages.send(player, MessageKey.ABILITY_ENDED_ON_DEATH);
     }
 
+    /**
+     * One ability reaching the end of its own clock.
+     *
+     * <p>Only this ability's entries are dropped - matched by id, so a state
+     * belonging to something the player has since activated is left alone - and
+     * then everything it was holding on them is undone. The selection is kept:
+     * an ability running out is not the player choosing to put it down.</p>
+     */
+    private void expireActive(Player player, AbilityDefinition definition) {
+        UUID playerId = player.getUniqueId();
+        clearLeftovers(player, removeIfSameAbility(activeEffects, playerId, definition.id()));
+        clearLeftovers(player, removeIfSameAbility(damageBuffs, playerId, definition.id()));
+        removeIfSameAbility(armed, playerId, definition.id());
+        removeIfSameAbility(dropBuffs, playerId, definition.id());
+        clearActivationFeedback(player);
+    }
+
+    /** @return the removed state when it was this ability's, otherwise {@code null} */
+    private static ArmedAbility removeIfSameAbility(
+            ConcurrentHashMap<UUID, ArmedAbility> states, UUID playerId, String abilityId
+    ) {
+        ArmedAbility state = states.get(playerId);
+        if (state == null || !state.abilityId().equals(abilityId)) {
+            return null;
+        }
+        return states.remove(playerId, state) ? state : null;
+    }
+
     /** Every kind of active state this player could be holding, and whatever it left on them. */
     private void tearDown(Player player) {
         UUID playerId = player.getUniqueId();
@@ -752,8 +835,13 @@ public final class YamlAbilityService implements AbilityService {
                 player.removePotionEffect(PotionEffectType.SPEED);
                 player.removePotionEffect(PotionEffectType.RESISTANCE);
                 player.removePotionEffect(PotionEffectType.STRENGTH);
+                player.removePotionEffect(PotionEffectType.JUMP_BOOST);
+                revokeWolfHearts(player);
                 player.setGlowing(false);
                 packTargets.remove(player.getUniqueId());
+                if (wolfForms.remove(player.getUniqueId()) != null) {
+                    broadcastWolfForms();
+                }
                 // The armour is deliberately not put back on. It went into the
                 // player's own inventory, it is theirs, and re-equipping it for
                 // them would fight whatever they chose to wear in the meantime.
@@ -802,7 +890,17 @@ public final class YamlAbilityService implements AbilityService {
         pushHud(player, definition, expiresAtMillis);
         ScheduledTask task = player.getScheduler().runAtFixedRate(plugin, self -> {
             long remainingMillis = expiresAtMillis - System.currentTimeMillis();
-            if (remainingMillis <= 0 || !isStillActive(player.getUniqueId(), definition.id())) {
+            // Running out is its own path, and until §24 it was not: the timer
+            // only stopped the feedback, so anything an ability had put on the
+            // player that is not a potion effect with a matching duration - the
+            // wolf's glow, its extra hearts, its form - was left on them until
+            // they happened to die, unequip or relog. Expiry now tears down
+            // exactly what deactivation does (madde 13).
+            if (remainingMillis <= 0) {
+                expireActive(player, definition);
+                return;
+            }
+            if (!isStillActive(player.getUniqueId(), definition.id())) {
                 clearActivationFeedback(player);
                 return;
             }
@@ -1639,13 +1737,20 @@ public final class YamlAbilityService implements AbilityService {
      * already happened, blow by blow, in {@link #handleEntityDamage}.</p>
      */
     @Override
-    public void handleCreatureDeath(Player killer, Location at) {
+    public void handleCreatureDeath(Player killer, Location at, EntityType victimType) {
         ArmedAbility active = damageBuffs.get(killer.getUniqueId());
         if (active == null || active.expiresAtMillis() < System.currentTimeMillis()) {
             return;
         }
         AbilityDefinition definition = settings().definitions().get(active.abilityId());
-        if (definition == null || definition.effectType() != AbilityEffectType.LIFE_STEAL) {
+        if (definition == null) {
+            return;
+        }
+        if (definition.effectType() == AbilityEffectType.NOBLE_WOLF) {
+            devourPrey(killer, at, victimType);
+            return;
+        }
+        if (definition.effectType() != AbilityEffectType.LIFE_STEAL) {
             return;
         }
         World world = at.getWorld();
@@ -1659,6 +1764,80 @@ public final class YamlAbilityService implements AbilityService {
         for (int i = 0; i < 10; i++) {
             trail.add(step);
             world.spawnParticle(Particle.SOUL_FIRE_FLAME, trail, 2, 0.05D, 0.05D, 0.05D, 0.0D);
+        }
+    }
+
+    /**
+     * The wolf eating what it just killed.
+     *
+     * <p>Only the animals that drop meat count, and only while the form is up.
+     * The hunger paid back is what the <em>cooked</em> cut would have restored,
+     * so a hunt actually feeds the player rather than being a detour on the way
+     * to a furnace - which is the whole difference between a predator and a
+     * person with a sword.</p>
+     *
+     * <p>Saturation is deliberately left alone. Filling both would make an hour
+     * of food out of one cow; the hunger bar moving is the reward, and the
+     * saturation is still earned the ordinary way.</p>
+     */
+    private void devourPrey(Player player, Location at, EntityType victimType) {
+        Integer nourishment = NOBLE_WOLF_PREY.get(victimType);
+        if (nourishment == null) {
+            return;
+        }
+        player.setFoodLevel(Math.min(20, player.getFoodLevel() + nourishment));
+        World world = at.getWorld();
+        world.playSound(at, Sound.ENTITY_GENERIC_EAT, 1.2F, 0.7F);
+        world.playSound(at, Sound.ENTITY_WOLF_PANT, 1.0F, 0.8F);
+        world.playSound(at, Sound.ENTITY_PLAYER_BURP, 0.8F, 0.6F);
+        world.spawnParticle(Particle.ITEM_SLIME, at.clone().add(0, 0.8D, 0), 18, 0.3D, 0.3D, 0.3D, 0.02D);
+        messages.send(player, MessageKey.ABILITY_NOBLE_WOLF_DEVOURED, Map.of(
+                "aclik", Integer.toString(nourishment)
+        ));
+    }
+
+    /**
+     * Asil Kurt does not take fall damage - it is a four-block leap and landing
+     * on it would be absurd.
+     *
+     * <p>Cancelled rather than reduced: a jump the ability itself grants is not
+     * a fall the player chose, and "mostly survivable" is a worse promise than
+     * "you can jump".</p>
+     */
+    @Override
+    public void handleFallDamage(EntityDamageEvent event) {
+        if (event.getCause() != EntityDamageEvent.DamageCause.FALL
+                || !(event.getEntity() instanceof Player player)
+                || !wolfForms.containsKey(player.getUniqueId())) {
+            return;
+        }
+        event.setCancelled(true);
+    }
+
+    /**
+     * Tells every online client who is currently a wolf.
+     *
+     * <p>Broadcast rather than sent to the transformed player, because the
+     * transformation is something <em>other</em> people see. Stateless in the
+     * same way the ability HUD is: every message carries the whole set, so a
+     * client that joined late or missed one is corrected by the next rather
+     * than needing a resynchronisation path.</p>
+     */
+    private void broadcastWolfForms() {
+        Set<UUID> transformed = Set.copyOf(wolfForms.keySet());
+        plugin.getServer().getGlobalRegionScheduler().run(plugin, task ->
+                plugin.getServer().getOnlinePlayers().forEach(listener -> hud.showWolfForms(listener, transformed)));
+    }
+
+    @Override
+    public void sendWolfForms(Player recipient) {
+        hud.showWolfForms(recipient, Set.copyOf(wolfForms.keySet()));
+    }
+
+    @Override
+    public void handlePlayerQuit(Player player) {
+        if (wolfForms.remove(player.getUniqueId()) != null) {
+            broadcastWolfForms();
         }
     }
 
@@ -1712,24 +1891,35 @@ public final class YamlAbilityService implements AbilityService {
      *   played at each listener's own position so distance never mutes it.</li>
      * </ul>
      *
-     * <p><strong>The one thing this deliberately does not do is change the
-     * player's model.</strong> A werewolf model is a client-side asset - a mesh
-     * and a texture - and neither the server nor a mod that ships no assets can
-     * conjure one. What is delivered instead is everything the request asked for
-     * that a server can actually be the authority on, plus the strongest
-     * identity the game itself offers: bare, glowing, fast, and surrounded by
-     * fleeing animals.</p>
+     * <p><strong>The form has a cost, and it is water.</strong> A predator that
+     * was strictly better than not being one would simply be the way the class
+     * is played after level fifty. Ten extra hearts, Strength 3 and a four-block
+     * leap are paid for by a body that cannot be in water at all: it starts
+     * losing health on the first upkeep pass and is told to get out in the
+     * plainest words the game can put on a screen.</p>
+     *
+     * <p>The transformation itself - the model every other player sees - is
+     * client-side, and is driven by the wolf-form broadcast rather than from
+     * here; see {@code HudService#showWolfForms}.</p>
      */
     private void startNobleWolf(Player player, AbilityDefinition definition, int radius, long activeMillis) {
-        int durationTicks = (int) Math.max(1L, activeMillis / 50L);
-        player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, durationTicks, 1, false, false));
-        player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, durationTicks, 1, false, false));
-        player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, durationTicks, 1, false, false));
+        int durationTicks = (int) Math.max(1L, activeMillis / MILLIS_PER_TICK);
+        // Amplifiers are zero-based: level 2 is amplifier 1. Written as levels
+        // and converted once, because the request is in levels and every past
+        // off-by-one in this file has been somebody reading an amplifier as a
+        // level.
+        applyTimedEffect(player, PotionEffectType.SPEED, durationTicks, NOBLE_WOLF_SPEED_LEVEL);
+        applyTimedEffect(player, PotionEffectType.RESISTANCE, durationTicks, NOBLE_WOLF_RESISTANCE_LEVEL);
+        applyTimedEffect(player, PotionEffectType.STRENGTH, durationTicks, NOBLE_WOLF_STRENGTH_LEVEL);
+        applyTimedEffect(player, PotionEffectType.JUMP_BOOST, durationTicks, NOBLE_WOLF_JUMP_LEVEL);
+        grantWolfHearts(player);
         player.setGlowing(true);
         stripArmour(player);
         howlAcrossServer(player);
         comboDamage.remove(player.getUniqueId());
         packTargets.remove(player.getUniqueId());
+        wolfForms.put(player.getUniqueId(), definition.id());
+        broadcastWolfForms();
         long expiresAt = System.currentTimeMillis() + activeMillis;
         player.getScheduler().runAtFixedRate(plugin, task -> {
             if (!player.isOnline() || System.currentTimeMillis() >= expiresAt
@@ -1741,7 +1931,66 @@ public final class YamlAbilityService implements AbilityService {
             forgetPlayer(player);
             drivePack(player, radius);
             scatterPrey(player, radius);
+            punishWater(player);
         }, null, 1L, UPKEEP_PERIOD_TICKS);
+    }
+
+    /** One potion effect for exactly the ability's duration, written in levels rather than amplifiers. */
+    private void applyTimedEffect(Player player, PotionEffectType type, int durationTicks, int level) {
+        player.addPotionEffect(new PotionEffect(type, durationTicks, Math.max(0, level - 1), false, false));
+    }
+
+    /**
+     * The ten extra hearts, under a key they can be taken off by.
+     *
+     * <p>Removed first, then re-added: an ability re-fired before the previous
+     * activation's cleanup ran would otherwise stack two modifiers under one
+     * key and leave one of them behind forever.</p>
+     */
+    private void grantWolfHearts(Player player) {
+        AttributeInstance maximum = player.getAttribute(Attribute.MAX_HEALTH);
+        if (maximum == null) {
+            return;
+        }
+        maximum.removeModifier(wolfHealthKey);
+        maximum.addModifier(new AttributeModifier(
+                wolfHealthKey, NOBLE_WOLF_BONUS_HEALTH, AttributeModifier.Operation.ADD_NUMBER));
+        // Given full rather than left at the old value: the point of the
+        // transformation is that the player is suddenly much harder to kill,
+        // and ten empty hearts do not say that.
+        player.setHealth(Math.min(maximum.getValue(), player.getHealth() + NOBLE_WOLF_BONUS_HEALTH));
+    }
+
+    /** Takes the hearts back, and takes the player down with them if they were living in the top ten. */
+    private void revokeWolfHearts(Player player) {
+        AttributeInstance maximum = player.getAttribute(Attribute.MAX_HEALTH);
+        if (maximum == null) {
+            return;
+        }
+        maximum.removeModifier(wolfHealthKey);
+        player.setHealth(Math.max(1.0D, Math.min(player.getHealth(), maximum.getValue())));
+    }
+
+    /**
+     * Water, which the wolf cannot be in.
+     *
+     * <p>Damaged directly rather than through drowning, because drowning has an
+     * air meter and a grace period and this is meant to be immediate. The
+     * warning is a title rather than a chat line for the same reason: a player
+     * who has just fallen into a river is not reading chat.</p>
+     */
+    private void punishWater(Player player) {
+        if (!player.isInWater()) {
+            return;
+        }
+        player.damage(NOBLE_WOLF_WATER_DAMAGE);
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_WOLF_WHINE, 1.0F, 1.4F);
+        player.getWorld().spawnParticle(Particle.SPLASH, player.getLocation().add(0, 1, 0), 20, 0.4D, 0.5D, 0.4D, 0.1D);
+        player.showTitle(Title.title(
+                messages.render(MessageKey.ABILITY_NOBLE_WOLF_WATER_TITLE),
+                messages.render(MessageKey.ABILITY_NOBLE_WOLF_WATER_SUBTITLE),
+                Title.Times.times(Duration.ZERO, Duration.ofMillis(600), Duration.ofMillis(200))
+        ));
     }
 
     /**

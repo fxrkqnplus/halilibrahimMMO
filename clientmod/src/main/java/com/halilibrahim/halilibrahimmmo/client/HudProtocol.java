@@ -27,6 +27,11 @@ public final class HudProtocol {
 
     public static final byte TYPE_CLEAR = 0;
     public static final byte TYPE_ABILITY = 1;
+    /** The set of players currently in Asil Kurt's form. About other people, not the recipient. */
+    public static final byte TYPE_WOLF_FORMS = 2;
+
+    /** Refuses a longer list outright rather than allocating on a stranger's say-so. */
+    private static final int MAXIMUM_WOLF_FORMS = 64;
 
     /** The screen edge breathes in and out rather than sitting still. */
     public static final int FLAG_PULSE = 1;
@@ -55,6 +60,49 @@ public final class HudProtocol {
      * @param remainingMillis milliseconds left when the message arrived, or
      *                       {@link #NO_EXPIRY}
      */
+    /**
+     * A decoded wolf-form broadcast.
+     *
+     * <p>Its own record rather than a field on {@link Message}, because it is a
+     * genuinely different message: it says nothing about the recipient's own
+     * ability, and mixing it into a record whose every other field would be
+     * empty would mean every reader of that record having to know which fields
+     * were meaningful this time.</p>
+     */
+    public record WolfForms(java.util.Set<java.util.UUID> playerIds) {
+    }
+
+    /** @return the decoded wolf-form set, or {@code null} when this is not one */
+    public static WolfForms readWolfForms(byte[] payload) {
+        if (payload == null || payload.length < 3 || payload.length > MAXIMUM_PAYLOAD_BYTES) {
+            return null;
+        }
+        try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(payload))) {
+            if (in.readByte() != PROTOCOL_VERSION || in.readByte() != TYPE_WOLF_FORMS) {
+                return null;
+            }
+            int count = in.readByte();
+            if (count < 0 || count > MAXIMUM_WOLF_FORMS) {
+                return null;
+            }
+            java.util.Set<java.util.UUID> playerIds = new java.util.HashSet<>(Math.max(1, count));
+            for (int index = 0; index < count; index++) {
+                playerIds.add(new java.util.UUID(in.readLong(), in.readLong()));
+            }
+            return new WolfForms(java.util.Set.copyOf(playerIds));
+        } catch (IOException exception) {
+            return null;
+        }
+    }
+
+    /** @return the message type byte, or {@code -1} when the payload is not ours at all */
+    public static byte peekType(byte[] payload) {
+        if (payload == null || payload.length < 2 || payload[0] != PROTOCOL_VERSION) {
+            return -1;
+        }
+        return payload[1];
+    }
+
     public record Message(
             byte type,
             String abilityId,

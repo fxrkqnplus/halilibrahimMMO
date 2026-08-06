@@ -233,7 +233,11 @@ kabiliyet:
   maden-gerekli: "<red><simge:uyari> <kabiliyet> yalnızca geniş, üstü kapalı bir madende kullanılabilir.</red>"
   hayvan-gerekli: "<red><simge:uyari> <kabiliyet> için çevrende çağırabileceğin bir hayvan olmalı.</red>"
   gece-gerekli: "<red><simge:uyari> <kabiliyet> yalnızca geceleri çağrılabilir.</red> <gray>Gün batımını bekle.</gray>"
-  etkin-asil-kurt: "<dark_red><bold><simge:kabiliyet> <kabiliyet></bold></dark_red> <gray>uyandı.</gray> <white><sure></white> <gray>boyunca zırh giyemezsin; canavarlar sana yaklaşmaz, kurtlar seninle avlanır, geri kalan her şey kaçar.</gray>"
+  etkin-asil-kurt: "<dark_red><bold><simge:kabiliyet> <kabiliyet></bold></dark_red> <gray>uyandı.</gray> <white><sure></white> <gray>boyunca zırh giyemezsin; canavarlar sana yaklaşmaz, kurtlar seninle avlanır, geri kalan her şey kaçar. Hız 2, Dayanıklılık 2, Güç 3 ve 10 fazladan kalp alırsın, çok yükseğe zıplar ve düşerken zarar görmezsin. <red>Suya girme.</red></gray>"
+  # Asil Kurt suda. Baslik, cunku nehre dusmus bir oyuncu sohbet okumaz.
+  asil-kurt-su-baslik: "<dark_red><bold>SUDAN ÇIK!</bold></dark_red>"
+  asil-kurt-su-altbaslik: "<red>Kurt suda yaşayamaz - canın gidiyor.</red>"
+  asil-kurt-yedi: "<dark_red><simge:hayvancilik> Avını yerinde parçaladın.</dark_red> <gray>Açlık <white>+<aclik></white>.</gray>"
   olumle-bitti: "<yellow><simge:uyari> Öldün;</yellow> <gray>çalışan kabiliyetin sona erdi. Kuşandığın kabiliyet üzerinde kalır.</gray>"
   # ----- Kombo merdiveni (Kan Yemini ve Asil Kurt) -----
   # Ekranın altında, istemci mod'unun cizdigi satir. Basamak, kabiliyet

@@ -46,4 +46,19 @@ public interface HudService extends PluginService {
 
     /** Announces that whatever was running has stopped. Safe to call when nothing was. */
     void clearAbility(Player player);
+
+    /**
+     * Tells {@code recipient} which players are currently in Asil Kurt's form,
+     * so their client can draw those players as the wolf instead of as people.
+     *
+     * <p>The one message on this channel that is not about the recipient. A
+     * transformation nobody else can see is not a transformation, so this is
+     * broadcast to everybody online - including the transformed players
+     * themselves, whose own body is drawn the same way to anybody watching
+     * them.</p>
+     *
+     * <p>Carries the whole set every time, so it is safe to send on any change
+     * and on join without tracking what each client already believes.</p>
+     */
+    void showWolfForms(Player recipient, java.util.Set<java.util.UUID> transformedPlayerIds);
 }

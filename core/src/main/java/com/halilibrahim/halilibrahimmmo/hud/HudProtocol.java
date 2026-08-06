@@ -3,6 +3,8 @@ package com.halilibrahim.halilibrahimmmo.hud;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.UUID;
 
 /**
  * The single place the {@code hmmo:hud} wire format is written, mirrored
@@ -32,7 +34,16 @@ import java.io.IOException;
  * byte  flags, see the FLAG_ constants
  * UTF   combo line, already rendered to plain text; empty when there is none
  * byte  combo tier, 0-6
+ * -- type 2 only --
+ * byte  how many players follow, 0-64
+ * long,long  each player's UUID, most significant bits first
  * </pre>
+ *
+ * <p><strong>Type 2 is about other people, which is why it is its own
+ * message.</strong> Types 0 and 1 describe what is happening to the player
+ * receiving them; the wolf-form set describes who else on the server has to be
+ * drawn as something other than a person, so it is broadcast to everybody and
+ * carries no ability state at all.</p>
  *
  * <h2>What changed in version 3</h2>
  * <ul>
@@ -64,6 +75,17 @@ public final class HudProtocol {
 
     public static final byte TYPE_CLEAR = 0;
     public static final byte TYPE_ABILITY = 1;
+    /** The set of players currently in Asil Kurt's form - see {@link #wolfForms}. */
+    public static final byte TYPE_WOLF_FORMS = 2;
+
+    /**
+     * Hard ceiling on how many transformed players one packet names.
+     *
+     * <p>Asil Kurt is a level-fifty ability with a ten minute cooldown, so the
+     * real number is one or two; this exists so the size of a packet can never
+     * be a function of how many people are online.</p>
+     */
+    public static final int MAXIMUM_WOLF_FORMS = 64;
 
     /** Set when the screen edge should breathe in and out rather than sitting still. */
     public static final int FLAG_PULSE = 1;
@@ -90,6 +112,35 @@ public final class HudProtocol {
             out.writeByte(TYPE_CLEAR);
         } catch (IOException exception) {
             throw new IllegalStateException("HUD clear packet could not be written.", exception);
+        }
+        return buffer.toByteArray();
+    }
+
+    /**
+     * The whole set of transformed players, every time.
+     *
+     * <p>Stateless like every other message on this channel: there is no "one
+     * player started" or "one player stopped", only the current truth, so a
+     * client that missed a packet is corrected by the next one instead of
+     * leaving somebody drawn as a wolf forever.</p>
+     */
+    public static byte[] wolfForms(Collection<UUID> playerIds) {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream(2 + playerIds.size() * 16);
+        try (DataOutputStream out = new DataOutputStream(buffer)) {
+            out.writeByte(PROTOCOL_VERSION);
+            out.writeByte(TYPE_WOLF_FORMS);
+            int count = Math.min(MAXIMUM_WOLF_FORMS, playerIds.size());
+            out.writeByte(count);
+            int written = 0;
+            for (UUID playerId : playerIds) {
+                if (written++ >= count) {
+                    break;
+                }
+                out.writeLong(playerId.getMostSignificantBits());
+                out.writeLong(playerId.getLeastSignificantBits());
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("HUD wolf-form packet could not be written.", exception);
         }
         return buffer.toByteArray();
     }

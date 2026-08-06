@@ -98,6 +98,11 @@ public final class PluginMessageHudService implements HudService {
         player.sendPluginMessage(plugin, HudProtocol.CHANNEL, HudProtocol.clear());
     }
 
+    @Override
+    public void showWolfForms(Player recipient, java.util.Set<java.util.UUID> transformedPlayerIds) {
+        recipient.sendPluginMessage(plugin, HudProtocol.CHANNEL, HudProtocol.wolfForms(transformedPlayerIds));
+    }
+
     /**
      * Zero for an ability that does not tint the screen at all, and the client
      * reads zero as "draw nothing" - so the whole of §24's narrowing is carried

@@ -4,12 +4,16 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.model.geom.ModelLayerLocation;
+import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,14 +63,43 @@ public final class HmmoClientMod implements ClientModInitializer {
     /** Widest the badge is allowed to be when its right edge is clamped to the screen. */
     private static final int BADGE_WIDTH_GUESS = 110;
 
+    /** The model layer Asil Kurt's body is baked from. */
+    private static final ModelLayerLocation WEREWOLF_LAYER = new ModelLayerLocation(
+            Identifier.fromNamespaceAndPath(HudProtocol.NAMESPACE, "kurt_adam"), "main");
+
     private final AbilityHudState hudState = new AbilityHudState();
     private final AbilityHudRenderer hudRenderer = new AbilityHudRenderer(hudState);
     private final EntityGlowTicker glowTicker = new EntityGlowTicker(hudState);
+    private final WolfFormState wolfForms = new WolfFormState();
+    private final WolfFormTicker wolfFormTicker = new WolfFormTicker(wolfForms);
 
     @Override
     public void onInitializeClient() {
         registerModCheck();
         registerHud();
+        registerWolfForm();
+    }
+
+    /**
+     * Asil Kurt's body: one model layer and one render layer on every player
+     * renderer.
+     *
+     * <p>Both are registered unconditionally and both are inert until a server
+     * says somebody is transformed - {@link WolfFormState} starts empty, so on a
+     * single-player world this costs one {@code isEmpty()} check per player per
+     * frame.</p>
+     */
+    private void registerWolfForm() {
+        ModelLayerRegistry.registerModelLayer(WEREWOLF_LAYER, WerewolfModel::createBodyLayer);
+        LivingEntityRenderLayerRegistrationCallback.EVENT.register(
+                (entityType, renderer, helper, context) -> {
+                    if (!(renderer instanceof AvatarRenderer<?>)) {
+                        return;
+                    }
+                    helper.register(new WerewolfLayer(
+                            (AvatarRenderer<?>) renderer, context.bakeLayer(WEREWOLF_LAYER), wolfForms));
+                });
+        ClientTickEvents.END_CLIENT_TICK.register(wolfFormTicker::tick);
     }
 
     private void registerModCheck() {
@@ -102,6 +135,17 @@ public final class HmmoClientMod implements ClientModInitializer {
     private void registerHud() {
         PayloadTypeRegistry.clientboundPlay().register(HudPayload.TYPE, HudPayload.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(HudPayload.TYPE, (payload, context) -> {
+            // Two message shapes share one channel, so the type byte decides
+            // which reader gets it. Sniffed rather than tried-and-failed: a
+            // wolf-form packet fed to the ability reader would be discarded
+            // silently and look exactly like a server that had gone quiet.
+            if (HudProtocol.peekType(payload.data()) == HudProtocol.TYPE_WOLF_FORMS) {
+                HudProtocol.WolfForms forms = HudProtocol.readWolfForms(payload.data());
+                if (forms != null) {
+                    context.client().execute(() -> wolfForms.accept(forms.playerIds()));
+                }
+                return;
+            }
             HudProtocol.Message message = HudProtocol.read(payload.data());
             if (message == null) {
                 return;
@@ -140,6 +184,10 @@ public final class HmmoClientMod implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             hudState.clear();
             glowTicker.tick(client);
+            // Cleared before the last tick, so that tick's job is to put every
+            // hidden player back rather than to keep hiding them.
+            wolfForms.clear();
+            wolfFormTicker.tick(client);
         });
     }
 
