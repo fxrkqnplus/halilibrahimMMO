@@ -68,6 +68,15 @@ public final class ZipBackupService implements BackupService {
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss", Locale.ROOT);
     /** How long the world flush is waited for before the backup goes ahead without it. */
     private static final long FLUSH_TIMEOUT_SECONDS = 30L;
+    /**
+     * How long a startup or crash backup waits before it runs.
+     *
+     * <p>{@code onEnable} is early: the plugin is up but the server has not
+     * loaded its worlds yet, so {@code getWorlds()} is still empty and a backup
+     * taken there archives the plugin folder and nothing else. Twenty seconds is
+     * comfortably past a normal world load and still inside the first minute.</p>
+     */
+    private static final long STARTUP_DELAY_SECONDS = 20L;
     /** Directories inside a world folder that hold player state rather than terrain. */
     private static final List<String> PLAYER_DATA_FOLDERS = List.of("playerdata", "stats", "advancements");
 
@@ -103,11 +112,18 @@ public final class ZipBackupService implements BackupService {
             thread.setDaemon(true);
             return thread;
         });
+        // Delayed rather than immediate, and this is load-bearing: enable() runs
+        // before the server has finished loading its worlds, so a backup taken
+        // here saw getWorlds() return an empty list and quietly archived the
+        // plugin folder and nothing else - missing exactly the player data a
+        // crash backup exists to save. Waiting is the whole fix; the window it
+        // opens (a second crash inside the first few seconds of a boot) is not a
+        // window anything could have covered anyway.
         if (previousRunCrashed && current.onUncleanShutdown()) {
-            logger.warn("Sunucu en son DUZGUN KAPANMAMIS. Guvenlik yedegi aliniyor...");
-            backupNow("cokme");
+            logger.warn("Sunucu en son DUZGUN KAPANMAMIS. Dunyalar yuklenince guvenlik yedegi alinacak.");
+            worker.schedule(() -> backupNow("cokme"), STARTUP_DELAY_SECONDS, TimeUnit.SECONDS);
         } else if (current.onStartup()) {
-            backupNow("acilis");
+            worker.schedule(() -> backupNow("acilis"), STARTUP_DELAY_SECONDS, TimeUnit.SECONDS);
         }
         if (current.scheduled()) {
             long minutes = Math.max(1L, current.interval().toMinutes());
@@ -237,7 +253,7 @@ public final class ZipBackupService implements BackupService {
              ZipOutputStream zip = new ZipOutputStream(out)) {
             if (current.includePluginData()) {
                 snapshot = snapshotDatabase();
-                entries += addTree(zip, plugin.getDataFolder().toPath(), "eklenti", this::isNotLiveDatabase);
+                entries += addTree(zip, plugin.getDataFolder().toPath(), "eklenti", this::isArchivable);
                 if (snapshot != null) {
                     entries += addFile(zip, snapshot, "eklenti/veritabani-anlik.db");
                 } else if (databaseType != DatabaseType.SQLITE) {
@@ -370,9 +386,19 @@ public final class ZipBackupService implements BackupService {
         }
     }
 
-    /** The live database file is excluded from the plain file walk - the snapshot goes in instead. */
-    private boolean isNotLiveDatabase(Path path) {
+    /**
+     * What is left out of the plugin folder walk.
+     *
+     * <p>The live database, because the consistent snapshot goes in instead; and
+     * the crash marker, because restoring an archive that contains it would make
+     * the very next boot believe it had crashed and take another backup for no
+     * reason.</p>
+     */
+    private boolean isArchivable(Path path) {
         String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (name.equals(MARKER_NAME)) {
+            return false;
+        }
         return !(name.endsWith(".db") || name.endsWith(".db-wal") || name.endsWith(".db-shm"));
     }
 
