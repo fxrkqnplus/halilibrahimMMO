@@ -19,8 +19,11 @@
 #    Her satır MiniMessage ile yazılır: <gray>, <white>, <gold>, <bold>...
 #    <simge:guc>, <simge:enerji> gibi sunucunun kendi ikonları da çalışır.
 #
-#  ÖNEMLİ: Eşya açıklama satırları ALT SATIRA KAYMAZ, kesilir. Bir satırı
-#  60-70 karakterin altında tutun; uzun bir açıklamayı iki satıra bölün.
+#  SATIR UZUNLUĞU: Bu dosyanın satırları OLDUĞU GİBİ çizilir - başka
+#  ekranların aksine otomatik alt satıra kaydırma uygulanmaz, çünkü
+#  sayfaların düzenini siz kuruyorsunuz. Bir satırı görünen 78 karakterin
+#  altında tutun (MiniMessage etiketleri sayılmaz); daha uzunu istemcide
+#  kesilir. Boş satır ("") paragraf arası bırakır.
 # =====================================================================
 
 kategoriler:
@@ -96,7 +99,7 @@ kategoriler:
           - "<gray>Dar ama derin bir uzman. Yaratık öldürerek büyür,</gray>"
           - "<gray>kabiliyetlerinin hepsi dövüşle ilgilidir.</gray>"
           - ""
-          - "<yellow>Kabiliyetleri kılıçla DA baltayla DA çalışır.</yellow>"
+          - "<yellow>Kabiliyetleri kılıçla ya da baltayla çalışır.</yellow>"
           - ""
           - "<white>10</white> <gray>B Planı - 5 sn boyunca yaratıklar seni göremez</gray>"
           - "<white>20</white> <gray>Avcı Odağı - PvE hasarın %50 artar</gray>"
@@ -146,12 +149,15 @@ kategoriler:
         satirlar:
           - "<gray><white>/sınıf</white> ekranından değiştirilir.</gray>"
           - ""
-          - "<red>İki şeyi bilerek yap:</red>"
-          - "<gray>• Ayrıldığın sınıfın seviyesi <white>tamamen sıfırlanır</white>.</gray>"
-          - "<gray>• Bir daha değiştirmek için <white>7 gün</white> beklersin.</gray>"
+          - "<red>Ayrıldığın sınıf tamamen sıfırlanır:</red>"
+          - "<gray>• Sınıf seviyesi 1'e döner.</gray>"
+          - "<gray>• O sınıfın odak ağacındaki bütün rankler silinir.</gray>"
           - ""
-          - "<gray>Harcadığın yetenek puanları kaybolmaz - onlar bütün</gray>"
-          - "<gray>sınıflar arasında paylaşılır.</gray>"
+          - "<green>Karşılığında o rankler için harcadığın bütün özellik ve</green>"
+          - "<green>kabiliyet puanları sana geri döner</green><gray>; yeni sınıfının</gray>"
+          - "<gray>ağacına yeniden harcarsın.</gray>"
+          - ""
+          - "<gray>Bir daha değiştirmek için <white>7 gün</white> beklersin.</gray>"
 
   # -------------------------------------------------------------------
   beceriler:
@@ -277,6 +283,53 @@ kategoriler:
           - ""
           - "<gray>Alet yalnızca <white>başlatmak</white> için gerekir. Bir kez</gray>"
           - "<gray>çalıştıktan sonra eşya değiştirmen onu bozmaz.</gray>"
+      - baslik: "<dark_red>Asil Kurt - dönüşüm</dark_red>"
+        simge: BONE
+        satirlar:
+          - "<gray>Tabiat Vârisi'nin 50. seviye kabiliyeti ve sınıfın son</gray>"
+          - "<gray>sözü. <white>Yalnızca geceleri</white> çağrılır; gündüz denersen</gray>"
+          - "<gray>ne enerji ne bekleme harcanır, sadece reddedilirsin.</gray>"
+          - ""
+          - "<gray>Açtığın anda tüm sunucu üç kez uluma duyar ve</gray>"
+          - "<gray>bir dakika boyunca <white>bir kurt olursun</white> - herkes seni</gray>"
+          - "<gray>öyle görür, çünkü model istemci mod'unda vardır.</gray>"
+          - ""
+          - "<white>Kazandıkların</white>"
+          - "<gray>• Hız 2, Dayanıklılık 2, Güç 3, Zıplama 5</gray>"
+          - "<gray>• <white>10 fazladan kalp</white> (canın da o kadar dolar)</gray>"
+          - "<gray>• 20 bloğa kadar düşme hasarı almazsın</gray>"
+          - "<gray>• Canavarlar seni göremez, kurtlar seninle avlanır</gray>"
+          - "<gray>• Et düşüren avını yerinde yersin, açlığın dolar</gray>"
+          - ""
+          - "<white>Ödediklerin</white>"
+          - "<gray>• Zırhın çıkar ve süre boyunca giyemezsin</gray>"
+          - "<gray>• <red>Suya giremezsin</red> - canın gider</gray>"
+          - "<gray>• Slotbarın gider, yerine Kurt Pençeleri gelir</gray>"
+          - "<gray>• Bekleme süresi <white>10 dakika</white></gray>"
+      - baslik: "<dark_red>Asil Kurt - pençeler ve güneş</dark_red>"
+        simge: SUNFLOWER
+        satirlar:
+          - "<white>Kurt Pençeleri</white>"
+          - "<gray>Dönüşürken slotbarındaki dokuz eşya güvenle saklanır ve</gray>"
+          - "<gray>yerine pençeler gelir. Süre boyunca slot değiştiremez,</gray>"
+          - "<gray>eşya bırakamaz, envanterine dokunamaz ve yerden bir</gray>"
+          - "<gray>şey alamazsın. Süre bitince hepsi geri gelir -</gray>"
+          - "<gray>sunucu çökse bile: kayıt oyuncunun kendi verisindedir.</gray>"
+          - ""
+          - "<white>Yere çakılma</white>"
+          - "<gray>Havadayken <white>shift</white>'e basılı tut: kendini yere</gray>"
+          - "<gray>fırlatırsın. İnişte bir sarsıntı olur, 6 blok</gray>"
+          - "<gray>yarıçapındaki yaratıklar hasar alıp savrulur.</gray>"
+          - "<gray>Merkeze ne kadar yakınsa o kadar sert vurur.</gray>"
+          - "<gray>Oyunculara dokunmaz ve bu dalışın kendisi düşme</gray>"
+          - "<gray>hasarı vermez.</gray>"
+          - ""
+          - "<white>Sabah olursa</white>"
+          - "<gray>Ekranında <gold>GÜNEŞTEN KAÇ</gold> yazar ve canın azalmaya</gray>"
+          - "<gray>başlar. Kabiliyet kendi saatiyle bitmez - <white>gökyüzü</white></gray>"
+          - "<white>ışığı hiç ulaşmayan</white> <gray>bir yere (mağara, kapalı bir</gray>"
+          - "<gray>oda) girip <white>5 saniye</white> beklemen gerekir. O zaman</gray>"
+          - "<gray>yavaşça insana dönersin.</gray>"
 
   # -------------------------------------------------------------------
   enerji:
@@ -353,14 +406,25 @@ kategoriler:
           - ""
           - "<gray>Menüde bir yeteneğin üstüne geldiğinde her rankın tam</gray>"
           - "<gray>olarak ne verdiği ve şu ana kadarki toplam yazar.</gray>"
-      - baslik: "<blue>Puanlar kaybolmaz</blue>"
+      - baslik: "<blue>Puanların üst sınırı</blue>"
         simge: TOTEM_OF_UNDYING
         satirlar:
-          - "<gray>İki havuz da <white>bütün sınıflar arasında paylaşılır</white>.</gray>"
-          - "<gray>Sınıf değiştirmek harcanmış rankları silmez.</gray>"
+          - "<gray>Her iki havuz da <white>ağacın alabileceği kadar</white> büyür.</gray>"
+          - "<gray>Sınıfının bütün yeteneklerini son rankına kadar</gray>"
+          - "<gray>doldurduğunda o havuz artmayı bırakır - harcanacak</gray>"
+          - "<gray>yer kalmamışken sayacın yükselmeye devam etmesi</gray>"
+          - "<gray>hiçbir şey ifade etmiyordu.</gray>"
+          - ""
+          - "<gray>Özellik havuzunun sınırına bulut sandığının iki</gray>"
+          - "<gray>genişletmesi de dâhildir.</gray>"
+      - baslik: "<blue>Puanlar kaybolmaz</blue>"
+        simge: EXPERIENCE_BOTTLE
+        satirlar:
+          - "<gray>Sınıf değiştirdiğinde ayrıldığın sınıfa harcadığın</gray>"
+          - "<gray>bütün puanlar <white>geri döner</white>.</gray>"
           - ""
           - "<gray>Yapılandırmadan bir yetenek kaldırılırsa o yeteneğe</gray>"
-          - "<gray>harcanmış puanlar sana geri döner.</gray>"
+          - "<gray>harcanmış puanlar da sana geri döner.</gray>"
 
   # -------------------------------------------------------------------
   gorevler:
@@ -496,10 +560,16 @@ kategoriler:
           - "<gray>  (hem beceri hem sınıf XP'sinde, üst üste biner)</gray>"
           - "<gray>• Sınıfına özgü kalıcı bonus (can / hasar / enerji)</gray>"
           - "<gray>• 4 özellik + 2 kabiliyet puanı</gray>"
-          - "<gray>• Liderlik tablosunda ham seviyeden bağımsız üstünlük</gray>"
+          - "<gray>• Bir milyon saygınlık</gray>"
           - "<gray>• <white>/ev</white>, <white>/takas</white> ve <white>/çanta</white> kalıcı olarak açılır</gray>"
           - ""
-          - "<gray>Prestij sunucu genelinde duyurulur, havai fişek atılır.</gray>"
+          - "<gray>Ayrıca <white>iki seçim</white> yaparsın ve ikisi de zorunludur:</gray>"
+          - "<white>1.</white> <gray>Dört <white>kalıcı bonustan</white> biri - can, PvE hasarı,</gray>"
+          - "<gray>   maksimum enerji ya da beceri XP'si. Aynısını her</gray>"
+          - "<gray>   rankta tekrar seçebilirsin, üst üste biner.</gray>"
+          - "<white>2.</white> <gray>İki <white>eşya sandığından</white> biri - savaş ya da maden.</gray>"
+          - ""
+          - "<gray>Seçimini yapana kadar diğer MMO ekranları açılmaz.</gray>"
 
   # -------------------------------------------------------------------
   bosslar:
@@ -595,14 +665,16 @@ kategoriler:
       - baslik: "<dark_aqua>Bulut Sandığı (/çanta)</dark_aqua>"
         simge: ENDER_CHEST
         satirlar:
-          - "<gray>Tek sandık kapasitesinde, <white>ölünce kaybolmayan</white></gray>"
-          - "<gray>kişisel bir depo. İçindekiler veritabanında durur,</gray>"
-          - "<gray>envanterinde değil - ne lav ne ölüm ona ulaşabilir.</gray>"
-          - ""
-          - "<gray>Her biyomda, her dünyada, her yerde açılır.</gray>"
+          - "<gray><white>Ölünce kaybolmayan</white> kişisel bir depo.</gray>"
+          - "<gray>İçindekiler veritabanında durur, envanterinde değil -</gray>"
+          - "<gray>ne lav ne ölüm ona ulaşabilir. Her dünyada açılır.</gray>"
           - ""
           - "<gray>Açılma şartı: <white>30. sınıf seviyesi</white> ya da en az bir</gray>"
           - "<gray>kez prestij yapmış olmak.</gray>"
+          - ""
+          - "<gray><white>18 slotla</white> açılır. Odak ağacındaki düğmeden bir</gray>"
+          - "<gray>özellik puanı karşılığında <white>+7 slot</white> alınır, en fazla</gray>"
+          - "<gray>iki kez: <white>18 → 25 → 32</white>.</gray>"
       - baslik: "<dark_aqua>Ev ve Takas</dark_aqua>"
         simge: RED_BED
         satirlar:

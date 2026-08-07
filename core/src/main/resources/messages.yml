@@ -60,6 +60,18 @@ yonetici:
   versiyon: "<yellow>HalilIbrahimMMO</yellow> <gray>sürüm</gray> <white><surum></white> <dark_gray>|</dark_gray> <gray>Paper <white><paper_surumu></white> için geliştirildi.</gray>"
   debug-acildi: "<green>Hata ayıklama modu <white>açıldı</white>.</green>"
   debug-kapatildi: "<yellow>Hata ayıklama modu <white>kapatıldı</white>.</yellow>"
+  yedek-basladi: "<aqua><simge:bilgi> Yedek aliniyor...</aqua> <gray>Dunyalar kaydediliyor, bu birkac saniye surebilir.</gray>"
+  yedek-bitti: "<green><simge:tamam> Yedek alindi:</green> <white><dosya></white> <gray>(<dosya-sayisi> dosya, <boyut> MB)</gray>"
+  yedek-kapali: "<red><simge:uyari> Yedekleme kapali. <white>yedek.yml -> etkin: true</white> yapin.</red>"
+  yedek-zaten-calisiyor: "<yellow><simge:uyari> Zaten bir yedek aliniyor.</yellow>"
+  yedek-icerik-yok: "<red><simge:uyari> yedek.yml'de hicbir icerik secili degil - yedeklenecek bir sey yok.</red>"
+  yedek-cok-buyuk: "<red><simge:uyari> Arsiv boyut sinirini asti ve silindi. Konsolu okuyun.</red>"
+  yedek-yazilamadi: "<red><simge:uyari> Yedek yazilamadi. Konsoldaki hata satirini okuyun.</red>"
+  envanter-alindi: "<green><simge:tamam> <white><esya></white> x<adet> alındı.</green> <gray>(<oyuncu>)</gray>"
+  envanter-verildi: "<green><simge:tamam> <white><esya></white> x<adet> verildi.</green> <gray>(<oyuncu>)</gray>"
+  envanter-hedef-dolu: "<red><simge:uyari> Oyuncunun envanterinde yer yok.</red>"
+  envanter-kendi-dolu: "<red><simge:uyari> Kendi envanterinde yer yok.</red>"
+  envanter-cevrimdisi: "<red><simge:uyari> <white><oyuncu></white> çevrimiçi değil - envanteri açılamaz.</red>"
   boss-cagirildi: "<gold><simge:boss> Dünya bossu çağırıldı:</gold> <white><isim></white> <gray>(koordinatlar sohbete duyuruldu)</gray>"
   boss-oyuncu-yok: "<red>Boss çağırmak için normal dünyada en az bir oyuncu çevrimiçi olmalı.</red>"
   # Boss cagirma ekranindaki isim akisi. Isim yalnizca bir sonraki cagirma
@@ -626,6 +638,32 @@ gui:
     tum-oyuncular-oge: "<gold>Tüm Oyuncular</gold>"
     tum-oyuncular-aciklama: "<gray>Çevrimdışı oyuncular dahil, kayıtlı her oyuncuyu düzenlemek için tıkla.</gray>"
     tum-oyuncular-baslik: "<dark_gray>Tüm Oyuncular</dark_gray>"
+    # ----- Yedekleme (Faz 25) -----
+    yedek-oge: "<aqua>Yedek Al</aqua>"
+    yedek-aciklama: "<gray>Dunyalari kaydeder, veritabaninin tutarli bir kopyasini cikarir ve hepsini bir ZIP arsivine yazar.<newline>Ayarlar: <white>yedek.yml</white></gray>"
+    yedek-son: "<dark_gray>Son yedek: <white><sure></white> once</dark_gray>"
+    yedek-hic: "<dark_gray>Bu oturumda henuz yedek alinmadi.</dark_gray>"
+    yedek-kapali: "<red>Yedekleme kapali <dark_gray>(yedek.yml -> etkin)</dark_gray></red>"
+    # ----- Oyuncu envanteri ekrani (Faz 25) -----
+    # Cevrimici bir oyuncunun envanterini oldugu gibi gosterir ve iki yonlu
+    # tasima yapar: ustteki bir esyaya tiklamak onu YONETICIYE alir, kendi
+    # envanterindeki bir esyaya tiklamak onu OYUNCUYA verir.
+    envanter-baslik: "<dark_gray>Envanter</dark_gray> <gray>-</gray> <white><oyuncu></white>"
+    envanter-oge: "<aqua>Envanterini Gör</aqua>"
+    envanter-aciklama: "<gray>Oyuncunun envanterini, zırhını ve durumunu gör • Yalnızca çevrimiçiyken</gray>"
+    envanter-ipucu: "<gray>Üstteki bir eşyaya tıkla: <white>sen alırsın</white>.<newline>Kendi envanterindeki bir eşyaya tıkla: <white>ona verirsin</white>.<newline><dark_gray>Yığının tamamı taşınır.</dark_gray></gray>"
+    envanter-durum: "<gold><oyuncu></gold>"
+    envanter-can: "<red><simge:can> Can: <white><can></white> / <white><maksimum></white></red>"
+    envanter-aclik: "<gold><simge:tarimcilik> Açlık: <white><aclik></white> / 20 <dark_gray>(doyum <doyum>)</dark_gray></gold>"
+    envanter-zirh: "<aqua><simge:sinif> Zırh puanı: <white><zirh></white> / 20</aqua>"
+    envanter-konum: "<dark_gray><dunya> <white><x></white>, <white><y></white>, <white><z></white></dark_gray>"
+    envanter-slot-kask: "<gray>Başlık</gray>"
+    envanter-slot-govde: "<gray>Gövde</gray>"
+    envanter-slot-pantolon: "<gray>Bacak</gray>"
+    envanter-slot-bot: "<gray>Ayak</gray>"
+    envanter-slot-sol-el: "<gray>Sol el</gray>"
+    envanter-dayaniklilik: "<dark_gray>Dayanıklılık: <white><kalan></white> / <white><toplam></white> <dark_gray>(%<yuzde>)</dark_gray></dark_gray>"
+    envanter-yenile: "<green>Yenile</green>"
     duzenle-baslik: "<dark_gray>Oyuncu Düzenle</dark_gray>"
     duzenle-bilgi-oge: "<gold><oyuncu></gold>"
     duzenle-bilgi-aciklama: "<gray>Güç <white><seviye></white> <dark_gray>|</dark_gray> Prestij <white><prestij></white> <dark_gray>|</dark_gray> Sınıf <white><sinif></white></gray>"
@@ -718,6 +756,11 @@ gui:
     ust-aciklama: "<gray>Aşağıdaki başlıklardan birine tıkla.</gray>"
     ust-ipucu: "<dark_gray>Açılan sayfada bir konunun üstüne gel, anlatım orada.</dark_gray>"
     konu-sayisi: "<dark_gray><sayi> konu <dark_gray>•</dark_gray> Açmak için tıkla</dark_gray>"
+    # Bir bolumun icindeyken diger bolumlere ana ekrana donmeden gecilir.
+    onceki-bolum: "<yellow>◀ Önceki bölüm</yellow>"
+    sonraki-bolum: "<yellow>Sonraki bölüm ▶</yellow>"
+    bolum-konumu: "<dark_gray><sira>/<toplam> bölüm</dark_gray>"
+    konu-ipucu: "<dark_gray>Üstüne gel - anlatımın tamamı burada.</dark_gray>"
 
   # "Eklenti Hakkında" ekrani (/menu ve /haliladmin icinden acilir).
   krediler:

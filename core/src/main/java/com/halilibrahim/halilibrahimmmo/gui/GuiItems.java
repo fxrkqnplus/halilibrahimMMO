@@ -48,6 +48,31 @@ public final class GuiItems {
         return item;
     }
 
+    /**
+     * The same item with its lore left exactly as it was written.
+     *
+     * <p>For the one screen whose text is broken into lines by a human on
+     * purpose: the handbook. {@code rehber.yml} is authored as a page - blank
+     * lines between paragraphs, a deliberate break after a heading, columns of
+     * "10  B Planı" that only line up because each is its own row - and running
+     * that through {@link LoreWrapper}'s 42-character budget re-broke every line
+     * a second time, at a different place, leaving each one as a long row
+     * followed by a stub. Wrapping helps prose nobody measured; it damages a
+     * layout somebody did.</p>
+     *
+     * <p>{@code GuideConfigTest} is the other half of this: it holds the
+     * handbook's own lines to a width a client will not truncate, which is a
+     * check that only matters once nothing downstream is rewrapping them.</p>
+     */
+    public static ItemStack ofPreformatted(Material material, Component name, List<Component> lore) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(undecorate(name));
+        meta.lore(lore.stream().map(GuiItems::undecorate).toList());
+        item.setItemMeta(meta);
+        return item;
+    }
+
     /** A {@link Material#PLAYER_HEAD} actually wearing {@code owner}'s skin, not a generic Steve head. */
     public static ItemStack playerHead(OfflinePlayer owner, Component name, List<Component> lore) {
         ItemStack item = of(Material.PLAYER_HEAD, name, lore);

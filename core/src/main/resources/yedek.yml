@@ -1,0 +1,71 @@
+# =====================================================================
+#  HalilIbrahimMMO - Yedekleme
+# =====================================================================
+#  NE ISE YARAR
+#  Sunucu duzgun kapanmadiginda (elektrik kesintisi, "kill -9", cokme)
+#  iki sey birden riske girer: SQLite veritabaninin yarim yazilmis
+#  olmasi ve oyuncu envanterlerinin son otomatik kayitta kalmasi. Bu
+#  bolum, o iki seyi bir ZIP arsivine alir.
+#
+#  NASIL CALISIR
+#  1) Once butun dunyalara "kendini kaydet" denir ve beklenir.
+#  2) SQLite veritabaninin TUTARLI bir kopyasi cikarilir (VACUUM INTO).
+#     Canli .db dosyasi arsive KONULMAZ - yarim yazilmis bir dosyayi
+#     geri yuklemek ikinci bir arizadir.
+#  3) Secilen icerik zip'lenir, eski arsivler silinir.
+#
+#  Arsivler sunucu kokunde "klasor" ile belirtilen dizine yazilir ve
+#  "hmmo-<tarih>-<sebep>.zip" olarak adlandirilir. Sebep dortten biridir:
+#    acilis   - "aciliste-al" acikken her acilista
+#    cokme    - onceki kapanis duzgun degildiyse
+#    zamanli  - "aralik-dakika" dolunca
+#    elle     - /haliladmin ekranindan
+#
+#  DIKKAT: Bu, sunucunuzun kendi yedegini almanin yerine gecmez. Ayni
+#  diskteki bir arsiv disk arizasindan kurtarmaz. Uzak bir yere kopya
+#  almaya devam edin.
+# =====================================================================
+
+# Ana anahtar. false yapilirsa hicbir yedek alinmaz, cokme kontrolu de
+# calismaz.
+etkin: true
+
+# Arsivlerin yazilacagi klasor (sunucu kokune gore).
+klasor: "hmmo-yedekler"
+
+# Zamanli yedek araligi, DAKIKA. 0 yazilirsa zamanli yedek kapanir ve
+# yalnizca acilis/cokme/elle yedekleri alinir.
+aralik-dakika: 360
+
+# Kac arsiv saklanacak. Bu sayidan eskiler otomatik silinir.
+saklanan-adet: 8
+
+# Her acilista bir yedek al. Varsayilan kapali: sik yeniden baslatilan
+# bir sunucuda saklama kotasini tek gunde doldurur.
+aciliste-al: false
+
+# Onceki kapanis duzgun degildiyse acilista yedek al. Bu bolumun asil
+# sebebi budur; kapatmadan once iki kere dusunun.
+cokmeden-sonra-al: true
+
+icerik:
+  # Eklentinin kendi klasoru: butun YAML ayarlari ve (SQLite ise)
+  # veritabaninin tutarli kopyasi. MySQL/MariaDB/PostgreSQL kullanan
+  # sunucularda veritabani harici oldugu icin arsive konulamaz; arsivin
+  # icine bunu soyleyen bir not dosyasi konur.
+  eklenti-verisi: true
+
+  # Her dunyanin playerdata / stats / advancements klasorleri ve
+  # level.dat dosyasi. Bir cokmede gercekten kaybedilen sey budur ve
+  # birkac megabayttir.
+  oyuncu-verisi: true
+
+  # DUNYALARIN TAMAMI. Kapali gelir ve bilerek: uzun sureli bir hayatta
+  # kalma haritasi gigabaytlarcadir ve her yedekte bastan kopyalanir.
+  # Acmadan once "maksimum-boyut-mb" degerini de yukseltin.
+  dunyalar: false
+
+# Bu boyutu asan bir arsiv yazildigi yerde SILINIR ve konsola sebebi
+# yazilir - dolu bir diskin sunucuyu durdurmasindansa yedegin
+# alinmamasi yeglenir.
+maksimum-boyut-mb: 2048

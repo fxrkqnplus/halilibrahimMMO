@@ -1,5 +1,6 @@
 package com.halilibrahim.halilibrahimmmo.gui;
 
+import com.halilibrahim.halilibrahimmmo.locale.DurationFormatter;
 import com.halilibrahim.halilibrahimmmo.locale.MessageKey;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -33,6 +34,7 @@ public final class AdminMenu implements GuiView {
     private static final int BOSS_SLOT = 30;
     private static final int VERSION_SLOT = 32;
     private static final int MODCHECK_SLOT = 34;
+    private static final int BACKUP_SLOT = 28;
     private static final int CREDITS_SLOT = 40;
 
     private final GuiServices services;
@@ -103,11 +105,72 @@ public final class AdminMenu implements GuiView {
                 services.messages().render(MessageKey.GUI_ADMIN_MODCHECK_ITEM),
                 List.of(services.messages().render(MessageKey.GUI_ADMIN_MODCHECK_LORE))
         ));
+        // Sits next to the boss button on the third row: both are one-click
+        // operations with a server-wide effect, unlike the screens above them.
+        inventory.setItem(BACKUP_SLOT, GuiItems.of(
+                Material.CHEST_MINECART,
+                services.messages().render(MessageKey.GUI_ADMIN_BACKUP_ITEM),
+                List.of(
+                        services.messages().render(MessageKey.GUI_ADMIN_BACKUP_LORE),
+                        backupStatusLine()
+                )
+        ));
         inventory.setItem(CREDITS_SLOT, GuiItems.of(
                 Material.NETHER_STAR,
                 services.messages().render(MessageKey.GUI_ADMIN_CREDITS_ITEM),
                 List.of(services.messages().render(MessageKey.GUI_ADMIN_CREDITS_LORE))
         ));
+    }
+
+    /**
+     * When the last backup finished, or why there has not been one.
+     *
+     * <p>Read from the service rather than from the archive folder: what an
+     * operator wants to know before pressing the button is whether the automatic
+     * one is working, and a folder listing cannot tell them that a disabled
+     * service is why it is empty.</p>
+     */
+    private Component backupStatusLine() {
+        if (!services.backups().settings().enabled()) {
+            return services.messages().render(MessageKey.GUI_ADMIN_BACKUP_DISABLED);
+        }
+        return services.backups().lastBackupAt()
+                .map(at -> services.messages().render(MessageKey.GUI_ADMIN_BACKUP_LAST, Map.of(
+                        "sure", DurationFormatter.ofMillis(services.messages(),
+                                Math.max(0L, System.currentTimeMillis() - at.toEpochMilli()))
+                )))
+                .orElseGet(() -> services.messages().render(MessageKey.GUI_ADMIN_BACKUP_NEVER));
+    }
+
+    /**
+     * Runs one backup and reports what happened, in Turkish, on the same screen.
+     *
+     * <p>The screen is deliberately left open. A backup can take a minute on a
+     * large world, and closing the panel would make it look as though the click
+     * had done nothing; the completion line arrives in chat when it is genuinely
+     * finished.</p>
+     */
+    private void runBackup(Player player) {
+        services.messages().send(player, MessageKey.BACKUP_STARTED);
+        services.backups().backupNow("elle").thenAccept(result ->
+                player.getScheduler().run(services.plugin(), task -> {
+                    if (result.successful()) {
+                        services.messages().send(player, MessageKey.BACKUP_DONE, Map.of(
+                                "dosya", result.fileName(),
+                                "dosya-sayisi", Integer.toString(result.entries()),
+                                "boyut", Long.toString(Math.max(1L, result.bytes() / 1024L / 1024L))
+                        ));
+                    } else {
+                        services.messages().send(player, switch (result.reason()) {
+                            case DISABLED -> MessageKey.BACKUP_FAILED_DISABLED;
+                            case ALREADY_RUNNING -> MessageKey.BACKUP_FAILED_RUNNING;
+                            case NOTHING_TO_DO -> MessageKey.BACKUP_FAILED_EMPTY;
+                            case TOO_LARGE -> MessageKey.BACKUP_FAILED_TOO_LARGE;
+                            case OK, WRITE_FAILED -> MessageKey.BACKUP_FAILED_WRITE;
+                        });
+                    }
+                    GuiManager.open(player, new AdminMenu(services));
+                }, null));
     }
 
     @Override
@@ -130,6 +193,7 @@ public final class AdminMenu implements GuiView {
             // A screen rather than a button since Faz 21: staff running an
             // event need to choose the tier, and sometimes the name.
             case BOSS_SLOT -> GuiManager.open(player, new AdminBossMenu(services));
+            case BACKUP_SLOT -> runBackup(player);
             case CREDITS_SLOT -> GuiManager.open(player, new CreditsMenu(services, true));
             default -> {
             }
