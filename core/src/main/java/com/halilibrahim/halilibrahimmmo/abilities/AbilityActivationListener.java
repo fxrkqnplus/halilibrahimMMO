@@ -13,10 +13,17 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerAttemptPickupItemEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
@@ -273,6 +280,10 @@ public final class AbilityActivationListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         abilities.restoreEfficiency(event.getPlayer());
+        // The same guarantee for the wolf's claws: a server that went down
+        // mid-transformation left somebody's hotbar in their own persistent
+        // data, and this is where it comes back.
+        abilities.restoreHotbarIfStranded(event.getPlayer());
         // The wolf-form set is only broadcast when it changes, so somebody
         // joining mid-transformation has to be told the current truth once.
         abilities.sendWolfForms(event.getPlayer());
@@ -302,6 +313,87 @@ public final class AbilityActivationListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamage(EntityDamageEvent event) {
         abilities.handleFallDamage(event);
+    }
+
+    /**
+     * Sneaking in mid-air is Asil Kurt throwing itself at the ground.
+     *
+     * <p>Never cancelled: the sneak itself is the player's, and the ability
+     * reads it rather than consuming it. Every non-wolf, non-airborne case is
+     * turned away inside the service, which is the only place that knows who is
+     * transformed.</p>
+     */
+    @EventHandler
+    public void onToggleSneak(PlayerToggleSneakEvent event) {
+        abilities.handleSneak(event.getPlayer(), event.isSneaking());
+    }
+
+    /**
+     * The claws stay in the hand. Asil Kurt takes the hotbar away and gives back
+     * one item, and these four handlers are what make that stick: no switching
+     * slots, no dropping, no swapping to the off hand, no moving anything in any
+     * inventory, and nothing picked up off the floor.
+     *
+     * <p><strong>Refused rather than silently ignored</strong>, and refused with
+     * one message per gesture rather than per attempt - a player mashing a number
+     * key should learn the rule once, not sixty times. The action bar is the
+     * surface for exactly this reason: it overwrites itself.</p>
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onItemHeld(PlayerItemHeldEvent event) {
+        if (!abilities.isTransformed(event.getPlayer().getUniqueId())) {
+            return;
+        }
+        event.setCancelled(true);
+        event.getPlayer().sendActionBar(messages.render(MessageKey.ABILITY_NOBLE_WOLF_LOCKED_SLOT));
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onDropItem(PlayerDropItemEvent event) {
+        if (!abilities.isTransformed(event.getPlayer().getUniqueId())) {
+            return;
+        }
+        event.setCancelled(true);
+        event.getPlayer().sendActionBar(messages.render(MessageKey.ABILITY_NOBLE_WOLF_LOCKED_ITEMS));
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onSwapHands(PlayerSwapHandItemsEvent event) {
+        if (abilities.isTransformed(event.getPlayer().getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player) || !abilities.isTransformed(player.getUniqueId())) {
+            return;
+        }
+        event.setCancelled(true);
+        player.sendActionBar(messages.render(MessageKey.ABILITY_NOBLE_WOLF_LOCKED_ITEMS));
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (event.getWhoClicked() instanceof Player player && abilities.isTransformed(player.getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Nothing is picked up while the claws are on.
+     *
+     * <p>The drop stays where it fell rather than being destroyed, and vanilla
+     * leaves it there for five minutes - far longer than the transformation
+     * lasts - so this costs a player nothing but a walk back. It is also the only
+     * version of "no other items" that does not quietly refill the hotbar the
+     * ability just emptied.</p>
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onPickup(PlayerAttemptPickupItemEvent event) {
+        if (abilities.isTransformed(event.getPlayer().getUniqueId())) {
+            event.setCancelled(true);
+        }
     }
 
     private record PendingActivation(String abilityId, boolean deactivating, long expiresAtMillis) {

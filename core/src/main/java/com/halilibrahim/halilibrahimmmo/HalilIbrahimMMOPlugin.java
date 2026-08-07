@@ -39,6 +39,8 @@ import com.halilibrahim.halilibrahimmmo.classes.YamlClassService;
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityActivationListener;
 import com.halilibrahim.halilibrahimmmo.abilities.AbilityExplosionListener;
 import com.halilibrahim.halilibrahimmmo.backpack.BackpackListener;
+import com.halilibrahim.halilibrahimmmo.backup.BackupService;
+import com.halilibrahim.halilibrahimmmo.backup.ZipBackupService;
 import com.halilibrahim.halilibrahimmmo.backpack.BackpackRepository;
 import com.halilibrahim.halilibrahimmmo.backpack.BackpackService;
 import com.halilibrahim.halilibrahimmmo.backpack.DatabaseBackpackService;
@@ -60,6 +62,7 @@ import com.halilibrahim.halilibrahimmmo.collections.CollectionRepository;
 import com.halilibrahim.halilibrahimmmo.collections.CollectionService;
 import com.halilibrahim.halilibrahimmmo.config.ConfigService;
 import com.halilibrahim.halilibrahimmmo.config.YamlConfigService;
+import com.halilibrahim.halilibrahimmmo.core.ConfigIntegrityCheck;
 import com.halilibrahim.halilibrahimmmo.core.LifecycleException;
 import com.halilibrahim.halilibrahimmmo.core.PluginService;
 import com.halilibrahim.halilibrahimmmo.core.ServiceContainer;
@@ -220,6 +223,12 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
         this.pluginLogger = new PluginLogger(getSLF4JLogger(), this::isDebugModeCurrentlyEnabled);
 
         try {
+            // Before a single service reads a single file: an owner who has
+            // mistyped one YAML gets the file name and the line number here,
+            // once, instead of whichever service happened to be started first
+            // throwing an English stack trace at them.
+            ConfigIntegrityCheck.run(this, pluginLogger);
+
             // Constructed before every service because AbilityService needs it; it owns no
             // lifecycle of its own, only a NamespacedKey and a per-loaded-chunk read cache.
             PlacedBlockTracker placedBlockTracker = new PlacedBlockTracker(this);
@@ -243,6 +252,17 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     DatabaseService.class
             );
             runPendingMigrations(databaseService);
+
+            // Registered immediately after the database and before anything that
+            // writes through it. Two reasons, and the order matters for both: the
+            // crash marker has to be read before any other service can touch the
+            // data folder, and a backup taken after a crash has to be taken
+            // before the first player is let in to overwrite what survived.
+            BackupService backupService = startService(
+                    new ZipBackupService(this, databaseService,
+                            configService.coreConfig().databaseSettings().type(), pluginLogger),
+                    BackupService.class
+            );
 
             ProfileService profileService = startService(
                     new CachedProfileService(new ProfileRepository(databaseService)), ProfileService.class
@@ -334,7 +354,11 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                             playerId -> {
                                 BackpackService backpacks = backpackServiceReference.get();
                                 return backpacks == null ? 0 : backpacks.upgrades(playerId);
-                            }), ClassService.class
+                            },
+                            // ...and the ceiling those widenings add to the
+                            // feature pool's cap, which is a constant rather
+                            // than a per-player reading.
+                            BackpackService.MAXIMUM_UPGRADES), ClassService.class
             );
             classServiceReference.set(classService);
             PrestigeService prestigeService = startService(
@@ -489,7 +513,7 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
                     leaderboardService, titleService, cosmeticService, feedbackService, sidebarService, configService,
                     api, activationService, pluginLogger, onboardingService, onboardingRewarder, homeService, tradeService,
                     reputationService, bossService, modVerificationService, chatPromptService,
-                    guideService, backpackService, milestoneToggles
+                    guideService, backpackService, milestoneToggles, backupService
             );
             // The trade screen lives in the GUI layer, which needs the trade
             // service to build - so the service is told how to draw itself only
@@ -506,10 +530,15 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
 
             pluginLogger.info("HalilIbrahimMMO " + getPluginMeta().getVersion() + " basariyla etkinlestirildi.");
         } catch (Exception exception) {
-            pluginLogger.error(
-                    "HalilIbrahimMMO etkinlestirilirken kritik bir hata olustu, eklenti devre disi birakiliyor.",
-                    exception
-            );
+            // Named, not just logged. "Kritik bir hata olustu" tells an owner
+            // nothing they can act on; the failing service and the root cause
+            // are what turn a boot failure into a file they can go and fix.
+            pluginLogger.error("HalilIbrahimMMO ACILAMADI. Eklenti devre disi birakiliyor.", exception);
+            pluginLogger.error("Basarili acilan servis sayisi: " + enabledServices.size()
+                    + ". Hata bir sonrakinde olustu.");
+            pluginLogger.error("Sebep: " + rootCauseOf(exception));
+            pluginLogger.error("Yapilandirma kaynakliysa ilgili dosyayi silin; bir sonraki aciliste "
+                    + "varsayilan haliyle yeniden olusturulur.");
             getServer().getPluginManager().disablePlugin(this);
         }
     }
@@ -575,11 +604,33 @@ public final class HalilIbrahimMMOPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(listener, this);
     }
 
+    /**
+     * Enables one service and records it for reverse-order shutdown.
+     *
+     * <p>A failure is re-thrown with the service's own name attached. Without
+     * it the boot log says only that something threw while reading a YAML file,
+     * and the twenty-odd services in this method all read one.</p>
+     */
     private <T extends PluginService> T startService(T service, Class<T> type) {
-        service.enable();
+        try {
+            service.enable();
+        } catch (RuntimeException exception) {
+            throw new LifecycleException(
+                    type.getSimpleName() + " baslatilamadi: " + rootCauseOf(exception), exception);
+        }
         services.register(type, service);
         enabledServices.add(service);
         return service;
+    }
+
+    /** The deepest message in the chain - the one that names the actual file, key or column. */
+    private static String rootCauseOf(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        String message = cause.getMessage();
+        return message == null || message.isBlank() ? cause.getClass().getSimpleName() : message;
     }
 
     private void runPendingMigrations(DatabaseService databaseService) {

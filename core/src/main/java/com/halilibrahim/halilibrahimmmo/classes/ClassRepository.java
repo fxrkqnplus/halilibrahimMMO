@@ -74,6 +74,25 @@ public final class ClassRepository {
         });
     }
 
+    /**
+     * Wipes every talent rank one player holds in one class.
+     *
+     * <p>Written as a delete rather than as a run of zero-rank rows: a rank of
+     * zero and no rank at all mean the same thing everywhere that reads this
+     * table, and rows nobody can see are rows that quietly grow.</p>
+     */
+    CompletableFuture<Void> clearRanks(UUID playerId, String classId) {
+        return database.executeVoid(connection -> {
+            try (PreparedStatement delete = connection.prepareStatement("""
+                    DELETE FROM hmmo_player_class_talents WHERE player_id = ? AND class_id = ?
+                    """)) {
+                delete.setString(1, playerId.toString());
+                delete.setString(2, classId);
+                delete.executeUpdate();
+            }
+        });
+    }
+
     CompletableFuture<Void> saveCooldown(UUID playerId, long readyAtMillis) {
         return database.executeVoid(connection -> {
             try (PreparedStatement update = connection.prepareStatement("""

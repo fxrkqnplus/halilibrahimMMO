@@ -66,6 +66,10 @@ public final class WerewolfLayer extends RenderLayer<AvatarRenderState, PlayerMo
         if (forms.isEmpty() || !forms.isTransformedEntity(state.id)) {
             return;
         }
+        // Handed over immediately before the pose is built, because the render
+        // state has no notion of being airborne and one model instance draws
+        // every wolf on screen - see WerewolfModel#motion.
+        model.motion(forms.motionOf(state.id));
         model.setupAnim(state);
         renderColoredCutoutModel(model, TEXTURE, pose, collector, packedLight, state, NO_TINT, RENDER_ORDER);
     }

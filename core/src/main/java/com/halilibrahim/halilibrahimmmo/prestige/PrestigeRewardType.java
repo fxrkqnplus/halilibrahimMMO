@@ -43,20 +43,20 @@ public enum PrestigeRewardType {
     /**
      * How many of these a prestige actually offers, counted from the top.
      *
-     * <p>Four choices where every one is a small permanent trickle is not four
-     * decisions, it is a menu - a player reads the same lore every rank and
-     * picks whatever they picked last time. Two makes the choice a real one:
-     * survive harder, or hit harder.</p>
+     * <p>All four. Faz 24 cut it to two on the reading that four small
+     * permanent trickles are a menu rather than a decision; Faz 25 puts it back
+     * because that reading answered the wrong question. The item the request
+     * wanted narrowed was the <em>physical</em> chest - the thing a player walks
+     * away holding - and narrowing the standing bonus instead took a direction
+     * away from every build that was steering towards energy or towards skill
+     * XP over ten ranks.</p>
      *
-     * <p><strong>The other two are not deleted, and that is the point.</strong>
-     * Every ENERJI and BILGELIK a player has already banked is a row in
-     * {@code hmmo_player_prestige_rewards} and keeps paying out exactly as
-     * before - the same rule §15.4 set for talent ranks whose configuration
-     * moved under them. Removing the constants would have silently taken those
-     * bonuses away, because {@link #byName} answers an unknown name with
-     * nothing.</p>
+     * <p>Nothing was ever removed from the enum, so no banked ENERJI or
+     * BILGELIK ever stopped paying out (§15.4's rule for configuration that
+     * moves under a spent rank); this constant only ever governed what the
+     * screen offered next.</p>
      */
-    public static final int SELECTABLE_COUNT = 2;
+    public static final int SELECTABLE_COUNT = 4;
 
     private final Material icon;
     private final MessageKey nameKey;

@@ -11,6 +11,7 @@ import com.halilibrahim.halilibrahimmmo.config.ConfigService;
 import com.halilibrahim.halilibrahimmmo.cosmetics.CosmeticService;
 import com.halilibrahim.halilibrahimmmo.energy.EnergyService;
 import com.halilibrahim.halilibrahimmmo.backpack.BackpackService;
+import com.halilibrahim.halilibrahimmmo.backup.BackupService;
 import com.halilibrahim.halilibrahimmmo.feedback.FeedbackService;
 import com.halilibrahim.halilibrahimmmo.guide.GuideService;
 import com.halilibrahim.halilibrahimmmo.journal.JournalService;
@@ -71,6 +72,7 @@ public record GuiServices(
         ChatPromptService chatPrompts,
         GuideService guide,
         BackpackService backpacks,
-        MilestoneToggles milestoneToggles
+        MilestoneToggles milestoneToggles,
+        BackupService backups
 ) {
 }

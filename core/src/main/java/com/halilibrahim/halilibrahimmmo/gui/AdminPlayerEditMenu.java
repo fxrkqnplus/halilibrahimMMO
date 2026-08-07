@@ -45,6 +45,8 @@ public final class AdminPlayerEditMenu implements GuiView {
     private static final int FEATURE_POINTS_SLOT = 32;
     private static final int ABILITY_POINTS_SLOT = 33;
     private static final int REPUTATION_SLOT = 34;
+    /** Only meaningful for a target who is here to be searched - see {@link AdminInventoryMenu}. */
+    private static final int INVENTORY_SLOT = 40;
     private static final int BACK_SLOT = 49;
 
     private final GuiServices services;
@@ -180,6 +182,18 @@ public final class AdminPlayerEditMenu implements GuiView {
                                         .orElse(services.messages().plain(MessageKey.GUI_ADMIN_EDIT_ABILITY_NONE, Map.of()))
                         )),
                         List.of(services.messages().render(MessageKey.GUI_ADMIN_EDIT_ABILITY_LORE))));
+
+        // Same rule as the ability button, for a harder reason: an offline
+        // player has no live inventory at all, so this is a barrier rather than
+        // a button that would open an empty board and look broken.
+        inventory.setItem(INVENTORY_SLOT, target == null
+                ? GuiItems.of(Material.BARRIER,
+                        services.messages().render(MessageKey.GUI_ADMIN_INVENTORY_ITEM),
+                        List.of(services.messages().render(MessageKey.GUI_ADMIN_INVENTORY_OFFLINE,
+                                Map.of("oyuncu", targetName))))
+                : GuiItems.of(Material.CHEST,
+                        services.messages().render(MessageKey.GUI_ADMIN_INVENTORY_ITEM),
+                        List.of(services.messages().render(MessageKey.GUI_ADMIN_INVENTORY_LORE))));
     }
 
     private String abilityName(String abilityId) {
@@ -224,6 +238,14 @@ public final class AdminPlayerEditMenu implements GuiView {
         }
         if (slot == ABILITY_SLOT && Bukkit.getPlayer(targetId) != null) {
             GuiManager.open(player, new AdminAbilityPickerMenu(services, targetId, targetName, fromOnlineList));
+            return;
+        }
+        if (slot == INVENTORY_SLOT) {
+            if (Bukkit.getPlayer(targetId) == null) {
+                services.messages().send(player, MessageKey.GUI_ADMIN_INVENTORY_OFFLINE, Map.of("oyuncu", targetName));
+                return;
+            }
+            GuiManager.open(player, new AdminInventoryMenu(services, targetId, targetName, fromOnlineList));
             return;
         }
         if (slot == REPUTATION_SLOT) {

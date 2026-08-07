@@ -62,15 +62,21 @@ zorunlu-modlar:
   # oyuncu doğrulamayı geçemez.
   - id: "hmmo-client"
     gorunen-ad: "HalilIbrahimMMO İstemci Mod'u"
-    # Faz 22'de mod 1.1.0'a (kabiliyet HUD'u), Faz 23'te 1.2.0'a çıktı (HUD
-    # protokolü 2: sönme, nabız, kombo satırı, mesafeye göre parlama). Minimum
-    # yine BİLEREK 1.0.0'da bırakıldı. Minimum, yeni sürüm oyuncuların
+    # Mod sürümü: 1.1.0 (Faz 22, kabiliyet HUD'u) -> 1.2.0 (Faz 23, HUD
+    # protokolü 2) -> 1.3.0 (Faz 24, protokol 3 ve kurt adam katmanı) ->
+    # 1.4.0 (Faz 25: kurt adam modelinin yeniden yazımı ve animasyonları,
+    # parlamanın gerçekten çalışması, Kurt Pençeleri modeli).
+    #
+    # FAZ 25'TE PROTOKOL DEĞİŞMEDİ - hâlâ 3. Yani 1.3.0 istemcisi bu sunucuda
+    # eksiksiz çalışır; 1.4.0 yalnızca daha iyi görünür.
+    #
+    # Minimum yine BİLEREK 1.0.0'da bırakıldı. Minimum, yeni sürüm oyuncuların
     # kurulumuna ULAŞTIKTAN SONRA yükseltilir; önce yükseltmek, mod'u
     # güncelleyememiş dürüst oyuncuları kapıda bırakır.
     #
-    # 1.x istemcisi protokol 2 paketlerini tanımaz ve SESSİZCE yok sayar: oyun
-    # aynı, yalnızca ekran sade kalır. HUD, bu sunucuda güncellenene kadar
-    # yokluğuna izin verilen tek şeydir - hiçbir oyun kuralı ona bağlı değildir.
+    # Eski bir istemci tanımadığı paketi SESSİZCE yok sayar: oyun aynı, yalnızca
+    # ekran sade kalır. HUD, bu sunucuda yokluğuna izin verilen tek şeydir -
+    # hiçbir oyun kuralı ona bağlı değildir.
     minimum-versiyon: "1.0.0"
 
   - id: "appleskin"

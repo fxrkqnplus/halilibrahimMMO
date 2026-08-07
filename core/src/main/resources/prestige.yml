@@ -48,7 +48,7 @@ fiziksel-oduller:
     gorunen-ad: "Savaş Sandığı"
     simge: NETHERITE_SWORD
     esyalar:
-      - { esya: ENCHANTED_GOLDEN_APPLE, adet: 4 }
+      - { esya: ENCHANTED_GOLDEN_APPLE, adet: 2 }
       - { esya: TOTEM_OF_UNDYING, adet: 2 }
       - { esya: NETHERITE_INGOT, adet: 2 }
   maden-sandigi:
@@ -58,33 +58,13 @@ fiziksel-oduller:
       - { esya: DIAMOND_BLOCK, adet: 6 }
       - { esya: ANCIENT_DEBRIS, adet: 4 }
       - { esya: EXPERIENCE_BOTTLE, adet: 32 }
-  doga-sandigi:
-    gorunen-ad: "Doğa Sandığı"
-    simge: OAK_SAPLING
-    esyalar:
-      - { esya: BONE_BLOCK, adet: 16 }
-      - { esya: GOLDEN_CARROT, adet: 32 }
-      - { esya: LEAD, adet: 8 }
-      - { esya: NAME_TAG, adet: 2 }
-  kasif-sandigi:
-    gorunen-ad: "Kâşif Sandığı"
-    simge: FILLED_MAP
-    esyalar:
-      - { esya: ENDER_PEARL, adet: 16 }
-      - { esya: FIREWORK_ROCKET, adet: 64 }
-      - { esya: GOLDEN_APPLE, adet: 8 }
 
 # Prestijde secilen kalici odullerin bir seferde ne kadar verdigi.
 #
-# FAZ 24: EKRAN ARTIK YALNIZCA ILK IKISINI SUNUYOR (CAN ve HASAR). Dort
-# secenegin hepsi kucuk ve kalici oldugu icin dort secim bir karar degil bir
-# menuydu; oyuncu her rankta ayni aciklamalari okuyup gecen sefer ne
-# sectiyse onu seciyordu. Iki secenek gercek bir yol ayrimi: daha zor olmek
-# ya da daha sert vurmak.
-#
-# ENERJI ve BILGELIK SILINMEDI ve degerleri hala okunuyor - daha once bu
-# ikisinden alan oyuncularin bonusu aynen odenmeye devam ediyor. Silinselerdi
-# o kayitlar sessizce hicbir seye karsilik gelmez olurdu.
+# DORT SECENEGIN HEPSI SUNULUR. Faz 24 bunu ikiye indirmisti; Faz 25 geri aldi,
+# cunku daraltilmasi istenen sey FIZIKSEL sandiklardi (yukarida iki pakete
+# indi), kalici bonus degil. Enerjiye ya da beceri XP'sine yonelen bir
+# karakterin yolunu on rank boyunca kapatmak istenen sey degildi.
 kalici-oduller:
   CAN: 2
   HASAR: 0.05

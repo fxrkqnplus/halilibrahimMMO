@@ -49,11 +49,23 @@ public final class YamlClassService implements ClassService {
     private final ConcurrentHashMap<UUID, CompletableFuture<Void>> updateChains = new ConcurrentHashMap<>();
     private final NamespacedKey healthModifierKey;
     private final java.util.function.ToIntFunction<java.util.UUID> featurePointsSpentElsewhere;
+    /**
+     * How many feature points can be spent on things that are not talents - the
+     * cloud chest's two widenings today.
+     *
+     * <p>Supplied by the bootstrap rather than read off {@code BackpackService},
+     * for the same reason {@link #featurePointsSpentElsewhere} is a lambda: the
+     * backpack already depends on this class, and a field pointing back would be
+     * a cycle. It is a plain number because it is a ceiling, not a per-player
+     * reading.</p>
+     */
+    private final int featurePointSinksOutsideTree;
 
     public YamlClassService(
             JavaPlugin plugin, ProfileService profiles, ClassRepository repository, AbilityService abilities,
             SkillService skills, ProgressionService progression,
-            java.util.function.ToIntFunction<java.util.UUID> featurePointsSpentElsewhere
+            java.util.function.ToIntFunction<java.util.UUID> featurePointsSpentElsewhere,
+            int featurePointSinksOutsideTree
     ) {
         this.plugin = plugin;
         this.profiles = profiles;
@@ -62,6 +74,7 @@ public final class YamlClassService implements ClassService {
         this.skills = skills;
         this.progression = progression;
         this.featurePointsSpentElsewhere = featurePointsSpentElsewhere;
+        this.featurePointSinksOutsideTree = Math.max(0, featurePointSinksOutsideTree);
         this.healthModifierKey = new NamespacedKey(plugin, "class-health");
     }
 
@@ -152,14 +165,48 @@ public final class YamlClassService implements ClassService {
                 return CompletableFuture.completedFuture(new ClassSelectionResult(ClassSelectionResult.Status.COOLDOWN, classId, progress.classChangeReadyAtMillis() - now));
             }
             long readyAt = profile.selectedClass().isEmpty() ? 0L : Math.addExact(now, settings().changeCooldownMillis());
+            String leaving = profile.selectedClass();
             return profiles.update(playerId, playerName, old -> withClass(old, classId))
                     .thenCompose(ignored -> repository.saveCooldown(playerId, readyAt))
-                    .thenApply(ignored -> {
+                    .thenCompose(ignored -> refundRanks(playerId, leaving, progress.talentRanks()))
+                    .thenApply(refundedRanks -> {
                         selectedClasses.put(playerId, classId);
-                        progressCache.put(playerId, new PlayerClassProgress(playerId, progress.talentRanks(), readyAt, progress.classLevels()));
+                        progressCache.put(playerId, new PlayerClassProgress(playerId, refundedRanks, readyAt, progress.classLevels()));
                         return new ClassSelectionResult(ClassSelectionResult.Status.SELECTED, classId, 0);
                     });
         }));
+    }
+
+    /**
+     * Gives back every point the player had sunk into the class they are
+     * leaving.
+     *
+     * <p>Until Faz 25 a rank survived the class change and kept costing its
+     * point forever while giving nothing: {@link #modifiers} only ever reads the
+     * <em>selected</em> class's ranks, but {@code spentPoints} counts them
+     * across every class. A player who had spent ten ability points as Mağara
+     * Adamı arrived at Tabiat Vârisi ten points poorer with nothing to show for
+     * it, and no way at all to get them back.</p>
+     *
+     * <p>Both pools are refunded, not only the ability one the request names.
+     * A feature rank in an abandoned class is exactly as dead as an ability
+     * rank in it, and refunding one while stranding the other would be a rule
+     * nobody could hold in their head.</p>
+     *
+     * <p>This is the same bargain the class level already makes: leaving a class
+     * resets that class to level 1, and now it resets that class's tree too.
+     * Coming back means earning it again, which is what "changing class" has
+     * meant here since Faz 9.</p>
+     */
+    private CompletableFuture<Map<String, Map<String, Integer>>> refundRanks(
+            UUID playerId, String leavingClassId, Map<String, Map<String, Integer>> current
+    ) {
+        if (leavingClassId == null || leavingClassId.isEmpty() || !current.containsKey(leavingClassId)) {
+            return CompletableFuture.completedFuture(current);
+        }
+        Map<String, Map<String, Integer>> remaining = mutableCopy(current);
+        remaining.remove(leavingClassId);
+        return repository.clearRanks(playerId, leavingClassId).thenApply(ignored -> freeze(remaining));
     }
 
     @Override
@@ -347,18 +394,68 @@ public final class YamlClassService implements ClassService {
                 profiles.update(playerId, playerName, old -> {
                     previousClass.set(old.selectedClass());
                     return withClass(old, classId);
-                }).thenApply(ignored -> {
-                    selectedClasses.put(playerId, classId);
-                    progressCache.put(playerId, new PlayerClassProgress(playerId, progress.talentRanks(), progress.classChangeReadyAtMillis(), progress.classLevels()));
-                    return previousClass.get();
-                })));
+                })
+                        // Refunded here too, for the reason §39.2 gave when it
+                        // aligned the two paths: an admin-set class and a
+                        // self-chosen one have to leave the player in the same
+                        // state, or the difference is a bug report waiting to
+                        // happen.
+                        .thenCompose(ignored -> refundRanks(playerId, previousClass.get(), progress.talentRanks()))
+                        .thenApply(refundedRanks -> {
+                            selectedClasses.put(playerId, classId);
+                            progressCache.put(playerId, new PlayerClassProgress(playerId, refundedRanks, progress.classChangeReadyAtMillis(), progress.classLevels()));
+                            return previousClass.get();
+                        })));
     }
 
+    /**
+     * The points this player has, never more than they could ever put anywhere.
+     *
+     * <p><strong>Capped since Faz 25.</strong> Both pools grow forever - one
+     * point per N Güç plus a handful per prestige - while the trees they buy are
+     * finite: every talent has a maximum rank, and once every rank of every
+     * talent is bought there is nothing left to spend on. A counter that kept
+     * climbing past that point was announcing a resource that had already
+     * stopped meaning anything, and made "kalan" the least useful number on the
+     * class screen.</p>
+     *
+     * <p>The ceiling is read off the tree itself rather than written down as a
+     * number, so retuning a talent's maximum rank in {@code classes.yml} moves
+     * the cap with it and the two can never disagree.</p>
+     */
     @Override
     public int pointsFor(PlayerProfile profile, TalentPointCategory category) {
-        return TalentPointBudget.pointsFor(
+        int earned = TalentPointBudget.pointsFor(
                 progression.cachedGlobalLevel(profile.playerId()), profile.prestige(), settings().talentPoints(), category
         ) + grantedPoints(profile.playerId(), category);
+        return Math.min(earned, spendableCeiling(profile.selectedClass(), category));
+    }
+
+    /**
+     * Every point one pool could ever absorb for one class.
+     *
+     * <p>Measured against the class the player is <em>on</em>, because ranks in
+     * a class they left are refunded the moment they leave it (see
+     * {@link #refundRanks}) - so the only tree their points can reach is this
+     * one. A player who has not chosen a class yet is measured against the most
+     * expensive class there is, so the number they see before choosing is never
+     * lower than what choosing will give them.</p>
+     */
+    private int spendableCeiling(String classId, TalentPointCategory category) {
+        Map<String, PlayerClassDefinition> definitions = settings().definitions();
+        PlayerClassDefinition selected = definitions.get(classId);
+        int ceiling = selected != null
+                ? rankCeiling(selected, category)
+                : definitions.values().stream().mapToInt(definition -> rankCeiling(definition, category)).max().orElse(0);
+        return category == TalentPointCategory.OZELLIK ? ceiling + featurePointSinksOutsideTree : ceiling;
+    }
+
+    /** The sum of every maximum rank in one class's tree, for one pool. */
+    private static int rankCeiling(PlayerClassDefinition definition, TalentPointCategory category) {
+        return definition.talents().values().stream()
+                .filter(talent -> talent.effectType().category() == category)
+                .mapToInt(TalentNodeDefinition::maximumRank)
+                .sum();
     }
 
     /**
@@ -374,7 +471,14 @@ public final class YamlClassService implements ClassService {
         int spentElsewhere = category == TalentPointCategory.OZELLIK
                 ? featurePointsSpentElsewhere.applyAsInt(profile.playerId())
                 : 0;
-        return pointsFor(profile, category) - progress.spentPoints(settings().definitions(), category) - spentElsewhere;
+        // Floored at zero. Since Faz 25 the budget is capped at what the tree
+        // can absorb, and a player carrying ranks in a class they left before
+        // that update - those are refunded the next time they change class, not
+        // retroactively - can briefly be over their own ceiling. "-3 puan" reads
+        // as a broken counter; "0" reads as "nothing to spend", which is the
+        // truth in both cases.
+        return Math.max(0,
+                pointsFor(profile, category) - progress.spentPoints(settings().definitions(), category) - spentElsewhere);
     }
 
     private ClassSettings parse(YamlConfiguration yaml) {

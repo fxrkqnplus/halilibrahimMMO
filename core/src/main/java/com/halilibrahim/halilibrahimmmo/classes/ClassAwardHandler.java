@@ -72,19 +72,25 @@ public final class ClassAwardHandler {
             return;
         }
         ClassLevelProgress progress = classes.classProgress(player.getUniqueId(), classId);
-        long requiredForLevel = progress.level() >= classes.settings().classLevelCurve().maximumLevel()
-                ? 0L
-                : classes.settings().classLevelCurve().requiredForCurrentLevel(progress.level());
+        // Same reasoning as {@code SkillAwardHandler}: a class at its cap keeps
+        // being handed XP by every synergy skill, and drawing a "+120 XP" bar
+        // against a track that cannot move is feedback for something that did
+        // not happen.
+        boolean maxedOut = progress.level() >= classes.settings().classLevelCurve().maximumLevel();
         player.getScheduler().run(plugin, task -> {
-            feedback.showExperienceProgress(
-                    player, MessageKey.FEEDBACK_XP_CLASS_BOSSBAR,
-                    Map.of(
-                            "sinif", definition.displayName(),
-                            "seviye", Integer.toString(progress.level()),
-                            "kazanilan", Long.toString(grantedAmount)
-                    ),
-                    progress.experience(), requiredForLevel, "class", definition.barColor().color()
-            );
+            if (!maxedOut) {
+                feedback.showExperienceProgress(
+                        player, MessageKey.FEEDBACK_XP_CLASS_BOSSBAR,
+                        Map.of(
+                                "sinif", definition.displayName(),
+                                "seviye", Integer.toString(progress.level()),
+                                "kazanilan", Long.toString(grantedAmount)
+                        ),
+                        progress.experience(),
+                        classes.settings().classLevelCurve().requiredForCurrentLevel(progress.level()),
+                        "class", definition.barColor().color()
+                );
+            }
             if (result.leveledUp()) {
                 feedback.celebrateClassLevelUp(player, definition.displayName(), result.newLevel());
                 notifyUnlockedAbilities(player, classId, result.previousLevel(), result.newLevel());

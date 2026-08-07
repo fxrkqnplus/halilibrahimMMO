@@ -1,0 +1,139 @@
+{
+  "__comment": "Kurt Pencesi - Asil Kurt donusumunde elde tutulan uc uzun beyaz pence. Gercek bir 3D model: yassi bir doku degil, dokuz kutudan olusan bir el. Sunucu bunu 'item_model' bileseniyle secer (bkz. YamlAbilityService#wolfClaws), yani hicbir vanilla esyanin gorunumu degismez.",
+  "textures": {
+    "particle": "hmmo:item/kurt_pencesi",
+    "0": "hmmo:item/kurt_pencesi"
+  },
+  "elements": [
+    {
+      "__comment": "Bogum: pencelerin ciktigi koyu tuylu taban.",
+      "from": [3, 2, 6.5],
+      "to": [13, 5.5, 9.5],
+      "faces": {
+        "north": {"uv": [0, 9, 10, 12], "texture": "#0"},
+        "south": {"uv": [0, 9, 10, 12], "texture": "#0"},
+        "west":  {"uv": [10, 9, 13, 12], "texture": "#0"},
+        "east":  {"uv": [10, 9, 13, 12], "texture": "#0"},
+        "up":    {"uv": [0, 12, 10, 15], "texture": "#0"},
+        "down":  {"uv": [0, 12, 10, 15], "texture": "#0"}
+      }
+    },
+    {
+      "__comment": "Sol pence - taban",
+      "from": [3.5, 5, 7],
+      "to": [5.5, 11, 9],
+      "faces": {
+        "north": {"uv": [0, 1, 2, 7], "texture": "#0"},
+        "south": {"uv": [0, 1, 2, 7], "texture": "#0"},
+        "west":  {"uv": [2, 1, 4, 7], "texture": "#0"},
+        "east":  {"uv": [2, 1, 4, 7], "texture": "#0"},
+        "up":    {"uv": [0, 0, 2, 1], "texture": "#0"},
+        "down":  {"uv": [0, 0, 2, 1], "texture": "#0"}
+      }
+    },
+    {
+      "__comment": "Sol pence - uc. Daha ince: kutu daralmadigi icin incelme iki kademede veriliyor.",
+      "from": [4, 10.5, 7.25],
+      "to": [5, 14.5, 8.75],
+      "rotation": {"origin": [4.5, 10.5, 8], "axis": "z", "angle": -22.5},
+      "faces": {
+        "north": {"uv": [4, 1, 5, 5], "texture": "#0"},
+        "south": {"uv": [4, 1, 5, 5], "texture": "#0"},
+        "west":  {"uv": [5, 1, 6, 5], "texture": "#0"},
+        "east":  {"uv": [5, 1, 6, 5], "texture": "#0"},
+        "up":    {"uv": [4, 0, 5, 1], "texture": "#0"},
+        "down":  {"uv": [4, 0, 5, 1], "texture": "#0"}
+      }
+    },
+    {
+      "__comment": "Orta pence - taban. En uzun olan.",
+      "from": [7, 5, 7],
+      "to": [9, 12, 9],
+      "faces": {
+        "north": {"uv": [0, 1, 2, 8], "texture": "#0"},
+        "south": {"uv": [0, 1, 2, 8], "texture": "#0"},
+        "west":  {"uv": [2, 1, 4, 8], "texture": "#0"},
+        "east":  {"uv": [2, 1, 4, 8], "texture": "#0"},
+        "up":    {"uv": [0, 0, 2, 1], "texture": "#0"},
+        "down":  {"uv": [0, 0, 2, 1], "texture": "#0"}
+      }
+    },
+    {
+      "__comment": "Orta pence - uc",
+      "from": [7.5, 11.5, 7.25],
+      "to": [8.5, 16, 8.75],
+      "faces": {
+        "north": {"uv": [4, 1, 5, 5], "texture": "#0"},
+        "south": {"uv": [4, 1, 5, 5], "texture": "#0"},
+        "west":  {"uv": [5, 1, 6, 5], "texture": "#0"},
+        "east":  {"uv": [5, 1, 6, 5], "texture": "#0"},
+        "up":    {"uv": [4, 0, 5, 1], "texture": "#0"},
+        "down":  {"uv": [4, 0, 5, 1], "texture": "#0"}
+      }
+    },
+    {
+      "__comment": "Sag pence - taban",
+      "from": [10.5, 5, 7],
+      "to": [12.5, 11, 9],
+      "faces": {
+        "north": {"uv": [0, 1, 2, 7], "texture": "#0"},
+        "south": {"uv": [0, 1, 2, 7], "texture": "#0"},
+        "west":  {"uv": [2, 1, 4, 7], "texture": "#0"},
+        "east":  {"uv": [2, 1, 4, 7], "texture": "#0"},
+        "up":    {"uv": [0, 0, 2, 1], "texture": "#0"},
+        "down":  {"uv": [0, 0, 2, 1], "texture": "#0"}
+      }
+    },
+    {
+      "__comment": "Sag pence - uc",
+      "from": [11, 10.5, 7.25],
+      "to": [12, 14.5, 8.75],
+      "rotation": {"origin": [11.5, 10.5, 8], "axis": "z", "angle": 22.5},
+      "faces": {
+        "north": {"uv": [4, 1, 5, 5], "texture": "#0"},
+        "south": {"uv": [4, 1, 5, 5], "texture": "#0"},
+        "west":  {"uv": [5, 1, 6, 5], "texture": "#0"},
+        "east":  {"uv": [5, 1, 6, 5], "texture": "#0"},
+        "up":    {"uv": [4, 0, 5, 1], "texture": "#0"},
+        "down":  {"uv": [4, 0, 5, 1], "texture": "#0"}
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 3.5, 1.5],
+      "scale": [0.9, 0.9, 0.9]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 3.5, 1.5],
+      "scale": [0.9, 0.9, 0.9]
+    },
+    "firstperson_righthand": {
+      "rotation": [10, -15, 0],
+      "translation": [1.5, 3.5, 2.5],
+      "scale": [1.1, 1.1, 1.1]
+    },
+    "firstperson_lefthand": {
+      "rotation": [10, 15, 0],
+      "translation": [1.5, 3.5, 2.5],
+      "scale": [1.1, 1.1, 1.1]
+    },
+    "gui": {
+      "rotation": [30, 45, 0],
+      "translation": [0, 0, 0],
+      "scale": [0.8, 0.8, 0.8]
+    },
+    "ground": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 3, 0],
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "fixed": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 0, 0],
+      "scale": [1, 1, 1]
+    }
+  }
+}

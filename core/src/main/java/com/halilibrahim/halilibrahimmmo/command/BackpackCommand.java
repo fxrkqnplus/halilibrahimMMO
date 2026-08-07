@@ -52,15 +52,13 @@ public final class BackpackCommand implements BasicCommand {
         // The read is a database round trip, so the window is opened back on the
         // player's own region once it resolves - the same hop every async
         // command in this codebase makes before touching Bukkit API.
+        // No chat confirmation. Faz 23 had already cut it to a single word and
+        // Faz 25 cuts it entirely: the window opening in front of the player is
+        // the confirmation, and a line printed thirty times a session is noise
+        // whatever it says. The capacity is on the window's own locked slots.
         backpacks.open(player).thenAccept(inventory -> player.getScheduler().run(plugin, task -> {
             player.openInventory(inventory);
             player.playSound(player.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 0.8F, 1.2F);
-            // Personal chat confirmation, matching what /ev and /takas already
-            // do: the window opening is the obvious part, but the chat line is
-            // what stays on screen after it is closed again.
-            messages.send(player, MessageKey.BACKPACK_OPENED, Map.of(
-                    "kapasite", Integer.toString(backpacks.capacity(player.getUniqueId()))
-            ));
         }, null));
     }
 }

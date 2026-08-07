@@ -61,20 +61,27 @@ public final class SkillAwardHandler {
         if (definition == null) {
             return;
         }
-        long requiredForLevel = progress.level() >= skills.settings().curve().maximumLevel()
-                ? 0L
-                : skills.settings().curve().requiredForCurrentLevel(progress.level());
+        // At the top of the curve the bar has nothing to fill and the XP has
+        // nowhere to go, so announcing "+45 XP" against a full bar was reporting
+        // a gain that did not happen. The level-up celebration below still runs:
+        // the award that *reaches* the cap is real news, every one after it is
+        // not.
+        boolean maxedOut = progress.level() >= skills.settings().curve().maximumLevel();
         player.getScheduler().run(plugin, task -> {
-            feedback.showExperienceProgress(
-                    player, MessageKey.FEEDBACK_XP_SKILL_BOSSBAR,
-                    Map.of(
-                            "beceri", definition.displayName(),
-                            "seviye", Integer.toString(progress.level()),
-                            "kazanilan", Long.toString(award.grantedAmount()),
-                            "kaynak", award.sourceDisplayName()
-                    ),
-                    progress.experience(), requiredForLevel, "skill", BossBar.Color.GREEN
-            );
+            if (!maxedOut) {
+                feedback.showExperienceProgress(
+                        player, MessageKey.FEEDBACK_XP_SKILL_BOSSBAR,
+                        Map.of(
+                                "beceri", definition.displayName(),
+                                "seviye", Integer.toString(progress.level()),
+                                "kazanilan", Long.toString(award.grantedAmount()),
+                                "kaynak", award.sourceDisplayName()
+                        ),
+                        progress.experience(),
+                        skills.settings().curve().requiredForCurrentLevel(progress.level()),
+                        "skill", BossBar.Color.GREEN
+                );
+            }
             if (award.leveledUp()) {
                 feedback.celebrateSkillLevelUp(player, definition.displayName(), progress.level());
                 announceGucMilestones(player, progress.level() - award.previousLevel());
