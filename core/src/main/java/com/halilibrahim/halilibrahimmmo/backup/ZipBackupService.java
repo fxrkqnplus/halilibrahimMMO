@@ -77,8 +77,26 @@ public final class ZipBackupService implements BackupService {
      * comfortably past a normal world load and still inside the first minute.</p>
      */
     private static final long STARTUP_DELAY_SECONDS = 20L;
-    /** Directories inside a world folder that hold player state rather than terrain. */
-    private static final List<String> PLAYER_DATA_FOLDERS = List.of("playerdata", "stats", "advancements");
+    /**
+     * Directories inside a world folder that hold player state rather than
+     * terrain.
+     *
+     * <p>Both spellings of the player folder are listed on purpose: the classic
+     * layout calls it {@code playerdata} and Minecraft 26's single-folder layout
+     * calls it {@code players}. Whichever exists is taken, and a name that does
+     * not exist costs one {@code isDirectory} check.</p>
+     */
+    private static final List<String> PLAYER_DATA_FOLDERS =
+            List.of("playerdata", "players", "stats", "advancements");
+    /**
+     * How far above a dimension folder the level folder is looked for.
+     *
+     * <p>Three is one more than any layout the game has shipped
+     * ({@code world/dimensions/minecraft/the_nether} is two), and a bound is what
+     * stops a missing {@code level.dat} from walking this up to the filesystem
+     * root.</p>
+     */
+    private static final int MAXIMUM_LEVEL_ROOT_DEPTH = 3;
 
     private final JavaPlugin plugin;
     private final DatabaseService database;
@@ -291,35 +309,108 @@ public final class ZipBackupService implements BackupService {
      * copying the terrain as well is the same operation an order of magnitude
      * more expensive, and on most servers the terrain is the part a host's own
      * snapshot already covers.</p>
+     *
+     * <p><strong>A world folder is not a level folder, and mistaking one for the
+     * other is how the first working version of this shipped an archive with no
+     * inventories in it.</strong> {@code World#getWorldFolder()} answers with the
+     * <em>dimension</em> directory - the one holding {@code region} and
+     * {@code data} - while {@code level.dat} and the player files live at the
+     * level root above it, shared by all three dimensions. So the pass runs
+     * twice: once per world for the dimension's own state, and once per distinct
+     * level root for the part a player would actually miss.</p>
      */
     private int addWorldContent(ZipOutputStream zip, BackupSettings current) throws IOException {
+        if (!current.includeWorlds() && !current.includePlayerData()) {
+            return 0;
+        }
+        List<World> worlds = plugin.getServer().getWorlds();
+        if (worlds.isEmpty()) {
+            // The one failure mode that looks like success: an archive full of
+            // configuration and none of the data it was taken for.
+            logger.warn("Yedek alinirken hicbir dunya yuklu degildi - arsivde OYUNCU VERISI YOK. "
+                    + "Bu bir hatadir; konsolu bildirin.");
+            return 0;
+        }
         int entries = 0;
-        for (World world : plugin.getServer().getWorlds()) {
+        java.util.Set<Path> levelRoots = new java.util.LinkedHashSet<>();
+        for (World world : worlds) {
             Path folder = world.getWorldFolder().toPath();
             if (!Files.isDirectory(folder)) {
+                logger.warn("Dunya klasoru bulunamadi, atlandi: " + world.getName() + " -> " + folder);
                 continue;
             }
+            levelRoots.add(levelRootOf(folder));
             if (current.includeWorlds()) {
                 entries += addTree(zip, folder, "dunya/" + world.getName(), path -> true);
                 continue;
             }
-            if (!current.includePlayerData()) {
-                continue;
+            // The dimension's own state: game rules, world border, raids,
+            // scheduled events. Small, and without it a restored level is a
+            // different world than the one that crashed.
+            Path data = folder.resolve("data");
+            if (Files.isDirectory(data)) {
+                entries += addTree(zip, data, "dunya/" + world.getName() + "/data", path -> true);
             }
-            // level.dat carries the world's seed, spawn and game rules - a few
-            // kilobytes that turn a pile of player files back into a server.
-            Path levelData = folder.resolve("level.dat");
-            if (Files.isRegularFile(levelData)) {
-                entries += addFile(zip, levelData, "dunya/" + world.getName() + "/level.dat");
+        }
+        if (current.includePlayerData()) {
+            for (Path root : levelRoots) {
+                entries += addLevelRoot(zip, root);
             }
-            for (String name : PLAYER_DATA_FOLDERS) {
-                Path sub = folder.resolve(name);
-                if (Files.isDirectory(sub)) {
-                    entries += addTree(zip, sub, "dunya/" + world.getName() + "/" + name, path -> true);
-                }
+        }
+        if (entries == 0) {
+            // Same class of failure as an empty world list, one step further in:
+            // the worlds are there but nothing under them matched. Said out loud
+            // rather than left as a smaller number in the summary line, because
+            // the summary looks perfectly healthy either way.
+            logger.warn("Yedege hicbir dunya dosyasi eklenemedi (" + worlds.size()
+                    + " dunya tarandi). Arsivde OYUNCU VERISI YOK.");
+        } else {
+            logger.info("Yedege " + entries + " dunya dosyasi eklendi (" + worlds.size()
+                    + " dunya, " + levelRoots.size() + " seviye koku).");
+        }
+        return entries;
+    }
+
+    /**
+     * {@code level.dat} and every player-bearing folder at one level root.
+     *
+     * <p>{@code level.dat} carries the seed, the spawn and the game rules - a few
+     * kilobytes that turn a pile of player files back into a server.</p>
+     */
+    private int addLevelRoot(ZipOutputStream zip, Path root) throws IOException {
+        String label = "seviye/" + root.getFileName();
+        int entries = 0;
+        Path levelData = root.resolve("level.dat");
+        if (Files.isRegularFile(levelData)) {
+            entries += addFile(zip, levelData, label + "/level.dat");
+        }
+        for (String name : PLAYER_DATA_FOLDERS) {
+            Path sub = root.resolve(name);
+            if (Files.isDirectory(sub)) {
+                entries += addTree(zip, sub, label + "/" + name, path -> true);
             }
         }
         return entries;
+    }
+
+    /**
+     * Walks up from a dimension folder to the level folder that owns it - the
+     * nearest ancestor holding a {@code level.dat}.
+     *
+     * <p>Bounded rather than unbounded: a missing {@code level.dat} must not send
+     * this climbing out of the server directory and into the filesystem root. If
+     * nothing is found the dimension folder itself is answered, which archives
+     * less rather than archiving something it should not.</p>
+     */
+    private static Path levelRootOf(Path dimensionFolder) {
+        Path candidate = dimensionFolder;
+        for (int step = 0; step <= MAXIMUM_LEVEL_ROOT_DEPTH && candidate != null; step++) {
+            if (Files.isRegularFile(candidate.resolve("level.dat"))) {
+                return candidate;
+            }
+            candidate = candidate.getParent();
+        }
+        return dimensionFolder;
     }
 
     /**
